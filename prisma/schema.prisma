@@ -11,10 +11,37 @@ datasource db {
   provider = "sqlite"
 }
 
+/// Kiracı: sistemi satın alan müşteri (bir kafe zinciri ya da tek işletme sahibi).
+///
+/// Her işletme ve her kullanıcı bir hesaba bağlıdır. Veri izolasyonunun tek
+/// dayanağı budur — bir hesabın kullanıcısı hiçbir koşulda başka bir hesabın
+/// verisini göremez.
+model Account {
+  id        String  @id @default(cuid())
+  name      String
+  /// Faturalama ve iletişim için hesap sahibinin adresi.
+  email     String?
+  /// Askıya alınan hesabın kullanıcıları panele giremez, QR'ları çalışmaz.
+  active    Boolean @default(true)
+  /// "deneme" | "standart" — ileride abonelik kademeleri için.
+  plan      String  @default("standart")
+
+  createdAt DateTime @default(now())
+
+  businesses Business[]
+  users      User[]
+
+  @@map("accounts")
+}
+
 /// İşletme türü. Kategori şablonlarının varsayılanını ve QR tasarımını belirler.
 /// SQLite enum desteklemediği için string olarak tutulur: "yeme_icme" | "balikci" | "gece_kulubu"
 model Business {
   id              String  @id @default(cuid())
+  /// Hangi kiracıya ait. Göç sırasında doldurulduktan sonra zorunlu hale geldi.
+  accountId       String
+  /// Genel adres (/f/{slug}/{masa}) kısa kalsın diye sistem genelinde tekil;
+  /// çakışma olursa işletme açılışında sonek eklenir.
   slug            String  @unique
   name            String
   type            String
@@ -34,6 +61,7 @@ model Business {
 
   createdAt DateTime @default(now())
 
+  account       Account            @relation(fields: [accountId], references: [id], onDelete: Cascade)
   categories    CategoryTemplate[]
   tables        Table[]
   feedbacks     Feedback[]
@@ -41,6 +69,7 @@ model Business {
   coupons       Coupon[]
   surveyViews   SurveyView[]
 
+  @@index([accountId])
   @@map("businesses")
 }
 
@@ -140,19 +169,25 @@ model Feedback {
 
 model User {
   id           String  @id @default(cuid())
+  /// Platform yöneticisi (superadmin) hiçbir hesaba ait değildir.
+  accountId    String?
   name         String
   email        String  @unique
   passwordHash String
-  /// "owner" (üç işletmeyi de görür) | "manager" (sadece kendi işletmesi)
+  /// "superadmin" (platformu işleten biz — tüm hesaplar)
+  /// "owner"      (hesabın sahibi — kendi hesabındaki tüm işletmeler)
+  /// "manager"    (yalnızca kendi işletmesi)
   role         String
-  /// owner için null.
+  /// owner ve superadmin için null.
   businessId   String?
   active       Boolean @default(true)
 
   createdAt DateTime @default(now())
 
+  account  Account?  @relation(fields: [accountId], references: [id], onDelete: Cascade)
   business Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
 
+  @@index([accountId])
   @@map("users")
 }
 

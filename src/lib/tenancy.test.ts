@@ -1,0 +1,182 @@
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaClient } from "@/generated/prisma/client";
+import { buildFeedbackWhere } from "./feedback-filters";
+import {
+  IMPOSSIBLE_ID,
+  allowedBusinessIdsFor,
+  canAccessBusinessFor,
+  userScopeFor,
+  type TenantScope,
+} from "./tenancy";
+
+/**
+ * Kiracı izolasyonunun uçtan uca sınavı: gerçek bir veritabanında iki hesap
+ * kurup, birinin diğerine hiçbir yoldan ulaşamadığını doğruluyoruz.
+ *
+ * Bu dosyadaki bir kırmızı, doğrudan "müşteri A, müşteri B'nin verisini
+ * görüyor" demektir.
+ */
+
+let prisma: PrismaClient;
+let dbFile: string;
+
+// A hesabı: iki işletme. B hesabı: bir işletme.
+const ids = {
+  hesapA: "hesap-a",
+  hesapB: "hesap-b",
+  aKafe1: "a-kafe-1",
+  aKafe2: "a-kafe-2",
+  bKafe1: "b-kafe-1",
+};
+
+const sahipA: TenantScope = {
+  role: "owner",
+  accountId: ids.hesapA,
+  businessId: null,
+};
+const sahipB: TenantScope = {
+  role: "owner",
+  accountId: ids.hesapB,
+  businessId: null,
+};
+const sorumluA1: TenantScope = {
+  role: "manager",
+  accountId: ids.hesapA,
+  businessId: ids.aKafe1,
+};
+const platform: TenantScope = {
+  role: "superadmin",
+  accountId: null,
+  businessId: null,
+};
+
+beforeAll(async () => {
+  dbFile = path.join(
+    fs.mkdtempSync(path.join(os.tmpdir(), "mm-test-")),
+    "test.db",
+  );
+
+  // Geçici, boş bir veritabanına şemayı bas. --url ile açıkça hedef verildiği
+  // için gerçek geliştirme veritabanına hiçbir koşulda dokunulmaz.
+  execFileSync("npx", ["prisma", "db", "push", `--url=file:${dbFile}`], {
+    stdio: "pipe",
+  });
+
+  prisma = new PrismaClient({
+    adapter: new PrismaBetterSqlite3({ url: `file:${dbFile}` }),
+  });
+
+  await prisma.account.create({ data: { id: ids.hesapA, name: "A Kafe Zinciri" } });
+  await prisma.account.create({ data: { id: ids.hesapB, name: "B Kafe" } });
+
+  for (const [id, accountId, name] of [
+    [ids.aKafe1, ids.hesapA, "A Merkez"],
+    [ids.aKafe2, ids.hesapA, "A Şube"],
+    [ids.bKafe1, ids.hesapB, "B Merkez"],
+  ] as const) {
+    await prisma.business.create({
+      data: { id, accountId, name, slug: id, type: "yeme_icme" },
+    });
+  }
+}, 120000);
+
+afterAll(async () => {
+  await prisma?.$disconnect();
+  fs.rmSync(path.dirname(dbFile), { recursive: true, force: true });
+});
+
+describe("hesap sahibinin kapsamı", () => {
+  it("yalnızca kendi hesabının işletmelerini görür", async () => {
+    const a = await allowedBusinessIdsFor(prisma, sahipA);
+    expect(a.sort()).toEqual([ids.aKafe1, ids.aKafe2].sort());
+
+    const b = await allowedBusinessIdsFor(prisma, sahipB);
+    expect(b).toEqual([ids.bKafe1]);
+  });
+
+  it("diğer hesabın işletmesine erişemez", async () => {
+    expect(await canAccessBusinessFor(prisma, sahipA, ids.bKafe1)).toBe(false);
+    expect(await canAccessBusinessFor(prisma, sahipB, ids.aKafe1)).toBe(false);
+  });
+
+  it("kendi işletmesine erişir", async () => {
+    expect(await canAccessBusinessFor(prisma, sahipA, ids.aKafe2)).toBe(true);
+  });
+});
+
+describe("işletme sorumlusunun kapsamı", () => {
+  it("yalnızca kendi işletmesini görür — aynı hesaptaki diğerini bile değil", async () => {
+    expect(await allowedBusinessIdsFor(prisma, sorumluA1)).toEqual([ids.aKafe1]);
+    expect(await canAccessBusinessFor(prisma, sorumluA1, ids.aKafe2)).toBe(false);
+  });
+
+  it("başka hesabın işletmesine erişemez", async () => {
+    expect(await canAccessBusinessFor(prisma, sorumluA1, ids.bKafe1)).toBe(false);
+  });
+});
+
+describe("platform yöneticisi", () => {
+  it("tüm hesapların işletmelerini görür", async () => {
+    const hepsi = await allowedBusinessIdsFor(prisma, platform);
+    expect(hepsi.sort()).toEqual([ids.aKafe1, ids.aKafe2, ids.bKafe1].sort());
+  });
+});
+
+describe("bozuk kapsam güvenli tarafa düşer", () => {
+  it("hesabı olmayan owner hiçbir işletme görmez", async () => {
+    const ids2 = await allowedBusinessIdsFor(prisma, {
+      role: "owner",
+      accountId: null,
+      businessId: null,
+    });
+    expect(ids2).toEqual([IMPOSSIBLE_ID]);
+  });
+
+  it("işletmesi olmayan manager hiçbir işletme görmez", async () => {
+    const ids2 = await allowedBusinessIdsFor(prisma, {
+      role: "manager",
+      accountId: ids.hesapA,
+      businessId: null,
+    });
+    expect(ids2).toEqual([IMPOSSIBLE_ID]);
+  });
+
+  it("olmayan işletme kimliği erişim vermez", async () => {
+    expect(await canAccessBusinessFor(prisma, sahipA, "yok-boyle-bir-sey")).toBe(false);
+    expect(await canAccessBusinessFor(prisma, sahipA, "")).toBe(false);
+  });
+});
+
+describe("kullanıcı kapsamı", () => {
+  it("hesabına göre filtreler, superadmin için serbest", () => {
+    expect(userScopeFor(sahipA)).toEqual({ accountId: ids.hesapA });
+    expect(userScopeFor(platform)).toEqual({});
+  });
+});
+
+describe("geri bildirim filtresi kapsamı aşamaz", () => {
+  it("B'nin işletmesi istense de A'nın kapsamı korunur", async () => {
+    const izinli = await allowedBusinessIdsFor(prisma, sahipA);
+    const where = buildFeedbackWhere({ isletme: ids.bKafe1 }, izinli);
+    // Adres çubuğuna B'nin kimliği yazılsa bile kapsam A'da kalır.
+    expect(where.businessId).toEqual({ in: izinli });
+  });
+
+  it("gerçek veriyle doğrulama: A'nın sorgusu B'nin kaydını getirmez", async () => {
+    await prisma.feedback.create({
+      data: { businessId: ids.bKafe1, overallRating: 1, comment: "B gizli yorum" },
+    });
+
+    const izinli = await allowedBusinessIdsFor(prisma, sahipA);
+    const sonuc = await prisma.feedback.findMany({
+      where: buildFeedbackWhere({}, izinli),
+    });
+
+    expect(sonuc).toHaveLength(0);
+  });
+});

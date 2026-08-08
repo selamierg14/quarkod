@@ -169,9 +169,13 @@ export async function getTableBreakdown(
     .sort((a, b) => (a.average ?? 5) - (b.average ?? 5));
 }
 
-export async function getBusinessStats(businessIds?: string[]): Promise<BusinessStats[]> {
+/**
+ * Kapsam zorunlu: parametre isteğe bağlı olsaydı, çağrıyı unutan bir sayfa
+ * sessizce bütün kiracıların verisini gösterirdi.
+ */
+export async function getBusinessStats(businessIds: string[]): Promise<BusinessStats[]> {
   const businesses = await prisma.business.findMany({
-    where: businessIds ? { id: { in: businessIds } } : {},
+    where: { id: { in: businessIds } },
     orderBy: { createdAt: "asc" },
   });
 

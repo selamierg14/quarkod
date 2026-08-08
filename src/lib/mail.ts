@@ -16,9 +16,13 @@ export async function notifyLowRating(feedbackId: string): Promise<void> {
 
   if (feedback.overallRating > feedback.business.notifyThreshold) return;
 
+  // Bildirim YALNIZCA bu işletmenin hesabına gider. Hesap koşulu olmadan
+  // "role: owner" filtresi bütün kiracıların sahiplerini kapsar ve bir kafenin
+  // şikayeti başka bir kafenin sahibine e-postayla giderdi.
   const users = await prisma.user.findMany({
     where: {
       active: true,
+      accountId: feedback.business.accountId,
       OR: [
         { role: "owner" },
         { role: "manager", businessId: feedback.businessId },

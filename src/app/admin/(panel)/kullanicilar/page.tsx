@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { requireOwner } from "@/lib/auth";
+import { requireOwner, userScope, visibleBusinesses } from "@/lib/auth";
 import { NewUserForm, ResetPasswordForm, ToggleUserButton } from "./UserForms";
 import { usesSeedPassword } from "./actions";
 
@@ -10,12 +10,15 @@ export const metadata = { title: "Kullanıcılar" };
 export default async function UsersPage() {
   const owner = await requireOwner();
 
+  // Her iki sorgu da hesap kapsamıyla sınırlı: bir kiracı diğerinin
+  // kullanıcılarını veya işletmelerini göremez.
   const [users, businesses] = await Promise.all([
     prisma.user.findMany({
+      where: userScope(owner),
       orderBy: [{ role: "asc" }, { name: "asc" }],
       include: { business: true },
     }),
-    prisma.business.findMany({ orderBy: { createdAt: "asc" } }),
+    visibleBusinesses(owner),
   ]);
 
   const seedFlags = await Promise.all(

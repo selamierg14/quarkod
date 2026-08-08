@@ -2,7 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
-import { getSession, hashPassword, requireOwner, requireUser } from "@/lib/auth";
+import {
+  canAccessBusiness,
+  getSession,
+  hashPassword,
+  requireOwner,
+  requireUser,
+  userScope,
+} from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 export type UserFormState = { error?: string; saved?: string };
@@ -23,7 +30,7 @@ export async function createUser(
   _prev: UserFormState,
   formData: FormData,
 ): Promise<UserFormState> {
-  await requireOwner();
+  const actor = await requireOwner();
 
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
@@ -38,6 +45,19 @@ export async function createUser(
     return { error: "İşletme sorumlusu için bir işletme seçin." };
   }
 
+  // Yeni kullanıcı her zaman ekleyenin hesabına açılır ve yalnızca o hesabın
+  // işletmesine atanabilir; aksi halde bir kiracı diğerinin işletmesine
+  // kullanıcı yerleştirebilirdi.
+  const accountId = actor.accountId;
+  if (!accountId) {
+    return {
+      error: "Platform yöneticisi buradan kullanıcı açamaz; Hesaplar sayfasını kullanın.",
+    };
+  }
+  if (businessId && !(await canAccessBusiness(actor, businessId))) {
+    return { error: "Bu işletmeye kullanıcı atama yetkiniz yok." };
+  }
+
   const problem = passwordProblem(password);
   if (problem) return { error: problem };
 
@@ -47,6 +67,7 @@ export async function createUser(
 
   await prisma.user.create({
     data: {
+      accountId,
       name,
       email,
       role,
@@ -63,7 +84,7 @@ export async function resetPassword(
   _prev: UserFormState,
   formData: FormData,
 ): Promise<UserFormState> {
-  await requireOwner();
+  const actor = await requireOwner();
 
   const id = String(formData.get("userId") ?? "");
   const password = String(formData.get("password") ?? "");
@@ -71,7 +92,9 @@ export async function resetPassword(
   const problem = passwordProblem(password);
   if (problem) return { error: problem };
 
-  const user = await prisma.user.findUnique({ where: { id } });
+  const user = await prisma.user.findFirst({
+    where: { id, ...userScope(actor) },
+  });
   if (!user) return { error: "Kullanıcı bulunamadı." };
 
   await prisma.user.update({
@@ -90,7 +113,9 @@ export async function toggleUser(formData: FormData) {
   // Patron kendi hesabını kapatıp sistemden kilitlenmesin.
   if (id === owner.id) return;
 
-  const user = await prisma.user.findUnique({ where: { id } });
+  const user = await prisma.user.findFirst({
+    where: { id, ...userScope(owner) },
+  });
   if (!user) return;
 
   await prisma.user.update({ where: { id }, data: { active: !user.active } });
@@ -136,7 +161,11 @@ export async function usesSeedPassword(userId: string): Promise<boolean> {
   const session = await getSession();
   if (!session) return false;
 
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  // Kapsam kontrolü burada da gerekli: aksi halde başka bir kiracının
+  // kullanıcı kimliği verilerek şifresi hakkında bilgi sızdırılabilir.
+  const user = await prisma.user.findFirst({
+    where: { id: userId, ...userScope(session) },
+  });
   if (!user) return false;
   return bcrypt.compare("degistir123", user.passwordHash);
 }

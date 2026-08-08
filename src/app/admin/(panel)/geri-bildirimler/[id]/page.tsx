@@ -28,7 +28,7 @@ export default async function FeedbackDetailPage({
     },
   });
 
-  if (!feedback || !canAccessBusiness(user, feedback.businessId)) notFound();
+  if (!feedback || !await canAccessBusiness(user, feedback.businessId)) notFound();
 
   const ratings: Record<string, number> = feedback.categoryRatings
     ? JSON.parse(feedback.categoryRatings)

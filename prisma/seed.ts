@@ -67,6 +67,18 @@ const BUSINESSES: BusinessSeed[] = [
 async function main() {
   const password = await bcrypt.hash("degistir123", 10);
 
+  // Örnek veri tek bir kiracıya aittir; göç sırasında oluşturulan hesabı
+  // yeniden kullanıyoruz ki tekrar çalıştırıldığında kopya hesap açılmasın.
+  const account = await prisma.account.upsert({
+    where: { id: "acct_varsayilan" },
+    update: {},
+    create: {
+      id: "acct_varsayilan",
+      name: "Varsayılan Hesap",
+      email: "patron@ornek.com",
+    },
+  });
+
   for (const seed of BUSINESSES) {
     const business = await prisma.business.upsert({
       where: { slug: seed.slug },
@@ -78,6 +90,7 @@ async function main() {
         notifyThreshold: seed.notifyThreshold,
       },
       create: {
+        accountId: account.id,
         slug: seed.slug,
         name: seed.name,
         type: seed.type,
@@ -117,8 +130,9 @@ async function main() {
 
     await prisma.user.upsert({
       where: { email: seed.manager.email },
-      update: { businessId: business.id },
+      update: { businessId: business.id, accountId: account.id },
       create: {
+        accountId: account.id,
         name: seed.manager.name,
         email: seed.manager.email,
         passwordHash: password,
@@ -130,8 +144,9 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: "patron@ornek.com" },
-    update: {},
+    update: { accountId: account.id },
     create: {
+      accountId: account.id,
       name: "Patron",
       email: "patron@ornek.com",
       passwordHash: password,
@@ -140,7 +155,22 @@ async function main() {
     },
   });
 
+  // Platform yöneticisi hiçbir hesaba ait değildir; hesapları o açar/askıya alır.
+  await prisma.user.upsert({
+    where: { email: "platform@ornek.com" },
+    update: {},
+    create: {
+      accountId: null,
+      name: "Platform Yöneticisi",
+      email: "platform@ornek.com",
+      passwordHash: password,
+      role: "superadmin",
+      businessId: null,
+    },
+  });
+
   console.log("Seed tamamlandı.");
+  console.log("  Platform:  platform@ornek.com / degistir123");
   console.log("  Patron:    patron@ornek.com / degistir123");
   for (const b of BUSINESSES) {
     console.log(`  ${b.name}: ${b.manager.email} / degistir123`);

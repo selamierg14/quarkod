@@ -46,7 +46,13 @@ export default async function AdminHomePage() {
     <div className="flex flex-col gap-8">
       <section>
         <h1 className="text-lg font-semibold tracking-tight">
-          {user.role === "owner" ? "Tüm işletmeler" : businesses[0]?.name}
+          {user.role === "manager"
+            ? (businesses[0]?.name ?? "İşletme atanmamış")
+            : businesses.length === 0
+              ? "Henüz işletme yok"
+              : businesses.length === 1
+                ? businesses[0].name
+                : "Tüm işletmeler"}
         </h1>
         <p className="mt-1 text-sm text-slate-500">
           {totalAll} geri bildirim · {openAll} açık şikayet
@@ -138,7 +144,11 @@ export default async function AdminHomePage() {
                   ).toFixed(2)
                 : "—"
             }
-            hint="Üç işletmenin ağırlıklı ortalaması"
+            hint={
+              businesses.length === 1
+                ? "Tüm geri bildirimlerin ortalaması"
+                : `${businesses.length} işletmenin ağırlıklı ortalaması`
+            }
           />
           <StatCard
             label="Anket tamamlama"

@@ -10,6 +10,34 @@
   e-posta bildirimi.
 - Patron üç işletmeyi tek panelden görür; işletme sorumlusu yalnızca kendisininkini.
 
+## Çok kiracılı yapı
+
+Sistem birden fazla müşteriye satılmak üzere kurulu. En üstte **hesap (kiracı)**
+var; her işletme ve her kullanıcı bir hesaba bağlı.
+
+| Rol | Görebildiği |
+| --- | --- |
+| `superadmin` | Platformu işleten taraf (siz). Hesapları açar, askıya alır. Hiçbir hesaba ait değildir. |
+| `owner` | Kendi hesabındaki tüm işletmeler. Kendi kullanıcılarını ve işletmelerini yönetir. |
+| `manager` | Yalnızca kendi işletmesi — aynı hesaptaki diğer işletmeyi bile göremez. |
+
+İzolasyonun kuralları tek bir yerde: [tenancy.ts](src/lib/tenancy.ts). Panel
+sayfaları bu kuralları doğrudan çağırır, kendi filtresini yazmaz.
+
+İki tasarım kararı bilinçli:
+
+- **Kapsam hesaplanamadığında boş filtre değil, eşleşmeyen bir kimlik döner.**
+  Prisma'da boş `where` "hepsi" demektir; sızıntının en olası yolu budur.
+- **Erişim kontrolü kimliğin tahmin edilemezliğine değil sahipliğe dayanır.**
+  Adres çubuğuna başka bir kiracının işletme kimliği yazılırsa 404 döner.
+
+Askıya alınan hesabın kullanıcıları panele giremez ve QR'ları çalışmaz; verisi
+silinmez, ödeme yapılınca kaldığı yerden devam eder.
+
+İzolasyon [tenancy.test.ts](src/lib/tenancy.test.ts) içinde gerçek bir
+veritabanına iki hesap kurularak sınanır. Buradaki bir kırmızı, doğrudan
+"müşteri A, müşteri B'nin verisini görüyor" demektir.
+
 ## Kurulum
 
 ```bash
@@ -43,7 +71,8 @@ değiştirin):
 
 | Rol | E-posta | Görebildiği |
 | --- | --- | --- |
-| Patron | `patron@ornek.com` | Üç işletme + kıyaslama + kullanıcı yönetimi |
+| Platform | `platform@ornek.com` | Tüm hesaplar; hesap açma/askıya alma |
+| Patron | `patron@ornek.com` | Kendi hesabındaki üç işletme + kıyaslama + kullanıcılar |
 | Sorumlu | `keskin@ornek.com` | KESKİNLEZZETLER |
 | Sorumlu | `egecunda@ornek.com` | Ege Cunda Balık |
 | Sorumlu | `sahnemarin@ornek.com` | Sahne Marin |

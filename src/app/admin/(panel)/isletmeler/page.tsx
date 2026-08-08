@@ -30,6 +30,13 @@ export default async function BusinessListPage() {
     <div className="flex flex-col gap-6">
       <h1 className="text-lg font-semibold tracking-tight">İşletmeler</h1>
 
+      {businesses.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
+          Henüz işletme eklenmemiş. Aşağıdan ilk işletmenizi açın; kategori
+          şablonu ve QR kodları otomatik hazırlanır.
+        </p>
+      ) : null}
+
       <ul className="grid gap-3 sm:grid-cols-2">
         {businesses.map((business) => {
           const count = countMap.get(business.id);

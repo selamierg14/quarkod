@@ -27,10 +27,12 @@ export default async function SurveyPage({ params }: { params: Promise<Params> }
   const business = await prisma.business.findUnique({
     where: { slug },
     include: {
+      account: true,
       categories: { where: { active: true }, orderBy: { sortOrder: "asc" } },
     },
   });
-  if (!business) notFound();
+  // Aboneliği biten/askıya alınan hesabın QR'ları da çalışmaz.
+  if (!business || !business.account.active) notFound();
 
   const table = await prisma.table.findUnique({
     where: {

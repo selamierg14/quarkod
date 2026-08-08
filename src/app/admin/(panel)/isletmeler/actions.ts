@@ -36,7 +36,18 @@ export async function createBusiness(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  await requireOwner();
+  const user = await requireOwner();
+
+  // Yeni işletme her zaman açan kişinin hesabına bağlanır. Platform yöneticisi
+  // panelden işletme açamaz; hesap seçmeden hangi kiracıya ait olacağı belirsiz
+  // kalır (o akış /admin/hesaplar üzerinden yürür).
+  const accountId = user.accountId;
+  if (!accountId) {
+    return {
+      error:
+        "Platform yöneticisi doğrudan işletme açamaz. Hesaplar sayfasından ilgili hesabın sahibiyle ilerleyin.",
+    };
+  }
 
   const name = String(formData.get("name") ?? "").trim();
   const type = String(formData.get("type") ?? "");
@@ -76,6 +87,7 @@ export async function createBusiness(
 
   const business = await prisma.business.create({
     data: {
+      accountId,
       slug,
       name,
       type,
@@ -101,6 +113,7 @@ export async function createBusiness(
   if (wantsManager) {
     await prisma.user.create({
       data: {
+        accountId,
         name: managerName,
         email: managerEmail,
         role: "manager",
@@ -122,7 +135,7 @@ export async function updateBusiness(
   const user = await requireUser();
   const id = String(formData.get("id") ?? "");
 
-  if (!canAccessBusiness(user, id)) return { error: "Yetkiniz yok." };
+  if (!await canAccessBusiness(user, id)) return { error: "Yetkiniz yok." };
 
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { error: "İşletme adı gerekli." };
@@ -167,7 +180,7 @@ export async function addCategory(
   const businessId = String(formData.get("businessId") ?? "");
   const name = String(formData.get("name") ?? "").trim();
 
-  if (!canAccessBusiness(user, businessId)) return { error: "Yetkiniz yok." };
+  if (!await canAccessBusiness(user, businessId)) return { error: "Yetkiniz yok." };
   if (!name) return { error: "Kategori adı gerekli." };
 
   const existing = await prisma.categoryTemplate.findUnique({
@@ -195,7 +208,7 @@ export async function toggleCategory(formData: FormData) {
   const id = String(formData.get("categoryId") ?? "");
 
   const category = await prisma.categoryTemplate.findUnique({ where: { id } });
-  if (!category || !canAccessBusiness(user, category.businessId)) return;
+  if (!category || !await canAccessBusiness(user, category.businessId)) return;
 
   await prisma.categoryTemplate.update({
     where: { id },
@@ -211,7 +224,7 @@ export async function moveCategory(formData: FormData) {
   const direction = String(formData.get("direction") ?? "");
 
   const category = await prisma.categoryTemplate.findUnique({ where: { id } });
-  if (!category || !canAccessBusiness(user, category.businessId)) return;
+  if (!category || !await canAccessBusiness(user, category.businessId)) return;
 
   const siblings = await prisma.categoryTemplate.findMany({
     where: { businessId: category.businessId },
@@ -242,7 +255,7 @@ export async function addTables(
 ): Promise<FormState> {
   const user = await requireUser();
   const businessId = String(formData.get("businessId") ?? "");
-  if (!canAccessBusiness(user, businessId)) return { error: "Yetkiniz yok." };
+  if (!await canAccessBusiness(user, businessId)) return { error: "Yetkiniz yok." };
 
   const raw = String(formData.get("tableNumbers") ?? "").trim();
   const isEntrance = formData.get("isEntrance") === "on";
@@ -296,7 +309,7 @@ export async function toggleTable(formData: FormData) {
   const id = String(formData.get("tableId") ?? "");
 
   const table = await prisma.table.findUnique({ where: { id } });
-  if (!table || !canAccessBusiness(user, table.businessId)) return;
+  if (!table || !await canAccessBusiness(user, table.businessId)) return;
 
   await prisma.table.update({ where: { id }, data: { active: !table.active } });
   revalidatePath(`/admin/isletmeler/${table.businessId}`);

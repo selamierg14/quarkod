@@ -5,6 +5,12 @@ import { AdminNav } from "@/components/AdminNav";
 
 export const dynamic = "force-dynamic";
 
+const ROL_ADI: Record<string, string> = {
+  superadmin: "Platform yöneticisi",
+  owner: "Hesap sahibi",
+  manager: "İşletme sorumlusu",
+};
+
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const user = await requireUser();
 
@@ -20,7 +26,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
               href="/admin/sifre"
               className="hidden text-sm text-slate-500 hover:text-slate-900 sm:inline"
             >
-              {user.name} · {user.role === "owner" ? "Patron" : "İşletme sorumlusu"}
+              {user.name} · {ROL_ADI[user.role]}
             </Link>
             <form action={logout}>
               <button
@@ -32,7 +38,10 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
             </form>
           </div>
         </div>
-        <AdminNav isOwner={user.role === "owner"} />
+        <AdminNav
+          isOwner={user.role !== "manager"}
+          isSuperadmin={user.role === "superadmin"}
+        />
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>

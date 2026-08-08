@@ -3,21 +3,44 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const LINKS = [
-  { href: "/admin", label: "Özet", exact: true, ownerOnly: false },
-  { href: "/admin/geri-bildirimler", label: "Geri bildirimler", ownerOnly: false },
-  { href: "/admin/kirilim", label: "Kırılım", ownerOnly: false },
-  { href: "/admin/isletmeler", label: "İşletmeler", ownerOnly: false },
+type NavLink = {
+  href: string;
+  label: string;
+  exact?: boolean;
+  /** manager göremez. */
+  ownerOnly?: boolean;
+  /** yalnızca platform yöneticisi görür. */
+  superadminOnly?: boolean;
+};
+
+const LINKS: NavLink[] = [
+  { href: "/admin", label: "Özet", exact: true },
+  { href: "/admin/geri-bildirimler", label: "Geri bildirimler" },
+  { href: "/admin/kirilim", label: "Kırılım" },
+  { href: "/admin/isletmeler", label: "İşletmeler" },
   { href: "/admin/kiyaslama", label: "İşletme kıyaslama", ownerOnly: true },
   { href: "/admin/kullanicilar", label: "Kullanıcılar", ownerOnly: true },
+  { href: "/admin/hesaplar", label: "Hesaplar", superadminOnly: true },
 ];
 
-export function AdminNav({ isOwner }: { isOwner: boolean }) {
+export function AdminNav({
+  isOwner,
+  isSuperadmin,
+}: {
+  isOwner: boolean;
+  isSuperadmin: boolean;
+}) {
   const pathname = usePathname();
+
+  const visible = LINKS.filter((link) => {
+    if (link.superadminOnly) return isSuperadmin;
+    if (link.ownerOnly) return isOwner;
+    return true;
+  });
 
   return (
     <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-2 pb-1">
-      {LINKS.filter((link) => isOwner || !link.ownerOnly).map((link) => {
+      {visible.map((link) => {
         const active = link.exact
           ? pathname === link.href
           : pathname.startsWith(link.href);

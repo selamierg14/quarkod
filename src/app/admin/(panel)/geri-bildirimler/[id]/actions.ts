@@ -18,7 +18,7 @@ export async function updateFeedback(
 
   const feedback = await prisma.feedback.findUnique({ where: { id } });
   if (!feedback) return { error: "Kayıt bulunamadı." };
-  if (!canAccessBusiness(user, feedback.businessId)) {
+  if (!await canAccessBusiness(user, feedback.businessId)) {
     return { error: "Bu kayda erişim yetkiniz yok." };
   }
   if (!(status in FEEDBACK_STATUSES)) {

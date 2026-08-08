@@ -1,4 +1,4 @@
-import { requireOwner } from "@/lib/auth";
+import { allowedBusinessIds, requireOwner } from "@/lib/auth";
 import { getBusinessStats } from "@/lib/stats";
 import { EmptyState } from "@/components/ui";
 import { DeltaBadge, TrendChart } from "@/components/TrendChart";
@@ -8,8 +8,9 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "İşletme kıyaslama" };
 
 export default async function ComparisonPage() {
-  await requireOwner();
-  const stats = await getBusinessStats();
+  const user = await requireOwner();
+  // Kapsamsız çağrı bütün kiracıların işletmelerini getirirdi.
+  const stats = await getBusinessStats(await allowedBusinessIds(user));
   const withData = stats.filter((stat) => stat.total > 0);
 
   return (

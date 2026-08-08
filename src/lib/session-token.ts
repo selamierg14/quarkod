@@ -8,14 +8,21 @@ import { SignJWT, jwtVerify } from "jose";
 export const SESSION_COOKIE = "mm_session";
 export const SESSION_MAX_AGE = 60 * 60 * 12; // 12 saat
 
-export type Role = "owner" | "manager";
+/**
+ * superadmin — platformu işleten taraf; tüm hesapları yönetir.
+ * owner      — hesabın sahibi; yalnızca kendi hesabındaki işletmeler.
+ * manager    — yalnızca kendi işletmesi.
+ */
+export type Role = "superadmin" | "owner" | "manager";
 
 export type SessionUser = {
   id: string;
   name: string;
   email: string;
   role: Role;
-  /** owner için null — üç işletmeyi de görür. */
+  /** Kiracı kimliği. superadmin için null — hiçbir hesaba ait değildir. */
+  accountId: string | null;
+  /** manager için dolu; owner ve superadmin için null. */
   businessId: string | null;
 };
 
@@ -34,6 +41,7 @@ export async function createSessionToken(user: SessionUser): Promise<string> {
     name: user.name,
     email: user.email,
     role: user.role,
+    accountId: user.accountId,
     businessId: user.businessId,
   })
     .setProtectedHeader({ alg: "HS256" })
@@ -51,11 +59,21 @@ export async function verifySessionToken(
     if (typeof payload.email !== "string" || typeof payload.role !== "string") {
       return null;
     }
+    const role = payload.role as Role;
+    if (role !== "superadmin" && role !== "owner" && role !== "manager") {
+      return null;
+    }
+    // superadmin dışındaki her kullanıcı bir hesaba bağlı olmak zorunda;
+    // aksi halde kapsamsız bir oturum oluşur.
+    const accountId = (payload.accountId as string | null) ?? null;
+    if (role !== "superadmin" && !accountId) return null;
+
     return {
       id: String(payload.sub),
       name: String(payload.name ?? ""),
       email: payload.email,
-      role: payload.role as Role,
+      role,
+      accountId,
       businessId: (payload.businessId as string | null) ?? null,
     };
   } catch {

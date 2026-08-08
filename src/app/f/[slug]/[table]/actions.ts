@@ -59,9 +59,9 @@ export async function recordSurveyView(
   try {
     const business = await prisma.business.findUnique({
       where: { slug },
-      select: { id: true },
+      select: { id: true, account: { select: { active: true } } },
     });
-    if (!business) return;
+    if (!business || !business.account.active) return;
 
     const table = await prisma.table.findUnique({
       where: {
@@ -96,9 +96,9 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
 
   const business = await prisma.business.findUnique({
     where: { slug: input.slug },
-    include: { categories: { where: { active: true } } },
+    include: { account: true, categories: { where: { active: true } } },
   });
-  if (!business) {
+  if (!business || !business.account.active) {
     return { ok: false, error: "İşletme bulunamadı." };
   }
 

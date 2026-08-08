@@ -11,6 +11,11 @@ import {
   type Role,
   type SessionUser,
 } from "./session-token";
+import {
+  allowedBusinessIdsFor,
+  canAccessBusinessFor,
+  userScopeFor,
+} from "./tenancy";
 
 export { SESSION_COOKIE, type Role, type SessionUser };
 
@@ -45,10 +50,17 @@ export async function requireUser(): Promise<SessionUser> {
   return user;
 }
 
-/** Sadece patronun erişebileceği sayfalar için. */
+/** Hesap sahibi veya platform yöneticisi gerektiren sayfalar için. */
 export async function requireOwner(): Promise<SessionUser> {
   const user = await requireUser();
-  if (user.role !== "owner") redirect("/admin");
+  if (user.role === "manager") redirect("/admin");
+  return user;
+}
+
+/** Yalnızca platformu işleten tarafın erişebileceği sayfalar için. */
+export async function requireSuperadmin(): Promise<SessionUser> {
+  const user = await requireUser();
+  if (user.role !== "superadmin") redirect("/admin");
   return user;
 }
 
@@ -58,14 +70,21 @@ export async function authenticate(
 ): Promise<SessionUser | null> {
   const user = await prisma.user.findUnique({
     where: { email: email.trim().toLowerCase() },
+    include: { account: true },
   });
   if (!user || !user.active) return null;
+
+  // Askıya alınan hesabın kullanıcıları giremez.
+  if (user.role !== "superadmin" && !user.account?.active) return null;
+
   if (!(await bcrypt.compare(password, user.passwordHash))) return null;
+
   return {
     id: user.id,
     name: user.name,
     email: user.email,
     role: user.role as Role,
+    accountId: user.accountId,
     businessId: user.businessId,
   };
 }
@@ -75,23 +94,33 @@ export function hashPassword(password: string): Promise<string> {
 }
 
 /**
- * Kullanıcının görebileceği kayıtlar için Prisma filtresi.
- * Patron: hepsi. İşletme sorumlusu: sadece kendi işletmesi.
+ * Aşağıdakiler tenancy.ts'teki kuralları oturumla sarmalar. Kuralların kendisi
+ * orada, testlerle birlikte duruyor.
  */
-export function businessScope(user: SessionUser) {
-  if (user.role === "owner") return {};
-  return { businessId: user.businessId ?? "__yok__" };
-}
 
-/** Sorumlunun başka bir işletmenin kaydına erişmesini engeller. */
-export function canAccessBusiness(user: SessionUser, businessId: string) {
-  return user.role === "owner" || user.businessId === businessId;
+/** Kullanıcının görebileceği işletmelerin kimlikleri. */
+export async function allowedBusinessIds(user: SessionUser): Promise<string[]> {
+  return allowedBusinessIdsFor(prisma, user);
 }
 
 /** Kullanıcının panelde seçebileceği işletmeler. */
 export async function visibleBusinesses(user: SessionUser) {
+  const ids = await allowedBusinessIds(user);
   return prisma.business.findMany({
-    where: user.role === "owner" ? {} : { id: user.businessId ?? "__yok__" },
+    where: { id: { in: ids } },
     orderBy: { createdAt: "asc" },
   });
+}
+
+/** Bir işletmeye erişim izni var mı — hesap sınırını da doğrular. */
+export async function canAccessBusiness(
+  user: SessionUser,
+  businessId: string,
+): Promise<boolean> {
+  return canAccessBusinessFor(prisma, user, businessId);
+}
+
+/** Kullanıcının yönetebileceği kullanıcılar için Prisma filtresi. */
+export function userScope(user: SessionUser) {
+  return userScopeFor(user);
 }

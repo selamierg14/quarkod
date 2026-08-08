@@ -24,7 +24,7 @@ export default async function QrPage({
 }) {
   const user = await requireUser();
   const { id } = await params;
-  if (!canAccessBusiness(user, id)) notFound();
+  if (!await canAccessBusiness(user, id)) notFound();
 
   const business = await prisma.business.findUnique({
     where: { id },
