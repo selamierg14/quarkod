@@ -23,8 +23,24 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Platform yöneticisi kiracıların operasyonel ekranlarında işi yok: farklı
+  // hesapların ortalamaları tek sayıda birleşir (anlamsız) ve gereksiz yere
+  // müşteri verisine temas edilir. Onu hesap yönetimine yönlendiriyoruz.
+  if (
+    session.role === "superadmin" &&
+    !SUPERADMIN_PATHS.some((allowed) => pathname.startsWith(allowed))
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/admin/hesaplar";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
   return NextResponse.next();
 }
+
+/** Platform yöneticisinin girebileceği yollar. */
+const SUPERADMIN_PATHS = ["/admin/hesaplar", "/admin/sifre"];
 
 export const config = {
   matcher: ["/admin/:path*"],

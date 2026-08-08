@@ -11,6 +11,7 @@ export const metadata = { title: "Özet" };
 
 export default async function AdminHomePage() {
   const user = await requireUser();
+
   const businesses = await visibleBusinesses(user);
   const businessIds = businesses.map((b) => b.id);
   const stats = await getBusinessStats(businessIds);

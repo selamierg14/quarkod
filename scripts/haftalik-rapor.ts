@@ -6,8 +6,8 @@ import { sendMail } from "../src/lib/mailer";
  * Haftalık özet raporu. Pazartesi sabahı cron ile çalıştırın:
  *   npm run rapor:haftalik
  *
- * Patrona üç işletmeyi birden içeren konsolide rapor, her işletme sorumlusuna
- * yalnızca kendi işletmesinin bölümü gider.
+ * Her hesap sahibine YALNIZCA kendi hesabının işletmelerini içeren konsolide
+ * rapor, her işletme sorumlusuna yalnızca kendi işletmesinin bölümü gider.
  */
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -16,6 +16,7 @@ const WEAK_THRESHOLD = 4;
 
 type Ozet = {
   businessId: string;
+  accountId: string;
   name: string;
   count: number;
   average: number | null;
@@ -64,8 +65,15 @@ function bolum(ozet: Ozet): string {
   return satirlar.join("\n");
 }
 
+/**
+ * Bütün işletmelerin özetini çıkarır. Kapsam daraltması gönderim sırasında
+ * kullanıcının hesabına göre yapılır — bu yüzden Ozet.accountId zorunlu.
+ */
 async function ozetle(prisma: ReturnType<typeof createScriptClient>): Promise<Ozet[]> {
-  const businesses = await prisma.business.findMany({ orderBy: { createdAt: "asc" } });
+  const businesses = await prisma.business.findMany({
+    where: { account: { active: true } },
+    orderBy: { createdAt: "asc" },
+  });
   const buHafta = new Date(Date.now() - 7 * DAY);
   const gecenHafta = new Date(Date.now() - 14 * DAY);
 
@@ -141,6 +149,7 @@ async function ozetle(prisma: ReturnType<typeof createScriptClient>): Promise<Oz
 
       return {
         businessId: business.id,
+        accountId: business.accountId,
         name: business.name,
         count: now._count._all,
         average: now._avg.overallRating !== null ? round(now._avg.overallRating) : null,
@@ -160,25 +169,36 @@ async function main() {
 
   try {
     const ozetler = await ozetle(prisma);
-    const toplamKayit = ozetler.reduce((acc, o) => acc + o.count, 0);
 
     const bugun = new Date().toLocaleDateString("tr-TR");
     const panel = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-    const users = await prisma.user.findMany({ where: { active: true } });
+
+    // Askıya alınmış hesaplara rapor gitmez; platform yöneticisi (accountId
+    // null) bu raporun muhatabı değil.
+    const users = await prisma.user.findMany({
+      where: { active: true, account: { active: true } },
+    });
 
     let gonderilen = 0;
 
     for (const user of users) {
+      // Kapsam HER ZAMAN kullanıcının kendi hesabıyla sınırlı. Bu satır
+      // olmadan her kiracının sahibi diğerlerinin cirosunu, şikayetlerini ve
+      // zayıf başlıklarını e-postayla alırdı.
+      const hesabinkiler = ozetler.filter((o) => o.accountId === user.accountId);
+
       const kapsam =
         user.role === "owner"
-          ? ozetler
-          : ozetler.filter((o) => o.businessId === user.businessId);
+          ? hesabinkiler
+          : hesabinkiler.filter((o) => o.businessId === user.businessId);
 
       if (kapsam.length === 0) continue;
 
+      const kapsamKayit = kapsam.reduce((acc, o) => acc + o.count, 0);
+
       const baslik =
         user.role === "owner"
-          ? `Haftalık memnuniyet raporu — ${bugun} (${toplamKayit} geri bildirim)`
+          ? `Haftalık memnuniyet raporu — ${bugun} (${kapsamKayit} geri bildirim)`
           : `[${kapsam[0].name}] Haftalık memnuniyet raporu — ${bugun}`;
 
       const govde = [
