@@ -1,0 +1,218 @@
+// Müşteri Memnuniyet Anketi Sistemi — çoklu işletme veri modeli
+// Şema tek bir ortak altyapıda birden fazla işletmeyi taşır: her anket kaydı
+// businessId ile etiketlenir, kategoriler sabit kod değil veritabanındadır.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+/// İşletme türü. Kategori şablonlarının varsayılanını ve QR tasarımını belirler.
+/// SQLite enum desteklemediği için string olarak tutulur: "yeme_icme" | "balikci" | "gece_kulubu"
+model Business {
+  id              String  @id @default(cuid())
+  slug            String  @unique
+  name            String
+  type            String
+  address         String?
+  googleReviewUrl String?
+
+  /// Bu puanın altındaki (<=) geri bildirimler anlık bildirim tetikler.
+  notifyThreshold Int     @default(3)
+  /// 5 yıldız verildiğinde Google'a yönlendirilsin mi. Kapatılırsa herkese
+  /// nötr teşekkür ekranı gösterilir (review-gating'den çıkış yolu).
+  googleRedirect  Boolean @default(true)
+  /// QR baskılarında kullanılan marka rengi (hex).
+  brandColor      String  @default("#111827")
+  /// Basılan QR kartında QR'ın üstünde duran çağrı metni. Okutulma oranını
+  /// en çok etkileyen şey bu cümle olduğu için işletmeye göre düzenlenebilir.
+  qrCardText      String?
+
+  createdAt DateTime @default(now())
+
+  categories    CategoryTemplate[]
+  tables        Table[]
+  feedbacks     Feedback[]
+  users         User[]
+  coupons       Coupon[]
+  surveyViews   SurveyView[]
+
+  @@map("businesses")
+}
+
+/// Her işletmenin anket kategorileri. Admin panelinden düzenlenebilir.
+model CategoryTemplate {
+  id         String  @id @default(cuid())
+  businessId String
+  name       String
+  sortOrder  Int     @default(0)
+  active     Boolean @default(true)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, name])
+  @@index([businessId, sortOrder])
+  @@map("category_templates")
+}
+
+model Table {
+  id          String    @id @default(cuid())
+  businessId  String
+  tableNumber String
+  /// QR linkindeki token. Masa bazlı, tahmin edilemez.
+  qrToken     String    @unique
+  /// Anti-spam (P1) için: token bu tarihten sonra geçersiz sayılabilir.
+  qrExpiresAt DateTime?
+  /// Sahne Marin gibi masa kavramı olmayan yerlerde tek ortak giriş QR'ı.
+  isEntrance  Boolean   @default(false)
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  business    Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  feedbacks   Feedback[]
+  surveyViews SurveyView[]
+
+  @@unique([businessId, tableNumber])
+  @@index([businessId])
+  @@map("tables")
+}
+
+model Feedback {
+  id            String @id @default(cuid())
+  businessId    String
+  tableId       String?
+  overallRating Int
+
+  /// { "kategori adı": 1-5 } — kategoriler işletmeye göre değiştiği için JSON.
+  categoryRatings String?
+  comment         String?
+  /// Yorumun aramaya hazır kopyası: küçük harf + Türkçe aksanlar sadeleştirilmiş.
+  /// SQLite'ın LIKE'ı ş/ğ/ı gibi harflerde büyük-küçük eşleştirmediği için gerekli.
+  commentSearch   String?
+  photoUrl        String?
+  contactInfo     String?
+  /// "telefon" | "eposta" — hangi kanaldan dönüleceği.
+  contactType     String?
+  /// KVKK açık rızası; iletişim bilgisi ancak rıza ile saklanır.
+  consentGiven    Boolean   @default(false)
+  consentAt       DateTime?
+  /// Rıza alınırken gösterilen aydınlatma metninin sürümü.
+  consentVersion  String?
+  /// İletişim bilgisinin saklama süresi dolduğunda silindiği an.
+  contactErasedAt DateTime?
+
+  /// "yeni" | "incelendi" | "cozuldu"
+  status          String    @default("yeni")
+  internalNote    String?
+  /// Durumun en son değiştiği an.
+  statusChangedAt DateTime?
+  /// "cozuldu" durumuna ilk geçiş anı — yanıt süresi bundan hesaplanır.
+  resolvedAt      DateTime?
+
+  /// 5 yıldızda Google butonu gösterildi mi.
+  redirectedToGoogle Boolean   @default(false)
+  /// Müşteri o butona gerçekten tıkladı mı — asıl dönüşüm ölçüsü budur.
+  googleClickedAt    DateTime?
+  /// Vardiya etiketi (P1): "sabah" | "aksam" | "gece"
+  shift              String?
+
+  ipHash    String?
+  /// Tarayıcı başına rastgele kimlik (çerez). Kafe Wi-Fi'ında herkes aynı IP'yi
+  /// paylaştığı için tekrar kontrolünün asıl dayanağı budur.
+  visitorId String?
+  createdAt DateTime @default(now())
+
+  business      Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  table         Table?         @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  coupons       Coupon[]
+  notifications Notification[]
+
+  @@index([businessId, createdAt])
+  @@index([businessId, status])
+  @@index([visitorId, tableId, createdAt])
+  @@index([ipHash, businessId, createdAt])
+  @@map("feedbacks")
+}
+
+model User {
+  id           String  @id @default(cuid())
+  name         String
+  email        String  @unique
+  passwordHash String
+  /// "owner" (üç işletmeyi de görür) | "manager" (sadece kendi işletmesi)
+  role         String
+  /// owner için null.
+  businessId   String?
+  active       Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  business Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+
+  @@map("users")
+}
+
+model Coupon {
+  id         String    @id @default(cuid())
+  businessId String
+  feedbackId String?
+  code       String    @unique
+  discount   String
+  used       Boolean   @default(false)
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  feedback Feedback? @relation(fields: [feedbackId], references: [id], onDelete: SetNull)
+
+  @@map("coupons")
+}
+
+/// QR okutup anket ekranını açanlar. Gönderilenlerle oranlanınca tamamlama
+/// oranı çıkar: "kaç kişi okuttu, kaçı bitirdi".
+model SurveyView {
+  id         String   @id @default(cuid())
+  businessId String
+  tableId    String?
+  visitorId  String?
+  createdAt  DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  table    Table?   @relation(fields: [tableId], references: [id], onDelete: SetNull)
+
+  @@index([businessId, createdAt])
+  @@index([visitorId, tableId, createdAt])
+  @@map("survey_views")
+}
+
+/// Admin giriş denemeleri — kaba kuvvet saldırısını yavaşlatmak için.
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  email     String
+  ipHash    String?
+  success   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+  @@index([ipHash, createdAt])
+  @@map("login_attempts")
+}
+
+model Notification {
+  id         String    @id @default(cuid())
+  feedbackId String
+  /// "email" | "whatsapp" | "telegram"
+  channel    String
+  recipient  String
+  sentAt     DateTime?
+  error      String?
+  createdAt  DateTime  @default(now())
+
+  feedback Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
