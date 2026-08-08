@@ -48,16 +48,20 @@ export default async function SurveyPage({ params }: { params: Promise<Params> }
 
   return (
     <main className="min-h-dvh bg-slate-50">
-      <div className="mx-auto max-w-md px-4 py-8">
+      {/* İşletmenin marka rengi sayfanın tepesinde ince bir şerit: baskıdaki
+          kartla aynı renk, müşteri doğru yere geldiğini anında anlıyor. */}
+      <div
+        className="h-1.5 w-full"
+        style={{ backgroundColor: business.brandColor }}
+        aria-hidden="true"
+      />
+
+      <div className="mx-auto max-w-md px-4 pt-7 pb-8">
         <header className="mb-6 text-center">
-          <div
-            className="mx-auto mb-3 h-1.5 w-12 rounded-full"
-            style={{ backgroundColor: business.brandColor }}
-          />
           <h1 className="text-xl font-semibold tracking-tight text-slate-900">
             {business.name}
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1.5 text-sm text-slate-500">
             {tableLabel} · 30 saniyenizi alır
           </p>
         </header>

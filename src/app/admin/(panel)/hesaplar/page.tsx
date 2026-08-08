@@ -18,16 +18,18 @@ export default async function AccountsPage() {
     },
   });
 
-  const businessCounts = await prisma.feedback.groupBy({
-    by: ["businessId"],
-    _count: { _all: true },
-  });
-  const businesses = await prisma.business.findMany({
-    select: { id: true, accountId: true },
-  });
+  // İşletme → hesap eşlemesi önce Map'e alınır; döngü içinde .find() yapmak
+  // hesap ve işletme sayısının çarpımı kadar tarama demekti.
+  const [businessCounts, businesses] = await Promise.all([
+    prisma.feedback.groupBy({ by: ["businessId"], _count: { _all: true } }),
+    prisma.business.findMany({ select: { id: true, accountId: true } }),
+  ]);
+
+  const accountOfBusiness = new Map(businesses.map((b) => [b.id, b.accountId]));
   const feedbackByAccount = new Map<string, number>();
+
   for (const row of businessCounts) {
-    const accountId = businesses.find((b) => b.id === row.businessId)?.accountId;
+    const accountId = accountOfBusiness.get(row.businessId);
     if (!accountId) continue;
     feedbackByAccount.set(
       accountId,

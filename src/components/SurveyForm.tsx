@@ -121,16 +121,44 @@ export function SurveyForm({
     );
   }
 
+  // Puan verilmeden önce ekranda tek bir iş var: yıldıza dokunmak. O anda
+  // kartı dikey ortalayıp alttaki devre dışı "Gönder" bloğunu hiç göstermiyoruz
+  // — yoksa ekranın yarısı ölü boşluk, dikkat de işe yaramayan gri bir düğmede
+  // kalıyordu.
+  const basladi = overall > 0;
+
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6 pb-28">
+    <form
+      onSubmit={handleSubmit}
+      className={`flex flex-col gap-6 ${
+        basladi
+          ? "pb-32"
+          : // İlk ekranda kart yukarıda kalır, alttaki boşluk da güven veren
+            // bir notla kapanır — böylece ekran "yarım kalmış" görünmüyor.
+            "min-h-[calc(100dvh-11rem)]"
+      }`}
+    >
       <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <p className="text-center text-[15px] text-slate-600">
           Bugünkü deneyiminizi genel olarak nasıl buldunuz?
         </p>
-        <div className="mt-4">
+        <div className="mt-5">
           <StarRating name="overall" value={overall} onChange={setOverall} size="lg" />
         </div>
+        {!basladi ? (
+          <p className="mt-4 text-center text-xs text-slate-400">
+            Bir yıldıza dokunun
+          </p>
+        ) : null}
       </section>
+
+      {!basladi ? (
+        <p className="mt-auto text-center text-xs leading-relaxed text-slate-400">
+          Görüşünüz doğrudan {businessName} sorumlusuna iletilir.
+          <br />
+          Ad soyad sorulmaz, isim vermek zorunda değilsiniz.
+        </p>
+      ) : null}
 
       {overall > 0 && categories.length > 0 ? (
         <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
@@ -261,21 +289,23 @@ export function SurveyForm({
         </p>
       ) : null}
 
-      <div className="fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white/95 p-4 backdrop-blur">
-        <div className="mx-auto max-w-md">
-          <button
-            type="submit"
-            disabled={pending || overall === 0}
-            className="w-full rounded-xl px-5 py-4 text-base font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:bg-slate-300 active:scale-[0.99]"
-            style={overall > 0 && !pending ? { backgroundColor: brandColor } : undefined}
-          >
-            {pending ? "Gönderiliyor..." : "Gönder"}
-          </button>
-          <p className="mt-2 text-center text-xs text-slate-400">
-            {tableLabel} · {businessName}
-          </p>
+      {basladi ? (
+        <div className="fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur">
+          <div className="mx-auto max-w-md">
+            <button
+              type="submit"
+              disabled={pending}
+              className="w-full rounded-xl px-5 py-4 text-base font-semibold text-white shadow-sm transition disabled:opacity-60 active:scale-[0.99]"
+              style={{ backgroundColor: brandColor }}
+            >
+              {pending ? "Gönderiliyor…" : "Gönder"}
+            </button>
+            <p className="mt-2 text-center text-xs text-slate-400">
+              {tableLabel} · {businessName}
+            </p>
+          </div>
         </div>
-      </div>
+      ) : null}
     </form>
   );
 }

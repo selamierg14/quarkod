@@ -59,7 +59,17 @@ export default async function AdminHomePage() {
           {totalAll} geri bildirim · {openAll} açık şikayet
         </p>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Sütun sayısı işletme sayısına uyar: tek işletmeli bir kafede
+            üç sütunluk ızgarada kart yalnız ve dar kalıyordu. */}
+        <div
+          className={`mt-4 grid gap-3 ${
+            stats.length === 1
+              ? "max-w-md"
+              : stats.length === 2
+                ? "sm:grid-cols-2"
+                : "sm:grid-cols-2 lg:grid-cols-3"
+          }`}
+        >
           {stats.map((stat) => (
             <div
               key={stat.id}

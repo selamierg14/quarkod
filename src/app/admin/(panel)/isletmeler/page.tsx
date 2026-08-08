@@ -12,19 +12,33 @@ export default async function BusinessListPage() {
   const user = await requireUser();
   const businesses = await visibleBusinesses(user);
 
-  const counts = await Promise.all(
-    businesses.map(async (business) => ({
-      id: business.id,
-      tables: await prisma.table.count({
-        where: { businessId: business.id, active: true },
-      }),
-      categories: await prisma.categoryTemplate.count({
-        where: { businessId: business.id, active: true },
-      }),
-      feedbacks: await prisma.feedback.count({ where: { businessId: business.id } }),
-    })),
-  );
-  const countMap = new Map(counts.map((c) => [c.id, c]));
+  // İşletme başına üç ayrı sorgu yerine üç toplu sorgu: 10 işletmede
+  // 31 sorgudan 4'e iner.
+  const ids = businesses.map((b) => b.id);
+  const [tableCounts, categoryCounts, feedbackCounts] = await Promise.all([
+    prisma.table.groupBy({
+      by: ["businessId"],
+      where: { businessId: { in: ids }, active: true },
+      _count: { _all: true },
+    }),
+    prisma.categoryTemplate.groupBy({
+      by: ["businessId"],
+      where: { businessId: { in: ids }, active: true },
+      _count: { _all: true },
+    }),
+    prisma.feedback.groupBy({
+      by: ["businessId"],
+      where: { businessId: { in: ids } },
+      _count: { _all: true },
+    }),
+  ]);
+
+  const toMap = (rows: { businessId: string; _count: { _all: number } }[]) =>
+    new Map(rows.map((row) => [row.businessId, row._count._all]));
+
+  const tables = toMap(tableCounts);
+  const categories = toMap(categoryCounts);
+  const feedbacks = toMap(feedbackCounts);
 
   return (
     <div className="flex flex-col gap-6">
@@ -39,7 +53,6 @@ export default async function BusinessListPage() {
 
       <ul className="grid gap-3 sm:grid-cols-2">
         {businesses.map((business) => {
-          const count = countMap.get(business.id);
           return (
             <li key={business.id}>
               <Link
@@ -58,8 +71,9 @@ export default async function BusinessListPage() {
                   {business.address ? ` · ${business.address}` : ""}
                 </p>
                 <p className="mt-3 text-xs text-slate-400">
-                  {count?.tables ?? 0} QR noktası · {count?.categories ?? 0} kategori ·{" "}
-                  {count?.feedbacks ?? 0} geri bildirim
+                  {tables.get(business.id) ?? 0} QR noktası ·{" "}
+                  {categories.get(business.id) ?? 0} kategori ·{" "}
+                  {feedbacks.get(business.id) ?? 0} geri bildirim
                 </p>
                 {!business.googleReviewUrl ? (
                   <p className="mt-2 text-xs text-amber-600">
