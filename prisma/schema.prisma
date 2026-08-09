@@ -63,6 +63,13 @@ model Business {
   qrCardText      String?
   /// İYS'de bu işletmenin marka kodu.
   iysBrandCode    String?
+  /// Anket ekranında gösterilen logo (yuvarlak marka rozeti). Data URI olarak
+  /// saklanır: dış depolama servisi gerektirmez, her ortamda çalışır. Yükleme
+  /// tarayıcıda küçültüldüğü için birkaç KB'de kalır.
+  logoUrl         String?
+  /// Anket ekranının tepesindeki kapak fotoğrafı (kafenin görseli). Aynı
+  /// gerekçeyle data URI; tarayıcıda ~1200px genişliğe küçültülür.
+  coverUrl        String?
 
   createdAt DateTime @default(now())
 

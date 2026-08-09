@@ -11,6 +11,7 @@ type Props = {
   slug: string;
   businessName: string;
   brandColor: string;
+  logoUrl: string | null;
   tableNumber: string;
   tableLabel: string;
   categories: { id: string; name: string }[];
@@ -25,6 +26,7 @@ export function SurveyForm({
   slug,
   businessName,
   brandColor,
+  logoUrl,
   tableNumber,
   tableLabel,
   categories,
@@ -87,7 +89,7 @@ export function SurveyForm({
 
   if (screen.kind === "thanks-google") {
     return (
-      <ThanksShell brandColor={brandColor} businessName={businessName}>
+      <ThanksShell brandColor={brandColor} businessName={businessName} logoUrl={logoUrl}>
         <h1 className="text-2xl font-semibold text-slate-900">Çok teşekkürler! 🎉</h1>
         <p className="mt-3 text-slate-600">
           Beğendiğinize sevindik. Bu deneyimi Google&apos;da da paylaşırsanız bizim
@@ -115,7 +117,7 @@ export function SurveyForm({
 
   if (screen.kind === "thanks-internal") {
     return (
-      <ThanksShell brandColor={brandColor} businessName={businessName}>
+      <ThanksShell brandColor={brandColor} businessName={businessName} logoUrl={logoUrl}>
         <h1 className="text-2xl font-semibold text-slate-900">
           Geri bildiriminiz için teşekkürler
         </h1>
@@ -134,32 +136,23 @@ export function SurveyForm({
   const basladi = overall > 0;
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className={`flex flex-col gap-6 ${
-        basladi
-          ? "pb-32"
-          : // İlk ekranda kart yukarıda kalır, alttaki boşluk da güven veren
-            // bir notla kapanır — böylece ekran "yarım kalmış" görünmüyor.
-            "min-h-[calc(100dvh-11rem)]"
-      }`}
-    >
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5 pb-32">
       <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <p className="text-center text-[15px] text-slate-600">
-          Bugünkü deneyiminizi genel olarak nasıl buldunuz?
+        <p className="text-center text-base font-medium text-slate-800">
+          Deneyiminizi nasıl buldunuz?
         </p>
         <div className="mt-5">
           <StarRating name="overall" value={overall} onChange={setOverall} size="lg" />
         </div>
         {!basladi ? (
           <p className="mt-4 text-center text-xs text-slate-400">
-            Bir yıldıza dokunun
+            Puan vermek için bir yıldıza dokunun
           </p>
         ) : null}
       </section>
 
       {!basladi ? (
-        <p className="mt-auto text-center text-xs leading-relaxed text-slate-400">
+        <p className="text-center text-xs leading-relaxed text-slate-400">
           Görüşünüz doğrudan {businessName} sorumlusuna iletilir.
           <br />
           Ad soyad sorulmaz, isim vermek zorunda değilsiniz.
@@ -167,7 +160,7 @@ export function SurveyForm({
       ) : null}
 
       {overall > 0 && categories.length > 0 ? (
-        <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+        <section className="mm-rise rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <h2 className="text-sm font-semibold tracking-wide text-slate-500 uppercase">
             Detaylar
           </h2>
@@ -193,7 +186,7 @@ export function SurveyForm({
       ) : null}
 
       {overall > 0 ? (
-        <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+        <section className="mm-rise rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <label
             htmlFor="comment"
             className="text-sm font-semibold tracking-wide text-slate-500 uppercase"
@@ -341,20 +334,43 @@ function ThanksShell({
   children,
   brandColor,
   businessName,
+  logoUrl,
 }: {
   children: React.ReactNode;
   brandColor: string;
   businessName: string;
+  logoUrl: string | null;
 }) {
   return (
-    <div className="rounded-2xl bg-white p-7 text-center shadow-sm ring-1 ring-slate-200">
-      <div
-        className="mx-auto flex h-14 w-14 items-center justify-center rounded-full text-2xl text-white"
-        style={{ backgroundColor: brandColor }}
-        aria-hidden="true"
-      >
-        ✓
+    <div className="mm-rise rounded-2xl bg-white p-7 text-center shadow-sm ring-1 ring-slate-200">
+      {/* Logo varsa onu göster, köşesine küçük bir onay rozeti bindir; yoksa
+          sade bir onay dairesi. */}
+      <div className="relative mx-auto h-16 w-16">
+        {logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={logoUrl}
+            alt=""
+            className="h-16 w-16 rounded-full object-cover ring-1 ring-slate-200"
+          />
+        ) : (
+          <div
+            className="flex h-16 w-16 items-center justify-center rounded-full text-2xl font-bold text-white"
+            style={{ backgroundColor: brandColor }}
+            aria-hidden="true"
+          >
+            {businessName.trim().charAt(0).toLocaleUpperCase("tr")}
+          </div>
+        )}
+        <span
+          className="absolute -right-1 -bottom-1 flex h-7 w-7 items-center justify-center rounded-full text-sm text-white ring-2 ring-white"
+          style={{ backgroundColor: brandColor }}
+          aria-hidden="true"
+        >
+          ✓
+        </span>
       </div>
+
       <div className="mt-5">{children}</div>
       <p className="mt-8 text-xs text-slate-400">{businessName}</p>
     </div>

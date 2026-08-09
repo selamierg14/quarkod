@@ -1,0 +1,44 @@
+/**
+ * Görsel doğrulama sabitleri ve sunucu tarafı kontrolü.
+ *
+ * Görseller data URI olarak veritabanında saklanıyor (dış depolama servisi
+ * yok). Bu yüzden boyut sınırı kritik: küçültme tarayıcıda yapılıyor ama
+ * sunucu buna güvenemez — kötü niyetli bir istek devasa bir dize gönderebilir.
+ */
+
+/** Data URI olarak izin verilen en büyük boyut (yaklaşık; base64 şişmesi dahil). */
+export const MAX_LOGO_BYTES = 200 * 1024; // ~200 KB
+export const MAX_COVER_BYTES = 600 * 1024; // ~600 KB
+
+/** Tarayıcıda küçültme hedefleri. */
+export const LOGO_MAX_DIM = 400;
+export const COVER_MAX_WIDTH = 1200;
+
+const ALLOWED_PREFIX = /^data:image\/(png|jpeg|webp);base64,/;
+
+export type ImageKind = "logo" | "cover";
+
+/**
+ * Bir data URI'nin güvenli biçimde saklanabileceğini doğrular.
+ * Geçerliyse null, değilse Türkçe hata mesajı döner.
+ */
+export function validateImageDataUrl(
+  value: string,
+  kind: ImageKind,
+): string | null {
+  if (!ALLOWED_PREFIX.test(value)) {
+    return "Görsel biçimi tanınmadı. PNG, JPEG veya WebP yükleyin.";
+  }
+
+  // base64 uzunluğundan yaklaşık bayt sayısı.
+  const base64 = value.slice(value.indexOf(",") + 1);
+  const bytes = Math.floor((base64.length * 3) / 4);
+  const limit = kind === "logo" ? MAX_LOGO_BYTES : MAX_COVER_BYTES;
+
+  if (bytes > limit) {
+    const kb = Math.round(limit / 1024);
+    return `Görsel çok büyük (en fazla ~${kb} KB). Daha küçük bir görsel deneyin.`;
+  }
+
+  return null;
+}

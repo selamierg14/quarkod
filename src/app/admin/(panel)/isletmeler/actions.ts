@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { canAccessBusiness, hashPassword, requireOwner, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { BUSINESS_TYPES, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/constants";
+import { validateImageDataUrl } from "@/lib/image";
 
 export type FormState = { error?: string; saved?: boolean };
 
@@ -150,6 +151,23 @@ export async function updateBusiness(
     return { error: "Google linki http:// veya https:// ile başlamalı." };
   }
 
+  // Görseller data URI olarak gelir; boş dize "kaldır" demek. Sunucu boyut ve
+  // biçimi yeniden doğrular — tarayıcının küçültmesine güvenmiyoruz.
+  const rawLogo = String(formData.get("logoUrl") ?? "");
+  const rawCover = String(formData.get("coverUrl") ?? "");
+
+  const logoUrl = rawLogo ? rawLogo : null;
+  const coverUrl = rawCover ? rawCover : null;
+
+  if (logoUrl) {
+    const problem = validateImageDataUrl(logoUrl, "logo");
+    if (problem) return { error: `Logo: ${problem}` };
+  }
+  if (coverUrl) {
+    const problem = validateImageDataUrl(coverUrl, "cover");
+    if (problem) return { error: `Kapak: ${problem}` };
+  }
+
   await prisma.business.update({
     where: { id },
     data: {
@@ -164,6 +182,8 @@ export async function updateBusiness(
       notifyThreshold: threshold,
       googleRedirect: formData.get("googleRedirect") === "on",
       qrCardText: String(formData.get("qrCardText") ?? "").trim().slice(0, 80) || null,
+      logoUrl,
+      coverUrl,
     },
   });
 

@@ -76,6 +76,8 @@ export default async function BusinessDetailPage({
             notifyThreshold: business.notifyThreshold,
             googleRedirect: business.googleRedirect,
             qrCardText: business.qrCardText,
+            logoUrl: business.logoUrl,
+            coverUrl: business.coverUrl,
           }}
           isOwner={user.role === "owner"}
         />

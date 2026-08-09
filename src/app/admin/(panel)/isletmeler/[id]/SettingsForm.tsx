@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { BUSINESS_TYPE_LIST, qrCardText } from "@/lib/constants";
+import { ImageUpload } from "@/components/ImageUpload";
 import { updateBusiness, type FormState } from "../actions";
 
 const INPUT =
@@ -17,6 +18,8 @@ type Business = {
   notifyThreshold: number;
   googleRedirect: boolean;
   qrCardText: string | null;
+  logoUrl: string | null;
+  coverUrl: string | null;
 };
 
 export function SettingsForm({
@@ -35,6 +38,27 @@ export function SettingsForm({
   return (
     <form action={formAction} className="flex flex-col gap-3">
       <input type="hidden" name="id" value={business.id} />
+
+      {/* Anket ekranında görünen görseller. Marka rengiyle birlikte müşterinin
+          doğru yere geldiğini anlamasını sağlar. */}
+      <div className="grid gap-4 rounded-lg bg-slate-50 p-4 sm:grid-cols-2">
+        <ImageUpload
+          name="logoUrl"
+          kind="logo"
+          label="Logo"
+          hint="Kare görünür. PNG/JPEG/WebP, kendiliğinden küçültülür."
+          initial={business.logoUrl}
+          brandColor={business.brandColor}
+        />
+        <ImageUpload
+          name="coverUrl"
+          kind="cover"
+          label="Kapak fotoğrafı (isteğe bağlı)"
+          hint="Anket ekranının tepesinde geniş görünür. Kafenin bir fotoğrafı olabilir."
+          initial={business.coverUrl}
+          brandColor={business.brandColor}
+        />
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">

@@ -208,6 +208,21 @@ söyleyin — 30 saniye sürer" gibi), işletme ayarlarından değiştirilebilir
 **karşılığı belli**. Bir ikram veya indirim vaat edebiliyorsanız okutulma oranı
 belirgin şekilde artar — o zaman metni ona göre yazın ve vaadi tutun.
 
+## İşletme görselleri (logo / kapak)
+
+Her işletme, anket ekranında görünecek bir **logo** ve isteğe bağlı bir **kapak
+fotoğrafı** yükleyebilir (İşletme ayarları). Görsel yoksa marka rengiyle bir
+degrade ve işletme adının baş harfi kullanılır — ekran her durumda dolu görünür.
+
+Görseller **tarayıcıda küçültülüp** veritabanına data URI olarak yazılır: dış
+depolama servisi (S3/R2) gerektirmez, her ortamda (VPS/serverless) çalışır. Logo
+~400px kareye, kapak ~1200px genişliğe indirgenir; tipik boyut birkaç KB.
+Yalnızca PNG/JPEG/WebP kabul edilir (SVG script taşıyabildiği için hariç),
+sunucu boyutu ayrıca doğrular ([image.ts](src/lib/image.ts)).
+
+İleride çok sayıda büyük görsel gerekirse geçiş yolu: alanlar zaten URL tutuyor,
+data URI yerine bir nesne deposunun URL'sini yazmak yeterli.
+
 ## Google yönlendirme politikası
 
 Spesifikasyonda review-gating riski bilinerek kabul edilmişti. Bu yüzden
