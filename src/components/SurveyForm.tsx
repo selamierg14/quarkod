@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { StarRating } from "./StarRating";
 import { KvkkNotice } from "./KvkkNotice";
 import { CONTACT_TYPES, consentSummary, type ContactType } from "@/lib/kvkk";
+import { marketingConsentText } from "@/lib/iys";
 import { markGoogleClick, submitFeedback } from "@/app/f/[slug]/[table]/actions";
 
 type Props = {
@@ -34,6 +35,10 @@ export function SurveyForm({
   const [contactInfo, setContactInfo] = useState("");
   const [contactType, setContactType] = useState<ContactType>("telefon");
   const [consent, setConsent] = useState(false);
+  // Ticari ileti onayı KVKK rızasından ayrı tutulur: ayrı kutu, ayrı metin,
+  // ayrı kayıt. Aynı kutuda toplamak iki farklı amacı tek onaya bindirmek
+  // olurdu ve verilen izin hukuken savunulamazdı.
+  const [marketing, setMarketing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [screen, setScreen] = useState<Screen>({ kind: "form" });
   const [pending, startTransition] = useTransition();
@@ -61,6 +66,7 @@ export function SurveyForm({
         contactInfo,
         contactType: contactInfo.trim() ? contactType : "",
         consentGiven: consent,
+        marketingConsent: marketing,
       });
 
       if (!result.ok) {
@@ -279,6 +285,27 @@ export function SurveyForm({
               </span>
             </label>
             <KvkkNotice businessName={businessName} />
+
+            {/* Ticari ileti izni ayrı bir kutudur ve yalnızca iletişim bilgisi
+                girildiğinde sorulur. KVKK rızasıyla aynı kutuya koymak, iki
+                farklı amacı tek onaya bindirmek olurdu; o izin İYS'de
+                savunulamazdı. */}
+            {contactInfo.trim() ? (
+              <label className="mt-4 flex items-start gap-3 border-t border-slate-100 pt-4 text-sm text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={marketing}
+                  onChange={(event) => setMarketing(event.target.checked)}
+                  className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300"
+                />
+                <span>
+                  {marketingConsentText(businessName)}
+                  <span className="mt-0.5 block text-xs text-slate-400">
+                    İsteğe bağlı. İşaretlemeseniz de geri bildiriminiz kaydedilir.
+                  </span>
+                </span>
+              </label>
+            ) : null}
           </div>
         </section>
       ) : null}

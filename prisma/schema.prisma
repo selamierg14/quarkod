@@ -25,6 +25,9 @@ model Account {
   active    Boolean @default(true)
   /// "deneme" | "standart" — ileride abonelik kademeleri için.
   plan      String  @default("standart")
+  /// İYS'de hizmet sağlayıcı kodu. Ticari ileti izinleri bu kodun altındaki
+  /// markalara bildirilir.
+  iysCode   String?
 
   createdAt DateTime @default(now())
 
@@ -58,6 +61,8 @@ model Business {
   /// Basılan QR kartında QR'ın üstünde duran çağrı metni. Okutulma oranını
   /// en çok etkileyen şey bu cümle olduğu için işletmeye göre düzenlenebilir.
   qrCardText      String?
+  /// İYS'de bu işletmenin marka kodu.
+  iysBrandCode    String?
 
   createdAt DateTime @default(now())
 
@@ -68,6 +73,7 @@ model Business {
   users         User[]
   coupons       Coupon[]
   surveyViews   SurveyView[]
+  consents      MarketingConsent[]
 
   @@index([accountId])
   @@map("businesses")
@@ -155,10 +161,11 @@ model Feedback {
   visitorId String?
   createdAt DateTime @default(now())
 
-  business      Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  table         Table?         @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  business      Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  table         Table?             @relation(fields: [tableId], references: [id], onDelete: SetNull)
   coupons       Coupon[]
   notifications Notification[]
+  consents      MarketingConsent[]
 
   @@index([businessId, createdAt])
   @@index([businessId, status])
@@ -235,6 +242,56 @@ model LoginAttempt {
   @@index([email, createdAt])
   @@index([ipHash, createdAt])
   @@map("login_attempts")
+}
+
+/// Ticari elektronik ileti izni (İYS kaydı).
+///
+/// KVKK açık rızasından TAMAMEN AYRIDIR: o rıza yalnızca ilgili geri bildirime
+/// dönüş içindir ve 90 günde silinir. Bu kayıt ise ayrı bir kutuyla, ayrı bir
+/// metinle alınır, 6563 sayılı kanun gereği İYS'ye bildirilir ve izin geri
+/// alınana kadar saklanır — silinmesi değil, RET'e çevrilmesi gerekir.
+///
+/// Alan adları bilerek İYS API'sinin sözlüğünü izler (recipient / type /
+/// recipientType / status / source / consentDate), böylece dışa aktarımda
+/// çeviri hatası olmaz.
+model MarketingConsent {
+  id         String  @id @default(cuid())
+  businessId String
+  /// İzin hangi ankette alındı — kanıt zinciri için.
+  feedbackId String?
+
+  /// İYS "recipient": +905XXXXXXXXX veya e-posta.
+  recipient     String
+  /// İYS "type": ARAMA | MESAJ | EPOSTA
+  channel       String
+  /// İYS "recipientType": BIREYSEL | TACIR
+  recipientType String @default("BIREYSEL")
+  /// İYS "status": ONAY | RET
+  status        String @default("ONAY")
+  /// İYS "source": izin nereden alındı (HS_WEB, HS_MOBIL...).
+  source        String @default("HS_WEB")
+  /// İYS "consentDate" — izin/ret anı.
+  consentAt     DateTime
+  /// Onaylanan metnin sürümü; uyuşmazlıkta neyin kabul edildiğinin kanıtı.
+  textVersion   String
+  ipHash        String?
+
+  /// İYS'ye bildirildiği an. Null ise bildirim bekliyor.
+  reportedAt       DateTime?
+  /// İYS'nin döndürdüğü işlem kimliği.
+  iysTransactionId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  feedback Feedback? @relation(fields: [feedbackId], references: [id], onDelete: SetNull)
+
+  /// İYS aynı alıcı+tip+alıcı tipi için en güncel kaydı esas alır; biz de tek
+  /// satır tutup durumu güncelliyoruz.
+  @@unique([businessId, channel, recipient])
+  @@index([businessId, reportedAt])
+  @@map("marketing_consents")
 }
 
 model Notification {

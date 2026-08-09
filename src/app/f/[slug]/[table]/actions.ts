@@ -8,6 +8,11 @@ import { shiftFromDate } from "@/lib/constants";
 import { foldTr } from "@/lib/text";
 import { CONTACT_TYPES, KVKK_VERSION, type ContactType } from "@/lib/kvkk";
 import { getOrCreateVisitorId } from "@/lib/visitor";
+import {
+  DEFAULT_IYS_SOURCE,
+  MARKETING_TEXT_VERSION,
+  toRecipient,
+} from "@/lib/iys";
 
 export type SubmitResult =
   | {
@@ -28,6 +33,8 @@ export type SurveyInput = {
   contactInfo: string;
   contactType: ContactType | "";
   consentGiven: boolean;
+  /// KVKK rızasından AYRI: ticari elektronik ileti (İYS) onayı.
+  marketingConsent: boolean;
 };
 
 /** Aynı ziyaretçinin aynı masadan tekrar göndermesi bu süre boyunca engellenir. */
@@ -213,6 +220,49 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
       visitorId,
     },
   });
+
+  // Ticari ileti izni ayrı bir kayıt: KVKK rızasıyla aynı kutuda değil, aynı
+  // tabloda da değil. Yalnızca müşteri o ikinci kutuyu işaretlediyse oluşur.
+  if (storeContact && input.marketingConsent && contactType) {
+    const hedef = toRecipient(contactType, rawContact);
+    if (hedef) {
+      await prisma.marketingConsent
+        .upsert({
+          where: {
+            businessId_channel_recipient: {
+              businessId: business.id,
+              channel: hedef.channel,
+              recipient: hedef.recipient,
+            },
+          },
+          // Aynı kişi tekrar onay verirse tarih güncellenir ve kayıt yeniden
+          // bildirilmek üzere işaretlenir (İYS en güncel kaydı esas alır).
+          update: {
+            status: "ONAY",
+            consentAt: now,
+            textVersion: MARKETING_TEXT_VERSION,
+            feedbackId: feedback.id,
+            reportedAt: null,
+            iysTransactionId: null,
+          },
+          create: {
+            businessId: business.id,
+            feedbackId: feedback.id,
+            recipient: hedef.recipient,
+            channel: hedef.channel,
+            recipientType: "BIREYSEL",
+            status: "ONAY",
+            source: DEFAULT_IYS_SOURCE,
+            consentAt: now,
+            textVersion: MARKETING_TEXT_VERSION,
+            ipHash,
+          },
+        })
+        .catch((error) => {
+          console.error("[iys] izin kaydedilemedi:", error);
+        });
+    }
+  }
 
   // Bildirim gönderimi anketi bekletmesin; hata olursa kayıt yine de durur.
   await notifyLowRating(feedback.id).catch((error) => {
