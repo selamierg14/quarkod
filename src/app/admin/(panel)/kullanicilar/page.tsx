@@ -14,7 +14,7 @@ export default async function UsersPage() {
   // kullanıcılarını veya işletmelerini göremez.
   const [users, businesses] = await Promise.all([
     prisma.user.findMany({
-      where: userScope(owner),
+      where: await userScope(owner),
       orderBy: [{ role: "asc" }, { name: "asc" }],
       include: { business: true },
     }),

@@ -11,6 +11,9 @@ const url = `file:${path.isAbsolute(filePath) ? filePath : path.join(process.cwd
 
 const prisma = new PrismaClient({ adapter: new PrismaBetterSqlite3({ url }) });
 
+/// Örnek hesapların 2FA kodlarının gideceği numara.
+const TEST_PHONE = "+905364901001";
+
 type BusinessSeed = {
   slug: string;
   name: string;
@@ -21,7 +24,7 @@ type BusinessSeed = {
   notifyThreshold: number;
   /** Masa numaraları; gece kulübünde kapı QR'ı için isEntrance kullanılır. */
   tables: { number: string; isEntrance?: boolean }[];
-  manager: { name: string; email: string };
+  manager: { name: string; email: string; username: string };
 };
 
 const BUSINESSES: BusinessSeed[] = [
@@ -34,7 +37,7 @@ const BUSINESSES: BusinessSeed[] = [
     brandColor: "#b91c1c",
     notifyThreshold: 3,
     tables: Array.from({ length: 12 }, (_, i) => ({ number: String(i + 1) })),
-    manager: { name: "Keskin Lezzetler Sorumlusu", email: "keskin@ornek.com" },
+    manager: { name: "Keskin Lezzetler Sorumlusu", email: "keskin@ornek.com", username: "keskin" },
   },
   {
     slug: "ege-cunda-balik",
@@ -45,7 +48,7 @@ const BUSINESSES: BusinessSeed[] = [
     brandColor: "#0e7490",
     notifyThreshold: 3,
     tables: Array.from({ length: 20 }, (_, i) => ({ number: String(i + 1) })),
-    manager: { name: "Ege Cunda Sorumlusu", email: "egecunda@ornek.com" },
+    manager: { name: "Ege Cunda Sorumlusu", email: "egecunda@ornek.com", username: "egecunda" },
   },
   {
     slug: "sahne-marin",
@@ -60,7 +63,7 @@ const BUSINESSES: BusinessSeed[] = [
       { number: "GIRIS", isEntrance: true },
       ...Array.from({ length: 8 }, (_, i) => ({ number: `VIP-${i + 1}` })),
     ],
-    manager: { name: "Sahne Marin Sorumlusu", email: "sahnemarin@ornek.com" },
+    manager: { name: "Sahne Marin Sorumlusu", email: "sahnemarin@ornek.com", username: "sahnemarin" },
   },
 ];
 
@@ -130,11 +133,13 @@ async function main() {
 
     await prisma.user.upsert({
       where: { email: seed.manager.email },
-      update: { businessId: business.id, accountId: account.id },
+      update: { businessId: business.id, accountId: account.id, phone: TEST_PHONE },
       create: {
         accountId: account.id,
         name: seed.manager.name,
+        username: seed.manager.username,
         email: seed.manager.email,
+        phone: TEST_PHONE,
         passwordHash: password,
         role: "manager",
         businessId: business.id,
@@ -144,11 +149,13 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: "patron@ornek.com" },
-    update: { accountId: account.id },
+    update: { accountId: account.id, phone: TEST_PHONE },
     create: {
       accountId: account.id,
       name: "Patron",
+      username: "patron",
       email: "patron@ornek.com",
+      phone: TEST_PHONE,
       passwordHash: password,
       role: "owner",
       businessId: null,
@@ -158,11 +165,13 @@ async function main() {
   // Platform yöneticisi hiçbir hesaba ait değildir; hesapları o açar/askıya alır.
   await prisma.user.upsert({
     where: { email: "platform@ornek.com" },
-    update: {},
+    update: { phone: TEST_PHONE },
     create: {
       accountId: null,
       name: "Platform Yöneticisi",
+      username: "platform",
       email: "platform@ornek.com",
+      phone: TEST_PHONE,
       passwordHash: password,
       role: "superadmin",
       businessId: null,
@@ -170,10 +179,11 @@ async function main() {
   });
 
   console.log("Seed tamamlandı.");
-  console.log("  Platform:  platform@ornek.com / degistir123");
-  console.log("  Patron:    patron@ornek.com / degistir123");
+  console.log("  Giriş kullanıcı adı ile yapılır; kod " + TEST_PHONE + " numarasına gider.");
+  console.log("  Platform:  platform / degistir123");
+  console.log("  Patron:    patron / degistir123");
   for (const b of BUSINESSES) {
-    console.log(`  ${b.name}: ${b.manager.email} / degistir123`);
+    console.log(`  ${b.name}: ${b.manager.username} / degistir123`);
   }
 }
 

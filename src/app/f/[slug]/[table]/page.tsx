@@ -45,37 +45,44 @@ export default async function SurveyPage({ params }: { params: Promise<Params> }
   if (!table || !table.active) notFound();
 
   const tableLabel = table.isEntrance ? "Giriş" : `Masa ${table.tableNumber}`;
-  const hasCover = Boolean(business.coverUrl);
   const hasLogo = Boolean(business.logoUrl);
 
+  // Arka plan görseli: kapak varsa o, yoksa logo. Sabitlenmiş ve kırpılmış
+  // olarak tüm ekranı kaplar; üstüne konan beyaz perde sayesinde soluklaşır,
+  // böylece metin okunur kalır ve görsel gerilmediği için bozulmaz.
+  const backdrop = business.coverUrl ?? business.logoUrl;
+
   return (
-    <main className="min-h-dvh bg-slate-50">
-      {/* Başlık: kapak fotoğrafı varsa banner, yoksa marka rengiyle bir degrade.
-          Logo her iki durumda da başlığın üstüne binen yuvarlak bir rozet. */}
-      <header className="relative">
-        {hasCover ? (
-          <div className="relative h-40 w-full overflow-hidden sm:h-48">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={business.coverUrl!}
-              alt=""
-              className="h-full w-full object-cover"
-            />
-            {/* Alttan koyu degrade: logo ve alt kenar okunur kalsın. */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/35" />
-          </div>
-        ) : (
-          <div
-            className="h-28 w-full sm:h-32"
-            style={{
-              background: `linear-gradient(135deg, ${business.brandColor}, ${business.brandColor}cc)`,
-            }}
-            aria-hidden="true"
+    <main
+      className={`relative min-h-dvh ${backdrop ? "" : "bg-slate-50"}`}
+    >
+      {/* --- Arka plan: işletmenin görseli tüm ekranı kaplar.
+          object-cover ile oranı korunur (gerilme/pikselleşme olmaz), üstündeki
+          beyaz perde ve hafif bulanıklık sayesinde soluklaşır. */}
+      {backdrop ? (
+        <div className="pointer-events-none fixed inset-0 -z-10 bg-slate-50" aria-hidden="true">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={backdrop}
+            alt=""
+            className="h-full w-full scale-110 object-cover blur-[3px]"
           />
-        )}
+          {/* Perde: görsel seçilir ama metin okunur kalır. Yüzde düşerse
+              kartların üstündeki yazı zeminle karışmaya başlıyor. */}
+          <div className="absolute inset-0 bg-slate-50/78" />
+        </div>
+      ) : null}
+
+      <header className="relative">
+        {/* Marka rengi şeridi: baskıdaki kartla aynı renk. */}
+        <div
+          className="h-1.5 w-full"
+          style={{ backgroundColor: business.brandColor }}
+          aria-hidden="true"
+        />
 
         <div className="mx-auto max-w-md px-4">
-          <div className="-mt-12 flex flex-col items-center text-center">
+          <div className="flex flex-col items-center pt-7 text-center">
             {hasLogo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -106,7 +113,7 @@ export default async function SurveyPage({ params }: { params: Promise<Params> }
         </div>
       </header>
 
-      <div className="mx-auto max-w-md px-4 pt-6 pb-8">
+      <div className="relative mx-auto max-w-md px-4 pt-6 pb-8">
         <ViewTracker slug={business.slug} tableNumber={table.tableNumber} />
 
         <SurveyForm

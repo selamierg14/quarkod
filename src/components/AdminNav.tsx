@@ -24,12 +24,7 @@ const LINKS: NavLink[] = [
   { href: "/admin/hesaplar", label: "Hesaplar", superadminOnly: true },
 ];
 
-/**
- * Platform yöneticisinin işi hesap yönetimi; kiracıların operasyonel ekranları
- * onun için hem anlamsız (farklı kiracıların ortalaması tek sayıda birleşir)
- * hem de gereksiz bir müşteri verisi teması. O yüzden yalnızca Hesaplar.
- */
-const SUPERADMIN_LINKS = new Set(["/admin/hesaplar"]);
+
 
 export function AdminNav({
   isOwner,
@@ -41,8 +36,7 @@ export function AdminNav({
   const pathname = usePathname();
 
   const visible = LINKS.filter((link) => {
-    if (isSuperadmin) return SUPERADMIN_LINKS.has(link.href);
-    if (link.superadminOnly) return false;
+    if (link.superadminOnly) return isSuperadmin;
     if (link.ownerOnly) return isOwner;
     return true;
   });

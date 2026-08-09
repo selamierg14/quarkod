@@ -59,10 +59,13 @@ export default async function ComparisonPage() {
 
           <section className="rounded-xl bg-white p-5 ring-1 ring-slate-200">
             <h2 className="text-xs font-medium tracking-wide text-slate-500 uppercase">
-              Haftalık seyir
+              Haftalık ortalama puan seyri
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Son 12 hafta. Veri gelmeyen haftalar boşluk olarak bırakılır.
+              Her nokta bir haftanın <strong>ortalama yıldız puanını</strong>{" "}
+              gösterir (dikey eksen 1–5). Yatay eksen hafta başlangıç tarihidir.
+              Veri gelmeyen haftalarda çizgi kesilir — sıfır puan almış gibi
+              görünmesin diye.
             </p>
             <div className="mt-4 space-y-5">
               {withData.map((stat) => (
@@ -78,6 +81,11 @@ export default async function ComparisonPage() {
                     <DeltaBadge delta={stat.delta} />
                   </div>
                   <TrendChart points={stat.trend} color={stat.brandColor} />
+                  <p className="-mt-1 text-xs text-slate-400">
+                    Son 12 hafta ·{" "}
+                    {stat.trend.filter((t) => t.count > 0).length} haftada veri var ·
+                    genel ortalama {stat.average?.toFixed(2) ?? "—"}
+                  </p>
                 </div>
               ))}
             </div>

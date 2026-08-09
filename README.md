@@ -10,6 +10,36 @@
   e-posta bildirimi.
 - Patron üç işletmeyi tek panelden görür; işletme sorumlusu yalnızca kendisininkini.
 
+## Giriş ve 2FA
+
+Giriş **kullanıcı adıyla** yapılır (e-posta ile değil): personel değişiminde
+e-posta değişse bile giriş bilgisi sabit kalsın diye.
+
+Akış tek ekranda üç adım:
+
+1. Kullanıcı adı + şifre
+2. Telefona gelen 6 haneli SMS kodu
+3. (Şifre sıfırlamada) yeni şifre
+
+Aynı ekrandaki **"Şifremi unuttum"** bağlantısı da SMS koduyla yürür — kullanıcı
+adı → kod → yeni şifre. Kullanıcı adının kayıtlı olup olmadığı sızdırılmaz;
+her durumda aynı ekrana geçilir.
+
+Güvenlik ayrıntıları:
+
+- Kodlar veritabanında **hash'li** durur (şifre gibi). Veritabanını gören biri
+  aktif kodu okuyup hesaba giremez.
+- Kod 5 dakika geçerli, 5 yanlış denemede yakılır, 60 saniye içinde yeni kod
+  istenemez (SMS bombardımanı olmasın).
+- Adımlar arası "hangi kullanıcı doğrulandı" bilgisi imzalı kısa ömürlü bir
+  çerezde taşınır — tarayıcıdan kullanıcı kimliği değiştirilip 2. adım
+  başkasının hesabıyla tamamlanamaz.
+- Telefonu olmayan kullanıcıda SMS gönderilemediği için 2FA uygulanmaz; yeni
+  kullanıcı açarken telefon zorunludur.
+
+SMS sağlayıcısı ayarları `.env` içindeki `SMS_*` alanlarındadır. Ayar yoksa kod
+konsola düşer ve akış tıkanmaz (geliştirme kolaylığı).
+
 ## Çok kiracılı yapı
 
 Sistem birden fazla müşteriye satılmak üzere kurulu. En üstte **hesap (kiracı)**
@@ -17,7 +47,7 @@ var; her işletme ve her kullanıcı bir hesaba bağlı.
 
 | Rol | Görebildiği |
 | --- | --- |
-| `superadmin` | Platformu işleten taraf (siz). Hesapları açar, askıya alır. Hiçbir hesaba ait değildir. |
+| `superadmin` | Platformu işleten taraf (siz). Hesapları açar, askıya alır ve **bir hesaba geçip o kiracının panelini birebir görebilir**. Hiçbir hesaba ait değildir. |
 | `owner` | Kendi hesabındaki tüm işletmeler. Kendi kullanıcılarını ve işletmelerini yönetir. |
 | `manager` | Yalnızca kendi işletmesi — aynı hesaptaki diğer işletmeyi bile göremez. |
 
@@ -30,6 +60,14 @@ sayfaları bu kuralları doğrudan çağırır, kendi filtresini yazmaz.
   Prisma'da boş `where` "hepsi" demektir; sızıntının en olası yolu budur.
 - **Erişim kontrolü kimliğin tahmin edilemezliğine değil sahipliğe dayanır.**
   Adres çubuğuna başka bir kiracının işletme kimliği yazılırsa 404 döner.
+
+**Hesaplar** ekranı hiyerarşik: her hesabın altında sahipleri, onun altında
+işletmeleri ve her işletmenin sorumluları girintili olarak listelenir — kimin
+kimin altında olduğu tek bakışta görünür.
+
+Bir hesaba geçildiğinde üstte kalıcı bir bant çıkar ("X hesabını
+görüntülüyorsunuz") ve tüm kapsam o hesaba daralır: açılan işletme ve kullanıcı
+o hesaba yazılır. Bant, yanlışlıkla müşteri verisinde işlem yapmayı önler.
 
 Askıya alınan hesabın kullanıcıları panele giremez ve QR'ları çalışmaz; verisi
 silinmez, ödeme yapılınca kaldığı yerden devam eder.
@@ -69,13 +107,16 @@ npm run dev
 `npm run setup` şu hesapları oluşturur (şifre hepsinde `degistir123` — ilk işte
 değiştirin):
 
-| Rol | E-posta | Görebildiği |
+| Rol | Kullanıcı adı | Görebildiği |
 | --- | --- | --- |
-| Platform | `platform@ornek.com` | Tüm hesaplar; hesap açma/askıya alma |
-| Patron | `patron@ornek.com` | Kendi hesabındaki üç işletme + kıyaslama + kullanıcılar |
-| Sorumlu | `keskin@ornek.com` | KESKİNLEZZETLER |
-| Sorumlu | `egecunda@ornek.com` | Ege Cunda Balık |
-| Sorumlu | `sahnemarin@ornek.com` | Sahne Marin |
+| Platform | `platform` | Tüm hesaplar; hesap açma/askıya alma/geçiş |
+| Patron | `patron` | Kendi hesabındaki üç işletme + kıyaslama + kullanıcılar |
+| Sorumlu | `keskin` | KESKİNLEZZETLER |
+| Sorumlu | `egecunda` | Ege Cunda Balık |
+| Sorumlu | `sahnemarin` | Sahne Marin |
+
+Giriş **kullanıcı adıyla** yapılır ve 2FA kodu örnek hesaplarda
+`+90 536 490 10 01` numarasına gider.
 
 Kurulum şifresini kullanan hesaplar **Kullanıcılar** sayfasında sarı etiketle
 işaretlenir. Herkes `/admin/sifre` üzerinden kendi şifresini değiştirebilir;
@@ -219,6 +260,11 @@ depolama servisi (S3/R2) gerektirmez, her ortamda (VPS/serverless) çalışır. 
 ~400px kareye, kapak ~1200px genişliğe indirgenir; tipik boyut birkaç KB.
 Yalnızca PNG/JPEG/WebP kabul edilir (SVG script taşıyabildiği için hariç),
 sunucu boyutu ayrıca doğrular ([image.ts](src/lib/image.ts)).
+
+Yüklenen görsel aynı zamanda **anket ekranının arka planını** kaplar: kapak
+varsa o, yoksa logo. `object-cover` ile oranı korunur (gerilme/pikselleşme
+olmaz), üstündeki beyaz perde ve hafif bulanıklıkla soluklaşır — marka hissi
+verir ama metin okunur kalır.
 
 İleride çok sayıda büyük görsel gerekirse geçiş yolu: alanlar zaten URL tutuyor,
 data URI yerine bir nesne deposunun URL'sini yazmak yeterli.

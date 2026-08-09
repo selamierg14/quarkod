@@ -1,7 +1,12 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { createAccount, toggleAccount, type AccountFormState } from "./actions";
+import {
+  createAccount,
+  enterAccount,
+  toggleAccount,
+  type AccountFormState,
+} from "./actions";
 
 const INPUT =
   "rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400";
@@ -53,6 +58,24 @@ export function NewAccountForm() {
         </label>
 
         <label className="flex flex-col gap-1">
+          <span className="text-xs text-slate-500">Kullanıcı adı (giriş için)</span>
+          <input
+            name="ownerUsername"
+            autoCapitalize="none"
+            spellCheck={false}
+            placeholder="boş bırakılırsa e-postadan türetilir"
+            className={INPUT}
+          />
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-xs text-slate-500">
+            Cep telefonu (doğrulama kodu)
+          </span>
+          <input name="ownerPhone" type="tel" required placeholder="05XX XXX XX XX" className={INPUT} />
+        </label>
+
+        <label className="flex flex-col gap-1">
           <span className="text-xs text-slate-500">Başlangıç şifresi</span>
           <input
             name="password"
@@ -92,6 +115,29 @@ export function NewAccountForm() {
           Kapat
         </button>
       </div>
+    </form>
+  );
+}
+
+/** Bu hesabın paneline geç. */
+export function EnterAccountButton({
+  accountId,
+  active,
+}: {
+  accountId: string;
+  active: boolean;
+}) {
+  return (
+    <form action={enterAccount}>
+      <input type="hidden" name="accountId" value={accountId} />
+      <button
+        type="submit"
+        disabled={!active}
+        title={active ? undefined : "Askıdaki hesabın paneline girilemez"}
+        className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white disabled:bg-slate-300"
+      >
+        Bu hesabı görüntüle
+      </button>
     </form>
   );
 }

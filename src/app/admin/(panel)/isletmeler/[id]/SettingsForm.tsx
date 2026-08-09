@@ -58,6 +58,21 @@ export function SettingsForm({
           initial={business.coverUrl}
           brandColor={business.brandColor}
         />
+
+        {/* Form uzun; görselleri seçen kişi en alttaki kaydet düğmesini
+            görmüyordu. Aynı formu buradan da gönderebilsin. */}
+        <div className="flex items-center gap-3 sm:col-span-2">
+          <button
+            type="submit"
+            disabled={pending}
+            className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white disabled:bg-slate-400"
+          >
+            {pending ? "Kaydediliyor..." : "Görselleri kaydet"}
+          </button>
+          <span className="text-xs text-slate-500">
+            Aşağıdaki ayarlarla birlikte kaydedilir.
+          </span>
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">

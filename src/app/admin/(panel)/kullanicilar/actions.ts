@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import {
+  actingAccountId,
   canAccessBusiness,
   getSession,
   hashPassword,
@@ -11,6 +12,7 @@ import {
   userScope,
 } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
 
 export type UserFormState = { error?: string; saved?: string };
 
@@ -34,12 +36,22 @@ export async function createUser(
 
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const rawUsername = String(formData.get("username") ?? "").trim().toLowerCase();
+  const rawPhone = String(formData.get("phone") ?? "").trim();
   const role = String(formData.get("role") ?? "");
   const businessId = String(formData.get("businessId") ?? "");
   const password = String(formData.get("password") ?? "");
 
   if (!name) return { error: "Ad soyad gerekli." };
   if (!/^\S+@\S+\.\S+$/.test(email)) return { error: "Geçerli bir e-posta girin." };
+
+  const username = rawUsername || toUsername(email.split("@")[0]);
+  const usernameSorun = usernameProblem(username);
+  if (usernameSorun) return { error: usernameSorun };
+
+  // 2FA kodu buraya gideceği için telefon zorunlu.
+  const phone = normalizePhone(rawPhone);
+  if (!phone) return { error: "Geçerli bir cep telefonu girin (5XX...)." };
   if (role !== "owner" && role !== "manager") return { error: "Rol seçin." };
   if (role === "manager" && !businessId) {
     return { error: "İşletme sorumlusu için bir işletme seçin." };
@@ -48,10 +60,10 @@ export async function createUser(
   // Yeni kullanıcı her zaman ekleyenin hesabına açılır ve yalnızca o hesabın
   // işletmesine atanabilir; aksi halde bir kiracı diğerinin işletmesine
   // kullanıcı yerleştirebilirdi.
-  const accountId = actor.accountId;
+  const accountId = await actingAccountId(actor);
   if (!accountId) {
     return {
-      error: "Platform yöneticisi buradan kullanıcı açamaz; Hesaplar sayfasını kullanın.",
+      error: "Önce Hesaplar sayfasından bir hesaba geçin; kullanıcı o hesaba açılacak.",
     };
   }
   if (businessId && !(await canAccessBusiness(actor, businessId))) {
@@ -64,12 +76,17 @@ export async function createUser(
   if (await prisma.user.findUnique({ where: { email } })) {
     return { error: "Bu e-posta zaten kayıtlı." };
   }
+  if (await prisma.user.findUnique({ where: { username } })) {
+    return { error: `"${username}" kullanıcı adı zaten alınmış.` };
+  }
 
   await prisma.user.create({
     data: {
       accountId,
       name,
+      username,
       email,
+      phone,
       role,
       businessId: role === "manager" ? businessId : null,
       passwordHash: await hashPassword(password),
@@ -77,7 +94,7 @@ export async function createUser(
   });
 
   revalidatePath("/admin/kullanicilar");
-  return { saved: `${name} eklendi.` };
+  return { saved: `${name} eklendi. Giriş kullanıcı adı: ${username}` };
 }
 
 export async function resetPassword(
@@ -93,7 +110,7 @@ export async function resetPassword(
   if (problem) return { error: problem };
 
   const user = await prisma.user.findFirst({
-    where: { id, ...userScope(actor) },
+    where: { id, ...await userScope(actor) },
   });
   if (!user) return { error: "Kullanıcı bulunamadı." };
 
@@ -114,7 +131,7 @@ export async function toggleUser(formData: FormData) {
   if (id === owner.id) return;
 
   const user = await prisma.user.findFirst({
-    where: { id, ...userScope(owner) },
+    where: { id, ...await userScope(owner) },
   });
   if (!user) return;
 
@@ -164,7 +181,7 @@ export async function usesSeedPassword(userId: string): Promise<boolean> {
   // Kapsam kontrolü burada da gerekli: aksi halde başka bir kiracının
   // kullanıcı kimliği verilerek şifresi hakkında bilgi sızdırılabilir.
   const user = await prisma.user.findFirst({
-    where: { id: userId, ...userScope(session) },
+    where: { id: userId, ...await userScope(session) },
   });
   if (!user) return false;
   return bcrypt.compare("degistir123", user.passwordHash);

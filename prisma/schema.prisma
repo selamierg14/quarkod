@@ -186,7 +186,13 @@ model User {
   /// Platform yöneticisi (superadmin) hiçbir hesaba ait değildir.
   accountId    String?
   name         String
+  /// Girişte kullanılan ad. E-posta değil bu sorulur — personel değişiminde
+  /// e-posta değişse de giriş bilgisi sabit kalsın diye.
+  username     String  @unique
+  /// Bildirim ve iletişim için; giriş kimliği değil.
   email        String  @unique
+  /// 2FA kodunun gideceği numara (+905XXXXXXXXX). Yoksa 2FA uygulanamaz.
+  phone        String?
   passwordHash String
   /// "superadmin" (platformu işleten biz — tüm hesaplar)
   /// "owner"      (hesabın sahibi — kendi hesabındaki tüm işletmeler)
@@ -200,9 +206,34 @@ model User {
 
   account  Account?  @relation(fields: [accountId], references: [id], onDelete: Cascade)
   business Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  otpCodes OtpCode[]
 
   @@index([accountId])
   @@map("users")
+}
+
+/// Tek kullanımlık SMS kodu (giriş 2. adımı ve şifre sıfırlama).
+///
+/// Kod düz metin saklanmaz — şifre gibi hash'lenir. Veritabanını gören biri
+/// aktif kodları okuyup başkasının hesabına giremesin diye.
+model OtpCode {
+  id       String @id @default(cuid())
+  userId   String
+  /// "giris" | "sifre"
+  purpose  String
+  codeHash String
+
+  /// Yanlış deneme sayısı; eşiği aşınca kod yakılır.
+  attempts  Int       @default(0)
+  expiresAt DateTime
+  /// Kullanıldığı an; dolu ise kod bir daha geçerli değildir.
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, createdAt])
+  @@map("otp_codes")
 }
 
 model Coupon {

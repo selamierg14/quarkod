@@ -59,6 +59,18 @@ export function TrendChart({
           withData[withData.length - 1].average
         }.`}
       >
+        {/* Dikey eksen başlığı: "bu sayılar ne?" sorusunu grafiğin içinde
+            cevaplıyoruz; yan yana birden çok grafik olduğunda tek tek
+            açıklama okumak zor. */}
+        <text
+          x={4}
+          y={padding.top - 2}
+          className="fill-slate-400"
+          style={{ fontSize: 8 }}
+        >
+          puan
+        </text>
+
         {[1, 2, 3, 4, 5].map((value) => (
           <g key={value}>
             <line
@@ -107,6 +119,33 @@ export function TrendChart({
           ),
         )}
 
+        {/* Son veri noktasını büyütüp değerini yazıyoruz: bakan kişinin ilk
+            aradığı şey "şu an neredeyiz". */}
+        {(() => {
+          const sonIndex = points.reduce(
+            (acc, p, i) => (p.average !== null ? i : acc),
+            -1,
+          );
+          if (sonIndex < 0) return null;
+          const son = points[sonIndex];
+          const cx = x(sonIndex);
+          const cy = y(son.average!);
+          return (
+            <g>
+              <circle cx={cx} cy={cy} r={4} fill={color} />
+              <text
+                x={cx - 6}
+                y={cy - 8}
+                textAnchor="end"
+                className="fill-slate-600"
+                style={{ fontSize: 10, fontWeight: 600 }}
+              >
+                {son.average!.toFixed(1)}
+              </text>
+            </g>
+          );
+        })()}
+
         {points.map((point, index) =>
           index % 2 === 0 ? (
             <text
@@ -123,7 +162,8 @@ export function TrendChart({
         )}
       </svg>
       <figcaption className="sr-only">
-        Son {points.length} haftanın ortalama puanı.
+        Son {points.length} haftanın ortalama yıldız puanı; dikey eksen 1 ile 5
+        arasındadır.
       </figcaption>
     </figure>
   );

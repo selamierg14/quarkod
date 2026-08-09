@@ -34,6 +34,26 @@ export function NewUserForm({ businesses }: { businesses: Business[] }) {
         </label>
 
         <label className="flex flex-col gap-1">
+          <span className="text-xs text-slate-500">
+            Kullanıcı adı (girişte bu kullanılır)
+          </span>
+          <input
+            name="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            placeholder="boş bırakılırsa e-postadan türetilir"
+            className={INPUT}
+          />
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-xs text-slate-500">
+            Cep telefonu (doğrulama kodu buraya gider)
+          </span>
+          <input name="phone" type="tel" required placeholder="05XX XXX XX XX" className={INPUT} />
+        </label>
+
+        <label className="flex flex-col gap-1">
           <span className="text-xs text-slate-500">Rol</span>
           <select
             name="role"

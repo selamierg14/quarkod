@@ -16,6 +16,7 @@ import {
   canAccessBusinessFor,
   userScopeFor,
 } from "./tenancy";
+import { effectiveAccountId } from "./impersonation";
 
 export { SESSION_COOKIE, type Role, type SessionUser };
 
@@ -57,6 +58,16 @@ export async function requireOwner(): Promise<SessionUser> {
   return user;
 }
 
+/**
+ * Kullanıcının "işlem yaptığı" hesap.
+ *
+ * Superadmin bir hesaba geçtiyse yeni kayıtlar (işletme, kullanıcı) o hesaba
+ * açılır; geçmediyse null döner ve çağıran taraf hata verir.
+ */
+export async function actingAccountId(user: SessionUser): Promise<string | null> {
+  return effectiveAccountId(user);
+}
+
 /** Yalnızca platformu işleten tarafın erişebileceği sayfalar için. */
 export async function requireSuperadmin(): Promise<SessionUser> {
   const user = await requireUser();
@@ -64,12 +75,29 @@ export async function requireSuperadmin(): Promise<SessionUser> {
   return user;
 }
 
+/** Oturuma dönüştürülecek kullanıcı kaydı. */
+export type AuthenticatedUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  accountId: string | null;
+  businessId: string | null;
+  phone: string | null;
+};
+
+/**
+ * Kullanıcı adı + şifre doğrulaması.
+ *
+ * Giriş kimliği e-posta değil kullanıcı adıdır: personel değişiminde e-posta
+ * değişse bile giriş bilgisi sabit kalsın diye.
+ */
 export async function authenticate(
-  email: string,
+  username: string,
   password: string,
-): Promise<SessionUser | null> {
+): Promise<AuthenticatedUser | null> {
   const user = await prisma.user.findUnique({
-    where: { email: email.trim().toLowerCase() },
+    where: { username: username.trim().toLowerCase() },
     include: { account: true },
   });
   if (!user || !user.active) return null;
@@ -86,6 +114,19 @@ export async function authenticate(
     role: user.role as Role,
     accountId: user.accountId,
     businessId: user.businessId,
+    phone: user.phone,
+  };
+}
+
+/** Doğrulanmış kullanıcıdan oturum nesnesi (2FA sonrası). */
+export function toSessionUser(user: AuthenticatedUser): SessionUser {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    accountId: user.accountId,
+    businessId: user.businessId,
   };
 }
 
@@ -98,8 +139,21 @@ export function hashPassword(password: string): Promise<string> {
  * orada, testlerle birlikte duruyor.
  */
 
-/** Kullanıcının görebileceği işletmelerin kimlikleri. */
+/**
+ * Kullanıcının görebileceği işletmelerin kimlikleri.
+ *
+ * Superadmin bir hesabı görüntülemeyi seçtiyse kapsam o hesaba daralır;
+ * seçmediyse tüm hesapları kapsar.
+ */
 export async function allowedBusinessIds(user: SessionUser): Promise<string[]> {
+  const aktif = await effectiveAccountId(user);
+  if (user.role === "superadmin" && aktif) {
+    return allowedBusinessIdsFor(prisma, {
+      role: "owner",
+      accountId: aktif,
+      businessId: null,
+    });
+  }
   return allowedBusinessIdsFor(prisma, user);
 }
 
@@ -117,10 +171,20 @@ export async function canAccessBusiness(
   user: SessionUser,
   businessId: string,
 ): Promise<boolean> {
+  const aktif = await effectiveAccountId(user);
+  if (user.role === "superadmin" && aktif) {
+    return canAccessBusinessFor(
+      prisma,
+      { role: "owner", accountId: aktif, businessId: null },
+      businessId,
+    );
+  }
   return canAccessBusinessFor(prisma, user, businessId);
 }
 
 /** Kullanıcının yönetebileceği kullanıcılar için Prisma filtresi. */
-export function userScope(user: SessionUser) {
+export async function userScope(user: SessionUser) {
+  const aktif = await effectiveAccountId(user);
+  if (user.role === "superadmin" && aktif) return { accountId: aktif };
   return userScopeFor(user);
 }

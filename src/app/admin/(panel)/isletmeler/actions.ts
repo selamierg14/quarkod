@@ -3,10 +3,17 @@
 import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { canAccessBusiness, hashPassword, requireOwner, requireUser } from "@/lib/auth";
+import {
+  actingAccountId,
+  canAccessBusiness,
+  hashPassword,
+  requireOwner,
+  requireUser,
+} from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { BUSINESS_TYPES, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/constants";
 import { validateImageDataUrl } from "@/lib/image";
+import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
 
 export type FormState = { error?: string; saved?: boolean };
 
@@ -39,14 +46,14 @@ export async function createBusiness(
 ): Promise<FormState> {
   const user = await requireOwner();
 
-  // Yeni işletme her zaman açan kişinin hesabına bağlanır. Platform yöneticisi
-  // panelden işletme açamaz; hesap seçmeden hangi kiracıya ait olacağı belirsiz
-  // kalır (o akış /admin/hesaplar üzerinden yürür).
-  const accountId = user.accountId;
+  // Yeni işletme, işlem yapılan hesaba bağlanır. Platform yöneticisi için bu,
+  // Hesaplar sayfasından "geçtiği" hesaptır; hiçbir hesaba geçmemişse hangi
+  // kiracıya ait olacağı belirsiz kalır ve işlem reddedilir.
+  const accountId = await actingAccountId(user);
   if (!accountId) {
     return {
       error:
-        "Platform yöneticisi doğrudan işletme açamaz. Hesaplar sayfasından ilgili hesabın sahibiyle ilerleyin.",
+        "Önce Hesaplar sayfasından bir hesaba geçin; işletme o hesaba açılacak.",
     };
   }
 
@@ -64,8 +71,13 @@ export async function createBusiness(
   // yeni işletmenin sorumlusu ilk günden panele girebilsin.
   const managerName = String(formData.get("managerName") ?? "").trim();
   const managerEmail = String(formData.get("managerEmail") ?? "").trim().toLowerCase();
+  const managerUsername = String(formData.get("managerUsername") ?? "").trim().toLowerCase();
+  const managerPhone = String(formData.get("managerPhone") ?? "").trim();
   const managerPassword = String(formData.get("managerPassword") ?? "");
   const wantsManager = Boolean(managerName || managerEmail || managerPassword);
+
+  let username = "";
+  let phone: string | null = null;
 
   if (wantsManager) {
     if (!managerName) return { error: "Sorumlu için ad soyad girin." };
@@ -75,8 +87,21 @@ export async function createBusiness(
     if (managerPassword.length < 8) {
       return { error: "Sorumlu şifresi en az 8 karakter olmalı." };
     }
+
+    username = managerUsername || toUsername(managerEmail.split("@")[0]);
+    const usernameSorun = usernameProblem(username);
+    if (usernameSorun) return { error: usernameSorun };
+
+    phone = normalizePhone(managerPhone);
+    if (!phone) {
+      return { error: "Sorumlu için geçerli bir cep telefonu girin (5XX...)." };
+    }
+
     if (await prisma.user.findUnique({ where: { email: managerEmail } })) {
       return { error: "Bu e-posta zaten kayıtlı." };
+    }
+    if (await prisma.user.findUnique({ where: { username } })) {
+      return { error: `"${username}" kullanıcı adı zaten alınmış.` };
     }
   }
 
@@ -116,7 +141,9 @@ export async function createBusiness(
       data: {
         accountId,
         name: managerName,
+        username,
         email: managerEmail,
+        phone,
         role: "manager",
         businessId: business.id,
         passwordHash: await hashPassword(managerPassword),

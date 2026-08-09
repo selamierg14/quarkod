@@ -132,6 +132,14 @@ export function NewBusinessForm() {
             <input name="managerEmail" type="email" className={INPUT} />
           </label>
           <label className="flex flex-col gap-1">
+            <span className="text-xs text-slate-500">Kullanıcı adı</span>
+            <input name="managerUsername" autoCapitalize="none" spellCheck={false} className={INPUT} />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs text-slate-500">Cep telefonu</span>
+            <input name="managerPhone" type="tel" placeholder="05XX XXX XX XX" className={INPUT} />
+          </label>
+          <label className="flex flex-col gap-1">
             <span className="text-xs text-slate-500">Başlangıç şifresi</span>
             <input
               name="managerPassword"
