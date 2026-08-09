@@ -26,6 +26,43 @@ export type SessionUser = {
   businessId: string | null;
 };
 
+/** Jetonun hâlâ geçerli sayılıp sayılmayacağını belirleyen kullanıcı hâli. */
+export type SessionCheck = {
+  active: boolean;
+  role: string;
+  accountId: string | null;
+  accountActive: boolean | null;
+  passwordChangedAt: Date | null;
+};
+
+/**
+ * İmzası geçerli bir jetonun yine de reddedilmesi gereken hâlleri.
+ *
+ * Jeton 12 saat yaşıyor; bu süre içinde yapılan yönetim işlemlerinin
+ * etkisiz kalmaması için her istekte kullanıcının güncel hâline bakılır.
+ * Karar burada saf bir fonksiyonda duruyor ki testlenebilsin.
+ *
+ * Geçerliyse null, değilse Türkçe bir sebep döner.
+ */
+export function sessionRevokedReason(
+  user: SessionCheck | null,
+  issuedAt: number,
+): string | null {
+  if (!user) return "kullanıcı yok";
+  if (!user.active) return "kullanıcı pasif";
+  if (user.role !== "superadmin") {
+    if (!user.accountId) return "hesapsız kullanıcı";
+    if (!user.accountActive) return "hesap askıda";
+  }
+  if (user.passwordChangedAt) {
+    // iat saniye cinsinden; şifre değişiminden önceki jetonlar yanar.
+    if (issuedAt < Math.floor(user.passwordChangedAt.getTime() / 1000)) {
+      return "şifre değişti";
+    }
+  }
+  return null;
+}
+
 function secretKey(): Uint8Array {
   const secret = process.env.AUTH_SECRET;
   if (!secret || secret.length < 16) {
@@ -51,9 +88,15 @@ export async function createSessionToken(user: SessionUser): Promise<string> {
     .sign(secretKey());
 }
 
+/** Jetonun kendisinden okunan, henüz veritabanıyla karşılaştırılmamış oturum. */
+export type TokenSession = SessionUser & {
+  /** Jetonun üretildiği an (saniye). Şifre değişiminde eski jetonları elemek için. */
+  issuedAt: number;
+};
+
 export async function verifySessionToken(
   token: string,
-): Promise<SessionUser | null> {
+): Promise<TokenSession | null> {
   try {
     const { payload } = await jwtVerify(token, secretKey());
     if (typeof payload.email !== "string" || typeof payload.role !== "string") {
@@ -75,6 +118,7 @@ export async function verifySessionToken(
       role,
       accountId,
       businessId: (payload.businessId as string | null) ?? null,
+      issuedAt: typeof payload.iat === "number" ? payload.iat : 0,
     };
   } catch {
     return null;

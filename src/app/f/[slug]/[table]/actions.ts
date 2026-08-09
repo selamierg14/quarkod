@@ -96,14 +96,27 @@ export async function recordSurveyView(
   }
 }
 
+/**
+ * Server action'lar dışarıdan doğrudan çağrılabilen HTTP uçlarıdır; gövde
+ * bizim formumuzdan gelmek zorunda değil. Metin alanlarını okumadan önce
+ * biçimlerini garanti altına alıyoruz, yoksa eksik bir alan `.trim()`
+ * üzerinde 500 hatası veriyordu.
+ */
+function asText(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
 export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> {
+  if (typeof input !== "object" || input === null) {
+    return { ok: false, error: "Form gönderilemedi. Sayfayı yenileyip tekrar deneyin." };
+  }
   const rating = Number(input.overallRating);
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
     return { ok: false, error: "Lütfen 1-5 arası bir puan verin." };
   }
 
   const business = await prisma.business.findUnique({
-    where: { slug: input.slug },
+    where: { slug: asText(input.slug) },
     include: { account: true, categories: { where: { active: true } } },
   });
   if (!business || !business.account.active) {
@@ -114,7 +127,7 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
     where: {
       businessId_tableNumber: {
         businessId: business.id,
-        tableNumber: input.tableNumber,
+        tableNumber: asText(input.tableNumber),
       },
     },
   });
@@ -175,7 +188,7 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
   }
 
   // İletişim bilgisi ancak açık rıza verildiyse saklanır.
-  const rawContact = input.contactInfo.trim().slice(0, 200);
+  const rawContact = asText(input.contactInfo).trim().slice(0, 200);
   const contactType =
     input.contactType && input.contactType in CONTACT_TYPES
       ? (input.contactType as ContactType)
@@ -195,7 +208,7 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
     return { ok: false, error: "Telefon numarası eksik görünüyor." };
   }
 
-  const comment = input.comment.trim().slice(0, 2000);
+  const comment = asText(input.comment).trim().slice(0, 2000);
   const now = new Date();
   const redirectToGoogle =
     rating === 5 && business.googleRedirect && Boolean(business.googleReviewUrl);

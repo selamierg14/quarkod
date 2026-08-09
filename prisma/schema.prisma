@@ -202,6 +202,11 @@ model User {
   businessId   String?
   active       Boolean @default(true)
 
+  /// Şifrenin en son ne zaman değiştiği. Bu andan ÖNCE üretilmiş oturum
+  /// jetonları geçersiz sayılır: şifresi çalınan kullanıcı şifresini
+  /// değiştirdiğinde saldırganın açık oturumu da kapansın diye.
+  passwordChangedAt DateTime?
+
   createdAt DateTime @default(now())
 
   account  Account?  @relation(fields: [accountId], references: [id], onDelete: Cascade)

@@ -9,6 +9,7 @@ import {
   hashPassword,
   requireOwner,
   requireUser,
+  setSessionCookie,
   userScope,
 } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -121,6 +122,17 @@ export async function resetPassword(
   const id = String(formData.get("userId") ?? "");
   const password = String(formData.get("password") ?? "");
 
+  // Kendi şifresini buradan değiştirmek, Profil'deki SMS doğrulamasını
+  // atlamanın kolay yoluydu: açık bırakılmış bir patron oturumunu ele
+  // geçiren kişi tek tıkla hesabı devralabiliyordu.
+  if (id === actor.id) {
+    return {
+      error:
+        "Kendi şifrenizi buradan değiştiremezsiniz. Profil sayfasından " +
+        "değiştirin; telefonunuza doğrulama kodu gönderilecek.",
+    };
+  }
+
   const problem = passwordProblem(password);
   if (problem) return { error: problem };
 
@@ -129,9 +141,14 @@ export async function resetPassword(
   });
   if (!user) return { error: "Kullanıcı bulunamadı." };
 
+  // Sıfırlama, o kullanıcının açık oturumlarını da kapatır: şifresi
+  // sıfırlanan kişinin panelde kalmaya devam etmesi anlamsız olurdu.
   await prisma.user.update({
     where: { id },
-    data: { passwordHash: await hashPassword(password) },
+    data: {
+      passwordHash: await hashPassword(password),
+      passwordChangedAt: new Date(),
+    },
   });
 
   revalidatePath("/admin/kullanicilar");
@@ -192,6 +209,14 @@ export async function changeOwnPassword(
       return { step: "form", error: "İşlem zaman aşımına uğradı. Baştan başlayın." };
     }
 
+    // Çerez o anki kullanıcıya bağlı: ortak kullanılan bir tarayıcıda
+    // yarım kalmış bir işlemin, sonradan giren başkasının şifresini
+    // belirlemesi mümkün olmasın.
+    if (bekleyen.userId !== user.id) {
+      await clearPendingPassword();
+      return { step: "form", error: "İşlem geçersiz. Baştan başlayın." };
+    }
+
     const sonuc = await verifyOtp(user.id, "sifre", code);
     if (!sonuc.ok) {
       return {
@@ -203,9 +228,21 @@ export async function changeOwnPassword(
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { passwordHash: bekleyen },
+      data: { passwordHash: bekleyen.hash, passwordChangedAt: new Date() },
     });
     await clearPendingPassword();
+
+    // Şifre değişimi eski oturumları geçersizleştirdiği için kendi
+    // oturumumuzu tazeliyoruz; yoksa kullanıcı kendi işleminden sonra
+    // giriş ekranına düşerdi.
+    await setSessionCookie({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role as "superadmin" | "owner" | "manager",
+      accountId: user.accountId,
+      businessId: user.businessId,
+    });
 
     return { step: "form", saved: "Şifreniz değiştirildi." };
   }
@@ -242,7 +279,7 @@ export async function changeOwnPassword(
   if (!kod.ok) return { step: "form", error: kod.error };
 
   // Yeni şifre hash'lenmiş hâlde çerezde bekler; düz metin hiçbir yerde durmaz.
-  await setPendingPassword(await hashPassword(next));
+  await setPendingPassword(user.id, await hashPassword(next));
 
   return { step: "kod", maskedPhone: kod.maskedPhone };
 }

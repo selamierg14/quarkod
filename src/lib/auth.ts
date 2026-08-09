@@ -7,6 +7,7 @@ import {
   SESSION_COOKIE,
   SESSION_MAX_AGE,
   createSessionToken,
+  sessionRevokedReason,
   verifySessionToken,
   type Role,
   type SessionUser,
@@ -37,11 +38,68 @@ export async function clearSessionCookie() {
   store.delete(SESSION_COOKIE);
 }
 
+/**
+ * Geçerli oturum — jeton imzası VE kullanıcının güncel hâli doğrulanır.
+ *
+ * Jeton 12 saat geçerli; imzaya bakmakla yetinseydik bu süre boyunca
+ * yapılan yönetim işlemleri hiçbir işe yaramazdı:
+ *
+ * - Pasifleştirilen kullanıcı panelde çalışmaya devam ederdi,
+ * - askıya alınan hesabın kullanıcıları içeride kalırdı (README bunun
+ *   aksini söylüyordu),
+ * - rolü sorumluluğa düşürülen kişi patron yetkisini korurdu,
+ * - şifresi çalınan kullanıcı şifresini değiştirse bile saldırganın açık
+ *   oturumu kapanmazdı.
+ *
+ * Bu yüzden her istekte kullanıcı tazeleniyor ve rol/kapsam jetondan değil
+ * veritabanından okunuyor. Panel trafiği düşük; sayfa başına bir sorgunun
+ * bedeli, yukarıdaki dördünün yanında önemsiz.
+ */
 export async function getSession(): Promise<SessionUser | null> {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  return verifySessionToken(token);
+
+  const jeton = await verifySessionToken(token);
+  if (!jeton) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { id: jeton.id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      accountId: true,
+      businessId: true,
+      active: true,
+      passwordChangedAt: true,
+      account: { select: { active: true } },
+    },
+  });
+
+  const iptal = sessionRevokedReason(
+    user && {
+      active: user.active,
+      role: user.role,
+      accountId: user.accountId,
+      accountActive: user.account?.active ?? null,
+      passwordChangedAt: user.passwordChangedAt,
+    },
+    jeton.issuedAt,
+  );
+  if (iptal || !user) return null;
+
+  const role = user.role as Role;
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role,
+    accountId: user.accountId,
+    businessId: user.businessId,
+  };
 }
 
 /** Admin sayfaları için: oturum yoksa giriş ekranına atar. */

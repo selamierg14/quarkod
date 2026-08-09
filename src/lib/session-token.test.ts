@@ -1,77 +1,79 @@
-import { beforeAll, describe, expect, it } from "vitest";
-import {
-  createSessionToken,
-  verifySessionToken,
-  type SessionUser,
-} from "./session-token";
+import { describe, expect, it } from "vitest";
+import { sessionRevokedReason, type SessionCheck } from "./session-token";
 
-beforeAll(() => {
-  process.env.AUTH_SECRET = "test-icin-yeterince-uzun-bir-anahtar-1234567890";
-});
+/**
+ * Oturum jetonu 12 saat yaşıyor. İmzaya bakmakla yetinilseydi bu süre
+ * boyunca yapılan yönetim işlemleri hiçbir işe yaramazdı; buradaki her
+ * kırmızı, "yetkisi alınan kişi hâlâ içeride" demektir.
+ */
 
-const OWNER: SessionUser = {
-  id: "u1",
-  name: "Sahip",
-  email: "sahip@a.com",
-  role: "owner",
-  accountId: "hesap-a",
-  businessId: null,
-};
+const SAAT = 3600;
+const simdi = Math.floor(Date.now() / 1000);
 
-describe("oturum jetonu", () => {
-  it("hesap kimliğini taşır ve geri verir", async () => {
-    const token = await createSessionToken(OWNER);
-    const session = await verifySessionToken(token);
-    expect(session?.accountId).toBe("hesap-a");
-    expect(session?.role).toBe("owner");
+function kullanici(over: Partial<SessionCheck> = {}): SessionCheck {
+  return {
+    active: true,
+    role: "owner",
+    accountId: "hesap-1",
+    accountActive: true,
+    passwordChangedAt: null,
+    ...over,
+  };
+}
+
+describe("sessionRevokedReason", () => {
+  it("sağlam kullanıcıyı kabul eder", () => {
+    expect(sessionRevokedReason(kullanici(), simdi)).toBeNull();
   });
 
-  it("kurcalanmış jetonu reddeder", async () => {
-    const token = await createSessionToken(OWNER);
-    // İmza doğrulaması bozulmalı: hesabı değiştirmeye çalışan bir saldırı.
-    const bozuk = token.slice(0, -3) + "AAA";
-    expect(await verifySessionToken(bozuk)).toBeNull();
+  it("pasifleştirilen kullanıcıyı hemen dışarı atar", () => {
+    expect(sessionRevokedReason(kullanici({ active: false }), simdi)).toBe(
+      "kullanıcı pasif",
+    );
   });
 
-  it("başka anahtarla imzalanmış jetonu reddeder", async () => {
-    const token = await createSessionToken(OWNER);
-    process.env.AUTH_SECRET = "bambaska-bir-anahtar-1234567890-abcdef";
-    expect(await verifySessionToken(token)).toBeNull();
-    process.env.AUTH_SECRET = "test-icin-yeterince-uzun-bir-anahtar-1234567890";
+  it("askıya alınan hesabın kullanıcısını dışarı atar", () => {
+    // Ödemesi kesilen kiracı, jetonu dolana kadar panelde kalamamalı.
+    expect(sessionRevokedReason(kullanici({ accountActive: false }), simdi)).toBe(
+      "hesap askıda",
+    );
   });
 
-  it("hesapsız owner oturumunu reddeder", async () => {
-    // accountId'si olmayan bir owner, kapsamsız sorgulara yol açardı.
-    const token = await createSessionToken({ ...OWNER, accountId: null });
-    expect(await verifySessionToken(token)).toBeNull();
-  });
-
-  it("hesapsız manager oturumunu reddeder", async () => {
-    const token = await createSessionToken({
-      ...OWNER,
-      role: "manager",
-      accountId: null,
-      businessId: "isletme-1",
-    });
-    expect(await verifySessionToken(token)).toBeNull();
-  });
-
-  it("superadmin hesapsız olabilir", async () => {
-    const token = await createSessionToken({
-      ...OWNER,
+  it("platform yöneticisi hesaba bağlı olmadığı için etkilenmez", () => {
+    const sysadmin = kullanici({
       role: "superadmin",
       accountId: null,
+      accountActive: null,
     });
-    const session = await verifySessionToken(token);
-    expect(session?.role).toBe("superadmin");
-    expect(session?.accountId).toBeNull();
+    expect(sessionRevokedReason(sysadmin, simdi)).toBeNull();
   });
 
-  it("tanınmayan rolü reddeder", async () => {
-    const token = await createSessionToken({
-      ...OWNER,
-      role: "platform_tanri" as never,
-    });
-    expect(await verifySessionToken(token)).toBeNull();
+  it("hesabı düşen normal kullanıcıyı kapsamsız bırakmaz", () => {
+    expect(sessionRevokedReason(kullanici({ accountId: null }), simdi)).toBe(
+      "hesapsız kullanıcı",
+    );
+  });
+
+  it("şifre değişiminden önceki jetonu yakar", () => {
+    // Şifresi çalınan kullanıcı şifresini değiştirdiğinde saldırganın açık
+    // oturumu da kapanmalı; asıl amacı bu.
+    const eskiJeton = simdi - 2 * SAAT;
+    const degisim = new Date((simdi - SAAT) * 1000);
+    expect(
+      sessionRevokedReason(kullanici({ passwordChangedAt: degisim }), eskiJeton),
+    ).toBe("şifre değişti");
+  });
+
+  it("şifre değişiminden sonraki jetonu kabul eder", () => {
+    // Kullanıcı kendi şifresini değiştirdiğinde kendi oturumu tazelenir.
+    const yeniJeton = simdi;
+    const degisim = new Date((simdi - SAAT) * 1000);
+    expect(
+      sessionRevokedReason(kullanici({ passwordChangedAt: degisim }), yeniJeton),
+    ).toBeNull();
+  });
+
+  it("silinen kullanıcıyı reddeder", () => {
+    expect(sessionRevokedReason(null, simdi)).toBe("kullanıcı yok");
   });
 });

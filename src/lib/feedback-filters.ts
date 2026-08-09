@@ -56,8 +56,22 @@ export function buildFeedbackWhere(
   return where;
 }
 
+/**
+ * Formül olarak yorumlanabilecek hücreleri etkisizleştirir.
+ *
+ * CSV'deki yorumlar müşteriden geliyor ve Excel `=`, `+`, `-`, `@` ile
+ * başlayan hücreyi formül sanıp çalıştırıyor. Yani anketi dolduran herhangi
+ * biri, dosyayı açan işletme sahibinin bilgisayarında komut çalıştırabilirdi
+ * (`=cmd|'/c ...'!A1` gibi). Başa tek tırnak koymak metni bozmadan bunu
+ * keser: Excel tırnağı göstermez, formül de kurmaz.
+ */
+function neutralizeFormula(value: string): string {
+  return /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+}
+
 /** Excel'in Türkçe yerel ayarda bozulmaması için noktalı virgül ve BOM kullanılır. */
 export function toCsv(rows: string[][]): string {
-  const escape = (value: string) => `"${value.replace(/"/g, '""')}"`;
+  const escape = (value: string) =>
+    `"${neutralizeFormula(value).replace(/"/g, '""')}"`;
   return "﻿" + rows.map((row) => row.map(escape).join(";")).join("\r\n");
 }

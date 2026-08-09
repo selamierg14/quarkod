@@ -30,7 +30,25 @@ Akış tek ekranda üç adım:
 
 **Panelden şifre değiştirmek her hâlükârda SMS kodu ister** — 2FA kapalı olsa
 bile. Açık bırakılmış bir oturumu ele geçiren kişinin şifreyi değiştirip hesabı
-tamamen devralmasını engeller.
+tamamen devralmasını engeller. Aynı sebeple patron **kendi** şifresini
+Kullanıcılar ekranından değiştiremez; orası SMS adımını atlamanın kolay yoluydu.
+
+## Oturumun geçerliliği
+
+Oturum jetonu 12 saat yaşar, ama imzasının geçerli olması tek başına yetmez:
+her istekte kullanıcının güncel hâline bakılır ([auth.ts](src/lib/auth.ts),
+kural [session-token.ts](src/lib/session-token.ts) içinde saf bir fonksiyonda).
+Aksi hâlde şu dördü 12 saat boyunca kâğıt üstünde kalırdı:
+
+- pasifleştirilen kullanıcı panelde çalışmaya devam ederdi,
+- askıya alınan hesabın kullanıcıları içeride kalırdı,
+- rolü düşürülen kişi patron yetkisini korurdu,
+- şifresini değiştiren kullanıcı, hesabını ele geçirmiş birinin açık
+  oturumunu kapatamazdı.
+
+Son madde için `users.passwordChangedAt` tutulur: bu andan önce üretilmiş her
+jeton yanar. Kullanıcı kendi şifresini değiştirdiğinde kendi çerezi tazelenir,
+yani dışarı atılan yalnızca **diğer** oturumlardır.
 
 Aynı ekrandaki **"Şifremi unuttum"** bağlantısı da SMS koduyla yürür — kullanıcı
 adı → kod → yeni şifre. Kullanıcı adının kayıtlı olup olmadığı sızdırılmaz;
@@ -159,6 +177,10 @@ sekmesindedir.
 Geri bildirim listesindeki **CSV indir** düğmesi, ekranda uygulanan filtrenin
 aynısıyla dosya üretir (Excel'in Türkçe karakterleri bozmaması için BOM'lu ve
 noktalı virgülle ayrılmış).
+
+`=`, `+`, `-` veya `@` ile başlayan hücrelerin başına tek tırnak konur. Yorumu
+yazan müşteri, dosyayı açan ise işletme sahibidir; bu fark olmasa zararsız
+görünen bir yorum Excel'de formül olarak çalışabilirdi.
 
 ## Kategori şablonları
 

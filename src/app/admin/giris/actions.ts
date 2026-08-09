@@ -226,9 +226,12 @@ export async function loginAction(
   const problem = passwordProblem(yeni);
   if (problem) return { step: "yeni-sifre", mode: "sifre", error: problem };
 
+  // passwordChangedAt: bu andan önceki oturumlar geçersizleşir. Şifresini
+  // unuttuğunu sanan kullanıcı aslında hesabı ele geçirildiği için
+  // giremiyor olabilir; sıfırlama saldırganı da dışarı atmalı.
   await prisma.user.update({
     where: { id: challenge.userId },
-    data: { passwordHash: await hashPassword(yeni) },
+    data: { passwordHash: await hashPassword(yeni), passwordChangedAt: new Date() },
   });
 
   await clearChallenge();
