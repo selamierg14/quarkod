@@ -11,7 +11,7 @@ import {
   toSessionUser,
 } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { issueOtp, maskPhone, verifyOtp } from "@/lib/otp";
+import { issueOtp, maskPhone, twoFactorEnabled, verifyOtp } from "@/lib/otp";
 import {
   checkLoginAllowed,
   pruneLoginAttempts,
@@ -149,9 +149,9 @@ export async function loginAction(
 
     void pruneLoginAttempts().catch(() => {});
 
-    // Telefonu olmayan kullanıcıya SMS gönderilemez; 2FA'yı uygulayamadığımız
-    // için doğrudan içeri alıyoruz ve panelde uyarı gösteriyoruz.
-    if (!user.phone) {
+    // 2FA kapalıysa (test aşaması) ya da kullanıcının telefonu yoksa SMS adımı
+    // atlanır ve doğrudan panele girilir. Bayrak .env'den açılır.
+    if (!twoFactorEnabled() || !user.phone) {
       await setSessionCookie(toSessionUser(user));
       redirect("/admin");
     }

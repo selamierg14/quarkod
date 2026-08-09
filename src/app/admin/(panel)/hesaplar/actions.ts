@@ -6,6 +6,7 @@ import { hashPassword, requireSuperadmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { clearActiveAccount, setActiveAccount } from "@/lib/impersonation";
 import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
+import { uniqueConstraintMessage } from "@/lib/unique-error";
 
 export type AccountFormState = { error?: string; saved?: string };
 
@@ -56,7 +57,8 @@ export async function createAccount(
 
   const passwordHash = await hashPassword(password);
 
-  await prisma.account.create({
+  try {
+    await prisma.account.create({
     data: {
       name,
       email: ownerEmail,
@@ -71,7 +73,12 @@ export async function createAccount(
         },
       },
     },
-  });
+    });
+  } catch (error) {
+    const mesaj = uniqueConstraintMessage(error);
+    if (mesaj) return { error: mesaj };
+    throw error;
+  }
 
   revalidatePath("/admin/hesaplar");
   return { saved: `${name} hesabı açıldı. Giriş kullanıcı adı: ${username}` };

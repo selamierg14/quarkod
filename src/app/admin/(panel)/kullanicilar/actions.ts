@@ -13,6 +13,13 @@ import {
 } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
+import { uniqueConstraintMessage } from "@/lib/unique-error";
+import { issueOtp, verifyOtp } from "@/lib/otp";
+import {
+  clearPendingPassword,
+  readPendingPassword,
+  setPendingPassword,
+} from "@/lib/pending-password";
 
 export type UserFormState = { error?: string; saved?: string };
 
@@ -80,18 +87,26 @@ export async function createUser(
     return { error: `"${username}" kullanıcı adı zaten alınmış.` };
   }
 
-  await prisma.user.create({
-    data: {
-      accountId,
-      name,
-      username,
-      email,
-      phone,
-      role,
-      businessId: role === "manager" ? businessId : null,
-      passwordHash: await hashPassword(password),
-    },
-  });
+  // Ön kontrol ile INSERT arasında başka bir istek aynı adı alabilir; bu
+  // yüzden veritabanının tekillik hatasını da yakalıyoruz.
+  try {
+    await prisma.user.create({
+      data: {
+        accountId,
+        name,
+        username,
+        email,
+        phone,
+        role,
+        businessId: role === "manager" ? businessId : null,
+        passwordHash: await hashPassword(password),
+      },
+    });
+  } catch (error) {
+    const mesaj = uniqueConstraintMessage(error);
+    if (mesaj) return { error: mesaj };
+    throw error;
+  }
 
   revalidatePath("/admin/kullanicilar");
   return { saved: `${name} eklendi. Giriş kullanıcı adı: ${username}` };
@@ -139,38 +154,97 @@ export async function toggleUser(formData: FormData) {
   revalidatePath("/admin/kullanicilar");
 }
 
-/** Herkes kendi şifresini değiştirebilir; mevcut şifre doğrulanır. */
-export async function changeOwnPassword(
-  _prev: UserFormState,
-  formData: FormData,
-): Promise<UserFormState> {
-  const session = await requireUser();
+export type PasswordState = {
+  step: "form" | "kod";
+  error?: string;
+  saved?: string;
+  maskedPhone?: string;
+};
 
+/**
+ * Kendi şifresini değiştirme — iki adım.
+ *
+ * 1. Mevcut şifre + yeni şifre doğrulanır, kayıtlı GSM'e kod gider.
+ * 2. Kod doğrulanınca şifre değişir.
+ *
+ * Tek adımda değiştirmek, açık bırakılmış bir oturumu ele geçiren kişinin
+ * şifreyi değiştirip hesabı tamamen devralmasına yetiyordu. Kod adımı bunu
+ * telefona sahip olma şartına bağlıyor.
+ *
+ * Yeni şifre 2. adıma kadar bir yerde tutulmalı; oturum çerezinde imzalı ve
+ * kısa ömürlü olarak taşınıyor — istemcide düz metin dolaşmıyor.
+ */
+export async function changeOwnPassword(
+  _prev: PasswordState,
+  formData: FormData,
+): Promise<PasswordState> {
+  const session = await requireUser();
+  const step = String(formData.get("step") ?? "form");
+
+  const user = await prisma.user.findUnique({ where: { id: session.id } });
+  if (!user) return { step: "form", error: "Kullanıcı bulunamadı." };
+
+  // --- 2. adım: SMS kodu
+  if (step === "kod") {
+    const code = String(formData.get("code") ?? "").trim();
+    const bekleyen = await readPendingPassword();
+    if (!bekleyen) {
+      return { step: "form", error: "İşlem zaman aşımına uğradı. Baştan başlayın." };
+    }
+
+    const sonuc = await verifyOtp(user.id, "sifre", code);
+    if (!sonuc.ok) {
+      return {
+        step: "kod",
+        error: sonuc.error,
+        maskedPhone: String(formData.get("maskedPhone") ?? ""),
+      };
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: bekleyen },
+    });
+    await clearPendingPassword();
+
+    return { step: "form", saved: "Şifreniz değiştirildi." };
+  }
+
+  // --- 1. adım: doğrulama + kod gönderimi
   const current = String(formData.get("current") ?? "");
   const next = String(formData.get("next") ?? "");
   const repeat = String(formData.get("repeat") ?? "");
 
-  const user = await prisma.user.findUnique({ where: { id: session.id } });
-  if (!user) return { error: "Kullanıcı bulunamadı." };
-
   if (!(await bcrypt.compare(current, user.passwordHash))) {
-    return { error: "Mevcut şifre hatalı." };
+    return { step: "form", error: "Mevcut şifre hatalı." };
   }
-  if (next !== repeat) return { error: "Yeni şifreler birbiriyle uyuşmuyor." };
+  if (next !== repeat) {
+    return { step: "form", error: "Yeni şifreler birbiriyle uyuşmuyor." };
+  }
 
   const problem = passwordProblem(next);
-  if (problem) return { error: problem };
+  if (problem) return { step: "form", error: problem };
 
   if (await bcrypt.compare(next, user.passwordHash)) {
-    return { error: "Yeni şifre eskisiyle aynı olamaz." };
+    return { step: "form", error: "Yeni şifre eskisiyle aynı olamaz." };
   }
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { passwordHash: await hashPassword(next) },
-  });
+  if (!user.phone) {
+    return {
+      step: "form",
+      error:
+        "Hesabınızda kayıtlı telefon yok; doğrulama kodu gönderilemiyor. " +
+        "Patronunuzdan numaranızı tanımlamasını isteyin.",
+    };
+  }
 
-  return { saved: "Şifreniz değiştirildi." };
+  const kod = await issueOtp(user.id, user.phone, "sifre");
+  if (!kod.ok) return { step: "form", error: kod.error };
+
+  // Yeni şifre hash'lenmiş hâlde çerezde bekler; düz metin hiçbir yerde durmaz.
+  await setPendingPassword(await hashPassword(next));
+
+  return { step: "kod", maskedPhone: kod.maskedPhone };
 }
 
 /** Seed şifresini hâlâ kullanan hesap var mı — panelde uyarı göstermek için. */

@@ -64,14 +64,34 @@ export type IysSource = keyof typeof IYS_SOURCES;
 export const DEFAULT_IYS_SOURCE: IysSource = "HS_WEB";
 
 /**
- * Onay metninin sürümü. Metin değişirse artırın — hangi kaydın hangi metne
- * onay verdiği, uyuşmazlıkta tek dayanağınız.
+ * Onay metninin sürümü. Metin değişirse artırın.
+ *
+ * Sürüm tek başına yetmez; onaylanan cümlenin tam kopyası da kayda yazılır
+ * (MarketingConsent.consentText). Metin aynı sürümle değiştirilirse hangi
+ * cümlenin kabul edildiği ancak o kopyadan ispatlanabilir.
  */
-export const MARKETING_TEXT_VERSION = "ticari-2026-08-v1";
+export const MARKETING_TEXT_VERSION = "ticari-2026-08-v2";
 
-/** Ankette gösterilen ticari ileti onayı cümlesi. */
-export function marketingConsentText(businessName: string): string {
-  return `${businessName} tarafından kampanya, indirim ve duyuru içeren ticari elektronik ileti gönderilmesine izin veriyorum. Bu izni dilediğim zaman geri alabilirim.`;
+/**
+ * Ankette gösterilen ticari ileti onayı cümlesi.
+ *
+ * Mevzuat açık ileti metninde iki şeyin net yazmasını istiyor: iletinin hangi
+ * KANALLA gönderileceği ve hangi MARKA adına yapılacağı. Bu yüzden metin
+ * müşterinin bıraktığı iletişim kanalına göre değişir — "SMS ve e-posta"
+ * gibi toplu bir ifade, aslında yalnızca telefon veren birinden e-posta
+ * onayı da almış gibi görünmek olurdu.
+ */
+export function marketingConsentText(
+  businessName: string,
+  contactType: "telefon" | "eposta",
+): string {
+  const kanal = contactType === "telefon" ? "SMS" : "e-posta";
+  return (
+    `${businessName} markası adına, bıraktığım iletişim adresine ${kanal} ` +
+    `yoluyla kampanya, indirim ve duyuru içeren ticari elektronik ileti ` +
+    `gönderilmesine izin veriyorum. Bu izni dilediğim zaman ücretsiz olarak ` +
+    `geri alabilirim.`
+  );
 }
 
 /**

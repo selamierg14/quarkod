@@ -11,6 +11,7 @@ import { getOrCreateVisitorId } from "@/lib/visitor";
 import {
   DEFAULT_IYS_SOURCE,
   MARKETING_TEXT_VERSION,
+  marketingConsentText,
   toRecipient,
 } from "@/lib/iys";
 
@@ -226,6 +227,10 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
   if (storeContact && input.marketingConsent && contactType) {
     const hedef = toRecipient(contactType, rawContact);
     if (hedef) {
+      // Kanıt üçlüsü: onay anı, gösterilen metnin tam kopyası ve IP adresi.
+      // Sürüm numarası tek başına yetmez; metin aynı sürümle değiştirilirse
+      // hangi cümlenin onaylandığı ispatlanamaz.
+      const gosterilenMetin = marketingConsentText(business.name, contactType);
       await prisma.marketingConsent
         .upsert({
           where: {
@@ -241,6 +246,9 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
             status: "ONAY",
             consentAt: now,
             textVersion: MARKETING_TEXT_VERSION,
+            consentText: gosterilenMetin,
+            ipAddress: ip || null,
+            ipHash,
             feedbackId: feedback.id,
             reportedAt: null,
             iysTransactionId: null,
@@ -255,6 +263,8 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
             source: DEFAULT_IYS_SOURCE,
             consentAt: now,
             textVersion: MARKETING_TEXT_VERSION,
+            consentText: gosterilenMetin,
+            ipAddress: ip || null,
             ipHash,
           },
         })

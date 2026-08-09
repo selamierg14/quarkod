@@ -11,6 +11,28 @@ import { sendSms } from "./sms";
  * gören biri aktif kodları okuyup başkasının hesabına giremesin diye.
  */
 
+/**
+ * Girişte iki adımlı doğrulama açık mı.
+ *
+ * Test aşamasında kapalı tutuluyor: her girişte gerçek SMS gitmesi hem
+ * maliyet hem de tek bir test telefonuna bağımlılık demek. Kod silinmedi,
+ * yalnızca devre dışı — .env'de "true" yapınca aynen çalışır.
+ */
+export function twoFactorEnabled(): boolean {
+  return process.env.TWO_FACTOR_ENABLED === "true";
+}
+
+/**
+ * Kodun gerçekten gideceği numara.
+ *
+ * Test aşamasında SMS_TEST_PHONE doluysa herkesin kodu oraya gider; böylece
+ * gerçek müşteri numaralarına test SMS'i gitmez. Canlıda bu değişken boş
+ * bırakılır ve kod kullanıcının kendi telefonuna gider.
+ */
+export function deliveryPhone(userPhone: string): string {
+  return process.env.SMS_TEST_PHONE?.trim() || userPhone;
+}
+
 export type OtpPurpose = "giris" | "sifre";
 
 const CODE_LENGTH = 6;
@@ -78,7 +100,9 @@ export async function issueOtp(
       ? `Memnuniyet paneli giris kodunuz: ${code}. ${OTP_TTL_MINUTES} dakika gecerlidir.`
       : `Sifre sifirlama kodunuz: ${code}. ${OTP_TTL_MINUTES} dakika gecerlidir.`;
 
-  const sonuc = await sendSms(phone, metin);
+  // Test aşamasında yönlendirme yapılır; maskeleme yine kullanıcının kendi
+  // numarasını gösterir ki ekranda tutarsızlık olmasın.
+  const sonuc = await sendSms(deliveryPhone(phone), metin);
   if (!sonuc.sent) {
     await prisma.otpCode.delete({ where: { id: record.id } });
     return { ok: false, error: sonuc.error ?? "Kod gönderilemedi." };

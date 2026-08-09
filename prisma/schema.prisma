@@ -310,8 +310,16 @@ model MarketingConsent {
   source        String @default("HS_WEB")
   /// İYS "consentDate" — izin/ret anı.
   consentAt     DateTime
-  /// Onaylanan metnin sürümü; uyuşmazlıkta neyin kabul edildiğinin kanıtı.
+  /// Onaylanan metnin sürümü.
   textVersion   String
+  /// Onay anında ekranda gösterilen metnin tam kopyası. Sürüm numarası tek
+  /// başına yetmez: metin aynı sürümle değiştirilirse hangi cümlenin
+  /// onaylandığı kanıtlanamaz. Uyuşmazlıkta dayanağımız bu alandır.
+  consentText   String?
+  /// 6563 sayılı kanun elektronik ortamda alınan onayın IP kaydını ister; bu
+  /// yüzden burada özet değil gerçek adres saklanır. Yalnızca ticari ileti
+  /// izninin ispatı amacıyla tutulur.
+  ipAddress     String?
   ipHash        String?
 
   /// İYS'ye bildirildiği an. Null ise bildirim bekliyor.

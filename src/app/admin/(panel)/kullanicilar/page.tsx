@@ -43,6 +43,8 @@ export default async function UsersPage() {
           <thead className="border-b border-slate-200 text-left text-xs tracking-wide text-slate-500 uppercase">
             <tr>
               <th className="px-4 py-3 font-medium">Ad</th>
+              <th className="px-4 py-3 font-medium">Kullanıcı adı</th>
+              <th className="px-4 py-3 font-medium">Telefon</th>
               <th className="px-4 py-3 font-medium">E-posta</th>
               <th className="px-4 py-3 font-medium">Rol</th>
               <th className="px-4 py-3 font-medium">İşletme</th>
@@ -64,6 +66,19 @@ export default async function UsersPage() {
                       kurulum şifresi
                     </span>
                   ) : null}
+                </td>
+                <td className="px-4 py-3">
+                  {/* Giriş kimliği bu; kopyalanabilsin diye tek parça. */}
+                  <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-700">
+                    {user.username}
+                  </code>
+                </td>
+                <td className="px-4 py-3 text-slate-600 tabular-nums">
+                  {user.phone ?? (
+                    <span className="text-amber-600" title="2FA ve şifre sıfırlama için gerekli">
+                      yok
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-slate-600">{user.email}</td>
                 <td className="px-4 py-3 text-slate-600">

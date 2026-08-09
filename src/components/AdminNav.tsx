@@ -17,11 +17,12 @@ const LINKS: NavLink[] = [
   { href: "/admin", label: "Özet", exact: true },
   { href: "/admin/geri-bildirimler", label: "Geri bildirimler" },
   { href: "/admin/kirilim", label: "Kırılım" },
-  { href: "/admin/isletmeler", label: "İşletmeler" },
+  { href: "/admin/isletmeler", label: "İşletmeler", ownerOnly: true },
   { href: "/admin/kiyaslama", label: "İşletme kıyaslama", ownerOnly: true },
   { href: "/admin/izinler", label: "İleti izinleri", ownerOnly: true },
   { href: "/admin/kullanicilar", label: "Kullanıcılar", ownerOnly: true },
   { href: "/admin/hesaplar", label: "Hesaplar", superadminOnly: true },
+  { href: "/admin/profil", label: "Profil" },
 ];
 
 

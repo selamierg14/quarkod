@@ -292,9 +292,24 @@ export function SurveyForm({
                   className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300"
                 />
                 <span>
-                  {marketingConsentText(businessName)}
+                  {marketingConsentText(businessName, contactType)}
                   <span className="mt-0.5 block text-xs text-slate-400">
-                    İsteğe bağlı. İşaretlemeseniz de geri bildiriminiz kaydedilir.
+                    İsteğe bağlı. İşaretlemeseniz de geri bildiriminiz kaydedilir.{" "}
+                    {/* Mevzuat, onay kutusunun yakınında aydınlatma metnine
+                        erişim ister; yukarıdaki açılır metne yönlendiriyoruz. */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const d = document.querySelector("details");
+                        if (d) {
+                          (d as HTMLDetailsElement).open = true;
+                          d.scrollIntoView({ block: "center", behavior: "smooth" });
+                        }
+                      }}
+                      className="underline underline-offset-2"
+                    >
+                      Aydınlatma metnini oku
+                    </button>
                   </span>
                 </span>
               </label>

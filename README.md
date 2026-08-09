@@ -13,13 +13,24 @@
 ## Giriş ve 2FA
 
 Giriş **kullanıcı adıyla** yapılır (e-posta ile değil): personel değişiminde
-e-posta değişse bile giriş bilgisi sabit kalsın diye.
+e-posta değişse bile giriş bilgisi sabit kalsın diye. Kullanıcı adları
+sistem genelinde tekildir; çakışma hem kayıttan önce hem veritabanı
+seviyesinde engellenir (yarış durumunda da anlaşılır hata döner).
+
+> **2FA şu an KAPALI.** `.env` içindeki `TWO_FACTOR_ENABLED="true"` ile açılır;
+> kod silinmedi, yalnızca devre dışı. Test aşamasında `SMS_TEST_PHONE` dolu
+> olduğu için tüm doğrulama kodları o numaraya gider — canlıya çıkarken bu
+> satırı boşaltın ki kodlar kullanıcıların kendi telefonuna gitsin.
 
 Akış tek ekranda üç adım:
 
 1. Kullanıcı adı + şifre
-2. Telefona gelen 6 haneli SMS kodu
+2. Telefona gelen 6 haneli SMS kodu (2FA açıkken)
 3. (Şifre sıfırlamada) yeni şifre
+
+**Panelden şifre değiştirmek her hâlükârda SMS kodu ister** — 2FA kapalı olsa
+bile. Açık bırakılmış bir oturumu ele geçiren kişinin şifreyi değiştirip hesabı
+tamamen devralmasını engeller.
 
 Aynı ekrandaki **"Şifremi unuttum"** bağlantısı da SMS koduyla yürür — kullanıcı
 adı → kod → yeni şifre. Kullanıcı adının kayıtlı olup olmadığı sızdırılmaz;
@@ -138,7 +149,12 @@ Panel: `/admin` · Anket örneği: `/f/keskinlezzetler/5`
 | `/admin/kiyaslama` | İşletmeler arası kıyaslama (yalnız patron) |
 | `/admin/kirilim` | Vardiyaya ve masaya göre kırılım |
 | `/admin/kullanicilar` | Kullanıcı ekleme, şifre sıfırlama, pasifleştirme (yalnız patron) |
-| `/admin/sifre` | Kendi şifresini değiştirme (herkes) |
+| `/admin/profil` | Kendi bilgileri ve şifre değişimi; işletme sorumlusunda işletme ayarları da burada |
+
+İşletme sorumlusu hiyerarşinin ucudur — altına başka kullanıcı ya da işletme
+almaz ve tek bir işletmeye bakar. Bu yüzden ayrı bir "İşletmeler" listesi
+görmez; işletmesinin ayarları, kategorileri ve masaları doğrudan Profil
+sekmesindedir.
 
 Geri bildirim listesindeki **CSV indir** düğmesi, ekranda uygulanan filtrenin
 aynısıyla dosya üretir (Excel'in Türkçe karakterleri bozmaması için BOM'lu ve
@@ -211,7 +227,19 @@ dayanak, saklama süresi, haklar). Rıza verilmeden iletişim bilgisi kaydedilme
 puan ve yorum yine kaydedilir.
 
 Her kayıtta rızanın **ne zaman** ve **hangi metin sürümüne** verildiği saklanır;
-geri bildirim detayında görünür. Metni değiştirdiğinizde
+geri bildirim detayında görünür.
+
+**İYS kanıt kaydı.** Ticari ileti onayında mevzuat üç şey ister ve üçü de
+saklanır ([schema](prisma/schema.prisma) → `MarketingConsent`):
+
+- **Açık ileti metni** — hangi kanaldan (SMS / e-posta) ve hangi marka adına
+  gönderileceği cümlede açıkça yazar. Metin müşterinin bıraktığı kanala göre
+  değişir; telefon veren birine "e-posta da gönderilecek" demek, alınmamış bir
+  onayı beyan etmek olurdu.
+- **Aydınlatma metni** — onay kutusunun hemen yanında açılır bağlantı.
+- **Log ve zaman damgası** — onay anı, **gerçek IP adresi** ve o an ekranda
+  gösterilen metnin tam kopyası. Sürüm numarası tek başına yetmez: metin aynı
+  sürümle değiştirilirse hangi cümlenin onaylandığı ispatlanamaz. Metni değiştirdiğinizde
 [kvkk.ts](src/lib/kvkk.ts) içindeki `KVKK_VERSION` değerini de artırın.
 
 Saklama süresi 90 gün. Süresi dolanları silmek için günde bir kez çalıştırın:

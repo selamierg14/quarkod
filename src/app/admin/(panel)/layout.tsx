@@ -44,12 +44,11 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
             Memnuniyet Paneli
           </Link>
           <div className="flex items-center gap-3">
-            <Link
-              href="/admin/sifre"
-              className="hidden text-sm text-slate-500 hover:text-slate-900 sm:inline"
-            >
+            {/* Profil artık sekmede; başlıktaki bu satır yalnızca kimin
+                oturumda olduğunu gösteren bir etiket. */}
+            <span className="hidden text-sm text-slate-500 sm:inline">
               {user.name} · {ROL_ADI[user.role]}
-            </Link>
+            </span>
             <form action={logout}>
               <button
                 type="submit"
