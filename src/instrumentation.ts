@@ -42,6 +42,19 @@ export async function onRequestError(
 export async function register() {
   // Yakalanmayan hatalar Next'in kancasına düşmez; onları da kayda alalım.
   if (process.env.NEXT_RUNTIME === "nodejs") {
+    // Üretimde yanlış ayarla açılmaktansa hiç açılmamak yeğdir: bu
+    // hataların hepsi sistem çalışıyor görünürken sessizce zarar verir.
+    if (process.env.NODE_ENV === "production") {
+      const { uretimSorunlari } = await import("./lib/uretim-kontrol");
+      const sorunlar = uretimSorunlari(process.env);
+      if (sorunlar.length) {
+        console.error("\n[ayar] Üretim ortamı hazır değil:\n");
+        for (const sorun of sorunlar) console.error(`  • ${sorun}`);
+        console.error("\nDüzeltip yeniden başlatın.\n");
+        process.exit(1);
+      }
+    }
+
     process.on("unhandledRejection", (reason) => {
       logError(reason, { path: "unhandledRejection" });
     });

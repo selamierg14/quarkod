@@ -111,7 +111,13 @@ veritabanına iki hesap kurularak sınanır. Buradaki bir kırmızı, doğrudan
 npm install
 ```
 
-`.env` dosyası hazır gelir; en azından şu iki değeri değiştirin:
+Ayarları kopyalayın ve doldurun:
+
+```bash
+cp .env.example .env
+```
+
+En azından şu değerler girilmeli:
 
 | Değişken | Açıklama |
 | --- | --- |
@@ -130,6 +136,41 @@ Geliştirme sunucusu:
 ```bash
 npm run dev
 ```
+
+## Yayına alma
+
+Üretimde sunucu, ayarları kendisi denetler ve eksik varsa **açılmaz**
+([uretim-kontrol.ts](src/lib/uretim-kontrol.ts)). Buradaki hataların hepsi
+sistem çalışıyor görünürken sessizce zarar verdiği için uyarı yerine
+durdurmayı seçtik:
+
+| Kontrol | Sessizce ne olurdu |
+| --- | --- |
+| `AUTH_SECRET` en az 32 karakter | Anahtarı bulan kişi istediği kullanıcı adına oturum üretir |
+| `NEXT_PUBLIC_APP_URL` gerçek ve `https` | localhost'la basılan QR'lar müşterinin telefonunda açılmaz; `secure` çerez http'de gitmez |
+| `SMS_TEST_PHONE` boş | **Tüm** müşterilerin doğrulama kodu tek bir telefona düşer |
+| 2FA açıksa `SMS_*` dolu | Kod gönderilemez, hiç kimse panele giremez |
+
+QR kodları basılmadan önce `NEXT_PUBLIC_APP_URL` kesinleşmiş olmalı — adres
+sonradan değişirse basılı bütün kartlar çöpe gider.
+
+**Veritabanı.** SQLite tek dosyadır (`prisma/dev.db`); diskin kalıcı olduğu
+bir sunucuda çalıştırın. Konteyner her dağıtımda sıfırlanan bir platformda
+(dosya sistemi geçici olan kurulumlar) veri kaybolur — orada kalıcı disk
+bağlayın ya da Postgres'e geçin. Prisma tarafında geçiş, `schema.prisma`
+içindeki sağlayıcıyı ve adaptörü değiştirmekten ibaret; sorgular aynı kalır.
+
+**Zamanlanmış işler.** Bunlar kendiliğinden çalışmaz, sunucuda cron'a
+eklenmeli:
+
+```bash
+0 4 * * *  cd /uygulama/yolu && npm run yedekle
+0 9 * * 1  cd /uygulama/yolu && npm run rapor:haftalik
+0 3 * * 0  cd /uygulama/yolu && npm run kvkk:temizle
+```
+
+Sırasıyla: gecelik yedek, pazartesi sabahı haftalık rapor, KVKK saklama
+süresi dolan iletişim bilgilerinin silinmesi.
 
 ## Örnek hesaplar
 
