@@ -17,6 +17,8 @@ const LINKS: NavLink[] = [
   { href: "/admin", label: "Özet", exact: true },
   { href: "/admin/geri-bildirimler", label: "Geri bildirimler" },
   { href: "/admin/kirilim", label: "Kırılım" },
+  { href: "/admin/urunler", label: "Ürünler" },
+  { href: "/admin/menu", label: "QR Menü" },
   { href: "/admin/isletmeler", label: "İşletmeler", ownerOnly: true },
   { href: "/admin/kiyaslama", label: "İşletme kıyaslama", ownerOnly: true },
   { href: "/admin/izinler", label: "İleti izinleri", ownerOnly: true },

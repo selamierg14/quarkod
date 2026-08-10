@@ -3,7 +3,20 @@ import { prisma } from "@/lib/db";
 import { getActiveAccountId } from "@/lib/impersonation";
 import { formatDateTime } from "@/components/ui";
 import { BUSINESS_TYPES, type BusinessType } from "@/lib/constants";
-import { EnterAccountButton, NewAccountForm, ToggleAccountButton } from "./AccountForms";
+import {
+  EnterAccountButton,
+  NewAccountForm,
+  SubscriptionForm,
+  ToggleAccountButton,
+} from "./AccountForms";
+import { hesapAktifMi, kalanGun } from "@/lib/abonelik";
+
+/** date input'unun beklediği yyyy-aa-gg; yerel saate göre. */
+function dateInputValue(tarih: Date | null): string {
+  if (!tarih) return "";
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${tarih.getFullYear()}-${p(tarih.getMonth() + 1)}-${p(tarih.getDate())}`;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -60,6 +73,10 @@ export default async function AccountsPage() {
           // sorumluları ayırıyoruz: ağaçta kimin nerede durduğu belli olsun.
           const sahipler = account.users.filter((u) => !u.businessId);
           const goruntuleniyor = aktifHesap === account.id;
+          // "Aktif" iki şeye birden bağlı: elle askıya alınmamış olmak ve
+          // abonelik süresinin dolmamış olması.
+          const calisiyor = hesapAktifMi(account);
+          const gun = kalanGun(account);
 
           return (
             <li
@@ -73,13 +90,28 @@ export default async function AccountsPage() {
                 <div>
                   <span className="flex items-center gap-2">
                     <span
-                      className={`font-semibold ${account.active ? "" : "text-slate-400 line-through"}`}
+                      className={`font-semibold ${calisiyor ? "" : "text-slate-400 line-through"}`}
                     >
                       {account.name}
                     </span>
                     {!account.active ? (
                       <span className="rounded bg-red-50 px-1.5 py-0.5 text-xs text-red-700">
                         askıda
+                      </span>
+                    ) : null}
+                    {account.active && !calisiyor ? (
+                      <span className="rounded bg-red-50 px-1.5 py-0.5 text-xs text-red-700">
+                        süresi doldu
+                      </span>
+                    ) : null}
+                    {calisiyor && gun !== null && gun <= 14 ? (
+                      <span className="rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-700">
+                        {gun} gün kaldı
+                      </span>
+                    ) : null}
+                    {account.menuEnabled ? (
+                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">
+                        QR menü
                       </span>
                     ) : null}
                     {goruntuleniyor ? (
@@ -95,16 +127,19 @@ export default async function AccountsPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  <EnterAccountButton
-                    accountId={account.id}
-                    active={account.active}
-                  />
+                  <EnterAccountButton accountId={account.id} active={calisiyor} />
                   <ToggleAccountButton
                     accountId={account.id}
                     active={account.active}
                   />
                 </div>
               </div>
+
+              <SubscriptionForm
+                accountId={account.id}
+                expiresAt={dateInputValue(account.expiresAt)}
+                menuEnabled={account.menuEnabled}
+              />
 
               {/* --- Hesap sahipleri */}
               <div className="px-4 py-2.5">

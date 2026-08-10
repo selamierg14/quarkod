@@ -180,3 +180,77 @@ describe("geri bildirim filtresi kapsamı aşamaz", () => {
     expect(sonuc).toHaveLength(0);
   });
 });
+
+/**
+ * Menü ve ürün puanları da kiracıya bağlı.
+ *
+ * Buradaki bir kırmızı, bir kafenin menüsünün ya da ürün puanlarının başka
+ * bir müşteriye görünmesi demektir.
+ */
+describe("menü ve ürün puanları hesaba bağlı", () => {
+  beforeAll(async () => {
+    for (const [id, businessId, ad] of [
+      ["kat-a", ids.aKafe1, "A Kahveler"],
+      ["kat-b", ids.bKafe1, "B Kahveler"],
+    ] as const) {
+      await prisma.menuCategory.create({ data: { id, businessId, name: ad } });
+    }
+
+    await prisma.menuItem.create({
+      data: { id: "urun-a", businessId: ids.aKafe1, categoryId: "kat-a", name: "A Latte" },
+    });
+    await prisma.menuItem.create({
+      data: { id: "urun-b", businessId: ids.bKafe1, categoryId: "kat-b", name: "B Latte" },
+    });
+
+    for (const [businessId, menuItemId, itemName] of [
+      [ids.aKafe1, "urun-a", "A Latte"],
+      [ids.bKafe1, "urun-b", "B Latte"],
+    ] as const) {
+      const feedback = await prisma.feedback.create({
+        data: { businessId, overallRating: 4 },
+      });
+      await prisma.itemRating.create({
+        data: { feedbackId: feedback.id, businessId, menuItemId, itemName, rating: 4 },
+      });
+    }
+  });
+
+  it("sahip yalnızca kendi hesabının menüsünü görür", async () => {
+    const izinli = await allowedBusinessIdsFor(prisma, sahipA);
+    const urunler = await prisma.menuItem.findMany({
+      where: { businessId: { in: izinli } },
+      select: { name: true },
+    });
+    expect(urunler.map((u) => u.name)).toEqual(["A Latte"]);
+  });
+
+  it("sahip yalnızca kendi hesabının ürün puanlarını görür", async () => {
+    const izinli = await allowedBusinessIdsFor(prisma, sahipB);
+    const puanlar = await prisma.itemRating.findMany({
+      where: { businessId: { in: izinli } },
+      select: { itemName: true },
+    });
+    expect(puanlar.map((p) => p.itemName)).toEqual(["B Latte"]);
+  });
+
+  it("başka hesabın ürününe puan yazılamaz — kapsam kontrolü ürün sahipliğine bakar", async () => {
+    // submitFeedback, gelen ürün kimliklerini businessId ile birlikte
+    // sorguluyor. Yanlış işletmenin ürünü verilirse hiç eşleşme dönmemeli.
+    const eslesen = await prisma.menuItem.findMany({
+      where: { id: { in: ["urun-b"] }, businessId: ids.aKafe1 },
+    });
+    expect(eslesen).toEqual([]);
+  });
+
+  it("ürün silinince puan kaydı kalır, bağ kopar", async () => {
+    // Rapor geçmişi ürünle birlikte silinmemeli; ad kayda kopyalandığı için
+    // "A Latte" satırı okunur kalır.
+    await prisma.menuItem.delete({ where: { id: "urun-a" } });
+    const kalan = await prisma.itemRating.findFirst({
+      where: { businessId: ids.aKafe1 },
+      select: { itemName: true, menuItemId: true },
+    });
+    expect(kalan).toEqual({ itemName: "A Latte", menuItemId: null });
+  });
+});

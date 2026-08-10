@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { COVER_MAX_WIDTH, LOGO_MAX_DIM, type ImageKind } from "@/lib/image";
+import { COVER_MAX_WIDTH, LOGO_MAX_DIM, MENU_MAX_DIM, type ImageKind } from "@/lib/image";
 
 /**
  * Görsel yükleme alanı.
@@ -52,6 +52,7 @@ export function ImageUpload({
   }
 
   const isLogo = kind === "logo";
+  const kareOnizleme = kind === "logo" || kind === "menu";
 
   return (
     <div className="flex flex-col gap-2">
@@ -60,25 +61,26 @@ export function ImageUpload({
       <div className="flex items-center gap-4">
         {/* Önizleme */}
         {value ? (
-          isLogo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={value}
-              alt="Logo önizleme"
-              className="h-16 w-16 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
-            />
-          ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={value}
-              alt="Kapak önizleme"
-              className="h-16 w-28 shrink-0 rounded-lg object-cover ring-1 ring-slate-200"
-            />
-          )
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={value}
+            alt={`${label} önizleme`}
+            className={`shrink-0 object-cover ring-1 ring-slate-200 ${
+              isLogo
+                ? "h-16 w-16 rounded-full"
+                : kareOnizleme
+                  ? "h-16 w-16 rounded-lg"
+                  : "h-16 w-28 rounded-lg"
+            }`}
+          />
         ) : (
           <div
             className={`flex shrink-0 items-center justify-center bg-slate-100 text-slate-400 ${
-              isLogo ? "h-16 w-16 rounded-full" : "h-16 w-28 rounded-lg"
+              kind === "logo"
+                ? "h-16 w-16 rounded-full"
+                : kind === "menu"
+                  ? "h-16 w-16 rounded-lg"
+                  : "h-16 w-28 rounded-lg"
             }`}
             aria-hidden="true"
           >
@@ -141,15 +143,17 @@ function resizeImage(file: File, kind: ImageKind): Promise<string> {
       const img = new Image();
       img.onerror = () => reject(new Error("çözülemedi"));
       img.onload = () => {
-        const isLogo = kind === "logo";
+        // Logo ve ürün fotoğrafı kare kırpılır; kapak oranını korur.
+        const kareMi = kind === "logo" || kind === "menu";
         let { width, height } = img;
 
-        if (isLogo) {
-          // Logo kare kırpılır: en büyük merkez kareyi al, sonra ölçekle.
+        if (kareMi) {
+          // En büyük merkez kareyi al, sonra ölçekle. Menüde her ürün aynı
+          // oranda görünmezse liste dağınık durur.
           const side = Math.min(width, height);
           const sx = (width - side) / 2;
           const sy = (height - side) / 2;
-          const target = Math.min(LOGO_MAX_DIM, side);
+          const target = Math.min(kind === "logo" ? LOGO_MAX_DIM : MENU_MAX_DIM, side);
           const canvas = document.createElement("canvas");
           canvas.width = target;
           canvas.height = target;

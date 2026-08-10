@@ -18,6 +18,7 @@ import {
   userScopeFor,
 } from "./tenancy";
 import { effectiveAccountId } from "./impersonation";
+import { hesapAktifMi } from "./abonelik";
 
 export { SESSION_COOKIE, type Role, type SessionUser };
 
@@ -74,7 +75,7 @@ export async function getSession(): Promise<SessionUser | null> {
       businessId: true,
       active: true,
       passwordChangedAt: true,
-      account: { select: { active: true } },
+      account: { select: { active: true, expiresAt: true } },
     },
   });
 
@@ -83,7 +84,7 @@ export async function getSession(): Promise<SessionUser | null> {
       active: user.active,
       role: user.role,
       accountId: user.accountId,
-      accountActive: user.account?.active ?? null,
+      accountActive: user.account ? hesapAktifMi(user.account) : null,
       passwordChangedAt: user.passwordChangedAt,
     },
     jeton.issuedAt,
@@ -160,8 +161,8 @@ export async function authenticate(
   });
   if (!user || !user.active) return null;
 
-  // Askıya alınan hesabın kullanıcıları giremez.
-  if (user.role !== "superadmin" && !user.account?.active) return null;
+  // Askıya alınan ya da süresi dolan hesabın kullanıcıları giremez.
+  if (user.role !== "superadmin" && !hesapAktifMi(user.account)) return null;
 
   if (!(await bcrypt.compare(password, user.passwordHash))) return null;
 

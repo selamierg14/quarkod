@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { clearActiveAccount, setActiveAccount } from "@/lib/impersonation";
 import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
 import { uniqueConstraintMessage } from "@/lib/unique-error";
+import { tarihGirdisi } from "@/lib/abonelik";
 
 export type AccountFormState = { error?: string; saved?: string };
 
@@ -121,4 +122,38 @@ export async function toggleAccount(formData: FormData) {
   });
 
   revalidatePath("/admin/hesaplar");
+}
+
+/**
+ * Aboneliğin bitiş tarihi ve satılan modüller.
+ *
+ * Tarih girilmezse hesap süresizdir. Süre dolduğunda hesap `active` alanına
+ * bakılmadan kapanır — elle askıya almayı beklemeye gerek kalmasın diye.
+ */
+export async function updateSubscription(
+  _prev: AccountFormState,
+  formData: FormData,
+): Promise<AccountFormState> {
+  await requireSuperadmin();
+
+  const id = String(formData.get("accountId") ?? "");
+  const account = await prisma.account.findUnique({ where: { id } });
+  if (!account) return { error: "Hesap bulunamadı." };
+
+  const expiresAt = tarihGirdisi(String(formData.get("expiresAt") ?? ""));
+  if (expiresAt === undefined) {
+    return { error: "Tarih geçersiz. Takvimden seçin ya da boş bırakın." };
+  }
+
+  await prisma.account.update({
+    where: { id },
+    data: { expiresAt, menuEnabled: formData.get("menuEnabled") === "on" },
+  });
+
+  revalidatePath("/admin/hesaplar");
+  return {
+    saved: expiresAt
+      ? `${account.name}: abonelik ${expiresAt.toLocaleDateString("tr-TR")} tarihine kadar.`
+      : `${account.name}: süresiz abonelik.`,
+  };
 }

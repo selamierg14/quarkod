@@ -8,6 +8,7 @@ import { shiftFromDate } from "@/lib/constants";
 import { foldTr } from "@/lib/text";
 import { CONTACT_TYPES, KVKK_VERSION, type ContactType } from "@/lib/kvkk";
 import { getOrCreateVisitorId } from "@/lib/visitor";
+import { hesapAktifMi } from "@/lib/abonelik";
 import {
   DEFAULT_IYS_SOURCE,
   MARKETING_TEXT_VERSION,
@@ -36,6 +37,8 @@ export type SurveyInput = {
   consentGiven: boolean;
   /// KVKK rızasından AYRI: ticari elektronik ileti (İYS) onayı.
   marketingConsent: boolean;
+  /// Müşterinin seçip puanladığı menü ürünleri.
+  itemRatings?: { menuItemId: string; rating: number }[];
 };
 
 /** Aynı ziyaretçinin aynı masadan tekrar göndermesi bu süre boyunca engellenir. */
@@ -67,9 +70,9 @@ export async function recordSurveyView(
   try {
     const business = await prisma.business.findUnique({
       where: { slug },
-      select: { id: true, account: { select: { active: true } } },
+      select: { id: true, account: { select: { active: true, expiresAt: true } } },
     });
-    if (!business || !business.account.active) return;
+    if (!business || !hesapAktifMi(business.account)) return;
 
     const table = await prisma.table.findUnique({
       where: {
@@ -119,7 +122,7 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
     where: { slug: asText(input.slug) },
     include: { account: true, categories: { where: { active: true } } },
   });
-  if (!business || !business.account.active) {
+  if (!business || !hesapAktifMi(business.account)) {
     return { ok: false, error: "İşletme bulunamadı." };
   }
 
@@ -284,6 +287,48 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
         .catch((error) => {
           console.error("[iys] izin kaydedilemedi:", error);
         });
+    }
+  }
+
+  // --- Ürün puanları
+  //
+  // Ürün adı kayda kopyalanıyor: menüden silinen ya da adı değişen bir ürünün
+  // eski puanları raporda anlamsızlaşmasın. İstemciden gelen ürün kimlikleri
+  // bu işletmeye ait mi diye ayrıca doğrulanıyor — aksi halde başka bir
+  // kafenin ürününe puan yazılabilirdi.
+  const gelenPuanlar = Array.isArray(input.itemRatings) ? input.itemRatings : [];
+  if (gelenPuanlar.length > 0) {
+    const istenen = new Map<string, number>();
+    for (const satir of gelenPuanlar.slice(0, 50)) {
+      const id = asText(satir?.menuItemId);
+      const puan = Number(satir?.rating);
+      if (id && Number.isInteger(puan) && puan >= 1 && puan <= 5) {
+        istenen.set(id, puan);
+      }
+    }
+
+    if (istenen.size > 0) {
+      const urunler = await prisma.menuItem.findMany({
+        where: { id: { in: [...istenen.keys()] }, businessId: business.id },
+        select: { id: true, name: true },
+      });
+
+      if (urunler.length > 0) {
+        await prisma.itemRating
+          .createMany({
+            data: urunler.map((urun) => ({
+              feedbackId: feedback.id,
+              businessId: business.id,
+              menuItemId: urun.id,
+              itemName: urun.name,
+              rating: istenen.get(urun.id)!,
+            })),
+          })
+          .catch((error) => {
+            // Ürün puanı kaybolsa da asıl geri bildirim durmalı.
+            console.error("[urun] puanlar kaydedilemedi:", error);
+          });
+      }
     }
   }
 

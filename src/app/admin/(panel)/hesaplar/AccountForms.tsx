@@ -5,6 +5,7 @@ import {
   createAccount,
   enterAccount,
   toggleAccount,
+  updateSubscription,
   type AccountFormState,
 } from "./actions";
 
@@ -163,6 +164,76 @@ export function ToggleAccountButton({
       >
         {active ? "Askıya al" : "Aktifleştir"}
       </button>
+    </form>
+  );
+}
+
+/**
+ * Abonelik süresi ve satılan modüller.
+ *
+ * Tarih girilmezse süresiz. Süre dolduğunda hesap kendiliğinden kapanır;
+ * bu yüzden "askıya al" düğmesinden ayrı duruyor — biri ödeme takvimi,
+ * diğeri elle müdahale.
+ */
+export function SubscriptionForm({
+  accountId,
+  expiresAt,
+  menuEnabled,
+}: {
+  accountId: string;
+  /** yyyy-aa-gg biçiminde ya da boş. */
+  expiresAt: string;
+  menuEnabled: boolean;
+}) {
+  const [state, formAction, pending] = useActionState<AccountFormState, FormData>(
+    updateSubscription,
+    {},
+  );
+
+  return (
+    <form
+      action={formAction}
+      className="flex flex-wrap items-end gap-3 border-t border-slate-100 bg-slate-50/60 px-4 py-3"
+    >
+      <input type="hidden" name="accountId" value={accountId} />
+
+      <label className="flex flex-col gap-1">
+        <span className="text-xs text-slate-500">Abonelik bitiş tarihi</span>
+        <input
+          type="date"
+          name="expiresAt"
+          defaultValue={expiresAt}
+          className={`${INPUT} py-1.5`}
+        />
+      </label>
+
+      <label className="flex items-center gap-2 pb-2 text-sm">
+        <input
+          type="checkbox"
+          name="menuEnabled"
+          defaultChecked={menuEnabled}
+          className="h-4 w-4 accent-slate-900"
+        />
+        QR menü modülü
+      </label>
+
+      <button
+        type="submit"
+        disabled={pending}
+        className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+      >
+        {pending ? "Kaydediliyor…" : "Kaydet"}
+      </button>
+
+      <span className="pb-2 text-xs">
+        {state.error ? <span className="text-red-600">{state.error}</span> : null}
+        {state.saved ? <span className="text-emerald-700">{state.saved}</span> : null}
+        {!state.error && !state.saved ? (
+          <span className="text-slate-400">
+            Boş bırakılırsa süresiz. Tarih geçince QR kodları çalışmaz.
+          </span>
+        ) : null}
+      </span>
     </form>
   );
 }

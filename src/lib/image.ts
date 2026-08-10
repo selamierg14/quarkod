@@ -9,14 +9,18 @@
 /** Data URI olarak izin verilen en büyük boyut (yaklaşık; base64 şişmesi dahil). */
 export const MAX_LOGO_BYTES = 200 * 1024; // ~200 KB
 export const MAX_COVER_BYTES = 600 * 1024; // ~600 KB
+/// Menü ürün fotoğrafı. Bir menüde onlarca ürün olabildiği için sınır dar
+/// tutuldu: sayfa müşterinin mobil veriyle açılıyor.
+export const MAX_MENU_BYTES = 250 * 1024; // ~250 KB
 
 /** Tarayıcıda küçültme hedefleri. */
 export const LOGO_MAX_DIM = 400;
 export const COVER_MAX_WIDTH = 1200;
+export const MENU_MAX_DIM = 800;
 
 const ALLOWED_PREFIX = /^data:image\/(png|jpeg|webp);base64,/;
 
-export type ImageKind = "logo" | "cover";
+export type ImageKind = "logo" | "cover" | "menu";
 
 /**
  * Bir data URI'nin güvenli biçimde saklanabileceğini doğrular.
@@ -33,7 +37,12 @@ export function validateImageDataUrl(
   // base64 uzunluğundan yaklaşık bayt sayısı.
   const base64 = value.slice(value.indexOf(",") + 1);
   const bytes = Math.floor((base64.length * 3) / 4);
-  const limit = kind === "logo" ? MAX_LOGO_BYTES : MAX_COVER_BYTES;
+  const limit =
+    kind === "logo"
+      ? MAX_LOGO_BYTES
+      : kind === "menu"
+        ? MAX_MENU_BYTES
+        : MAX_COVER_BYTES;
 
   if (bytes > limit) {
     const kb = Math.round(limit / 1024);

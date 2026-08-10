@@ -4,6 +4,8 @@ import { getActiveAccount } from "@/lib/impersonation";
 import { exitAccount } from "./hesaplar/actions";
 import { logout } from "../giris/actions";
 import { AdminNav } from "@/components/AdminNav";
+import { prisma } from "@/lib/db";
+import { abonelikUyarisi } from "@/lib/abonelik";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +18,17 @@ const ROL_ADI: Record<string, string> = {
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const user = await requireUser();
   const aktifHesap = await getActiveAccount(user);
+
+  // Abonelik uyarısı: süre dolduğunda kullanıcı zaten giremiyor, bu yüzden
+  // uyarının değeri DOLMADAN önce görünmesinde. QR'ların bir sabah
+  // çalışmadığını müşteriden duymak, satılan hizmete güveni bitirir.
+  const hesap = user.accountId
+    ? await prisma.account.findUnique({
+        where: { id: user.accountId },
+        select: { active: true, expiresAt: true },
+      })
+    : null;
+  const uyari = hesap ? abonelikUyarisi(hesap) : null;
 
   return (
     <div className="min-h-dvh bg-slate-50">
@@ -35,6 +48,19 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
               Görüntülemeden çık
             </button>
           </form>
+        </div>
+      ) : null}
+
+      {uyari ? (
+        <div
+          className={`print-hidden px-4 py-2 text-sm ${
+            uyari.seviye === "bitti"
+              ? "bg-red-100 text-red-900"
+              : "bg-amber-100 text-amber-900"
+          }`}
+        >
+          <span className="font-semibold">Abonelik:</span> {uyari.mesaj} Yenilemek
+          için bizimle iletişime geçin.
         </div>
       ) : null}
 

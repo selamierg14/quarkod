@@ -25,6 +25,14 @@ model Account {
   active    Boolean @default(true)
   /// "deneme" | "standart" — ileride abonelik kademeleri için.
   plan      String  @default("standart")
+  /// Aboneliğin bittiği an. Null ise süresiz. Bu tarihten sonra hesap
+  /// `active` alanına bakılmaksızın pasif sayılır: kullanıcılar panele
+  /// giremez, QR'lar çalışmaz. Veri silinmez — ödeme gelince kaldığı
+  /// yerden devam eder.
+  expiresAt DateTime?
+  /// QR menü modülü. Ayrı satıldığı için hesap düzeyinde açılır; kapalıyken
+  /// müşteri karşılama ekranını hiç görmez, doğrudan ankete gider.
+  menuEnabled Boolean @default(false)
   /// İYS'de hizmet sağlayıcı kodu. Ticari ileti izinleri bu kodun altındaki
   /// markalara bildirilir.
   iysCode   String?
@@ -73,14 +81,17 @@ model Business {
 
   createdAt DateTime @default(now())
 
-  account       Account            @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  categories    CategoryTemplate[]
-  tables        Table[]
-  feedbacks     Feedback[]
-  users         User[]
-  coupons       Coupon[]
-  surveyViews   SurveyView[]
-  consents      MarketingConsent[]
+  account        Account            @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  categories     CategoryTemplate[]
+  tables         Table[]
+  feedbacks      Feedback[]
+  users          User[]
+  coupons        Coupon[]
+  surveyViews    SurveyView[]
+  consents       MarketingConsent[]
+  menuCategories MenuCategory[]
+  menuItems      MenuItem[]
+  itemRatings    ItemRating[]
 
   @@index([accountId])
   @@map("businesses")
@@ -173,12 +184,99 @@ model Feedback {
   coupons       Coupon[]
   notifications Notification[]
   consents      MarketingConsent[]
+  itemRatings   ItemRating[]
 
   @@index([businessId, createdAt])
   @@index([businessId, status])
   @@index([visitorId, tableId, createdAt])
   @@index([ipHash, businessId, createdAt])
   @@map("feedbacks")
+}
+
+/// QR menüdeki bölüm: "Kahveler", "Tatlılar", "Ana Yemekler"...
+///
+/// Anket kategorilerinden (CategoryTemplate) ayrı bir şey: o "servis hızı"
+/// gibi ölçütleri tutar, bu ise satılan ürünleri gruplar.
+model MenuCategory {
+  id         String  @id @default(cuid())
+  businessId String
+  name       String
+  sortOrder  Int     @default(0)
+  active     Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  business Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  items    MenuItem[]
+
+  @@unique([businessId, name])
+  @@index([businessId, sortOrder])
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id         String @id @default(cuid())
+  /// Kategoriyle birlikte işletme de tutuluyor: ürün raporları ve izolasyon
+  /// sorguları kategoriye join atmadan çalışsın diye.
+  businessId String
+  categoryId String
+
+  name        String
+  description String?
+  /// Fiyat kuruş cinsinden tam sayı. Ondalıklı sayıda 19.90 gibi değerler
+  /// yuvarlama hatası biriktirir; menüde 1 kuruş sapma bile güven kaybıdır.
+  priceKurus  Int?
+  /// Ürün fotoğrafı, data URI. Tarayıcıda küçültülür (logo/kapak ile aynı yol).
+  imageUrl    String?
+
+  /// Bugün tükendi mi. Menünün en sık değişen alanı bu; ürünü silmek yerine
+  /// işaretlenir, çünkü yarın geri gelecek ve geçmiş puanları ona bağlı.
+  soldOut Boolean @default(false)
+  /// Diyet/alerjen etiketleri, virgülle ayrılmış: "vegan,glutensiz,aci".
+  /// Sabit bir listeden seçildiği için ayrı tablo kurmaya değmiyor.
+  tags    String?
+
+  sortOrder Int     @default(0)
+  active    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  business Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  category MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  ratings  ItemRating[]
+
+  @@index([businessId, active])
+  @@index([categoryId, sortOrder])
+  @@map("menu_items")
+}
+
+/// Müşterinin tek bir ürüne verdiği puan.
+///
+/// Genel puandan ayrı tutuluyor: "servis yavaştı ama tatlı harikaydı"
+/// diyebilmek, işletmenin sorunu nerede arayacağını bilmesi demek.
+model ItemRating {
+  id         String @id @default(cuid())
+  feedbackId String
+  businessId String
+  menuItemId String?
+
+  rating Int
+  /// Puanlandığı andaki ürün adı. Ürün sonradan silinse ya da adı değişse
+  /// eski raporlar anlamsızlaşmasın diye kayda kopyalanıyor; menuItemId
+  /// silinmede null'a düşer, isim kalır.
+  itemName String
+
+  createdAt DateTime @default(now())
+
+  feedback Feedback  @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  menuItem MenuItem? @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+
+  /// Aynı ankette aynı ürün iki kez puanlanmasın.
+  @@unique([feedbackId, menuItemId])
+  @@index([businessId, createdAt])
+  @@index([menuItemId])
+  @@map("item_ratings")
 }
 
 model User {

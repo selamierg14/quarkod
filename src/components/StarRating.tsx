@@ -8,12 +8,25 @@ type Props = {
   /** "lg" ana puan için, "sm" kategori satırları için. */
   size?: "sm" | "lg";
   label?: string;
+  /**
+   * Ekran okuyucuya okunacak ad. Kategori/ürün adı görsel olarak yandaki
+   * satırda durduğu için `label` kullanılmıyor; bu geçilmezse aynı sayfadaki
+   * onlarca yıldız grubu ekran okuyucuda ayırt edilemez hale gelir.
+   */
+  ariaLabel?: string;
   name: string;
 };
 
 const LABELS = ["Çok kötü", "Kötü", "İdare eder", "İyi", "Harika"];
 
-export function StarRating({ value, onChange, size = "sm", label, name }: Props) {
+export function StarRating({
+  value,
+  onChange,
+  size = "sm",
+  label,
+  ariaLabel,
+  name,
+}: Props) {
   const big = size === "lg";
   const groupRef = useRef<HTMLDivElement>(null);
 
@@ -51,7 +64,7 @@ export function StarRating({ value, onChange, size = "sm", label, name }: Props)
       <div
         ref={groupRef}
         role="radiogroup"
-        aria-label={label ?? "Genel memnuniyet puanı"}
+        aria-label={ariaLabel ?? label ?? "Genel memnuniyet puanı"}
         className={`flex ${big ? "gap-1.5" : "gap-0.5"}`}
       >
         {[1, 2, 3, 4, 5].map((star) => {

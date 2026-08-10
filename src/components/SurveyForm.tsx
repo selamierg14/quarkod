@@ -15,6 +15,8 @@ type Props = {
   tableNumber: string;
   tableLabel: string;
   categories: { id: string; name: string }[];
+  /** QR menüdeki ürünler. Menü modülü kapalıysa boş gelir ve adım hiç çıkmaz. */
+  menuItems?: { id: string; name: string; kategori: string }[];
 };
 
 type Screen =
@@ -30,9 +32,14 @@ export function SurveyForm({
   tableNumber,
   tableLabel,
   categories,
+  menuItems = [],
 }: Props) {
   const [overall, setOverall] = useState(0);
   const [categoryRatings, setCategoryRatings] = useState<Record<string, number>>({});
+  // Müşterinin seçtiği ürünler ve verdiği puanlar. Seçim ile puan ayrı:
+  // ürünü seçip puan vermeden bırakan olabiliyor, o kaydı yazmıyoruz.
+  const [secilenUrunler, setSecilenUrunler] = useState<string[]>([]);
+  const [urunPuanlari, setUrunPuanlari] = useState<Record<string, number>>({});
   const [comment, setComment] = useState("");
   const [contactInfo, setContactInfo] = useState("");
   const [contactType, setContactType] = useState<ContactType>("telefon");
@@ -69,6 +76,11 @@ export function SurveyForm({
         contactType: contactInfo.trim() ? contactType : "",
         consentGiven: consent,
         marketingConsent: marketing,
+        // Yalnızca puanlanmış ürünler gider; seçilip boş bırakılan ürün
+        // "0 puan" değildir, veri yokluğudur.
+        itemRatings: secilenUrunler
+          .filter((id) => (urunPuanlari[id] ?? 0) > 0)
+          .map((id) => ({ menuItemId: id, rating: urunPuanlari[id] })),
       });
 
       if (!result.ok) {
@@ -174,6 +186,7 @@ export function SurveyForm({
                 <span className="text-[15px] text-slate-700">{category.name}</span>
                 <StarRating
                   name={`kategori-${category.id}`}
+                  ariaLabel={`${category.name} puanı`}
                   value={categoryRatings[category.name] ?? 0}
                   onChange={(value) =>
                     setCategoryRatings((prev) => ({ ...prev, [category.name]: value }))
@@ -183,6 +196,20 @@ export function SurveyForm({
             ))}
           </ul>
         </section>
+      ) : null}
+
+      {overall > 0 && menuItems.length > 0 ? (
+        <UrunPuanlama
+          urunler={menuItems}
+          secilen={secilenUrunler}
+          puanlar={urunPuanlari}
+          onToggle={(id) =>
+            setSecilenUrunler((prev) =>
+              prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+            )
+          }
+          onPuan={(id, puan) => setUrunPuanlari((prev) => ({ ...prev, [id]: puan }))}
+        />
       ) : null}
 
       {overall > 0 ? (
@@ -389,5 +416,97 @@ function ThanksShell({
       <div className="mt-5">{children}</div>
       <p className="mt-8 text-xs text-slate-400">{businessName}</p>
     </div>
+  );
+}
+
+/**
+ * "Ne aldınız?" adımı.
+ *
+ * Önce ürün seçilir, sonra seçilen ürünler puanlanır. Tüm menüyü yıldız
+ * satırlarıyla göstermek anketi okunamaz hale getirirdi: 60 ürünlü bir
+ * menüde kimse aşağı inmez. Seçim rozetleri tek dokunuşluk, puanlama ise
+ * yalnızca seçilenler için açılıyor.
+ */
+function UrunPuanlama({
+  urunler,
+  secilen,
+  puanlar,
+  onToggle,
+  onPuan,
+}: {
+  urunler: { id: string; name: string; kategori: string }[];
+  secilen: string[];
+  puanlar: Record<string, number>;
+  onToggle: (id: string) => void;
+  onPuan: (id: string, puan: number) => void;
+}) {
+  // Kategori sırası menüdeki sırayla aynı kalsın diye Map kullanılıyor.
+  const gruplar = new Map<string, typeof urunler>();
+  for (const urun of urunler) {
+    const mevcut = gruplar.get(urun.kategori);
+    if (mevcut) mevcut.push(urun);
+    else gruplar.set(urun.kategori, [urun]);
+  }
+
+  const secilenUrunler = secilen
+    .map((id) => urunler.find((u) => u.id === id))
+    .filter((u): u is (typeof urunler)[number] => Boolean(u));
+
+  return (
+    <section className="mm-rise rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <h2 className="text-sm font-semibold tracking-wide text-slate-500 uppercase">
+        Ne aldınız?
+      </h2>
+      <p className="mt-1 text-sm text-slate-400">
+        Seçtiklerinizi ayrı ayrı puanlayabilirsiniz. İsteğe bağlı.
+      </p>
+
+      <div className="mt-4 flex flex-col gap-3">
+        {[...gruplar.entries()].map(([kategori, liste]) => (
+          <div key={kategori}>
+            <p className="mb-1.5 text-xs text-slate-400">{kategori}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {liste.map((urun) => {
+                const secili = secilen.includes(urun.id);
+                return (
+                  <button
+                    key={urun.id}
+                    type="button"
+                    aria-pressed={secili}
+                    onClick={() => onToggle(urun.id)}
+                    className={`rounded-full px-3 py-1.5 text-sm transition ${
+                      secili
+                        ? "bg-slate-900 text-white"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    {secili ? "✓ " : ""}
+                    {urun.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {secilenUrunler.length > 0 ? (
+        <ul className="mt-5 divide-y divide-slate-100 border-t border-slate-100 pt-1">
+          {secilenUrunler.map((urun) => (
+            <li key={urun.id} className="flex items-center justify-between gap-3 py-2.5">
+              <span className="min-w-0 flex-1 truncate text-[15px] text-slate-700">
+                {urun.name}
+              </span>
+              <StarRating
+                name={`urun-${urun.id}`}
+                ariaLabel={`${urun.name} puanı`}
+                value={puanlar[urun.id] ?? 0}
+                onChange={(value) => onPuan(urun.id, value)}
+              />
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
   );
 }

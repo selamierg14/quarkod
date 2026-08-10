@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { createScriptClient } from "./prisma-client";
 import { sendMail } from "../src/lib/mailer";
+import { enIyiEnKotu, urunPuanlari } from "../src/lib/menu";
 
 /**
  * Haftalık özet raporu. Pazartesi sabahı cron ile çalıştırın:
@@ -25,6 +26,9 @@ type Ozet = {
   googleShown: number;
   googleClicked: number;
   weak: { name: string; average: number }[];
+  /// Haftanın en beğenilen ve en düşük puanlı ürünleri (yeterli oyu olanlar).
+  enIyiUrunler: { itemName: string; ortalama: number; oySayisi: number }[];
+  enKotuUrunler: { itemName: string; ortalama: number; oySayisi: number }[];
 };
 
 function round(value: number, digits = 2): number {
@@ -62,6 +66,20 @@ function bolum(ozet: Ozet): string {
     }
   }
 
+  // Ürün puanları: sorunun hangi üründe olduğunu isim isim gösterir.
+  if (ozet.enKotuUrunler.length > 0) {
+    satirlar.push("Düşük puanlı ürünler:");
+    for (const urun of ozet.enKotuUrunler) {
+      satirlar.push(`  ${urun.itemName}: ${urun.ortalama}/5 (${urun.oySayisi} oy)`);
+    }
+  }
+  if (ozet.enIyiUrunler.length > 0) {
+    satirlar.push("En beğenilen ürünler:");
+    for (const urun of ozet.enIyiUrunler) {
+      satirlar.push(`  ${urun.itemName}: ${urun.ortalama}/5 (${urun.oySayisi} oy)`);
+    }
+  }
+
   return satirlar.join("\n");
 }
 
@@ -79,7 +97,8 @@ async function ozetle(prisma: ReturnType<typeof createScriptClient>): Promise<Oz
 
   return Promise.all(
     businesses.map(async (business) => {
-      const [now, prev, open, googleShown, googleClicked, rows] = await Promise.all([
+      const [now, prev, open, googleShown, googleClicked, urunOylari, rows] =
+        await Promise.all([
         prisma.feedback.aggregate({
           where: { businessId: business.id, createdAt: { gte: buHafta } },
           _avg: { overallRating: true },
@@ -113,6 +132,10 @@ async function ozetle(prisma: ReturnType<typeof createScriptClient>): Promise<Oz
             createdAt: { gte: buHafta },
           },
         }),
+        prisma.itemRating.findMany({
+          where: { businessId: business.id, createdAt: { gte: buHafta } },
+          select: { menuItemId: true, itemName: true, rating: true },
+        }),
         prisma.feedback.findMany({
           where: {
             businessId: business.id,
@@ -139,6 +162,10 @@ async function ozetle(prisma: ReturnType<typeof createScriptClient>): Promise<Oz
         }
       }
 
+      // Ürün bazlı özet. Eşiği geçemeyen ürünler listeye girmez: 1-2 oyla
+      // bir ürünü haftanın en kötüsü ilan etmek işletmeyi yanlış yönlendirir.
+      const { enIyi, enKotu } = enIyiEnKotu(urunPuanlari(urunOylari), 3);
+
       // Sadece gerçekten zayıf olanlar; her şey 5/5 iken "en zayıf: 5/5"
       // yazmak raporu anlamsızlaştırıyor.
       const weak = [...buckets.entries()]
@@ -159,6 +186,8 @@ async function ozetle(prisma: ReturnType<typeof createScriptClient>): Promise<Oz
         googleShown,
         googleClicked,
         weak,
+        enIyiUrunler: enIyi,
+        enKotuUrunler: enKotu,
       };
     }),
   );

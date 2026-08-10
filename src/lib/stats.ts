@@ -351,3 +351,18 @@ export async function getBusinessStats(businessIds: string[]): Promise<BusinessS
     }),
   );
 }
+
+/**
+ * Dönem içindeki ham ürün puanları.
+ *
+ * Toplama işi menu.ts'teki saf fonksiyonlarda yapılıyor; burası yalnızca
+ * veriyi çekiyor. Böylece "en iyi/en kötü" kuralları veritabanı olmadan
+ * testlenebiliyor.
+ */
+export async function getItemRatings(businessIds: string[], days = 30) {
+  if (businessIds.length === 0) return [];
+  return prisma.itemRating.findMany({
+    where: { businessId: { in: businessIds }, createdAt: { gte: daysAgo(days) } },
+    select: { menuItemId: true, itemName: true, rating: true },
+  });
+}

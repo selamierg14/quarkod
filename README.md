@@ -105,6 +105,57 @@ silinmez, ödeme yapılınca kaldığı yerden devam eder.
 veritabanına iki hesap kurularak sınanır. Buradaki bir kırmızı, doğrudan
 "müşteri A, müşteri B'nin verisini görüyor" demektir.
 
+## QR menü ve ürün puanları
+
+Menü, hesap düzeyinde satılan ayrı bir modül (`accounts.menuEnabled`).
+Kapalıyken müşteri hiçbir fark görmez; QR doğrudan ankete gider.
+
+**Müşteri akışı.** QR okutulunca iki seçenekli bir karşılama ekranı çıkar:
+*Menüyü görüntüle* ve *Deneyiminizi değerlendirin*. Menüden ankete geçiş de
+aynı yere çıkar. Modül kapalıysa ya da menüde ürün yoksa karşılama atlanır —
+fazladan bir tık, tamamlanma oranını düşüren en ucuz hatadır. Basılı QR
+adresleri değişmedi.
+
+**Ürün puanlama.** Ankette müşteri ne aldığını rozetlerden seçer, seçtiği her
+ürüne ayrı yıldız verir. Tüm menüyü yıldız satırıyla göstermek 60 ürünlü bir
+menüde kimseyi aşağı indirmezdi. Tükendi işaretli ürünler listeye girmez:
+bugün yenmemiştir.
+
+Puan kaydına ürün adı **kopyalanır** ([schema](prisma/schema.prisma) →
+`ItemRating.itemName`). Ürün menüden silinse ya da adı değişse bile eski
+raporlar okunur kalır; bağ kopar, isim durur.
+
+**Rapor.** *Ürünler* sekmesi dönem içindeki ortalamaları, oy sayılarını ve en
+iyi/en kötü listelerini gösterir. Bu listelere yalnızca en az
+`GUVENILIR_OY_SINIRI` (5) oyu olan ürünler girer — tek kızgın müşterinin
+oyuyla bir ürünü "ayın en kötüsü" ilan etmek işletmeyi yanlış yere
+baktırırdı. Az oylu ürünler tabloda kalır ama *az veri* etiketiyle. Haftalık
+rapor e-postasında da düşük ve yüksek puanlı ürünler listelenir.
+
+**Menü yönetimi.** *QR Menü* sekmesinden bölüm ve ürün eklenir: fotoğraf
+(kare kırpılır, ~800px), fiyat, açıklama, diyet/alerjen etiketleri. Fiyat
+kuruş cinsinden tam sayı olarak saklanır; ondalıklı sayıda toplamlarda kuruş
+sapmaları birikir ve menüde 1 kuruş bile güveni sarsar.
+
+**"Tükendi" tek tıktır.** Menünün en sık değişen alanı bu ve mutfaktan gelen
+bilgiyle saniyeler içinde işaretlenmesi gerekiyor. Ürün silinmez: yarın geri
+gelecek ve geçmiş puanları ona bağlı.
+
+## Abonelik süresi
+
+Hesaba bitiş tarihi verilebilir (`accounts.expiresAt`, Hesaplar ekranından).
+Tarih geçince hesap `active` alanına bakılmadan kapanır: kullanıcılar panele
+giremez, QR kodları 404 döner. Veri silinmez, ödeme gelince kaldığı yerden
+devam eder.
+
+Karar tek bir yerde: [abonelik.ts](src/lib/abonelik.ts) → `hesapAktifMi()`.
+Her çağrı noktası kendi kontrolünü yazsaydı biri unutulur ve süresi dolmuş
+bir hesap oradan çalışmaya devam ederdi.
+
+Son 14 güne girildiğinde panelin üstünde uyarı bandı çıkar. Uyarının değeri
+süre **dolmadan** görünmesinde: kafenin QR'larının bir sabah çalışmadığını
+müşteriden duyması, satılan hizmete duyulan güveni en hızlı bitiren şeydir.
+
 ## Kurulum
 
 ```bash
@@ -198,7 +249,9 @@ Panel: `/admin` · Anket örneği: `/f/keskinlezzetler/5`
 
 | Yol | Ne yapar |
 | --- | --- |
-| `/f/{isletme}/{masa}` | Müşteri anketi (mobil öncelikli, tek elle doldurulur) |
+| `/f/{isletme}/{masa}` | Karşılama: menü mü, değerlendirme mi (menü kapalıysa ankete atlar) |
+| `/f/{isletme}/{masa}/menu` | Fotoğraflı QR menü |
+| `/f/{isletme}/{masa}/anket` | Müşteri anketi (mobil öncelikli, tek elle doldurulur) |
 | `/admin` | Özet: işletme başına ortalama, açık şikayet, en zayıf kategori |
 | `/admin/geri-bildirimler` | Filtrelenebilir tablo (işletme, durum, puan, tarih, yorumda arama) |
 | `/admin/geri-bildirimler/{id}` | Detay, durum geçişi (yeni/incelendi/çözüldü), iç not, bildirim geçmişi |
@@ -207,6 +260,8 @@ Panel: `/admin` · Anket örneği: `/f/keskinlezzetler/5`
 | `/admin/isletmeler/{id}/qr` | Toplu QR üretimi, PNG indirme, masa standı için yazdırma |
 | `/admin/kiyaslama` | İşletmeler arası kıyaslama (yalnız patron) |
 | `/admin/kirilim` | Vardiyaya ve masaya göre kırılım |
+| `/admin/urunler` | Ürün bazlı puanlar; en beğenilen ve en düşük puanlılar |
+| `/admin/menu` | QR menü yönetimi: bölüm, ürün, fotoğraf, fiyat, tükendi |
 | `/admin/kullanicilar` | Kullanıcı ekleme, şifre sıfırlama, pasifleştirme (yalnız patron) |
 | `/admin/profil` | Kendi bilgileri ve şifre değişimi; işletme sorumlusunda işletme ayarları da burada |
 
