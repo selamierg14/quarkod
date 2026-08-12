@@ -13,7 +13,38 @@ export const SESSION_MAX_AGE = 60 * 60 * 12; // 12 saat
  * owner      — hesabın sahibi; yalnızca kendi hesabındaki işletmeler.
  * manager    — yalnızca kendi işletmesi.
  */
-export type Role = "superadmin" | "owner" | "manager";
+export const ROLLER = [
+  "superadmin",
+  "owner",
+  "bolge",
+  "manager",
+  "viewer",
+] as const;
+
+export type Role = (typeof ROLLER)[number];
+
+/**
+ * Jetondan okunan rolün tanıdığımız bir rol olup olmadığı.
+ *
+ * Liste iki yerde ayrı ayrı yazıldığında yeni bir rol eklendiğinde biri
+ * güncellenmeden kalıyor ve o roldeki kullanıcı giriş yapıp yapamadığını
+ * bile anlayamıyor (jeton üretiliyor ama sonraki istekte sessizce
+ * reddediliyor). Tek kaynak burası.
+ */
+export function gecerliRolMu(value: string): value is Role {
+  return (ROLLER as readonly string[]).includes(value);
+}
+
+/**
+ * Yazma yetkisi olmayan roller. Salt okunur kullanıcı hesabın her yerini
+ * görür ama hiçbir kaydı değiştiremez; kontrol tek yerden yapılsın diye
+ * liste burada duruyor.
+ */
+export const SALT_OKUNUR_ROLLER: Role[] = ["viewer"];
+
+export function yazabilirMi(role: Role): boolean {
+  return !SALT_OKUNUR_ROLLER.includes(role);
+}
 
 export type SessionUser = {
   id: string;
@@ -102,10 +133,8 @@ export async function verifySessionToken(
     if (typeof payload.email !== "string" || typeof payload.role !== "string") {
       return null;
     }
-    const role = payload.role as Role;
-    if (role !== "superadmin" && role !== "owner" && role !== "manager") {
-      return null;
-    }
+    if (!gecerliRolMu(payload.role)) return null;
+    const role = payload.role;
     // superadmin dışındaki her kullanıcı bir hesaba bağlı olmak zorunda;
     // aksi halde kapsamsız bir oturum oluşur.
     const accountId = (payload.accountId as string | null) ?? null;

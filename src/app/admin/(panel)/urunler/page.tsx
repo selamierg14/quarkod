@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireUser, visibleBusinesses } from "@/lib/auth";
+import { requireTenant, visibleBusinesses } from "@/lib/auth";
 import { EmptyState } from "@/components/ui";
 import { GUVENILIR_OY_SINIRI, enIyiEnKotu, urunPuanlari } from "@/lib/menu";
 import { getItemRatings } from "@/lib/stats";
@@ -16,9 +16,9 @@ const DONEMLER = [
 
 /** Ortalamaya göre renk: 3'ün altı kırmızı, 4'ün altı sarı. */
 function renk(ortalama: number): string {
-  if (ortalama < 3) return "bg-red-500";
-  if (ortalama < 4) return "bg-amber-400";
-  return "bg-emerald-500";
+  if (ortalama < 3) return "bg-danger-soft0";
+  if (ortalama < 4) return "bg-rating";
+  return "bg-success-soft0";
 }
 
 export default async function UrunlerPage({
@@ -26,7 +26,7 @@ export default async function UrunlerPage({
 }: {
   searchParams: Promise<{ isletme?: string; gun?: string }>;
 }) {
-  const user = await requireUser();
+  const user = await requireTenant();
   const businesses = await visibleBusinesses(user);
   const allowedIds = businesses.map((b) => b.id);
   const query = await searchParams;
@@ -52,8 +52,8 @@ export default async function UrunlerPage({
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight">Ürün puanları</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-title font-semibold">Ürün puanları</h1>
+        <p className="mt-1 text-small text-ink-muted">
           Müşterilerin tek tek puanladığı ürünler. Genel memnuniyet düşükken
           sorunun hangi üründe olduğunu buradan görürsünüz.
         </p>
@@ -64,10 +64,10 @@ export default async function UrunlerPage({
           <div className="flex flex-wrap gap-1">
             <Link
               href={`/admin/urunler?gun=${gun}`}
-              className={`rounded-lg px-3 py-1.5 text-sm ${
+              className={`rounded-chip px-3 py-1.5 text-small ${
                 !query.isletme
-                  ? "bg-slate-900 text-white"
-                  : "bg-white text-slate-600 ring-1 ring-slate-200"
+                  ? "bg-ink text-white"
+                  : "bg-surface text-ink-soft ring-1 ring-line"
               }`}
             >
               Tümü
@@ -76,10 +76,10 @@ export default async function UrunlerPage({
               <Link
                 key={b.id}
                 href={`/admin/urunler?isletme=${b.id}&gun=${gun}`}
-                className={`rounded-lg px-3 py-1.5 text-sm ${
+                className={`rounded-chip px-3 py-1.5 text-small ${
                   query.isletme === b.id
-                    ? "bg-slate-900 text-white"
-                    : "bg-white text-slate-600 ring-1 ring-slate-200"
+                    ? "bg-ink text-white"
+                    : "bg-surface text-ink-soft ring-1 ring-line"
                 }`}
               >
                 {b.name}
@@ -93,10 +93,10 @@ export default async function UrunlerPage({
             <Link
               key={d.gun}
               href={linkTabani({ gun: String(d.gun) })}
-              className={`rounded-lg px-3 py-1.5 text-sm ${
+              className={`rounded-chip px-3 py-1.5 text-small ${
                 gun === d.gun
-                  ? "bg-slate-900 text-white"
-                  : "bg-white text-slate-600 ring-1 ring-slate-200"
+                  ? "bg-ink text-white"
+                  : "bg-surface text-ink-soft ring-1 ring-line"
               }`}
             >
               {d.label}
@@ -112,7 +112,7 @@ export default async function UrunlerPage({
         </EmptyState>
       ) : (
         <>
-          <p className="text-sm text-slate-500">
+          <p className="text-small text-ink-muted">
             {puanlar.length} ürün · {toplamOy} puan
           </p>
 
@@ -121,13 +121,13 @@ export default async function UrunlerPage({
               yanlış yere baktırırdı. */}
           {enIyi.length > 0 || enKotu.length > 0 ? (
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200">
-                <h2 className="text-sm font-semibold text-emerald-700">En beğenilenler</h2>
+              <div className="rounded-control bg-surface p-4 ring-1 ring-line">
+                <h2 className="text-small font-semibold text-success-ink">En beğenilenler</h2>
                 <ul className="mt-2 flex flex-col gap-1.5">
                   {enIyi.map((u) => (
-                    <li key={u.itemName} className="flex justify-between gap-3 text-sm">
+                    <li key={u.itemName} className="flex justify-between gap-3 text-small">
                       <span className="truncate">{u.itemName}</span>
-                      <span className="shrink-0 tabular-nums text-slate-500">
+                      <span className="shrink-0 tabular text-ink-muted">
                         {u.ortalama.toFixed(1)} ({u.oySayisi})
                       </span>
                     </li>
@@ -135,13 +135,13 @@ export default async function UrunlerPage({
                 </ul>
               </div>
 
-              <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200">
-                <h2 className="text-sm font-semibold text-red-700">En düşük puanlılar</h2>
+              <div className="rounded-control bg-surface p-4 ring-1 ring-line">
+                <h2 className="text-small font-semibold text-danger-ink">En düşük puanlılar</h2>
                 <ul className="mt-2 flex flex-col gap-1.5">
                   {enKotu.map((u) => (
-                    <li key={u.itemName} className="flex justify-between gap-3 text-sm">
+                    <li key={u.itemName} className="flex justify-between gap-3 text-small">
                       <span className="truncate">{u.itemName}</span>
-                      <span className="shrink-0 tabular-nums text-slate-500">
+                      <span className="shrink-0 tabular text-ink-muted">
                         {u.ortalama.toFixed(1)} ({u.oySayisi})
                       </span>
                     </li>
@@ -150,16 +150,16 @@ export default async function UrunlerPage({
               </div>
             </div>
           ) : (
-            <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <p className="rounded-control bg-warning-soft px-4 py-3 text-small text-warning-ink">
               Henüz hiçbir ürün {GUVENILIR_OY_SINIRI} oya ulaşmadı; &quot;en iyi/en
               kötü&quot; listesi bu yüzden boş. Aşağıdaki tablo tüm ürünleri
               gösteriyor.
             </p>
           )}
 
-          <div className="overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-left text-xs text-slate-500 uppercase">
+          <div className="overflow-hidden rounded-control bg-surface ring-1 ring-line">
+            <table className="w-full text-small">
+              <thead className="bg-canvas text-left text-caption text-ink-muted uppercase">
                 <tr>
                   <th className="px-4 py-2 font-medium">Ürün</th>
                   <th className="px-4 py-2 text-right font-medium">Oy</th>
@@ -167,33 +167,33 @@ export default async function UrunlerPage({
                   <th className="w-1/3 px-4 py-2 font-medium">&nbsp;</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line">
                 {puanlar.map((u) => (
                   <tr key={u.menuItemId ?? u.itemName}>
                     <td className="px-4 py-2">
                       {u.itemName}
                       {u.azVeri ? (
                         <span
-                          className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-500"
+                          className="ml-2 rounded bg-sunken px-1.5 py-0.5 text-[11px] text-ink-muted"
                           title={`${GUVENILIR_OY_SINIRI} oydan az; yorumlarken dikkat edin`}
                         >
                           az veri
                         </span>
                       ) : null}
                       {u.menuItemId === null ? (
-                        <span className="ml-2 text-[11px] text-slate-400">
+                        <span className="ml-2 text-[11px] text-ink-faint">
                           (menüden kaldırılmış)
                         </span>
                       ) : null}
                     </td>
-                    <td className="px-4 py-2 text-right tabular-nums text-slate-500">
+                    <td className="px-4 py-2 text-right tabular text-ink-muted">
                       {u.oySayisi}
                     </td>
-                    <td className="px-4 py-2 text-right font-medium tabular-nums">
+                    <td className="px-4 py-2 text-right font-medium tabular">
                       {u.ortalama.toFixed(1)}
                     </td>
                     <td className="px-4 py-2">
-                      <div className="h-2 w-full rounded-full bg-slate-100">
+                      <div className="h-2 w-full rounded-full bg-sunken">
                         <div
                           className={`h-2 rounded-full ${renk(u.ortalama)}`}
                           style={{ width: `${(u.ortalama / 5) * 100}%` }}

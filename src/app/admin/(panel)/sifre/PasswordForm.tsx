@@ -6,7 +6,7 @@ import { changeOwnPassword, type PasswordState } from "../kullanicilar/actions";
 const INITIAL: PasswordState = { step: "form" };
 
 const INPUT =
-  "rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-[16px] outline-none focus:border-slate-400";
+  "rounded-chip border border-line bg-surface px-3 py-2.5 text-[16px] outline-none focus:border-line-strong";
 
 /**
  * Şifre değiştirme iki adımlı: doğrulama sonrası kayıtlı telefona kod gider.
@@ -28,7 +28,7 @@ export function PasswordForm() {
       {state.step === "form" ? (
         <>
           <label className="flex flex-col gap-1">
-            <span className="text-xs text-slate-500">Mevcut şifre</span>
+            <span className="text-caption text-ink-muted">Mevcut şifre</span>
             <input
               name="current"
               type="password"
@@ -39,7 +39,7 @@ export function PasswordForm() {
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-xs text-slate-500">
+            <span className="text-caption text-ink-muted">
               Yeni şifre (en az 8 karakter)
             </span>
             <input
@@ -53,7 +53,7 @@ export function PasswordForm() {
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-xs text-slate-500">Yeni şifre (tekrar)</span>
+            <span className="text-caption text-ink-muted">Yeni şifre (tekrar)</span>
             <input
               name="repeat"
               type="password"
@@ -64,14 +64,14 @@ export function PasswordForm() {
             />
           </label>
 
-          <p className="text-xs text-slate-400">
+          <p className="text-caption text-ink-faint">
             Devam ettiğinizde kayıtlı telefonunuza bir doğrulama kodu gönderilir.
           </p>
         </>
       ) : (
         <>
-          <p className="text-sm text-slate-600">
-            <span className="font-medium text-slate-800">{state.maskedPhone}</span>{" "}
+          <p className="text-small text-ink-soft">
+            <span className="font-medium text-ink-strong">{state.maskedPhone}</span>{" "}
             numarasına gönderilen 6 haneli kodu girin. Kod doğrulanmadan şifre
             değişmez.
           </p>
@@ -94,12 +94,12 @@ export function PasswordForm() {
       )}
 
       {state.error ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
           {state.error}
         </p>
       ) : null}
       {state.saved ? (
-        <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+        <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink">
           {state.saved}
         </p>
       ) : null}
@@ -107,7 +107,7 @@ export function PasswordForm() {
       <button
         type="submit"
         disabled={pending}
-        className="mt-1 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white disabled:bg-slate-400"
+        className="mt-1 rounded-control bg-ink px-4 py-2.5 text-small font-medium text-white disabled:bg-slate-400"
       >
         {pending
           ? "Lütfen bekleyin…"

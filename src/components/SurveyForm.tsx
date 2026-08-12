@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
+import Link from "next/link";
 import { StarRating } from "./StarRating";
+import { ImageUpload } from "./ImageUpload";
+import { taslakAnahtari, taslakOku, taslakSil, taslakYaz } from "@/lib/anket-taslak";
 import { KvkkNotice } from "./KvkkNotice";
 import { CONTACT_TYPES, consentSummary, type ContactType } from "@/lib/kvkk";
 import { marketingConsentText } from "@/lib/iys";
@@ -34,22 +37,78 @@ export function SurveyForm({
   categories,
   menuItems = [],
 }: Props) {
-  const [overall, setOverall] = useState(0);
-  const [categoryRatings, setCategoryRatings] = useState<Record<string, number>>({});
+  // Müşteri fotoğraflı menüye gidip geri dönebiliyor; o gidiş gelişte
+  // verdiği yıldızlar, yorumu ve iletişim bilgisi kaybolmasın diye anketin
+  // tamamı taslak olarak tarayıcıda tutuluyor.
+  const taslakKaydi = taslakAnahtari(slug, tableNumber);
+  const [taslak] = useState(() => taslakOku(taslakKaydi));
+
+  const [overall, setOverall] = useState(taslak.overall);
+  const [categoryRatings, setCategoryRatings] = useState<Record<string, number>>(
+    taslak.kategoriler,
+  );
   // Müşterinin seçtiği ürünler ve verdiği puanlar. Seçim ile puan ayrı:
   // ürünü seçip puan vermeden bırakan olabiliyor, o kaydı yazmıyoruz.
-  const [secilenUrunler, setSecilenUrunler] = useState<string[]>([]);
-  const [urunPuanlari, setUrunPuanlari] = useState<Record<string, number>>({});
-  const [comment, setComment] = useState("");
-  const [contactInfo, setContactInfo] = useState("");
-  const [contactType, setContactType] = useState<ContactType>("telefon");
-  const [consent, setConsent] = useState(false);
+  const [secilenUrunler, setSecilenUrunler] = useState<string[]>(taslak.secilen);
+  const [urunPuanlari, setUrunPuanlari] = useState<Record<string, number>>(
+    taslak.urunPuanlari,
+  );
+  const [comment, setComment] = useState(taslak.yorum);
+  // Fotoğraf taslağa yazılmıyor: 400 KB'lik data URI sessionStorage kotasını
+  // doldurup diğer cevapların kaydını da bozabilir.
+  const [photo, setPhoto] = useState("");
+  const [contactInfo, setContactInfo] = useState(taslak.iletisim);
+  const [contactType, setContactType] = useState<ContactType>(
+    taslak.iletisimTipi in CONTACT_TYPES
+      ? (taslak.iletisimTipi as ContactType)
+      : "telefon",
+  );
+  const [consent, setConsent] = useState(taslak.riza);
   // Ticari ileti onayı KVKK rızasından ayrı tutulur: ayrı kutu, ayrı metin,
   // ayrı kayıt. Aynı kutuda toplamak iki farklı amacı tek onaya bindirmek
   // olurdu ve verilen izin hukuken savunulamazdı.
-  const [marketing, setMarketing] = useState(false);
+  const [marketing, setMarketing] = useState(taslak.ticari);
   const [error, setError] = useState<string | null>(null);
   const [screen, setScreen] = useState<Screen>({ kind: "form" });
+
+  // Her değişiklikte taslağı tazeliyoruz; müşteri hangi adımda menüye
+  // giderse gitsin dönüşte aynı yerden devam eder.
+  useEffect(() => {
+    taslakYaz(taslakKaydi, {
+      overall,
+      kategoriler: categoryRatings,
+      secilen: secilenUrunler,
+      urunPuanlari,
+      yorum: comment,
+      iletisim: contactInfo,
+      iletisimTipi: contactType,
+      riza: consent,
+      ticari: marketing,
+    });
+  }, [
+    taslakKaydi,
+    overall,
+    categoryRatings,
+    secilenUrunler,
+    urunPuanlari,
+    comment,
+    contactInfo,
+    contactType,
+    consent,
+    marketing,
+  ]);
+
+  // Taslak yalnızca tarayıcıda var; sunucu render'ı boş formu çizer.
+  // Hidrasyondan sonra taslağı göstermek, uyuşmazlık uyarısı almadan aynı
+  // sonucu verir. Puan verilene kadar formun gerisi zaten görünmediği için
+  // tek bir kapı (overall) yetiyor.
+  const bagli = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+  const gorunenOverall = bagli ? overall : 0;
+
   const [pending, startTransition] = useTransition();
 
   function handleSubmit(event: React.FormEvent) {
@@ -72,6 +131,7 @@ export function SurveyForm({
         overallRating: overall,
         categoryRatings,
         comment,
+        photo,
         contactInfo,
         contactType: contactInfo.trim() ? contactType : "",
         consentGiven: consent,
@@ -87,6 +147,10 @@ export function SurveyForm({
         setError(result.error);
         return;
       }
+      // Anket gönderildi; taslak durmasın, aynı masadaki bir sonraki
+      // müşteriye eski cevaplar açılmasın.
+      taslakSil(taslakKaydi);
+
       if (result.redirectToGoogle && result.googleReviewUrl) {
         setScreen({
           kind: "thanks-google",
@@ -102,8 +166,8 @@ export function SurveyForm({
   if (screen.kind === "thanks-google") {
     return (
       <ThanksShell brandColor={brandColor} businessName={businessName} logoUrl={logoUrl}>
-        <h1 className="text-2xl font-semibold text-slate-900">Çok teşekkürler! 🎉</h1>
-        <p className="mt-3 text-slate-600">
+        <h1 className="text-2xl font-semibold text-ink">Çok teşekkürler! 🎉</h1>
+        <p className="mt-3 text-ink-soft">
           Beğendiğinize sevindik. Bu deneyimi Google&apos;da da paylaşırsanız bizim
           için çok değerli olur — 30 saniyenizi almaz.
         </p>
@@ -115,12 +179,12 @@ export function SurveyForm({
             // Dönüşüm ölçümü; başarısız olsa da bağlantı normal şekilde açılır.
             void markGoogleClick(screen.feedbackId);
           }}
-          className="mt-6 block w-full rounded-xl px-5 py-4 text-center text-base font-semibold text-white shadow-sm active:scale-[0.99]"
+          className="mt-6 block w-full rounded-control px-5 py-4 text-center text-base font-semibold text-white shadow-card active:scale-[0.99]"
           style={{ backgroundColor: brandColor }}
         >
           Google&apos;da yorum bırak
         </a>
-        <p className="mt-4 text-center text-sm text-slate-400">
+        <p className="mt-4 text-center text-small text-ink-faint">
           İsterseniz bu adımı atlayabilirsiniz.
         </p>
       </ThanksShell>
@@ -130,10 +194,10 @@ export function SurveyForm({
   if (screen.kind === "thanks-internal") {
     return (
       <ThanksShell brandColor={brandColor} businessName={businessName} logoUrl={logoUrl}>
-        <h1 className="text-2xl font-semibold text-slate-900">
+        <h1 className="text-2xl font-semibold text-ink">
           Geri bildiriminiz için teşekkürler
         </h1>
-        <p className="mt-3 text-slate-600">
+        <p className="mt-3 text-ink-soft">
           Yazdıklarınız doğrudan işletme sorumlusuna iletildi. Eksiğimizi
           söylediğiniz için teşekkür ederiz — en kısa sürede ilgileneceğiz.
         </p>
@@ -145,45 +209,45 @@ export function SurveyForm({
   // kartı dikey ortalayıp alttaki devre dışı "Gönder" bloğunu hiç göstermiyoruz
   // — yoksa ekranın yarısı ölü boşluk, dikkat de işe yaramayan gri bir düğmede
   // kalıyordu.
-  const basladi = overall > 0;
+  const basladi = gorunenOverall > 0;
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5 pb-32">
-      <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <p className="text-center text-base font-medium text-slate-800">
+      <section className="rounded-card bg-surface p-6 shadow-card ring-1 ring-line">
+        <p className="text-center text-base font-medium text-ink-strong">
           Deneyiminizi nasıl buldunuz?
         </p>
         <div className="mt-5">
-          <StarRating name="overall" value={overall} onChange={setOverall} size="lg" />
+          <StarRating name="overall" value={gorunenOverall} onChange={setOverall} size="lg" />
         </div>
         {!basladi ? (
-          <p className="mt-4 text-center text-xs text-slate-400">
+          <p className="mt-4 text-center text-caption text-ink-faint">
             Puan vermek için bir yıldıza dokunun
           </p>
         ) : null}
       </section>
 
       {!basladi ? (
-        <p className="text-center text-xs leading-relaxed text-slate-400">
+        <p className="text-center text-caption leading-relaxed text-ink-faint">
           Görüşünüz doğrudan {businessName} sorumlusuna iletilir.
           <br />
           Ad soyad sorulmaz, isim vermek zorunda değilsiniz.
         </p>
       ) : null}
 
-      {overall > 0 && categories.length > 0 ? (
-        <section className="mm-rise rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <h2 className="text-sm font-semibold tracking-wide text-slate-500 uppercase">
+      {basladi && categories.length > 0 ? (
+        <section className="mm-rise rounded-card bg-surface p-5 shadow-card ring-1 ring-line">
+          <h2 className="text-small font-semibold tracking-wide text-ink-muted uppercase">
             Detaylar
           </h2>
-          <p className="mt-1 text-sm text-slate-400">İstediğinizi boş bırakabilirsiniz.</p>
-          <ul className="mt-4 divide-y divide-slate-100">
+          <p className="mt-1 text-small text-ink-faint">İstediğinizi boş bırakabilirsiniz.</p>
+          <ul className="mt-4 divide-y divide-line">
             {categories.map((category) => (
               <li
                 key={category.id}
                 className="flex items-center justify-between gap-3 py-2.5"
               >
-                <span className="text-[15px] text-slate-700">{category.name}</span>
+                <span className="text-body text-ink-soft">{category.name}</span>
                 <StarRating
                   name={`kategori-${category.id}`}
                   ariaLabel={`${category.name} puanı`}
@@ -198,9 +262,10 @@ export function SurveyForm({
         </section>
       ) : null}
 
-      {overall > 0 && menuItems.length > 0 ? (
+      {basladi && menuItems.length > 0 ? (
         <UrunPuanlama
           urunler={menuItems}
+          menuAdresi={`/f/${slug}/${encodeURIComponent(tableNumber)}/menu?sec=1`}
           secilen={secilenUrunler}
           puanlar={urunPuanlari}
           onToggle={(id) =>
@@ -212,11 +277,11 @@ export function SurveyForm({
         />
       ) : null}
 
-      {overall > 0 ? (
-        <section className="mm-rise rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      {basladi ? (
+        <section className="mm-rise rounded-card bg-surface p-5 shadow-card ring-1 ring-line">
           <label
             htmlFor="comment"
-            className="text-sm font-semibold tracking-wide text-slate-500 uppercase"
+            className="text-small font-semibold tracking-wide text-ink-muted uppercase"
           >
             Eklemek istediğiniz bir şey var mı?
           </label>
@@ -231,15 +296,29 @@ export function SurveyForm({
                 ? "Ne iyi gitmedi? Yazarsanız düzeltebiliriz."
                 : "Beğendiğiniz veya eksik bulduğunuz şeyler..."
             }
-            className="mt-3 w-full resize-none rounded-xl border border-slate-200 p-3 text-[16px] text-slate-800 outline-none focus:border-slate-400"
+            className="mt-3 w-full resize-none rounded-control border border-line p-3 text-[16px] text-ink-strong outline-none focus:border-line-strong"
           />
 
-          <div className="mt-5 border-t border-slate-100 pt-4">
-            <p className="text-[15px] text-slate-700">
+          {/* Kanıt fotoğrafı: "çorba böyle geldi" karesi, şikayeti
+              tartışılmaz kılıyor ve işletmenin işini kolaylaştırıyor. */}
+          <div className="mt-4">
+            <ImageUpload
+              name="anket-foto"
+              kind="anket"
+              label="Fotoğraf eklemek ister misiniz? (isteğe bağlı)"
+              hint="Yalnızca işletme sorumlusu görür."
+              initial={null}
+              brandColor={brandColor}
+              onChange={setPhoto}
+            />
+          </div>
+
+          <div className="mt-5 border-t border-line pt-4">
+            <p className="text-body text-ink-soft">
               Size dönmemizi ister misiniz?{" "}
-              <span className="text-slate-400">(isteğe bağlı)</span>
+              <span className="text-ink-faint">(isteğe bağlı)</span>
             </p>
-            <p className="mt-0.5 text-sm text-slate-500">
+            <p className="mt-0.5 text-small text-ink-muted">
               {overall <= 3
                 ? "Bırakırsanız işletme sorumlusu sizinle bizzat ilgilenir."
                 : "Sadece bu geri bildiriminiz için ararız."}
@@ -258,11 +337,11 @@ export function SurveyForm({
                   aria-checked={contactType === type}
                   onClick={() => setContactType(type)}
                   className={`
-                    rounded-lg px-4 py-2 text-sm transition
+                    rounded-chip px-4 py-2 text-small transition
                     ${
                       contactType === type
-                        ? "bg-slate-900 text-white"
-                        : "bg-slate-100 text-slate-600"
+                        ? "bg-ink text-white"
+                        : "bg-sunken text-ink-soft"
                     }
                   `}
                 >
@@ -282,23 +361,23 @@ export function SurveyForm({
                 contactType === "eposta" ? "ornek@eposta.com" : "05XX XXX XX XX"
               }
               aria-label={CONTACT_TYPES[contactType]}
-              className="mt-2 w-full rounded-xl border border-slate-200 p-3 text-[16px] text-slate-800 outline-none focus:border-slate-400"
+              className="mt-2 w-full rounded-control border border-line p-3 text-[16px] text-ink-strong outline-none focus:border-line-strong"
             />
 
             {/* Kutu her zaman görünür: müşteri iletişim bilgisi yazmadan da
                 verilerine ne olduğunu görebilmeli. Zorunluluk yalnızca iletişim
                 bilgisi bırakıldığında doğar. */}
-            <label className="mt-4 flex items-start gap-3 text-sm text-slate-600">
+            <label className="mt-4 flex items-start gap-3 text-small text-ink-soft">
               <input
                 type="checkbox"
                 checked={consent}
                 onChange={(event) => setConsent(event.target.checked)}
-                className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300"
+                className="mt-0.5 h-5 w-5 shrink-0 rounded border-line-strong"
               />
               <span>
                 {consentSummary(businessName)}
                 {contactInfo.trim() ? (
-                  <span className="ml-1 text-red-500" aria-hidden="true">
+                  <span className="ml-1 text-danger" aria-hidden="true">
                     *
                   </span>
                 ) : null}
@@ -311,16 +390,16 @@ export function SurveyForm({
                 farklı amacı tek onaya bindirmek olurdu; o izin İYS'de
                 savunulamazdı. */}
             {contactInfo.trim() ? (
-              <label className="mt-4 flex items-start gap-3 border-t border-slate-100 pt-4 text-sm text-slate-600">
+              <label className="mt-4 flex items-start gap-3 border-t border-line pt-4 text-small text-ink-soft">
                 <input
                   type="checkbox"
                   checked={marketing}
                   onChange={(event) => setMarketing(event.target.checked)}
-                  className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300"
+                  className="mt-0.5 h-5 w-5 shrink-0 rounded border-line-strong"
                 />
                 <span>
                   {marketingConsentText(businessName, contactType)}
-                  <span className="mt-0.5 block text-xs text-slate-400">
+                  <span className="mt-0.5 block text-caption text-ink-faint">
                     İsteğe bağlı. İşaretlemeseniz de geri bildiriminiz kaydedilir.{" "}
                     {/* Mevzuat, onay kutusunun yakınında aydınlatma metnine
                         erişim ister; yukarıdaki açılır metne yönlendiriyoruz. */}
@@ -346,23 +425,23 @@ export function SurveyForm({
       ) : null}
 
       {error ? (
-        <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+        <p className="rounded-control bg-danger-soft px-4 py-3 text-small text-danger-ink" role="alert">
           {error}
         </p>
       ) : null}
 
       {basladi ? (
-        <div className="fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur">
+        <div className="fixed inset-x-0 bottom-0 border-t border-line bg-surface/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur">
           <div className="mx-auto max-w-md">
             <button
               type="submit"
               disabled={pending}
-              className="w-full rounded-xl px-5 py-4 text-base font-semibold text-white shadow-sm transition disabled:opacity-60 active:scale-[0.99]"
+              className="w-full rounded-control px-5 py-4 text-base font-semibold text-white shadow-card transition disabled:opacity-60 active:scale-[0.99]"
               style={{ backgroundColor: brandColor }}
             >
               {pending ? "Gönderiliyor…" : "Gönder"}
             </button>
-            <p className="mt-2 text-center text-xs text-slate-400">
+            <p className="mt-2 text-center text-caption text-ink-faint">
               {tableLabel} · {businessName}
             </p>
           </div>
@@ -384,7 +463,7 @@ function ThanksShell({
   logoUrl: string | null;
 }) {
   return (
-    <div className="mm-rise rounded-2xl bg-white p-7 text-center shadow-sm ring-1 ring-slate-200">
+    <div className="mm-rise rounded-card bg-surface p-7 text-center shadow-card ring-1 ring-line">
       {/* Logo varsa onu göster, köşesine küçük bir onay rozeti bindir; yoksa
           sade bir onay dairesi. */}
       <div className="relative mx-auto h-16 w-16">
@@ -393,7 +472,7 @@ function ThanksShell({
           <img
             src={logoUrl}
             alt=""
-            className="h-16 w-16 rounded-full object-cover ring-1 ring-slate-200"
+            className="h-16 w-16 rounded-full object-cover ring-1 ring-line"
           />
         ) : (
           <div
@@ -405,7 +484,7 @@ function ThanksShell({
           </div>
         )}
         <span
-          className="absolute -right-1 -bottom-1 flex h-7 w-7 items-center justify-center rounded-full text-sm text-white ring-2 ring-white"
+          className="absolute -right-1 -bottom-1 flex h-7 w-7 items-center justify-center rounded-full text-small text-white ring-2 ring-white"
           style={{ backgroundColor: brandColor }}
           aria-hidden="true"
         >
@@ -414,7 +493,7 @@ function ThanksShell({
       </div>
 
       <div className="mt-5">{children}</div>
-      <p className="mt-8 text-xs text-slate-400">{businessName}</p>
+      <p className="mt-8 text-caption text-ink-faint">{businessName}</p>
     </div>
   );
 }
@@ -429,20 +508,38 @@ function ThanksShell({
  */
 function UrunPuanlama({
   urunler,
+  menuAdresi,
   secilen,
   puanlar,
   onToggle,
   onPuan,
 }: {
   urunler: { id: string; name: string; kategori: string }[];
+  menuAdresi: string;
   secilen: string[];
   puanlar: Record<string, number>;
   onToggle: (id: string) => void;
   onPuan: (id: string, puan: number) => void;
 }) {
+  const [arama, setArama] = useState("");
+  const [hepsi, setHepsi] = useState(false);
+
+  const anahtar = arama.trim().toLocaleLowerCase("tr-TR");
+  const eslesen = anahtar
+    ? urunler.filter((u) => u.name.toLocaleLowerCase("tr-TR").includes(anahtar))
+    : urunler;
+
+  // Arama yapılmadığında uzun menü ekranı boğuyor; yine de hiçbir ürün
+  // erişilemez kalmasın diye "tümünü göster" ile hepsi açılabiliyor.
+  const KISA_LISTE = 8;
+  const kisaltildi = !anahtar && !hepsi && eslesen.length > KISA_LISTE;
+  const gosterilen = kisaltildi
+    ? eslesen.filter((u, i) => i < KISA_LISTE || secilen.includes(u.id))
+    : eslesen;
+
   // Kategori sırası menüdeki sırayla aynı kalsın diye Map kullanılıyor.
   const gruplar = new Map<string, typeof urunler>();
-  for (const urun of urunler) {
+  for (const urun of gosterilen) {
     const mevcut = gruplar.get(urun.kategori);
     if (mevcut) mevcut.push(urun);
     else gruplar.set(urun.kategori, [urun]);
@@ -453,18 +550,46 @@ function UrunPuanlama({
     .filter((u): u is (typeof urunler)[number] => Boolean(u));
 
   return (
-    <section className="mm-rise rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-      <h2 className="text-sm font-semibold tracking-wide text-slate-500 uppercase">
+    <section className="mm-rise rounded-card bg-surface p-5 shadow-card ring-1 ring-line">
+      <h2 className="text-small font-semibold tracking-wide text-ink-muted uppercase">
         Ne aldınız?
       </h2>
-      <p className="mt-1 text-sm text-slate-400">
+      <p className="mt-1 text-small text-ink-faint">
         Seçtiklerinizi ayrı ayrı puanlayabilirsiniz. İsteğe bağlı.
       </p>
+
+      {/* Fotoğraflı menü, isim listesinden çok daha kolay hatırlatıyor:
+          ürünü adından bulamayan müşteri menüye gidip görselden işaretler. */}
+      <Link
+        href={menuAdresi}
+        className="mt-4 flex items-center justify-between gap-3 rounded-control bg-canvas px-4 py-3 text-small ring-1 ring-line"
+      >
+        <span>
+          <span className="font-medium text-ink-strong">Menüden seç</span>
+          <span className="block text-caption text-ink-muted">
+            Fotoğraflı menüden işaretleyip buraya dönün
+          </span>
+        </span>
+        <span aria-hidden="true" className="text-ink-faint">
+          →
+        </span>
+      </Link>
+
+      {urunler.length > KISA_LISTE ? (
+        <input
+          type="search"
+          value={arama}
+          onChange={(event) => setArama(event.target.value)}
+          placeholder="Ürün ara..."
+          aria-label="Ürün ara"
+          className="mt-3 w-full rounded-control border border-line p-3 text-[16px] text-ink-strong outline-none focus:border-line-strong"
+        />
+      ) : null}
 
       <div className="mt-4 flex flex-col gap-3">
         {[...gruplar.entries()].map(([kategori, liste]) => (
           <div key={kategori}>
-            <p className="mb-1.5 text-xs text-slate-400">{kategori}</p>
+            <p className="mb-1.5 text-caption text-ink-faint">{kategori}</p>
             <div className="flex flex-wrap gap-1.5">
               {liste.map((urun) => {
                 const secili = secilen.includes(urun.id);
@@ -474,10 +599,10 @@ function UrunPuanlama({
                     type="button"
                     aria-pressed={secili}
                     onClick={() => onToggle(urun.id)}
-                    className={`rounded-full px-3 py-1.5 text-sm transition ${
+                    className={`rounded-full px-3 py-1.5 text-small transition ${
                       secili
-                        ? "bg-slate-900 text-white"
-                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        ? "bg-ink text-white"
+                        : "bg-sunken text-ink-soft hover:bg-line"
                     }`}
                   >
                     {secili ? "✓ " : ""}
@@ -490,11 +615,27 @@ function UrunPuanlama({
         ))}
       </div>
 
+      {gosterilen.length === 0 ? (
+        <p className="mt-3 text-small text-ink-faint">
+          Bu isimde ürün yok. Menüden seçerek de işaretleyebilirsiniz.
+        </p>
+      ) : null}
+
+      {kisaltildi ? (
+        <button
+          type="button"
+          onClick={() => setHepsi(true)}
+          className="mt-3 text-small font-medium text-ink-soft underline underline-offset-2"
+        >
+          Tüm ürünleri göster ({urunler.length})
+        </button>
+      ) : null}
+
       {secilenUrunler.length > 0 ? (
-        <ul className="mt-5 divide-y divide-slate-100 border-t border-slate-100 pt-1">
+        <ul className="mt-5 divide-y divide-line border-t border-line pt-1">
           {secilenUrunler.map((urun) => (
             <li key={urun.id} className="flex items-center justify-between gap-3 py-2.5">
-              <span className="min-w-0 flex-1 truncate text-[15px] text-slate-700">
+              <span className="min-w-0 flex-1 truncate text-body text-ink-soft">
                 {urun.name}
               </span>
               <StarRating

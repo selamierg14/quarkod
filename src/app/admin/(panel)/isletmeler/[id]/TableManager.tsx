@@ -32,11 +32,11 @@ export function TableManager({
               type="submit"
               title={table.active ? "Kapat" : "Aç"}
               className={`
-                rounded-lg px-3 py-1.5 text-sm ring-1 transition
+                rounded-chip px-3 py-1.5 text-small ring-1 transition
                 ${
                   table.active
-                    ? "bg-white text-slate-700 ring-slate-200 hover:ring-slate-300"
-                    : "bg-slate-100 text-slate-400 line-through ring-slate-200"
+                    ? "bg-surface text-ink-soft ring-line hover:ring-line-strong"
+                    : "bg-sunken text-ink-faint line-through ring-line"
                 }
               `}
             >
@@ -45,13 +45,13 @@ export function TableManager({
           </form>
         ))}
         {tables.length === 0 ? (
-          <p className="text-sm text-slate-400">Henüz masa tanımlanmamış.</p>
+          <p className="text-small text-ink-faint">Henüz masa tanımlanmamış.</p>
         ) : null}
       </div>
 
       <form
         action={formAction}
-        className="flex flex-col gap-2 border-t border-slate-100 pt-3"
+        className="flex flex-col gap-2 border-t border-line pt-3"
       >
         <input type="hidden" name="businessId" value={businessId} />
         <div className="flex gap-2">
@@ -59,29 +59,29 @@ export function TableManager({
             name="tableNumbers"
             required
             placeholder='"1-20" veya "VIP-1, VIP-2, Teras"'
-            className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400"
+            className="flex-1 rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong"
           />
           <button
             type="submit"
             disabled={pending}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:bg-slate-400"
+            className="rounded-chip bg-ink px-4 py-2 text-small font-medium text-white disabled:bg-slate-400"
           >
             Ekle
           </button>
         </div>
-        <label className="flex items-center gap-2 text-sm text-slate-600">
+        <label className="flex items-center gap-2 text-small text-ink-soft">
           <input type="checkbox" name="isEntrance" className="h-4 w-4" />
           Giriş/kapı QR&apos;ı olarak ekle (masa numarası göstermez)
         </label>
       </form>
 
       {state.error ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
           {state.error}
         </p>
       ) : null}
       {state.saved ? (
-        <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+        <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink">
           Eklendi.
         </p>
       ) : null}

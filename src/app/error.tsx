@@ -21,32 +21,32 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-slate-50 px-5">
+    <main className="flex min-h-dvh items-center justify-center bg-canvas px-5">
       <div className="w-full max-w-sm text-center">
         <div
-          className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-2xl text-amber-700"
+          className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-warning-soft text-2xl text-warning-ink"
           aria-hidden="true"
         >
           !
         </div>
 
-        <h1 className="mt-5 text-xl font-semibold tracking-tight text-slate-900">
+        <h1 className="mt-5 text-xl font-semibold tracking-tight text-ink">
           Bir şeyler ters gitti
         </h1>
-        <p className="mt-3 text-[15px] leading-relaxed text-slate-600">
+        <p className="mt-3 text-body leading-relaxed text-ink-soft">
           Sayfa yüklenemedi. Genellikle tekrar denemek yeterli oluyor.
         </p>
 
         <button
           type="button"
           onClick={reset}
-          className="mt-6 rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white"
+          className="mt-6 rounded-control bg-ink px-5 py-3 text-small font-medium text-white"
         >
           Tekrar dene
         </button>
 
         {error.digest ? (
-          <p className="mt-6 text-xs text-slate-400">
+          <p className="mt-6 text-caption text-ink-faint">
             Sorun sürerse bu kodu iletin: <code>{error.digest}</code>
           </p>
         ) : null}

@@ -44,50 +44,61 @@ export default async function KarsilamaPage({ params }: { params: Promise<Params
 
   return (
     <MusteriKabuk business={business} tableLabel={tableLabel} altBaslik="Hoş geldiniz">
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3.5">
         <Link
           href={`${taban}/menu`}
-          className="group flex items-center gap-4 rounded-2xl bg-white/95 p-5 text-left shadow-sm ring-1 ring-slate-200 transition hover:shadow-md focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:outline-none"
+          className="group flex items-center gap-4 rounded-card bg-surface p-5 text-left shadow-card ring-1 ring-line transition active:scale-[0.99] active:shadow-none"
         >
           <span
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-white"
-            style={{ backgroundColor: business.brandColor }}
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand text-brand-ink"
             aria-hidden="true"
           >
             <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={1.8}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 5h16M4 12h16M4 19h10" />
             </svg>
           </span>
-          <span className="min-w-0">
-            <span className="block font-semibold text-slate-900">Menüyü görüntüle</span>
-            <span className="block text-sm text-slate-500">
+          <span className="min-w-0 flex-1">
+            <span className="block text-body font-semibold text-ink">Menüyü görüntüle</span>
+            <span className="block text-small text-ink-muted">
               Fotoğraflı menü, fiyatlar ve günün durumu
             </span>
+          </span>
+          <span
+            aria-hidden="true"
+            className="shrink-0 text-ink-faint transition group-active:translate-x-0.5"
+          >
+            →
           </span>
         </Link>
 
         <Link
           href={`${taban}/anket`}
-          className="group flex items-center gap-4 rounded-2xl bg-white/95 p-5 text-left shadow-sm ring-1 ring-slate-200 transition hover:shadow-md focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:outline-none"
+          className="group flex items-center gap-4 rounded-card bg-surface p-5 text-left shadow-card ring-1 ring-line transition active:scale-[0.99] active:shadow-none"
         >
           <span
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600"
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-warning-soft text-rating"
             aria-hidden="true"
           >
             <svg viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor">
               <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z" />
             </svg>
           </span>
-          <span className="min-w-0">
-            <span className="block font-semibold text-slate-900">
+          <span className="min-w-0 flex-1">
+            <span className="block text-body font-semibold text-ink">
               Deneyiminizi değerlendirin
             </span>
-            <span className="block text-sm text-slate-500">30 saniyenizi alır</span>
+            <span className="block text-small text-ink-muted">30 saniyenizi alır</span>
+          </span>
+          <span
+            aria-hidden="true"
+            className="shrink-0 text-ink-faint transition group-active:translate-x-0.5"
+          >
+            →
           </span>
         </Link>
       </div>
 
-      <p className="mt-5 text-center text-xs text-slate-400">
+      <p className="mt-6 text-center text-caption text-ink-faint">
         Görüşleriniz doğrudan işletme sahibine ulaşır.
       </p>
     </MusteriKabuk>

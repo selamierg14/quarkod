@@ -1,23 +1,23 @@
-import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { getActiveAccount } from "@/lib/impersonation";
 import { exitAccount } from "./hesaplar/actions";
 import { logout } from "../giris/actions";
-import { AdminNav } from "@/components/AdminNav";
+import { AdminSidebar } from "@/components/AdminSidebar";
 import { prisma } from "@/lib/db";
+import { ROL_ADLARI } from "@/lib/constants";
 import { abonelikUyarisi } from "@/lib/abonelik";
+import { panelMenusu, panelModu } from "@/lib/panel";
 
 export const dynamic = "force-dynamic";
-
-const ROL_ADI: Record<string, string> = {
-  superadmin: "Platform yöneticisi",
-  owner: "Hesap sahibi",
-  manager: "İşletme sorumlusu",
-};
 
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const user = await requireUser();
   const aktifHesap = await getActiveAccount(user);
+
+  // Menü, kullanıcının gerçekten girebildiği sayfaları göstermeli: platform
+  // yöneticisi bir hesaba girmediği sürece kiracı ekranlarını hiç görmüyor.
+  const modu = panelModu(user.role, Boolean(aktifHesap));
+  const gruplar = panelMenusu(modu, user.role);
 
   // Abonelik uyarısı: süre dolduğunda kullanıcı zaten giremiyor, bu yüzden
   // uyarının değeri DOLMADAN önce görünmesinde. QR'ların bir sabah
@@ -31,67 +31,69 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const uyari = hesap ? abonelikUyarisi(hesap) : null;
 
   return (
-    <div className="min-h-dvh bg-slate-50">
-      {/* Platform yöneticisi bir kiracıyı görüntülüyorsa bu bant hep üstte
-          durur: yanlışlıkla müşterinin verisinde işlem yapmayı önler. */}
-      {aktifHesap ? (
-        <div className="print-hidden flex flex-wrap items-center justify-between gap-2 bg-amber-100 px-4 py-2 text-sm text-amber-900">
-          <span>
-            <span className="font-semibold">{aktifHesap.name}</span> hesabını
-            görüntülüyorsunuz. Yaptığınız işlemler bu hesaba yazılır.
-          </span>
-          <form action={exitAccount}>
+    <div className="flex min-h-dvh bg-canvas">
+      <AdminSidebar
+        gruplar={gruplar}
+        kullaniciAdi={user.name}
+        rolAdi={ROL_ADLARI[user.role] ?? user.role}
+        cikis={
+          <form action={logout}>
             <button
               type="submit"
-              className="rounded-lg bg-amber-900 px-3 py-1 text-xs font-medium text-white"
+              className="w-full rounded-chip border border-line bg-surface px-3 py-1.5 text-small text-ink-soft transition hover:bg-canvas hover:text-ink"
             >
-              Görüntülemeden çık
+              Çıkış
             </button>
           </form>
-        </div>
-      ) : null}
+        }
+      />
 
-      {uyari ? (
-        <div
-          className={`print-hidden px-4 py-2 text-sm ${
-            uyari.seviye === "bitti"
-              ? "bg-red-100 text-red-900"
-              : "bg-amber-100 text-amber-900"
-          }`}
-        >
-          <span className="font-semibold">Abonelik:</span> {uyari.mesaj} Yenilemek
-          için bizimle iletişime geçin.
-        </div>
-      ) : null}
-
-      <header className="print-hidden border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-          <Link href="/admin" className="font-semibold tracking-tight">
-            Memnuniyet Paneli
-          </Link>
-          <div className="flex items-center gap-3">
-            {/* Profil artık sekmede; başlıktaki bu satır yalnızca kimin
-                oturumda olduğunu gösteren bir etiket. */}
-            <span className="hidden text-sm text-slate-500 sm:inline">
-              {user.name} · {ROL_ADI[user.role]}
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Platform yöneticisi bir kiracıyı görüntülüyorsa bu bant hep üstte
+            durur: yanlışlıkla müşterinin verisinde işlem yapmayı önler. */}
+        {aktifHesap ? (
+          <div className="print-hidden flex flex-wrap items-center justify-between gap-2 bg-warning-soft px-4 py-2 text-small text-warning-ink">
+            <span>
+              <span className="font-semibold">{aktifHesap.name}</span> hesabını
+              görüntülüyorsunuz. Yaptığınız işlemler bu hesaba yazılır.
             </span>
-            <form action={logout}>
+            <form action={exitAccount}>
               <button
                 type="submit"
-                className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+                className="rounded-chip bg-warning-ink px-3 py-1 text-caption font-medium text-white"
               >
-                Çıkış
+                Görüntülemeden çık
               </button>
             </form>
           </div>
-        </div>
-        <AdminNav
-          isOwner={user.role !== "manager"}
-          isSuperadmin={user.role === "superadmin"}
-        />
-      </header>
+        ) : null}
 
-      <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
+        {uyari ? (
+          <div
+            className={`print-hidden px-4 py-2 text-small ${
+              uyari.seviye === "bitti"
+                ? "bg-danger-line text-danger-deep"
+                : "bg-warning-soft text-warning-ink"
+            }`}
+          >
+            <span className="font-semibold">Abonelik:</span> {uyari.mesaj} Yenilemek
+            için bizimle iletişime geçin.
+          </div>
+        ) : null}
+
+        {/* Salt okunur kullanıcı düğmelere basıp hata almasın: kısıt baştan
+            söyleniyor. Asıl koruma sunucudaki requireYazma kapısı. */}
+        {user.role === "viewer" ? (
+          <div className="print-hidden bg-sunken px-4 py-2 text-small text-ink-soft ring-1 ring-inset ring-line">
+            <span className="font-semibold">Salt okunur erişim:</span> raporları
+            görebilirsiniz, kayıtlarda değişiklik yapamazsınız.
+          </div>
+        ) : null}
+
+        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 lg:px-8 lg:py-8">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

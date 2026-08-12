@@ -8,8 +8,9 @@ import {
   canAccessBusiness,
   hashPassword,
   requireOwner,
-  requireUser,
+  requireYazma,
 } from "@/lib/auth";
+import { denetimYaz } from "@/lib/denetim";
 import { prisma } from "@/lib/db";
 import { BUSINESS_TYPES, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/constants";
 import { validateImageDataUrl } from "@/lib/image";
@@ -45,6 +46,7 @@ export async function createBusiness(
   formData: FormData,
 ): Promise<FormState> {
   const user = await requireOwner();
+  await requireYazma();
 
   // Yeni işletme, işlem yapılan hesaba bağlanır. Platform yöneticisi için bu,
   // Hesaplar sayfasından "geçtiği" hesaptır; hiçbir hesaba geçmemişse hangi
@@ -151,6 +153,13 @@ export async function createBusiness(
     });
   }
 
+  await denetimYaz(user, "business.create", {
+    entity: "business",
+    entityId: business.id,
+    detail: `${business.name} açıldı`,
+    accountId: business.accountId,
+  });
+
   revalidatePath("/admin/isletmeler");
   revalidatePath("/admin/kullanicilar");
   redirect(`/admin/isletmeler/${business.id}`);
@@ -160,7 +169,7 @@ export async function updateBusiness(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireYazma();
   const id = String(formData.get("id") ?? "");
 
   if (!await canAccessBusiness(user, id)) return { error: "Yetkiniz yok." };
@@ -214,6 +223,12 @@ export async function updateBusiness(
     },
   });
 
+  await denetimYaz(user, "business.update", {
+    entity: "business",
+    entityId: id,
+    detail: `${name} ayarları güncellendi`,
+  });
+
   revalidatePath(`/admin/isletmeler/${id}`);
   revalidatePath("/admin/isletmeler");
   return { saved: true };
@@ -223,7 +238,7 @@ export async function addCategory(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireYazma();
   const businessId = String(formData.get("businessId") ?? "");
   const name = String(formData.get("name") ?? "").trim();
 
@@ -246,12 +261,18 @@ export async function addCategory(
     });
   }
 
+  await denetimYaz(user, "business.category", {
+    entity: "business",
+    entityId: businessId,
+    detail: `Kategori eklendi: ${name}`,
+  });
+
   revalidatePath(`/admin/isletmeler/${businessId}`);
   return { saved: true };
 }
 
 export async function toggleCategory(formData: FormData) {
-  const user = await requireUser();
+  const user = await requireYazma();
   const id = String(formData.get("categoryId") ?? "");
 
   const category = await prisma.categoryTemplate.findUnique({ where: { id } });
@@ -266,7 +287,7 @@ export async function toggleCategory(formData: FormData) {
 }
 
 export async function moveCategory(formData: FormData) {
-  const user = await requireUser();
+  const user = await requireYazma();
   const id = String(formData.get("categoryId") ?? "");
   const direction = String(formData.get("direction") ?? "");
 
@@ -300,7 +321,7 @@ export async function addTables(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireYazma();
   const businessId = String(formData.get("businessId") ?? "");
   if (!await canAccessBusiness(user, businessId)) return { error: "Yetkiniz yok." };
 
@@ -345,6 +366,12 @@ export async function addTables(
     added += 1;
   }
 
+  await denetimYaz(user, "business.table", {
+    entity: "business",
+    entityId: businessId,
+    detail: `${added} masa eklendi`,
+  });
+
   revalidatePath(`/admin/isletmeler/${businessId}`);
   return added > 0
     ? { saved: true }
@@ -352,12 +379,17 @@ export async function addTables(
 }
 
 export async function toggleTable(formData: FormData) {
-  const user = await requireUser();
+  const user = await requireYazma();
   const id = String(formData.get("tableId") ?? "");
 
   const table = await prisma.table.findUnique({ where: { id } });
   if (!table || !await canAccessBusiness(user, table.businessId)) return;
 
   await prisma.table.update({ where: { id }, data: { active: !table.active } });
+  await denetimYaz(user, "business.table", {
+    entity: "table",
+    entityId: id,
+    detail: `Masa ${table.tableNumber} ${table.active ? "kapatıldı" : "açıldı"}`,
+  });
   revalidatePath(`/admin/isletmeler/${table.businessId}`);
 }

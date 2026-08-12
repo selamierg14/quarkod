@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUser, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { BUSINESS_TYPES, type BusinessType } from "@/lib/constants";
+import { BUSINESS_TYPES, type BusinessType, ROL_ADLARI } from "@/lib/constants";
 import { PasswordForm } from "../sifre/PasswordForm";
 import { SettingsForm } from "../isletmeler/[id]/SettingsForm";
 import { CategoryManager } from "../isletmeler/[id]/CategoryManager";
@@ -10,12 +10,6 @@ import { TableManager } from "../isletmeler/[id]/TableManager";
 export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Profil" };
-
-const ROL_ADI: Record<string, string> = {
-  superadmin: "Platform yöneticisi",
-  owner: "Hesap sahibi",
-  manager: "İşletme sorumlusu",
-};
 
 /**
  * Profil: kullanıcının kendi bilgileri ve şifresi.
@@ -55,63 +49,63 @@ export default async function ProfilePage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="text-lg font-semibold tracking-tight">Profil</h1>
+      <h1 className="text-title font-semibold">Profil</h1>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <section className="rounded-xl bg-white p-5 ring-1 ring-slate-200">
-          <h2 className="text-xs font-medium tracking-wide text-slate-500 uppercase">
+        <section className="rounded-control bg-surface p-5 ring-1 ring-line">
+          <h2 className="text-caption font-medium tracking-wide text-ink-muted uppercase">
             Hesap bilgileri
           </h2>
-          <dl className="mt-4 space-y-3 text-sm">
+          <dl className="mt-4 space-y-3 text-small">
             <div className="flex justify-between gap-4">
-              <dt className="text-slate-500">Ad soyad</dt>
+              <dt className="text-ink-muted">Ad soyad</dt>
               <dd className="font-medium">{kayit?.name}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-slate-500">Kullanıcı adı</dt>
+              <dt className="text-ink-muted">Kullanıcı adı</dt>
               <dd>
-                <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">
+                <code className="rounded bg-sunken px-1.5 py-0.5 text-caption">
                   {kayit?.username}
                 </code>
               </dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-slate-500">Telefon</dt>
-              <dd className="tabular-nums">
+              <dt className="text-ink-muted">Telefon</dt>
+              <dd className="tabular">
                 {kayit?.phone ?? (
-                  <span className="text-amber-600">tanımlı değil</span>
+                  <span className="text-rating">tanımlı değil</span>
                 )}
               </dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-slate-500">E-posta</dt>
-              <dd className="text-slate-700">{kayit?.email}</dd>
+              <dt className="text-ink-muted">E-posta</dt>
+              <dd className="text-ink-soft">{kayit?.email}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-slate-500">Rol</dt>
-              <dd>{ROL_ADI[kayit?.role ?? ""] ?? kayit?.role}</dd>
+              <dt className="text-ink-muted">Rol</dt>
+              <dd>{ROL_ADLARI[kayit?.role ?? ""] ?? kayit?.role}</dd>
             </div>
             {kayit?.account ? (
               <div className="flex justify-between gap-4">
-                <dt className="text-slate-500">Bağlı olduğu hesap</dt>
+                <dt className="text-ink-muted">Bağlı olduğu hesap</dt>
                 <dd>{kayit.account.name}</dd>
               </div>
             ) : null}
             {kayit?.business ? (
               <div className="flex justify-between gap-4">
-                <dt className="text-slate-500">İşletme</dt>
+                <dt className="text-ink-muted">İşletme</dt>
                 <dd>{kayit.business.name}</dd>
               </div>
             ) : null}
           </dl>
 
-          <p className="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-400">
+          <p className="mt-4 border-t border-line pt-3 text-caption text-ink-faint">
             Ad, telefon ve e-posta değişikliği için hesap sahibinize başvurun.
           </p>
         </section>
 
-        <section className="rounded-xl bg-white p-5 ring-1 ring-slate-200">
-          <h2 className="text-xs font-medium tracking-wide text-slate-500 uppercase">
+        <section className="rounded-control bg-surface p-5 ring-1 ring-line">
+          <h2 className="text-caption font-medium tracking-wide text-ink-muted uppercase">
             Şifre değiştir
           </h2>
           <div className="mt-4">
@@ -124,7 +118,7 @@ export default async function ProfilePage() {
           ekranında dolaşmasının anlamı yok, tek işletmesi var. */}
       {kendiIsletmesi ? (
         <>
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5">
             <div>
               <h2 className="flex items-center gap-2 font-semibold tracking-tight">
                 <span
@@ -133,22 +127,22 @@ export default async function ProfilePage() {
                 />
                 {kendiIsletmesi.name}
               </h2>
-              <p className="text-sm text-slate-500">
+              <p className="text-small text-ink-muted">
                 {BUSINESS_TYPES[kendiIsletmesi.type as BusinessType] ??
                   kendiIsletmesi.type}{" "}
-                · <code className="text-xs">/f/{kendiIsletmesi.slug}/…</code>
+                · <code className="text-caption">/f/{kendiIsletmesi.slug}/…</code>
               </p>
             </div>
             <Link
               href={`/admin/isletmeler/${kendiIsletmesi.id}/qr`}
-              className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white"
+              className="rounded-control bg-ink px-4 py-2.5 text-small font-medium text-white"
             >
               QR kodlarını üret / yazdır
             </Link>
           </div>
 
-          <section className="rounded-xl bg-white p-5 ring-1 ring-slate-200">
-            <h3 className="mb-4 text-xs font-medium tracking-wide text-slate-500 uppercase">
+          <section className="rounded-control bg-surface p-5 ring-1 ring-line">
+            <h3 className="mb-4 text-caption font-medium tracking-wide text-ink-muted uppercase">
               İşletme ayarları
             </h3>
             <SettingsForm
@@ -170,8 +164,8 @@ export default async function ProfilePage() {
           </section>
 
           <div className="grid gap-5 lg:grid-cols-2">
-            <section className="rounded-xl bg-white p-5 ring-1 ring-slate-200">
-              <h3 className="mb-4 text-xs font-medium tracking-wide text-slate-500 uppercase">
+            <section className="rounded-control bg-surface p-5 ring-1 ring-line">
+              <h3 className="mb-4 text-caption font-medium tracking-wide text-ink-muted uppercase">
                 Anket kategorileri
               </h3>
               <CategoryManager
@@ -184,8 +178,8 @@ export default async function ProfilePage() {
               />
             </section>
 
-            <section className="rounded-xl bg-white p-5 ring-1 ring-slate-200">
-              <h3 className="mb-4 text-xs font-medium tracking-wide text-slate-500 uppercase">
+            <section className="rounded-control bg-surface p-5 ring-1 ring-line">
+              <h3 className="mb-4 text-caption font-medium tracking-wide text-ink-muted uppercase">
                 Masalar / QR noktaları
               </h3>
               <TableManager

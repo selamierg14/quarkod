@@ -36,33 +36,33 @@ export default async function BusinessDetailPage({
         <div>
           <Link
             href="/admin/isletmeler"
-            className="text-sm text-slate-500 hover:text-slate-900"
+            className="text-small text-ink-muted hover:text-ink"
           >
             ← İşletmeler
           </Link>
-          <h1 className="mt-1 flex items-center gap-2 text-lg font-semibold tracking-tight">
+          <h1 className="mt-1 flex items-center gap-2 text-title font-semibold">
             <span
               className="h-2.5 w-2.5 rounded-full"
               style={{ backgroundColor: business.brandColor }}
             />
             {business.name}
           </h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-small text-ink-muted">
             {BUSINESS_TYPES[business.type as BusinessType] ?? business.type} ·{" "}
-            <code className="text-xs">/f/{business.slug}/…</code>
+            <code className="text-caption">/f/{business.slug}/…</code>
           </p>
         </div>
 
         <Link
           href={`/admin/isletmeler/${business.id}/qr`}
-          className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white"
+          className="rounded-control bg-ink px-4 py-2.5 text-small font-medium text-white"
         >
           QR kodlarını üret / yazdır
         </Link>
       </div>
 
-      <section className="rounded-xl bg-white p-5 ring-1 ring-slate-200">
-        <h2 className="mb-4 text-xs font-medium tracking-wide text-slate-500 uppercase">
+      <section className="rounded-control bg-surface p-5 ring-1 ring-line">
+        <h2 className="mb-4 text-caption font-medium tracking-wide text-ink-muted uppercase">
           Ayarlar
         </h2>
         <SettingsForm
@@ -84,8 +84,8 @@ export default async function BusinessDetailPage({
       </section>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <section className="rounded-xl bg-white p-5 ring-1 ring-slate-200">
-          <h2 className="mb-4 text-xs font-medium tracking-wide text-slate-500 uppercase">
+        <section className="rounded-control bg-surface p-5 ring-1 ring-line">
+          <h2 className="mb-4 text-caption font-medium tracking-wide text-ink-muted uppercase">
             Anket kategorileri
           </h2>
           <CategoryManager
@@ -98,8 +98,8 @@ export default async function BusinessDetailPage({
           />
         </section>
 
-        <section className="rounded-xl bg-white p-5 ring-1 ring-slate-200">
-          <h2 className="mb-4 text-xs font-medium tracking-wide text-slate-500 uppercase">
+        <section className="rounded-control bg-surface p-5 ring-1 ring-line">
+          <h2 className="mb-4 text-caption font-medium tracking-wide text-ink-muted uppercase">
             Masalar / QR noktaları
           </h2>
           <TableManager

@@ -9,12 +9,26 @@ import {
 } from "./actions";
 
 const INPUT =
-  "rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400";
+  "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
 
 type Business = { id: string; name: string };
 
-export function NewUserForm({ businesses }: { businesses: Business[] }) {
-  const [role, setRole] = useState("manager");
+const ROL_SECENEKLERI: Record<string, string> = {
+  manager: "İşletme sorumlusu (tek işletme)",
+  bolge: "Bölge müdürü (seçili işletmeler)",
+  viewer: "Salt okunur (rapor görür, değiştiremez)",
+  owner: "Patron (hesabın tamamını yönetir)",
+};
+
+export function NewUserForm({
+  businesses,
+  roller,
+}: {
+  businesses: Business[];
+  /** Ekleyen kişinin açmaya yetkili olduğu roller — sunucuda da doğrulanır. */
+  roller: string[];
+}) {
+  const [role, setRole] = useState(roller[0] ?? "manager");
   const [state, formAction, pending] = useActionState<UserFormState, FormData>(
     createUser,
     {},
@@ -24,17 +38,17 @@ export function NewUserForm({ businesses }: { businesses: Business[] }) {
     <form action={formAction} className="flex flex-col gap-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-slate-500">Ad soyad</span>
+          <span className="text-caption text-ink-muted">Ad soyad</span>
           <input name="name" required className={INPUT} />
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-slate-500">E-posta</span>
+          <span className="text-caption text-ink-muted">E-posta</span>
           <input name="email" type="email" required className={INPUT} />
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-slate-500">
+          <span className="text-caption text-ink-muted">
             Kullanıcı adı (girişte bu kullanılır)
           </span>
           <input
@@ -47,28 +61,31 @@ export function NewUserForm({ businesses }: { businesses: Business[] }) {
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-slate-500">
+          <span className="text-caption text-ink-muted">
             Cep telefonu (doğrulama kodu buraya gider)
           </span>
           <input name="phone" type="tel" required placeholder="05XX XXX XX XX" className={INPUT} />
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-slate-500">Rol</span>
+          <span className="text-caption text-ink-muted">Rol</span>
           <select
             name="role"
             value={role}
             onChange={(event) => setRole(event.target.value)}
             className={INPUT}
           >
-            <option value="manager">İşletme sorumlusu</option>
-            <option value="owner">Patron (hepsini görür)</option>
+            {roller.map((r) => (
+              <option key={r} value={r}>
+                {ROL_SECENEKLERI[r] ?? r}
+              </option>
+            ))}
           </select>
         </label>
 
         {role === "manager" ? (
           <label className="flex flex-col gap-1">
-            <span className="text-xs text-slate-500">İşletme</span>
+            <span className="text-caption text-ink-muted">İşletme</span>
             <select name="businessId" required className={INPUT}>
               <option value="">Seçin</option>
               {businesses.map((business) => (
@@ -80,8 +97,32 @@ export function NewUserForm({ businesses }: { businesses: Business[] }) {
           </label>
         ) : null}
 
+        {role === "bolge" ? (
+          <fieldset className="flex flex-col gap-1 sm:col-span-2">
+            <legend className="text-caption text-ink-muted">
+              Sorumlu olduğu işletmeler
+            </legend>
+            <div className="mt-1 flex flex-wrap gap-3 rounded-chip border border-line bg-surface p-3">
+              {businesses.map((business) => (
+                <label
+                  key={business.id}
+                  className="flex items-center gap-2 text-small text-ink-soft"
+                >
+                  <input
+                    type="checkbox"
+                    name="bolgeIsletmeleri"
+                    value={business.id}
+                    className="h-4 w-4 accent-[var(--color-ink)]"
+                  />
+                  {business.name}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        ) : null}
+
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-slate-500">Başlangıç şifresi</span>
+          <span className="text-caption text-ink-muted">Başlangıç şifresi</span>
           <input
             name="password"
             type="text"
@@ -98,7 +139,7 @@ export function NewUserForm({ businesses }: { businesses: Business[] }) {
       <button
         type="submit"
         disabled={pending}
-        className="self-start rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white disabled:bg-slate-400"
+        className="self-start rounded-control bg-ink px-4 py-2.5 text-small font-medium text-white disabled:bg-slate-400"
       >
         {pending ? "Ekleniyor..." : "Kullanıcı ekle"}
       </button>
@@ -118,7 +159,7 @@ export function ResetPasswordForm({ userId }: { userId: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50"
+        className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas"
       >
         Şifre sıfırla
       </button>
@@ -135,28 +176,28 @@ export function ResetPasswordForm({ userId }: { userId: string }) {
           required
           minLength={8}
           placeholder="yeni şifre"
-          className="w-36 rounded-lg border border-slate-200 px-2 py-1 text-xs outline-none focus:border-slate-400"
+          className="w-36 rounded-chip border border-line px-2 py-1 text-caption outline-none focus:border-line-strong"
         />
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs text-white disabled:bg-slate-400"
+          className="rounded-chip bg-ink px-2.5 py-1 text-caption text-white disabled:bg-slate-400"
         >
           Kaydet
         </button>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-500"
+          className="rounded-chip border border-line px-2 py-1 text-caption text-ink-muted"
         >
           ✕
         </button>
       </div>
       {state.error ? (
-        <span className="text-xs text-red-600">{state.error}</span>
+        <span className="text-caption text-danger">{state.error}</span>
       ) : null}
       {state.saved ? (
-        <span className="text-xs text-emerald-600">{state.saved}</span>
+        <span className="text-caption text-success">{state.saved}</span>
       ) : null}
     </form>
   );
@@ -178,7 +219,7 @@ export function ToggleUserButton({
         type="submit"
         disabled={disabled}
         title={disabled ? "Kendi hesabınızı kapatamazsınız" : undefined}
-        className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+        className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas disabled:opacity-40"
       >
         {active ? "Pasifleştir" : "Aktifleştir"}
       </button>
@@ -189,14 +230,14 @@ export function ToggleUserButton({
 function Feedback({ state }: { state: UserFormState }) {
   if (state.error) {
     return (
-      <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+      <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
         {state.error}
       </p>
     );
   }
   if (state.saved) {
     return (
-      <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+      <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink">
         {state.saved}
       </p>
     );

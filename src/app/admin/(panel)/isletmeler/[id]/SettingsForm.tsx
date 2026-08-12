@@ -6,7 +6,7 @@ import { ImageUpload } from "@/components/ImageUpload";
 import { updateBusiness, type FormState } from "../actions";
 
 const INPUT =
-  "rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400";
+  "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
 
 type Business = {
   id: string;
@@ -41,7 +41,7 @@ export function SettingsForm({
 
       {/* Anket ekranında görünen görseller. Marka rengiyle birlikte müşterinin
           doğru yere geldiğini anlamasını sağlar. */}
-      <div className="grid gap-4 rounded-lg bg-slate-50 p-4 sm:grid-cols-2">
+      <div className="grid gap-4 rounded-chip bg-canvas p-4 sm:grid-cols-2">
         <ImageUpload
           name="logoUrl"
           kind="logo"
@@ -65,11 +65,11 @@ export function SettingsForm({
           <button
             type="submit"
             disabled={pending}
-            className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white disabled:bg-slate-400"
+            className="rounded-control bg-ink px-4 py-2.5 text-small font-medium text-white disabled:bg-slate-400"
           >
             {pending ? "Kaydediliyor..." : "Görselleri kaydet"}
           </button>
-          <span className="text-xs text-slate-500">
+          <span className="text-caption text-ink-muted">
             Aşağıdaki ayarlarla birlikte kaydedilir.
           </span>
         </div>
@@ -77,13 +77,13 @@ export function SettingsForm({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-slate-500">İşletme adı</span>
+          <span className="text-caption text-ink-muted">İşletme adı</span>
           <input name="name" defaultValue={business.name} required className={INPUT} />
         </label>
 
         {isOwner ? (
           <label className="flex flex-col gap-1">
-            <span className="text-xs text-slate-500">Tür</span>
+            <span className="text-caption text-ink-muted">Tür</span>
             <select name="type" defaultValue={business.type} className={INPUT}>
               {BUSINESS_TYPE_LIST.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -95,12 +95,12 @@ export function SettingsForm({
         ) : null}
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-slate-500">Adres</span>
+          <span className="text-caption text-ink-muted">Adres</span>
           <input name="address" defaultValue={business.address ?? ""} className={INPUT} />
         </label>
 
         <label className="flex flex-col gap-1 sm:col-span-2">
-          <span className="text-xs text-slate-500">Google yorum linki</span>
+          <span className="text-caption text-ink-muted">Google yorum linki</span>
           <input
             name="googleReviewUrl"
             type="url"
@@ -111,7 +111,7 @@ export function SettingsForm({
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-slate-500">
+          <span className="text-caption text-ink-muted">
             Bildirim eşiği (bu puan ve altında haber ver)
           </span>
           <select
@@ -128,17 +128,17 @@ export function SettingsForm({
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-slate-500">Marka rengi</span>
+          <span className="text-caption text-ink-muted">Marka rengi</span>
           <input
             name="brandColor"
             type="color"
             defaultValue={business.brandColor}
-            className="h-9 w-20 rounded-lg border border-slate-200 bg-white p-1"
+            className="h-9 w-20 rounded-chip border border-line bg-surface p-1"
           />
         </label>
 
         <label className="flex flex-col gap-1 sm:col-span-2">
-          <span className="text-xs text-slate-500">
+          <span className="text-caption text-ink-muted">
             QR kartındaki çağrı metni — masadaki kartta karekodun üstünde yazar
           </span>
           <input
@@ -148,23 +148,23 @@ export function SettingsForm({
             maxLength={80}
             className={INPUT}
           />
-          <span className="text-xs text-slate-400">
+          <span className="text-caption text-ink-faint">
             Boş bırakırsanız varsayılan kullanılır. Kısa, karşılığı belli ve süre
             veren cümleler daha çok okutulur.
           </span>
         </label>
       </div>
 
-      <label className="flex items-start gap-3 rounded-lg bg-slate-50 p-3">
+      <label className="flex items-start gap-3 rounded-chip bg-canvas p-3">
         <input
           type="checkbox"
           name="googleRedirect"
           defaultChecked={business.googleRedirect}
           className="mt-0.5 h-4 w-4"
         />
-        <span className="text-sm">
+        <span className="text-small">
           <span className="font-medium">5 yıldızda Google&apos;a yönlendir</span>
-          <span className="mt-0.5 block text-xs text-slate-500">
+          <span className="mt-0.5 block text-caption text-ink-muted">
             Kapatırsanız herkes aynı nötr teşekkür ekranını görür; Google linki
             gösterilmez. Yorum filtreleme (review-gating) politikası nedeniyle
             ileride bu varyanta geçmek isterseniz kod değişikliği gerekmez.
@@ -173,12 +173,12 @@ export function SettingsForm({
       </label>
 
       {state.error ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
           {state.error}
         </p>
       ) : null}
       {state.saved ? (
-        <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+        <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink">
           Kaydedildi.
         </p>
       ) : null}
@@ -186,7 +186,7 @@ export function SettingsForm({
       <button
         type="submit"
         disabled={pending}
-        className="self-start rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white disabled:bg-slate-400"
+        className="self-start rounded-control bg-ink px-4 py-2.5 text-small font-medium text-white disabled:bg-slate-400"
       >
         {pending ? "Kaydediliyor..." : "Kaydet"}
       </button>

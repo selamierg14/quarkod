@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { isiCalistir } from "./is-kaydi";
 import { createScriptClient } from "./prisma-client";
 import { sendMail } from "../src/lib/mailer";
 import { enIyiEnKotu, urunPuanlari } from "../src/lib/menu";
@@ -252,7 +253,6 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+// Çalışma kaydı tutuluyor: "cron'a bağlamayı unuttuk" durumu panelde
+// "Hiç çalışmadı" olarak görünsün.
+void isiCalistir("haftalik-rapor", main);

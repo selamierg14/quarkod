@@ -1,3 +1,12 @@
+/** Rollerin panelde görünen adları. Tek yerde dursun ki ekranlar ayrışmasın. */
+export const ROL_ADLARI: Record<string, string> = {
+  superadmin: "Platform yöneticisi",
+  owner: "Hesap sahibi",
+  bolge: "Bölge müdürü",
+  manager: "İşletme sorumlusu",
+  viewer: "Salt okunur",
+};
+
 /** İşletme türleri — kategori şablonlarının varsayılanını belirler. */
 export const BUSINESS_TYPES = {
   yeme_icme: "Yeme-içme",

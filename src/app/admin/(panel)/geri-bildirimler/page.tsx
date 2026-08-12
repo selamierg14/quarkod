@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireUser, visibleBusinesses } from "@/lib/auth";
+import { requireTenant, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { EmptyState, StatusBadge, Stars, formatDateTime } from "@/components/ui";
 import { buildFeedbackWhere, type FeedbackQuery } from "@/lib/feedback-filters";
@@ -16,7 +16,7 @@ export default async function FeedbackListPage({
 }: {
   searchParams: Promise<FeedbackQuery>;
 }) {
-  const user = await requireUser();
+  const user = await requireTenant();
   const businesses = await visibleBusinesses(user);
   const allowedIds = businesses.map((b) => b.id);
   const query = await searchParams;
@@ -51,9 +51,9 @@ export default async function FeedbackListPage({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-baseline justify-between">
-        <h1 className="text-lg font-semibold tracking-tight">Geri bildirimler</h1>
+        <h1 className="text-title font-semibold">Geri bildirimler</h1>
         <span className="flex items-center gap-3">
-          <span className="text-sm text-slate-500">{total} kayıt</span>
+          <span className="text-small text-ink-muted">{total} kayıt</span>
           {total > 0 ? (
             <a
               href={`/admin/geri-bildirimler/disa-aktar?${new URLSearchParams(
@@ -61,7 +61,7 @@ export default async function FeedbackListPage({
                   ([key, value]) => value && key !== "sayfa",
                 ) as [string, string][],
               ).toString()}`}
-              className="print-hidden rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+              className="print-hidden rounded-chip border border-line bg-surface px-3 py-1.5 text-small text-ink-soft hover:bg-canvas"
             >
               CSV indir
             </a>
@@ -77,9 +77,9 @@ export default async function FeedbackListPage({
       {feedbacks.length === 0 ? (
         <EmptyState>Bu filtrelere uyan kayıt yok.</EmptyState>
       ) : (
-        <div className="overflow-x-auto rounded-xl bg-white ring-1 ring-slate-200">
-          <table className="w-full min-w-[720px] text-sm">
-            <thead className="border-b border-slate-200 text-left text-xs tracking-wide text-slate-500 uppercase">
+        <div className="overflow-x-auto rounded-control bg-surface ring-1 ring-line">
+          <table className="w-full min-w-[720px] text-small">
+            <thead className="border-b border-line text-left text-caption tracking-wide text-ink-muted uppercase">
               <tr>
                 <th className="px-4 py-3 font-medium">Tarih</th>
                 <th className="px-4 py-3 font-medium">İşletme</th>
@@ -90,7 +90,7 @@ export default async function FeedbackListPage({
                 <th className="px-4 py-3 font-medium">Durum</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-line">
               {feedbacks.map((feedback) => {
                 const ratings: Record<string, number> = feedback.categoryRatings
                   ? JSON.parse(feedback.categoryRatings)
@@ -101,8 +101,8 @@ export default async function FeedbackListPage({
                   .slice(0, 2);
 
                 return (
-                  <tr key={feedback.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 whitespace-nowrap text-slate-500">
+                  <tr key={feedback.id} className="hover:bg-canvas">
+                    <td className="px-4 py-3 whitespace-nowrap text-ink-muted">
                       <Link
                         href={`/admin/geri-bildirimler/${feedback.id}`}
                         className="hover:underline"
@@ -119,7 +119,7 @@ export default async function FeedbackListPage({
                         {feedback.business.name}
                       </span>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-slate-500">
+                    <td className="px-4 py-3 whitespace-nowrap text-ink-muted">
                       {feedback.table
                         ? feedback.table.isEntrance
                           ? "Giriş"
@@ -131,13 +131,13 @@ export default async function FeedbackListPage({
                     </td>
                     <td className="px-4 py-3">
                       {weak.length === 0 ? (
-                        <span className="text-slate-300">—</span>
+                        <span className="text-rating-empty">—</span>
                       ) : (
                         <span className="flex flex-wrap gap-1">
                           {weak.map(([name, value]) => (
                             <span
                               key={name}
-                              className="rounded-md bg-red-50 px-1.5 py-0.5 text-xs text-red-700"
+                              className="rounded-md bg-danger-soft px-1.5 py-0.5 text-caption text-danger-ink"
                             >
                               {name} {value}
                             </span>
@@ -148,7 +148,7 @@ export default async function FeedbackListPage({
                     <td className="max-w-xs px-4 py-3">
                       <Link
                         href={`/admin/geri-bildirimler/${feedback.id}`}
-                        className="line-clamp-2 text-slate-600 hover:text-slate-900"
+                        className="line-clamp-2 text-ink-soft hover:text-ink"
                       >
                         {feedback.comment ?? "—"}
                       </Link>
@@ -165,22 +165,22 @@ export default async function FeedbackListPage({
       )}
 
       {pageCount > 1 ? (
-        <div className="flex items-center justify-center gap-2 text-sm">
+        <div className="flex items-center justify-center gap-2 text-small">
           {page > 1 ? (
             <Link
               href={pageHref(page - 1)}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 hover:bg-white"
+              className="rounded-chip border border-line px-3 py-1.5 hover:bg-surface"
             >
               ← Önceki
             </Link>
           ) : null}
-          <span className="text-slate-500">
+          <span className="text-ink-muted">
             {page} / {pageCount}
           </span>
           {page < pageCount ? (
             <Link
               href={pageHref(page + 1)}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 hover:bg-white"
+              className="rounded-chip border border-line px-3 py-1.5 hover:bg-surface"
             >
               Sonraki →
             </Link>

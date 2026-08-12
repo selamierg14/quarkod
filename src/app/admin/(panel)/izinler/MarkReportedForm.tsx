@@ -13,7 +13,7 @@ export function MarkReportedForm({ bekleyen }: { bekleyen: number }) {
       <button
         type="button"
         onClick={() => setAcik(true)}
-        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+        className="rounded-chip border border-line bg-surface px-3 py-1.5 text-small text-ink-soft hover:bg-canvas"
       >
         Bildirildi olarak işaretle
       </button>
@@ -25,18 +25,18 @@ export function MarkReportedForm({ bekleyen }: { bekleyen: number }) {
       <input
         name="transactionId"
         placeholder="İYS işlem no (isteğe bağlı)"
-        className="w-52 rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-slate-400"
+        className="w-52 rounded-chip border border-line px-3 py-1.5 text-small outline-none focus:border-line-strong"
       />
       <button
         type="submit"
-        className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white"
+        className="rounded-chip bg-ink px-3 py-1.5 text-small font-medium text-white"
       >
         {bekleyen} kaydı işaretle
       </button>
       <button
         type="button"
         onClick={() => setAcik(false)}
-        className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-500"
+        className="rounded-chip border border-line px-3 py-1.5 text-small text-ink-muted"
       >
         Vazgeç
       </button>

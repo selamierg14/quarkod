@@ -23,14 +23,14 @@ export function StatusForm({
       <input type="hidden" name="id" value={id} />
 
       <div>
-        <span className="text-xs font-medium tracking-wide text-slate-500 uppercase">
+        <span className="text-caption font-medium tracking-wide text-ink-muted uppercase">
           Durum
         </span>
         <div className="mt-2 flex flex-wrap gap-2">
           {FEEDBACK_STATUS_LIST.map((option) => (
             <label
               key={option.value}
-              className="cursor-pointer rounded-lg border border-slate-200 px-3 py-2 text-sm has-checked:border-slate-900 has-checked:bg-slate-900 has-checked:text-white"
+              className="cursor-pointer rounded-chip border border-line px-3 py-2 text-small has-checked:border-slate-900 has-checked:bg-ink has-checked:text-white"
             >
               <input
                 type="radio"
@@ -46,7 +46,7 @@ export function StatusForm({
       </div>
 
       <label className="mt-2 flex flex-col gap-2">
-        <span className="text-xs font-medium tracking-wide text-slate-500 uppercase">
+        <span className="text-caption font-medium tracking-wide text-ink-muted uppercase">
           İç not
         </span>
         <textarea
@@ -54,17 +54,17 @@ export function StatusForm({
           rows={4}
           defaultValue={internalNote ?? ""}
           placeholder="Ne yapıldı? Kiminle konuşuldu?"
-          className="w-full resize-none rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-slate-400"
+          className="w-full resize-none rounded-control border border-line p-3 text-small outline-none focus:border-line-strong"
         />
       </label>
 
       {state.error ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
           {state.error}
         </p>
       ) : null}
       {state.saved ? (
-        <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+        <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink">
           Kaydedildi.
         </p>
       ) : null}
@@ -72,7 +72,7 @@ export function StatusForm({
       <button
         type="submit"
         disabled={pending}
-        className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white disabled:bg-slate-400"
+        className="rounded-control bg-ink px-4 py-2.5 text-small font-medium text-white disabled:bg-slate-400"
       >
         {pending ? "Kaydediliyor..." : "Kaydet"}
       </button>

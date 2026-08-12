@@ -1,5 +1,12 @@
-import { describe, expect, it } from "vitest";
-import { sessionRevokedReason, type SessionCheck } from "./session-token";
+import { beforeAll, describe, expect, it } from "vitest";
+import {
+  ROLLER,
+  createSessionToken,
+  gecerliRolMu,
+  sessionRevokedReason,
+  verifySessionToken,
+  type SessionCheck,
+} from "./session-token";
 
 /**
  * Oturum jetonu 12 saat yaşıyor. İmzaya bakmakla yetinilseydi bu süre
@@ -75,5 +82,35 @@ describe("sessionRevokedReason", () => {
 
   it("silinen kullanıcıyı reddeder", () => {
     expect(sessionRevokedReason(null, simdi)).toBe("kullanıcı yok");
+  });
+});
+
+describe("jeton rolleri", () => {
+  // Jeton imzası için gerekli; testte gerçek .env okunmuyor.
+  beforeAll(() => {
+    process.env.AUTH_SECRET = "test-icin-yeterince-uzun-bir-anahtar-0123456789";
+  });
+
+  it("tanımlı her rolü kabul eder", async () => {
+    // Rol listesi iki yerde ayrı yazıldığında yeni eklenen rol (viewer,
+    // bölge müdürü) giriş yapıyor ama sonraki istekte sessizce dışarı
+    // atılıyordu: kullanıcı "şifrem yanlış" sanıyordu.
+    for (const role of ROLLER) {
+      const jeton = await createSessionToken({
+        id: "u1",
+        name: "Test",
+        email: "t@example.com",
+        role,
+        accountId: role === "superadmin" ? null : "hesap-1",
+        businessId: null,
+      });
+      const cozulen = await verifySessionToken(jeton);
+      expect(cozulen?.role, `${role} rolü reddedildi`).toBe(role);
+    }
+  });
+
+  it("tanımsız rolü reddeder", () => {
+    expect(gecerliRolMu("garson")).toBe(false);
+    expect(gecerliRolMu("viewer")).toBe(true);
   });
 });

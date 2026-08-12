@@ -23,7 +23,9 @@ const LINKS: NavLink[] = [
   { href: "/admin/kiyaslama", label: "İşletme kıyaslama", ownerOnly: true },
   { href: "/admin/izinler", label: "İleti izinleri", ownerOnly: true },
   { href: "/admin/kullanicilar", label: "Kullanıcılar", ownerOnly: true },
+  { href: "/admin/denetim", label: "Denetim kaydı", ownerOnly: true },
   { href: "/admin/hesaplar", label: "Hesaplar", superadminOnly: true },
+  { href: "/admin/sistem", label: "Sistem", superadminOnly: true },
   { href: "/admin/profil", label: "Profil" },
 ];
 
@@ -45,7 +47,7 @@ export function AdminNav({
   });
 
   return (
-    <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-2 pb-1">
+    <nav aria-label="Panel" className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-2">
       {visible.map((link) => {
         const active = link.exact
           ? pathname === link.href
@@ -54,9 +56,10 @@ export function AdminNav({
           <Link
             key={link.href}
             href={link.href}
+            aria-current={active ? "page" : undefined}
             className={`
-              rounded-lg px-3 py-2 text-sm whitespace-nowrap transition
-              ${active ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}
+              rounded-chip px-3 py-2 text-small font-medium whitespace-nowrap transition
+              ${active ? "bg-ink text-white" : "text-ink-soft hover:bg-sunken hover:text-ink"}
             `}
           >
             {link.label}

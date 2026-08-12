@@ -1,0 +1,121 @@
+import { describe, expect, it } from "vitest";
+import { acilabilirRoller, aktifMi, panelMenusu, panelModu } from "./panel";
+
+/** Menüdeki tüm bağlantı adreslerini düz listeye indirger. */
+function adresler(modu: Parameters<typeof panelMenusu>[0], role: Parameters<typeof panelMenusu>[1]) {
+  return panelMenusu(modu, role).flatMap((g) => g.linkler.map((l) => l.href));
+}
+
+describe("panel modu", () => {
+  it("platform yöneticisi hesap seçmediyse platform modundadır", () => {
+    expect(panelModu("superadmin", false)).toBe("platform");
+  });
+
+  it("bir hesaba girdiğinde kiracı moduna geçer", () => {
+    // Impersonation'ın anlamı bu: panel tam olarak o müşterinin gördüğü hale gelmeli.
+    expect(panelModu("superadmin", true)).toBe("kiraci");
+  });
+
+  it("diğer roller her zaman kiracı modundadır", () => {
+    for (const role of ["owner", "bolge", "manager", "viewer"] as const) {
+      expect(panelModu(role, false)).toBe("kiraci");
+    }
+  });
+});
+
+describe("platform menüsü", () => {
+  const platform = adresler("platform", "superadmin");
+
+  it("kiracıya ait ekranları hiç göstermez", () => {
+    // Platform yöneticisi hiçbir işletmenin sahibi değil; "kimin özeti"
+    // sorusunun cevabı olmayan ekranlar menüde durmamalı.
+    for (const gizli of [
+      "/admin",
+      "/admin/geri-bildirimler",
+      "/admin/kirilim",
+      "/admin/urunler",
+      "/admin/menu",
+      "/admin/izinler",
+      "/admin/kiyaslama",
+    ]) {
+      expect(platform).not.toContain(gizli);
+    }
+  });
+
+  it("platform işlerini gösterir", () => {
+    expect(platform).toEqual([
+      "/admin/hesaplar",
+      "/admin/isletmeler",
+      "/admin/kullanicilar",
+      "/admin/denetim",
+      "/admin/sistem",
+      "/admin/profil",
+    ]);
+  });
+});
+
+describe("kiracı menüsü", () => {
+  it("hesap sahibi yönetim ekranlarını görür", () => {
+    const owner = adresler("kiraci", "owner");
+    expect(owner).toContain("/admin");
+    expect(owner).toContain("/admin/izinler");
+    expect(owner).toContain("/admin/kullanicilar");
+  });
+
+  it("işletme sorumlusu yönetim ekranlarını görmez", () => {
+    // Bu ekranların arkasındaki requireOwner zaten manager'ı geri çeviriyor;
+    // menüde göstermek onu kapalı bir kapıya yollamak olurdu.
+    const manager = adresler("kiraci", "manager");
+    expect(manager).toContain("/admin/geri-bildirimler");
+    expect(manager).not.toContain("/admin/kullanicilar");
+    expect(manager).not.toContain("/admin/izinler");
+    expect(manager).not.toContain("/admin/kiyaslama");
+  });
+
+  it("salt okunur kullanıcı da yönetim ekranlarını görmez", () => {
+    const viewer = adresler("kiraci", "viewer");
+    expect(viewer).toContain("/admin/urunler");
+    expect(viewer).not.toContain("/admin/kullanicilar");
+  });
+
+  it("platform yöneticisi hesaba girince kiracı ekranlarını görür", () => {
+    const iceriden = adresler("kiraci", "superadmin");
+    expect(iceriden).toContain("/admin");
+    expect(iceriden).toContain("/admin/izinler");
+  });
+});
+
+describe("aktif bağlantı", () => {
+  const ozet = { href: "/admin", label: "Özet", ikon: "pano" as const, exact: true };
+  const geri = { href: "/admin/geri-bildirimler", label: "Geri", ikon: "mesaj" as const };
+
+  it("kök adres yalnızca tam eşleşmede aktiftir", () => {
+    // exact olmasa "/admin" her sayfada aktif görünürdü.
+    expect(aktifMi(ozet, "/admin")).toBe(true);
+    expect(aktifMi(ozet, "/admin/urunler")).toBe(false);
+  });
+
+  it("alt sayfalar üst bağlantıyı aktif tutar", () => {
+    expect(aktifMi(geri, "/admin/geri-bildirimler/abc")).toBe(true);
+  });
+});
+
+describe("açılabilir roller", () => {
+  it("hesap sahibi ikinci bir sahip açamaz", () => {
+    // Sahiplik aboneliği ve faturayı taşır; müşterinin kendi hesabından
+    // bizim göremediğimiz sahipler türemesin.
+    const owner = acilabilirRoller("owner");
+    expect(owner).not.toContain("owner");
+    expect(owner).toEqual(["bolge", "manager", "viewer"]);
+  });
+
+  it("platform yöneticisi sahip açabilir", () => {
+    expect(acilabilirRoller("superadmin")).toContain("owner");
+  });
+
+  it("sorumlu ve salt okunur hiç kullanıcı açamaz", () => {
+    expect(acilabilirRoller("manager")).toEqual([]);
+    expect(acilabilirRoller("viewer")).toEqual([]);
+    expect(acilabilirRoller("bolge")).toEqual([]);
+  });
+});

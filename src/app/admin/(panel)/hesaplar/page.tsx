@@ -2,7 +2,7 @@ import { requireSuperadmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getActiveAccountId } from "@/lib/impersonation";
 import { formatDateTime } from "@/components/ui";
-import { BUSINESS_TYPES, type BusinessType } from "@/lib/constants";
+import { BUSINESS_TYPES, type BusinessType, ROL_ADLARI } from "@/lib/constants";
 import {
   EnterAccountButton,
   NewAccountForm,
@@ -21,11 +21,6 @@ function dateInputValue(tarih: Date | null): string {
 export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Hesaplar" };
-
-const ROL_ADI: Record<string, string> = {
-  owner: "Hesap sahibi",
-  manager: "İşletme sorumlusu",
-};
 
 export default async function AccountsPage() {
   const user = await requireSuperadmin();
@@ -59,8 +54,8 @@ export default async function AccountsPage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight">Hesaplar</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-title font-semibold">Hesaplar</h1>
+        <p className="mt-1 text-small text-ink-muted">
           Sistemi kullanan müşteriler ve altlarındaki işletme/kullanıcı yapısı.
           Bir hesaba geçtiğinizde panel tam olarak o müşterinin gördüğü hale
           gelir.
@@ -81,46 +76,46 @@ export default async function AccountsPage() {
           return (
             <li
               key={account.id}
-              className={`overflow-hidden rounded-xl bg-white ring-1 ${
-                goruntuleniyor ? "ring-2 ring-slate-900" : "ring-slate-200"
+              className={`overflow-hidden rounded-control bg-surface ring-1 ${
+                goruntuleniyor ? "ring-2 ring-ink" : "ring-line"
               }`}
             >
               {/* --- Hesap başlığı */}
-              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-4 py-3">
+              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-3">
                 <div>
                   <span className="flex items-center gap-2">
                     <span
-                      className={`font-semibold ${calisiyor ? "" : "text-slate-400 line-through"}`}
+                      className={`font-semibold ${calisiyor ? "" : "text-ink-faint line-through"}`}
                     >
                       {account.name}
                     </span>
                     {!account.active ? (
-                      <span className="rounded bg-red-50 px-1.5 py-0.5 text-xs text-red-700">
+                      <span className="rounded bg-danger-soft px-1.5 py-0.5 text-caption text-danger-ink">
                         askıda
                       </span>
                     ) : null}
                     {account.active && !calisiyor ? (
-                      <span className="rounded bg-red-50 px-1.5 py-0.5 text-xs text-red-700">
+                      <span className="rounded bg-danger-soft px-1.5 py-0.5 text-caption text-danger-ink">
                         süresi doldu
                       </span>
                     ) : null}
                     {calisiyor && gun !== null && gun <= 14 ? (
-                      <span className="rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-700">
+                      <span className="rounded bg-warning-soft px-1.5 py-0.5 text-caption text-warning-ink">
                         {gun} gün kaldı
                       </span>
                     ) : null}
                     {account.menuEnabled ? (
-                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">
+                      <span className="rounded bg-sunken px-1.5 py-0.5 text-caption text-ink-soft">
                         QR menü
                       </span>
                     ) : null}
                     {goruntuleniyor ? (
-                      <span className="rounded bg-slate-900 px-1.5 py-0.5 text-xs text-white">
+                      <span className="rounded bg-ink px-1.5 py-0.5 text-caption text-white">
                         görüntüleniyor
                       </span>
                     ) : null}
                   </span>
-                  <p className="mt-0.5 text-xs text-slate-400">
+                  <p className="mt-0.5 text-caption text-ink-faint">
                     {account.businesses.length} işletme · {account.users.length}{" "}
                     kullanıcı · {formatDateTime(account.createdAt)}
                   </p>
@@ -143,25 +138,25 @@ export default async function AccountsPage() {
 
               {/* --- Hesap sahipleri */}
               <div className="px-4 py-2.5">
-                <p className="text-[11px] font-medium tracking-wide text-slate-400 uppercase">
+                <p className="text-[11px] font-medium tracking-wide text-ink-faint uppercase">
                   Hesap sahipleri
                 </p>
                 {sahipler.length === 0 ? (
-                  <p className="mt-1 text-sm text-amber-600">
+                  <p className="mt-1 text-small text-rating">
                     Sahip yok — bu hesaba kimse giremez.
                   </p>
                 ) : (
                   <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
                     {sahipler.map((u) => (
-                      <li key={u.id} className="text-sm">
-                        <span className={u.active ? "" : "text-slate-400 line-through"}>
+                      <li key={u.id} className="text-small">
+                        <span className={u.active ? "" : "text-ink-faint line-through"}>
                           {u.name}
                         </span>
-                        <code className="ml-1.5 rounded bg-slate-100 px-1 text-xs text-slate-600">
+                        <code className="ml-1.5 rounded bg-sunken px-1 text-caption text-ink-soft">
                           {u.username}
                         </code>
-                        <span className="ml-1.5 text-xs text-slate-400">
-                          {ROL_ADI[u.role] ?? u.role}
+                        <span className="ml-1.5 text-caption text-ink-faint">
+                          {ROL_ADLARI[u.role] ?? u.role}
                         </span>
                       </li>
                     ))}
@@ -171,15 +166,15 @@ export default async function AccountsPage() {
 
               {/* --- İşletmeler ve altlarındaki sorumlular */}
               {account.businesses.length === 0 ? (
-                <p className="px-4 pb-3 text-sm text-slate-400">
+                <p className="px-4 pb-3 text-small text-ink-faint">
                   Henüz işletme eklenmemiş.
                 </p>
               ) : (
-                <ul className="divide-y divide-slate-100 border-t border-slate-100">
+                <ul className="divide-y divide-line border-t border-line">
                   {account.businesses.map((business) => (
                     <li key={business.id} className="flex flex-wrap items-start gap-3 px-4 py-2.5">
                       {/* Girinti + çizgi: kimin altında olduğu görsel olarak belli. */}
-                      <span className="mt-1.5 ml-1 h-3 w-3 shrink-0 rounded-bl border-b border-l border-slate-300" />
+                      <span className="mt-1.5 ml-1 h-3 w-3 shrink-0 rounded-bl border-b border-l border-line-strong" />
 
                       <div className="min-w-0 flex-1">
                         <span className="flex flex-wrap items-center gap-2">
@@ -188,17 +183,17 @@ export default async function AccountsPage() {
                             style={{ backgroundColor: business.brandColor }}
                           />
                           <span className="font-medium">{business.name}</span>
-                          <code className="rounded bg-slate-100 px-1 text-xs text-slate-500">
+                          <code className="rounded bg-sunken px-1 text-caption text-ink-muted">
                             /f/{business.slug}
                           </code>
                         </span>
-                        <p className="mt-0.5 text-xs text-slate-400">
+                        <p className="mt-0.5 text-caption text-ink-faint">
                           {BUSINESS_TYPES[business.type as BusinessType] ?? business.type} ·{" "}
                           {business._count.tables} QR · {business._count.feedbacks} geri bildirim
                         </p>
 
                         {business.users.length > 0 ? (
-                          <p className="mt-1 text-xs text-slate-500">
+                          <p className="mt-1 text-caption text-ink-muted">
                             Sorumlu:{" "}
                             {business.users.map((u, i) => (
                               <span key={u.id}>
@@ -206,14 +201,14 @@ export default async function AccountsPage() {
                                 <span className={u.active ? "" : "line-through"}>
                                   {u.name}
                                 </span>{" "}
-                                <code className="rounded bg-slate-100 px-1">
+                                <code className="rounded bg-sunken px-1">
                                   {u.username}
                                 </code>
                               </span>
                             ))}
                           </p>
                         ) : (
-                          <p className="mt-1 text-xs text-amber-600">Sorumlu atanmamış</p>
+                          <p className="mt-1 text-caption text-rating">Sorumlu atanmamış</p>
                         )}
                       </div>
                     </li>

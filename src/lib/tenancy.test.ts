@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "@/generated/prisma/client";
 import { buildFeedbackWhere } from "./feedback-filters";
+import { yazabilirMi } from "./session-token";
 import {
   IMPOSSIBLE_ID,
   allowedBusinessIdsFor,
@@ -54,6 +55,20 @@ const platform: TenantScope = {
   accountId: null,
   businessId: null,
 };
+// A hesabında yalnızca "A Merkez"e bakan bölge müdürü.
+const bolgeA: TenantScope = {
+  role: "bolge",
+  accountId: ids.hesapA,
+  businessId: null,
+  userId: "bolge-a",
+};
+// A hesabının tamamını görebilen ama hiçbir şeyi değiştiremeyen kullanıcı.
+const okuyucuA: TenantScope = {
+  role: "viewer",
+  accountId: ids.hesapA,
+  businessId: null,
+  userId: "okuyucu-a",
+};
 
 beforeAll(async () => {
   dbFile = path.join(
@@ -83,6 +98,23 @@ beforeAll(async () => {
       data: { id, accountId, name, slug: id, type: "yeme_icme" },
     });
   }
+  // Bölge müdürü: A hesabında yalnızca bir işletmeye atanmış. B hesabının
+  // işletmesine yapılmış hatalı bir atama da ekleniyor — hesap filtresinin
+  // bunu elemesi gerekiyor.
+  await prisma.user.create({
+    data: {
+      id: "bolge-a",
+      accountId: ids.hesapA,
+      name: "Bölge Müdürü",
+      username: "bolge-a",
+      email: "bolge@a.test",
+      role: "bolge",
+      passwordHash: "x",
+      businesses: {
+        create: [{ businessId: ids.aKafe1 }, { businessId: ids.bKafe1 }],
+      },
+    },
+  });
 }, 120000);
 
 afterAll(async () => {
@@ -252,5 +284,50 @@ describe("menü ve ürün puanları hesaba bağlı", () => {
       select: { itemName: true, menuItemId: true },
     });
     expect(kalan).toEqual({ itemName: "A Latte", menuItemId: null });
+  });
+});
+
+describe("bölge müdürü", () => {
+  it("yalnızca atandığı işletmeleri görür", async () => {
+    const izinli = await allowedBusinessIdsFor(prisma, bolgeA);
+    expect(izinli).toEqual([ids.aKafe1]);
+  });
+
+  it("aynı hesaptaki atanmamış işletmeye erişemez", async () => {
+    expect(await canAccessBusinessFor(prisma, bolgeA, ids.aKafe2)).toBe(false);
+  });
+
+  it("başka hesaba yapılmış hatalı atama kapsama girmez", async () => {
+    // Atama tablosunda B işletmesi de var; hesap filtresi onu elemeli.
+    const izinli = await allowedBusinessIdsFor(prisma, bolgeA);
+    expect(izinli).not.toContain(ids.bKafe1);
+    expect(await canAccessBusinessFor(prisma, bolgeA, ids.bKafe1)).toBe(false);
+  });
+
+  it("hiç atama yoksa hiçbir şey görmez", async () => {
+    const bos = await allowedBusinessIdsFor(prisma, {
+      role: "bolge",
+      accountId: ids.hesapA,
+      businessId: null,
+      userId: "olmayan-kullanici",
+    });
+    expect(bos).toEqual([IMPOSSIBLE_ID]);
+  });
+});
+
+describe("salt okunur kullanıcı", () => {
+  it("hesabın tamamını görür", async () => {
+    const izinli = await allowedBusinessIdsFor(prisma, okuyucuA);
+    expect(izinli.sort()).toEqual([ids.aKafe1, ids.aKafe2].sort());
+  });
+
+  it("başka hesabın işletmesine erişemez", async () => {
+    expect(await canAccessBusinessFor(prisma, okuyucuA, ids.bKafe1)).toBe(false);
+  });
+
+  it("yazma yetkisi yoktur", () => {
+    expect(yazabilirMi("viewer")).toBe(false);
+    expect(yazabilirMi("owner")).toBe(true);
+    expect(yazabilirMi("bolge")).toBe(true);
   });
 });

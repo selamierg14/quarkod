@@ -17,9 +17,9 @@ import {
 } from "./actions";
 
 const INPUT =
-  "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400";
+  "w-full rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
 const KUCUK_BUTON =
-  "rounded border border-slate-200 px-1.5 py-0.5 text-xs text-slate-500 hover:bg-slate-50";
+  "rounded border border-line px-1.5 py-0.5 text-caption text-ink-muted hover:bg-canvas";
 
 export type UrunGorunumu = {
   id: string;
@@ -44,7 +44,7 @@ export function NewCategoryForm({ businessId }: { businessId: string }) {
     <form action={formAction} className="flex flex-wrap items-end gap-2">
       <input type="hidden" name="businessId" value={businessId} />
       <label className="flex flex-col gap-1">
-        <span className="text-xs text-slate-500">Yeni bölüm</span>
+        <span className="text-caption text-ink-muted">Yeni bölüm</span>
         <input
           name="name"
           required
@@ -55,11 +55,11 @@ export function NewCategoryForm({ businessId }: { businessId: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white disabled:bg-slate-400"
+        className="rounded-chip bg-ink px-3 py-2 text-small font-medium text-white disabled:bg-slate-400"
       >
         {pending ? "Ekleniyor…" : "Bölüm ekle"}
       </button>
-      {state.error ? <p className="pb-2 text-sm text-red-600">{state.error}</p> : null}
+      {state.error ? <p className="pb-2 text-small text-danger">{state.error}</p> : null}
     </form>
   );
 }
@@ -78,7 +78,7 @@ export function CategoryHeader({
   const [duzenle, setDuzenle] = useState(false);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-2.5">
+    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-2.5">
       {duzenle ? (
         <form
           action={renameMenuCategory}
@@ -96,12 +96,12 @@ export function CategoryHeader({
         </form>
       ) : (
         <span className="flex items-center gap-2">
-          <span className={`font-medium ${active ? "" : "text-slate-400 line-through"}`}>
+          <span className={`font-medium ${active ? "" : "text-ink-faint line-through"}`}>
             {name}
           </span>
-          <span className="text-xs text-slate-400">{urunSayisi} ürün</span>
+          <span className="text-caption text-ink-faint">{urunSayisi} ürün</span>
           {!active ? (
-            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">
+            <span className="rounded bg-sunken px-1.5 py-0.5 text-caption text-ink-muted">
               menüde görünmüyor
             </span>
           ) : null}
@@ -144,11 +144,11 @@ export function CategoryHeader({
 function EtiketSecimi({ secili }: { secili: string[] }) {
   return (
     <fieldset className="flex flex-wrap gap-2">
-      <legend className="mb-1 text-xs text-slate-500">Etiketler</legend>
+      <legend className="mb-1 text-caption text-ink-muted">Etiketler</legend>
       {Object.entries(MENU_TAGS).map(([deger, etiket]) => (
         <label
           key={deger}
-          className="flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 px-2.5 py-1 text-xs has-checked:border-slate-900 has-checked:bg-slate-900 has-checked:text-white"
+          className="flex cursor-pointer items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-caption has-checked:border-slate-900 has-checked:bg-ink has-checked:text-white"
         >
           <input
             type="checkbox"
@@ -176,11 +176,11 @@ function UrunAlanlari({
     <>
       <div className="grid gap-3 sm:grid-cols-[1fr_10rem]">
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-slate-500">Ürün adı</span>
+          <span className="text-caption text-ink-muted">Ürün adı</span>
           <input name="name" required defaultValue={urun?.name} className={INPUT} />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-slate-500">Fiyat (₺)</span>
+          <span className="text-caption text-ink-muted">Fiyat (₺)</span>
           <input
             name="price"
             inputMode="decimal"
@@ -192,7 +192,7 @@ function UrunAlanlari({
       </div>
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs text-slate-500">Açıklama (isteğe bağlı)</span>
+        <span className="text-caption text-ink-muted">Açıklama (isteğe bağlı)</span>
         <input
           name="description"
           defaultValue={urun?.description ?? ""}
@@ -233,7 +233,7 @@ export function NewItemForm({
       <button
         type="button"
         onClick={() => setAcik(true)}
-        className="m-3 self-start rounded-lg border border-dashed border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+        className="m-3 self-start rounded-chip border border-dashed border-line-strong px-3 py-2 text-small text-ink-soft hover:bg-canvas"
       >
         + Ürün ekle
       </button>
@@ -241,25 +241,25 @@ export function NewItemForm({
   }
 
   return (
-    <form action={formAction} className="m-3 flex flex-col gap-3 rounded-lg bg-slate-50 p-4">
+    <form action={formAction} className="m-3 flex flex-col gap-3 rounded-chip bg-canvas p-4">
       <input type="hidden" name="categoryId" value={categoryId} />
       <UrunAlanlari brandColor={brandColor} />
 
-      {state.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
-      {state.saved ? <p className="text-sm text-emerald-700">{state.saved}</p> : null}
+      {state.error ? <p className="text-small text-danger">{state.error}</p> : null}
+      {state.saved ? <p className="text-small text-success-ink">{state.saved}</p> : null}
 
       <div className="flex gap-2">
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:bg-slate-400"
+          className="rounded-chip bg-ink px-4 py-2 text-small font-medium text-white disabled:bg-slate-400"
         >
           {pending ? "Ekleniyor…" : "Ürünü ekle"}
         </button>
         <button
           type="button"
           onClick={() => setAcik(false)}
-          className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600"
+          className="rounded-chip border border-line px-4 py-2 text-small text-ink-soft"
         >
           Kapat
         </button>
@@ -285,24 +285,24 @@ export function ItemRow({
   if (duzenle) {
     return (
       <li className="p-3">
-        <form action={formAction} className="flex flex-col gap-3 rounded-lg bg-slate-50 p-4">
+        <form action={formAction} className="flex flex-col gap-3 rounded-chip bg-canvas p-4">
           <input type="hidden" name="itemId" value={urun.id} />
           <UrunAlanlari urun={urun} brandColor={brandColor} />
 
-          {state.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
+          {state.error ? <p className="text-small text-danger">{state.error}</p> : null}
 
           <div className="flex gap-2">
             <button
               type="submit"
               disabled={pending}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:bg-slate-400"
+              className="rounded-chip bg-ink px-4 py-2 text-small font-medium text-white disabled:bg-slate-400"
             >
               {pending ? "Kaydediliyor…" : "Kaydet"}
             </button>
             <button
               type="button"
               onClick={() => setDuzenle(false)}
-              className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600"
+              className="rounded-chip border border-line px-4 py-2 text-small text-ink-soft"
             >
               Vazgeç
             </button>
@@ -319,40 +319,40 @@ export function ItemRow({
         <img
           src={urun.imageUrl}
           alt=""
-          className="h-12 w-12 shrink-0 rounded-lg object-cover ring-1 ring-slate-200"
+          className="h-12 w-12 shrink-0 rounded-chip object-cover ring-1 ring-line"
         />
       ) : (
-        <div className="h-12 w-12 shrink-0 rounded-lg bg-slate-100" aria-hidden="true" />
+        <div className="h-12 w-12 shrink-0 rounded-chip bg-sunken" aria-hidden="true" />
       )}
 
       <div className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className={`font-medium ${urun.active ? "" : "text-slate-400 line-through"}`}>
+          <span className={`font-medium ${urun.active ? "" : "text-ink-faint line-through"}`}>
             {urun.name}
           </span>
           {urun.priceKurus !== null ? (
-            <span className="text-sm text-slate-500">{formatPrice(urun.priceKurus)}</span>
+            <span className="text-small text-ink-muted">{formatPrice(urun.priceKurus)}</span>
           ) : null}
           {urun.soldOut ? (
-            <span className="rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-700">
+            <span className="rounded bg-warning-soft px-1.5 py-0.5 text-caption text-warning-ink">
               tükendi
             </span>
           ) : null}
           {!urun.active ? (
-            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">
+            <span className="rounded bg-sunken px-1.5 py-0.5 text-caption text-ink-muted">
               menüde yok
             </span>
           ) : null}
         </span>
 
         {urun.description ? (
-          <p className="mt-0.5 truncate text-xs text-slate-400">{urun.description}</p>
+          <p className="mt-0.5 truncate text-caption text-ink-faint">{urun.description}</p>
         ) : null}
 
         {etiketler.length > 0 ? (
           <p className="mt-1 flex flex-wrap gap-1">
             {etiketler.map((t) => (
-              <span key={t} className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600">
+              <span key={t} className="rounded bg-sunken px-1.5 py-0.5 text-[11px] text-ink-soft">
                 {MENU_TAGS[t]}
               </span>
             ))}
@@ -366,10 +366,10 @@ export function ItemRow({
           <input type="hidden" name="itemId" value={urun.id} />
           <button
             type="submit"
-            className={`rounded px-2 py-0.5 text-xs ${
+            className={`rounded px-2 py-0.5 text-caption ${
               urun.soldOut
-                ? "bg-amber-100 text-amber-800"
-                : "border border-slate-200 text-slate-500 hover:bg-slate-50"
+                ? "bg-warning-soft text-warning-ink"
+                : "border border-line text-ink-muted hover:bg-canvas"
             }`}
           >
             {urun.soldOut ? "Stoğa al" : "Tükendi"}

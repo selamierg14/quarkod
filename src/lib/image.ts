@@ -12,15 +12,20 @@ export const MAX_COVER_BYTES = 600 * 1024; // ~600 KB
 /// Menü ürün fotoğrafı. Bir menüde onlarca ürün olabildiği için sınır dar
 /// tutuldu: sayfa müşterinin mobil veriyle açılıyor.
 export const MAX_MENU_BYTES = 250 * 1024; // ~250 KB
+/// Müşterinin ankete eklediği kanıt fotoğrafı. Menü fotoğrafından biraz
+/// geniş: burada amaç iştah açmak değil, "sorun buydu" demek — detay
+/// okunabilmeli.
+export const MAX_ANKET_BYTES = 400 * 1024; // ~400 KB
 
 /** Tarayıcıda küçültme hedefleri. */
 export const LOGO_MAX_DIM = 400;
 export const COVER_MAX_WIDTH = 1200;
 export const MENU_MAX_DIM = 800;
+export const ANKET_MAX_DIM = 1000;
 
 const ALLOWED_PREFIX = /^data:image\/(png|jpeg|webp);base64,/;
 
-export type ImageKind = "logo" | "cover" | "menu";
+export type ImageKind = "logo" | "cover" | "menu" | "anket";
 
 /**
  * Bir data URI'nin güvenli biçimde saklanabileceğini doğrular.
@@ -42,7 +47,9 @@ export function validateImageDataUrl(
       ? MAX_LOGO_BYTES
       : kind === "menu"
         ? MAX_MENU_BYTES
-        : MAX_COVER_BYTES;
+        : kind === "anket"
+          ? MAX_ANKET_BYTES
+          : MAX_COVER_BYTES;
 
   if (bytes > limit) {
     const kb = Math.round(limit / 1024);

@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { FEEDBACK_STATUS_LIST, SHIFTS } from "@/lib/constants";
+import { TarihGirdisi } from "@/components/ui";
 
 type Props = {
   businesses: { id: string; name: string }[];
@@ -9,7 +10,7 @@ type Props = {
 };
 
 const INPUT =
-  "rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400";
+  "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
 
 export function FilterBar({ businesses, showBusinessFilter }: Props) {
   const router = useRouter();
@@ -26,10 +27,10 @@ export function FilterBar({ businesses, showBusinessFilter }: Props) {
   const hasFilters = [...params.keys()].some((key) => key !== "sayfa");
 
   return (
-    <div className="print-hidden flex flex-wrap items-end gap-2 rounded-xl bg-white p-3 ring-1 ring-slate-200">
+    <div className="print-hidden flex flex-wrap items-end gap-2 rounded-control bg-surface p-3 ring-1 ring-line">
       {showBusinessFilter ? (
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-slate-500">İşletme</span>
+          <span className="text-caption text-ink-muted">İşletme</span>
           <select
             className={INPUT}
             value={params.get("isletme") ?? ""}
@@ -46,7 +47,7 @@ export function FilterBar({ businesses, showBusinessFilter }: Props) {
       ) : null}
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs text-slate-500">Durum</span>
+        <span className="text-caption text-ink-muted">Durum</span>
         <select
           className={INPUT}
           value={params.get("durum") ?? ""}
@@ -62,7 +63,7 @@ export function FilterBar({ businesses, showBusinessFilter }: Props) {
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs text-slate-500">Puan</span>
+        <span className="text-caption text-ink-muted">Puan</span>
         <select
           className={INPUT}
           value={params.get("puan") ?? ""}
@@ -80,7 +81,7 @@ export function FilterBar({ businesses, showBusinessFilter }: Props) {
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs text-slate-500">Vardiya</span>
+        <span className="text-caption text-ink-muted">Vardiya</span>
         <select
           className={INPUT}
           value={params.get("vardiya") ?? ""}
@@ -96,27 +97,25 @@ export function FilterBar({ businesses, showBusinessFilter }: Props) {
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs text-slate-500">Başlangıç</span>
-        <input
-          type="date"
+        <span className="text-caption text-ink-muted">Başlangıç</span>
+        <TarihGirdisi
           className={INPUT}
-          value={params.get("baslangic") ?? ""}
-          onChange={(event) => update("baslangic", event.target.value)}
+          deger={params.get("baslangic") ?? ""}
+          onDegisim={(v) => update("baslangic", v)}
         />
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs text-slate-500">Bitiş</span>
-        <input
-          type="date"
+        <span className="text-caption text-ink-muted">Bitiş</span>
+        <TarihGirdisi
           className={INPUT}
-          value={params.get("bitis") ?? ""}
-          onChange={(event) => update("bitis", event.target.value)}
+          deger={params.get("bitis") ?? ""}
+          onDegisim={(v) => update("bitis", v)}
         />
       </label>
 
       <label className="flex flex-1 flex-col gap-1">
-        <span className="text-xs text-slate-500">Yorumda ara</span>
+        <span className="text-caption text-ink-muted">Yorumda ara</span>
         <input
           type="search"
           placeholder="kelime..."
@@ -134,7 +133,7 @@ export function FilterBar({ businesses, showBusinessFilter }: Props) {
         <button
           type="button"
           onClick={() => router.push("/admin/geri-bildirimler")}
-          className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+          className="rounded-chip border border-line px-3 py-2 text-small text-ink-soft hover:bg-canvas"
         >
           Temizle
         </button>

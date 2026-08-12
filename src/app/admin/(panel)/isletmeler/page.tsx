@@ -42,10 +42,10 @@ export default async function BusinessListPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-lg font-semibold tracking-tight">İşletmeler</h1>
+      <h1 className="text-title font-semibold">İşletmeler</h1>
 
       {businesses.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
+        <p className="rounded-control border border-dashed border-line-strong bg-surface p-8 text-center text-small text-ink-muted">
           Henüz işletme eklenmemiş. Aşağıdan ilk işletmenizi açın; kategori
           şablonu ve QR kodları otomatik hazırlanır.
         </p>
@@ -57,7 +57,7 @@ export default async function BusinessListPage() {
             <li key={business.id}>
               <Link
                 href={`/admin/isletmeler/${business.id}`}
-                className="block rounded-xl bg-white p-5 ring-1 ring-slate-200 hover:ring-slate-300"
+                className="block rounded-control bg-surface p-5 ring-1 ring-line hover:ring-line-strong"
               >
                 <span className="flex items-center gap-2 font-medium">
                   <span
@@ -66,17 +66,17 @@ export default async function BusinessListPage() {
                   />
                   {business.name}
                 </span>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-small text-ink-muted">
                   {BUSINESS_TYPES[business.type as BusinessType] ?? business.type}
                   {business.address ? ` · ${business.address}` : ""}
                 </p>
-                <p className="mt-3 text-xs text-slate-400">
+                <p className="mt-3 text-caption text-ink-faint">
                   {tables.get(business.id) ?? 0} QR noktası ·{" "}
                   {categories.get(business.id) ?? 0} kategori ·{" "}
                   {feedbacks.get(business.id) ?? 0} geri bildirim
                 </p>
                 {!business.googleReviewUrl ? (
-                  <p className="mt-2 text-xs text-amber-600">
+                  <p className="mt-2 text-caption text-rating">
                     Google yorum linki tanımlı değil — 5 yıldız yönlendirmesi çalışmaz.
                   </p>
                 ) : null}

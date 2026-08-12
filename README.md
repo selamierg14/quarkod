@@ -78,10 +78,17 @@ var; her işletme ve her kullanıcı bir hesaba bağlı.
 | --- | --- |
 | `superadmin` | Platformu işleten taraf (siz). Hesapları açar, askıya alır ve **bir hesaba geçip o kiracının panelini birebir görebilir**. Hiçbir hesaba ait değildir. |
 | `owner` | Kendi hesabındaki tüm işletmeler. Kendi kullanıcılarını ve işletmelerini yönetir. |
+| `bolge` | Bölge müdürü: kendisine atanmış **birden çok** işletme. Atamalar `user_businesses` tablosunda; hesap filtresinden de geçirilir, yanlış atama kapsama girmez. |
 | `manager` | Yalnızca kendi işletmesi — aynı hesaptaki diğer işletmeyi bile göremez. |
+| `viewer` | Salt okunur: hesabın tamamını görür, hiçbir kaydı değiştiremez. Yazma yapan her sunucu eylemi `requireYazma()` kapısından geçer; koruma arayüzün düğme gizlemesine değil bu kapıya dayanır. |
 
 İzolasyonun kuralları tek bir yerde: [tenancy.ts](src/lib/tenancy.ts). Panel
 sayfaları bu kuralları doğrudan çağırır, kendi filtresini yazmaz.
+
+**Denetim kaydı.** Panelde yapılan her değişiklik (durum değişimi, menü
+düzenlemesi, kullanıcı açma, abonelik güncelleme) ve platform ekibinin bir
+hesaba girişi `audit_logs` tablosuna yazılır; **Denetim kaydı** sekmesinden
+okunur. Hesap sahibi yalnızca kendi kiracısının kaydını görür.
 
 İki tasarım kararı bilinçli:
 
@@ -212,16 +219,22 @@ bağlayın ya da Postgres'e geçin. Prisma tarafında geçiş, `schema.prisma`
 içindeki sağlayıcıyı ve adaptörü değiştirmekten ibaret; sorgular aynı kalır.
 
 **Zamanlanmış işler.** Bunlar kendiliğinden çalışmaz, sunucuda cron'a
-eklenmeli:
+eklenmeli. Üçünü birden çalıştıran tek satır yeterli:
 
 ```bash
-0 4 * * *  cd /uygulama/yolu && npm run yedekle
-0 9 * * 1  cd /uygulama/yolu && npm run rapor:haftalik
-0 3 * * 0  cd /uygulama/yolu && npm run kvkk:temizle
+0 4 * * *  cd /uygulama/yolu && npm run isler:gunluk >> /var/log/memnuniyet.log 2>&1
 ```
 
-Sırasıyla: gecelik yedek, pazartesi sabahı haftalık rapor, KVKK saklama
-süresi dolan iletişim bilgilerinin silinmesi.
+Sırasıyla KVKK temizliği, yedekleme ve (yalnızca kendi gününde) haftalık
+rapor çalışır. Rapor günü `HAFTALIK_RAPOR_GUNU` ile değişir (0=pazar,
+varsayılan 1=pazartesi). İşleri tek tek de çalıştırabilirsiniz:
+`npm run kvkk:temizle`, `npm run yedekle`, `npm run rapor:haftalik`.
+
+Her çalışma veritabanına kaydedilir. Platform yöneticisi panelde
+**Sistem** sekmesinden "en son ne zaman çalıştı" bilgisini görür; cron
+kurulmayı unutulmuşsa iş orada **Hiç çalışmadı** olarak kırmızı görünür.
+Bu ekran olmadan KVKK temizliğinin hiç çalışmadığı ancak bir denetimde
+ortaya çıkardı.
 
 ## Örnek hesaplar
 

@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canAccessBusiness, requireUser } from "@/lib/auth";
+import { canAccessBusiness, requireYazma } from "@/lib/auth";
+import { denetimYaz } from "@/lib/denetim";
 import { prisma } from "@/lib/db";
 import { validateImageDataUrl } from "@/lib/image";
 import { parsePrice, serializeTags } from "@/lib/menu";
@@ -18,7 +19,8 @@ export type MenuFormState = { error?: string; saved?: string };
  * müşteri ekranı göremese de doğrudan action çağırarak menü kurabilirdi.
  */
 async function menuIzni(businessId: string): Promise<string | null> {
-  const user = await requireUser();
+  // Salt okunur kullanıcı buradan geçemez: requireYazma hata fırlatır.
+  const user = await requireYazma();
   if (!businessId || !(await canAccessBusiness(user, businessId))) {
     return "Bu işletme için yetkiniz yok.";
   }
@@ -26,6 +28,16 @@ async function menuIzni(businessId: string): Promise<string | null> {
     return "QR menü modülü bu hesapta açık değil.";
   }
   return null;
+}
+
+/** Menü değişikliklerini denetim kaydına yazar. */
+async function menuDenetim(
+  action: "menu.category" | "menu.item",
+  detail: string,
+  entityId?: string,
+) {
+  const user = await requireYazma();
+  await denetimYaz(user, action, { detail, entity: action, entityId });
 }
 
 function yenile() {
@@ -61,6 +73,7 @@ export async function addMenuCategory(
     throw error;
   }
 
+  await menuDenetim("menu.category", `Bölüm eklendi: ${name}`);
   yenile();
   return { saved: `${name} bölümü eklendi.` };
 }
@@ -73,6 +86,7 @@ export async function renameMenuCategory(formData: FormData) {
   if (await menuIzni(kategori.businessId)) return;
 
   await prisma.menuCategory.update({ where: { id }, data: { name } }).catch(() => {});
+  await menuDenetim("menu.category", `Bölüm adı: ${kategori.name} → ${name}`, id);
   yenile();
 }
 
@@ -88,6 +102,11 @@ export async function toggleMenuCategory(formData: FormData) {
     where: { id },
     data: { active: !kategori.active },
   });
+  await menuDenetim(
+    "menu.category",
+    `Bölüm ${kategori.active ? "gizlendi" : "açıldı"}: ${kategori.name}`,
+    id,
+  );
   yenile();
 }
 
@@ -180,7 +199,7 @@ export async function addMenuItem(
     select: { sortOrder: true },
   });
 
-  await prisma.menuItem.create({
+  const yeniUrun = await prisma.menuItem.create({
     data: {
       businessId: kategori.businessId,
       categoryId,
@@ -188,6 +207,7 @@ export async function addMenuItem(
       ...alanlar.veri,
     },
   });
+  await menuDenetim("menu.item", `Ürün eklendi: ${yeniUrun.name}`, yeniUrun.id);
 
   yenile();
   return { saved: `${alanlar.veri.name} eklendi.` };
@@ -208,6 +228,7 @@ export async function updateMenuItem(
   if (!alanlar.ok) return { error: alanlar.error };
 
   await prisma.menuItem.update({ where: { id }, data: alanlar.veri });
+  await menuDenetim("menu.item", `Ürün güncellendi: ${urun.name}`, id);
   yenile();
   return { saved: `${alanlar.veri.name} güncellendi.` };
 }
@@ -226,6 +247,11 @@ export async function toggleSoldOut(formData: FormData) {
   if (await menuIzni(urun.businessId)) return;
 
   await prisma.menuItem.update({ where: { id }, data: { soldOut: !urun.soldOut } });
+  await menuDenetim(
+    "menu.item",
+    `${urun.name}: ${urun.soldOut ? "tekrar var" : "bugün tükendi"}`,
+    id,
+  );
   yenile();
 }
 
@@ -236,6 +262,11 @@ export async function toggleMenuItem(formData: FormData) {
   if (await menuIzni(urun.businessId)) return;
 
   await prisma.menuItem.update({ where: { id }, data: { active: !urun.active } });
+  await menuDenetim(
+    "menu.item",
+    `Ürün ${urun.active ? "gizlendi" : "açıldı"}: ${urun.name}`,
+    id,
+  );
   yenile();
 }
 

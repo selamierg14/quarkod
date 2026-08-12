@@ -1,7 +1,13 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { COVER_MAX_WIDTH, LOGO_MAX_DIM, MENU_MAX_DIM, type ImageKind } from "@/lib/image";
+import {
+  ANKET_MAX_DIM,
+  COVER_MAX_WIDTH,
+  LOGO_MAX_DIM,
+  MENU_MAX_DIM,
+  type ImageKind,
+} from "@/lib/image";
 
 /**
  * Görsel yükleme alanı.
@@ -21,6 +27,7 @@ export function ImageUpload({
   hint,
   initial,
   brandColor,
+  onChange,
 }: {
   name: string;
   kind: ImageKind;
@@ -28,8 +35,15 @@ export function ImageUpload({
   hint: string;
   initial: string | null;
   brandColor: string;
+  /** Form alanı yerine doğrudan duruma yazan kullanımlar için. */
+  onChange?: (value: string) => void;
 }) {
-  const [value, setValue] = useState<string>(initial ?? "");
+  const [value, setValueState] = useState<string>(initial ?? "");
+
+  function setValue(yeni: string) {
+    setValueState(yeni);
+    onChange?.(yeni);
+  }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -56,7 +70,7 @@ export function ImageUpload({
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-xs text-slate-500">{label}</span>
+      <span className="text-caption text-ink-muted">{label}</span>
 
       <div className="flex items-center gap-4">
         {/* Önizleme */}
@@ -65,22 +79,22 @@ export function ImageUpload({
           <img
             src={value}
             alt={`${label} önizleme`}
-            className={`shrink-0 object-cover ring-1 ring-slate-200 ${
+            className={`shrink-0 object-cover ring-1 ring-line ${
               isLogo
                 ? "h-16 w-16 rounded-full"
                 : kareOnizleme
-                  ? "h-16 w-16 rounded-lg"
-                  : "h-16 w-28 rounded-lg"
+                  ? "h-16 w-16 rounded-chip"
+                  : "h-16 w-28 rounded-chip"
             }`}
           />
         ) : (
           <div
-            className={`flex shrink-0 items-center justify-center bg-slate-100 text-slate-400 ${
+            className={`flex shrink-0 items-center justify-center bg-sunken text-ink-faint ${
               kind === "logo"
                 ? "h-16 w-16 rounded-full"
                 : kind === "menu"
-                  ? "h-16 w-16 rounded-lg"
-                  : "h-16 w-28 rounded-lg"
+                  ? "h-16 w-16 rounded-chip"
+                  : "h-16 w-28 rounded-chip"
             }`}
             aria-hidden="true"
           >
@@ -95,7 +109,7 @@ export function ImageUpload({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={busy}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            className="rounded-chip border border-line bg-surface px-3 py-1.5 text-small text-ink-soft hover:bg-canvas disabled:opacity-60"
           >
             {busy ? "İşleniyor…" : value ? "Değiştir" : "Görsel seç"}
           </button>
@@ -103,7 +117,7 @@ export function ImageUpload({
             <button
               type="button"
               onClick={() => setValue("")}
-              className="rounded-lg px-2.5 py-1.5 text-sm text-slate-500 hover:text-red-600"
+              className="rounded-chip px-2.5 py-1.5 text-small text-ink-muted hover:text-danger"
             >
               Kaldır
             </button>
@@ -125,8 +139,8 @@ export function ImageUpload({
       {/* Kaydedilecek değer; boş dize "kaldır" anlamına gelir. */}
       <input type="hidden" name={name} value={value} />
 
-      <p className="text-xs text-slate-400">{hint}</p>
-      {error ? <p className="text-xs text-red-600">{error}</p> : null}
+      <p className="text-caption text-ink-faint">{hint}</p>
+      {error ? <p className="text-caption text-danger">{error}</p> : null}
 
       {/* Marka rengi, logo boşken önizleme kenarında ipucu olarak durur. */}
       <span className="sr-only" style={{ color: brandColor }} />
@@ -164,10 +178,13 @@ function resizeImage(file: File, kind: ImageKind): Promise<string> {
           return;
         }
 
-        // Kapak: genişliğe göre ölçekle, oranı koru.
-        if (width > COVER_MAX_WIDTH) {
-          height = Math.round((height * COVER_MAX_WIDTH) / width);
-          width = COVER_MAX_WIDTH;
+        // Kapak ve anket fotoğrafı: oranı koru, uzun kenarı sınırla.
+        // Kanıt fotoğrafını kare kırpmak sorunun yarısını kesebilir.
+        const enBoy = kind === "anket" ? ANKET_MAX_DIM : COVER_MAX_WIDTH;
+        if (Math.max(width, height) > enBoy) {
+          const oran = enBoy / Math.max(width, height);
+          width = Math.round(width * oran);
+          height = Math.round(height * oran);
         }
         const canvas = document.createElement("canvas");
         canvas.width = width;

@@ -19,19 +19,19 @@ export function CategoryManager({
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-sm text-slate-500">
+      <p className="text-small text-ink-muted">
         Anket ekranında bu başlıklar bu sırayla görünür. Kaldırmak yerine
         &quot;kapat&quot; deyin — eski kayıtlardaki puanlar korunur.
       </p>
 
-      <ul className="divide-y divide-slate-100 rounded-lg ring-1 ring-slate-200">
+      <ul className="divide-y divide-line rounded-chip ring-1 ring-line">
         {categories.map((category, index) => (
           <li
             key={category.id}
             className="flex items-center gap-2 px-3 py-2"
           >
             <span
-              className={`flex-1 text-sm ${category.active ? "" : "text-slate-400 line-through"}`}
+              className={`flex-1 text-small ${category.active ? "" : "text-ink-faint line-through"}`}
             >
               {category.name}
             </span>
@@ -43,7 +43,7 @@ export function CategoryManager({
                 type="submit"
                 disabled={index === 0}
                 aria-label={`${category.name} yukarı taşı`}
-                className="rounded px-2 py-1 text-slate-400 hover:bg-slate-100 disabled:opacity-30"
+                className="rounded px-2 py-1 text-ink-faint hover:bg-sunken disabled:opacity-30"
               >
                 ↑
               </button>
@@ -55,7 +55,7 @@ export function CategoryManager({
                 type="submit"
                 disabled={index === categories.length - 1}
                 aria-label={`${category.name} aşağı taşı`}
-                className="rounded px-2 py-1 text-slate-400 hover:bg-slate-100 disabled:opacity-30"
+                className="rounded px-2 py-1 text-ink-faint hover:bg-sunken disabled:opacity-30"
               >
                 ↓
               </button>
@@ -64,7 +64,7 @@ export function CategoryManager({
               <input type="hidden" name="categoryId" value={category.id} />
               <button
                 type="submit"
-                className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50"
+                className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas"
               >
                 {category.active ? "Kapat" : "Aç"}
               </button>
@@ -72,7 +72,7 @@ export function CategoryManager({
           </li>
         ))}
         {categories.length === 0 ? (
-          <li className="px-3 py-4 text-sm text-slate-400">
+          <li className="px-3 py-4 text-small text-ink-faint">
             Henüz kategori yok — anket sadece genel yıldız sorar.
           </li>
         ) : null}
@@ -84,19 +84,19 @@ export function CategoryManager({
           name="name"
           required
           placeholder="Yeni kategori (örn. Otopark)"
-          className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400"
+          className="flex-1 rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong"
         />
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:bg-slate-400"
+          className="rounded-chip bg-ink px-4 py-2 text-small font-medium text-white disabled:bg-slate-400"
         >
           Ekle
         </button>
       </form>
 
       {state.error ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
           {state.error}
         </p>
       ) : null}

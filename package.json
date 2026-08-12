@@ -20,7 +20,10 @@
     "setup": "prisma migrate deploy && prisma generate && prisma db seed",
     "postinstall": "prisma generate",
     "demo:veri": "tsx scripts/demo-veri.ts",
-    "demo:menu": "tsx scripts/demo-menu.ts"
+    "demo:menu": "tsx scripts/demo-menu.ts",
+    "sifre:sifirla": "tsx scripts/sifre-sifirla.ts",
+    "isler:gunluk": "tsx scripts/isler.ts",
+    "demo:kullanicilar": "tsx scripts/demo-kullanicilar.ts"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.9.1",

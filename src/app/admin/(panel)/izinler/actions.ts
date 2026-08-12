@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { allowedBusinessIds, requireOwner } from "@/lib/auth";
+import { allowedBusinessIds, requireOwner, requireYazma } from "@/lib/auth";
+import { denetimYaz } from "@/lib/denetim";
 import { prisma } from "@/lib/db";
 
 /**
@@ -13,6 +14,7 @@ import { prisma } from "@/lib/db";
  */
 export async function markReported(formData: FormData) {
   const user = await requireOwner();
+  await requireYazma();
   const ids = await allowedBusinessIds(user);
   const transactionId = String(formData.get("transactionId") ?? "").trim();
 
@@ -22,6 +24,12 @@ export async function markReported(formData: FormData) {
       reportedAt: new Date(),
       iysTransactionId: transactionId || null,
     },
+  });
+
+  await denetimYaz(user, "consent.reported", {
+    detail: transactionId
+      ? `İYS'ye bildirildi (işlem: ${transactionId})`
+      : "İYS'ye bildirildi",
   });
 
   revalidatePath("/admin/izinler");

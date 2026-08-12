@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireUser, visibleBusinesses } from "@/lib/auth";
+import { requireTenant, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { EmptyState } from "@/components/ui";
 import { CategoryHeader, ItemRow, NewCategoryForm, NewItemForm } from "./MenuForms";
@@ -13,7 +13,7 @@ export default async function MenuPage({
 }: {
   searchParams: Promise<{ isletme?: string }>;
 }) {
-  const user = await requireUser();
+  const user = await requireTenant();
   const businesses = await visibleBusinesses(user);
   const query = await searchParams;
 
@@ -36,10 +36,10 @@ export default async function MenuPage({
   if (!menuAcik) {
     return (
       <div className="flex flex-col gap-4">
-        <h1 className="text-lg font-semibold tracking-tight">QR Menü</h1>
-        <div className="rounded-xl bg-white p-6 ring-1 ring-slate-200">
+        <h1 className="text-title font-semibold">QR Menü</h1>
+        <div className="rounded-control bg-surface p-6 ring-1 ring-line">
           <p className="font-medium">Bu hesapta QR menü modülü kapalı.</p>
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-small text-ink-muted">
             QR menü, müşterinin masadaki kodu okuttuğunda fotoğraflı menünüzü
             görmesini sağlar; ayrıca ne yediğini seçip tek tek puanlayabilir,
             böylece hangi ürünün sevilmediğini isim isim görürsünüz. Açtırmak
@@ -65,8 +65,8 @@ export default async function MenuPage({
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight">QR Menü</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-title font-semibold">QR Menü</h1>
+        <p className="mt-1 text-small text-ink-muted">
           Müşteri masadaki kodu okuttuğunda bu menüyü görür ve yediklerini
           puanlayabilir.{" "}
           <Link
@@ -85,10 +85,10 @@ export default async function MenuPage({
             <Link
               key={b.id}
               href={`/admin/menu?isletme=${b.id}`}
-              className={`rounded-lg px-3 py-1.5 text-sm ${
+              className={`rounded-chip px-3 py-1.5 text-small ${
                 b.id === secili.id
-                  ? "bg-slate-900 text-white"
-                  : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"
+                  ? "bg-ink text-white"
+                  : "bg-surface text-ink-soft ring-1 ring-line hover:bg-canvas"
               }`}
             >
               {b.name}
@@ -97,10 +97,10 @@ export default async function MenuPage({
         </div>
       ) : null}
 
-      <p className="text-sm text-slate-500">
+      <p className="text-small text-ink-muted">
         {kategoriler.length} bölüm · {toplamUrun} ürün
         {tukenen > 0 ? (
-          <span className="text-amber-700"> · {tukenen} ürün tükendi olarak işaretli</span>
+          <span className="text-warning-ink"> · {tukenen} ürün tükendi olarak işaretli</span>
         ) : null}
       </p>
 
@@ -112,7 +112,7 @@ export default async function MenuPage({
       ) : (
         <ul className="flex flex-col gap-4">
           {kategoriler.map((kategori) => (
-            <li key={kategori.id} className="overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
+            <li key={kategori.id} className="overflow-hidden rounded-control bg-surface ring-1 ring-line">
               <CategoryHeader
                 id={kategori.id}
                 name={kategori.name}
@@ -121,9 +121,9 @@ export default async function MenuPage({
               />
 
               {kategori.items.length === 0 ? (
-                <p className="px-4 pt-3 text-sm text-slate-400">Bu bölümde ürün yok.</p>
+                <p className="px-4 pt-3 text-small text-ink-faint">Bu bölümde ürün yok.</p>
               ) : (
-                <ul className="divide-y divide-slate-100">
+                <ul className="divide-y divide-line">
                   {kategori.items.map((urun) => (
                     <ItemRow key={urun.id} urun={urun} brandColor={secili.brandColor} />
                   ))}
@@ -138,7 +138,7 @@ export default async function MenuPage({
         </ul>
       )}
 
-      <div className="rounded-xl bg-white p-5 ring-1 ring-slate-200">
+      <div className="rounded-control bg-surface p-5 ring-1 ring-line">
         <NewCategoryForm businessId={secili.id} />
       </div>
     </div>

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { hashPassword, requireSuperadmin } from "@/lib/auth";
+import { denetimYaz } from "@/lib/denetim";
 import { prisma } from "@/lib/db";
 import { clearActiveAccount, setActiveAccount } from "@/lib/impersonation";
 import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
@@ -21,7 +22,7 @@ export async function createAccount(
   _prev: AccountFormState,
   formData: FormData,
 ): Promise<AccountFormState> {
-  await requireSuperadmin();
+  const actor = await requireSuperadmin();
 
   const name = String(formData.get("name") ?? "").trim();
   const ownerName = String(formData.get("ownerName") ?? "").trim();
@@ -29,6 +30,9 @@ export async function createAccount(
   const ownerUsername = String(formData.get("ownerUsername") ?? "").trim().toLowerCase();
   const ownerPhone = String(formData.get("ownerPhone") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  // Hesabın geçerlilik tarihi açılışta veriliyor: "önce açalım sonra süre
+  // koyarız" unutuluyor ve süresiz hesap kalıyordu.
+  const expiresAt = tarihGirdisi(String(formData.get("expiresAt") ?? ""));
 
   if (!name) return { error: "Hesap adı gerekli." };
   if (!ownerName) return { error: "Hesap sahibinin adı gerekli." };
@@ -49,6 +53,9 @@ export async function createAccount(
   if (password.length < 8) {
     return { error: "Şifre en az 8 karakter olmalı." };
   }
+  if (expiresAt === undefined) {
+    return { error: "Geçerlilik tarihi hatalı. Takvimden seçin ya da boş bırakın." };
+  }
   if (await prisma.user.findUnique({ where: { email: ownerEmail } })) {
     return { error: "Bu e-posta zaten kayıtlı." };
   }
@@ -58,11 +65,14 @@ export async function createAccount(
 
   const passwordHash = await hashPassword(password);
 
+  let yeniHesapId: string | null = null;
   try {
-    await prisma.account.create({
+    const olusan = await prisma.account.create({
     data: {
       name,
       email: ownerEmail,
+      expiresAt,
+      menuEnabled: formData.get("menuEnabled") === "on",
       users: {
         create: {
           name: ownerName,
@@ -75,14 +85,26 @@ export async function createAccount(
       },
     },
     });
+    yeniHesapId = olusan.id;
   } catch (error) {
     const mesaj = uniqueConstraintMessage(error);
     if (mesaj) return { error: mesaj };
     throw error;
   }
 
+  await denetimYaz(actor, "account.create", {
+    accountId: yeniHesapId,
+    entity: "account",
+    entityId: yeniHesapId ?? undefined,
+    detail: `${name} hesabı açıldı (sahip: ${ownerName})`,
+  });
+
   revalidatePath("/admin/hesaplar");
-  return { saved: `${name} hesabı açıldı. Giriş kullanıcı adı: ${username}` };
+  return {
+    saved: expiresAt
+      ? `${name} hesabı açıldı (${expiresAt.toLocaleDateString("tr-TR")} tarihine kadar geçerli). Giriş kullanıcı adı: ${username}`
+      : `${name} hesabı açıldı — süresiz. Giriş kullanıcı adı: ${username}`,
+  };
 }
 
 /**
@@ -93,10 +115,19 @@ export async function createAccount(
  */
 /** Platform yöneticisi bir hesabın paneline geçer. */
 export async function enterAccount(formData: FormData) {
-  await requireSuperadmin();
+  const actor = await requireSuperadmin();
   const id = String(formData.get("accountId") ?? "");
   const account = await prisma.account.findUnique({ where: { id } });
   if (!account) return;
+
+  // Bu kaydın önemi diğerlerinden fazla: müşterinin verisine platform
+  // ekibinden birinin girdiği an burada iz bırakır.
+  await denetimYaz(actor, "account.enter", {
+    accountId: account.id,
+    entity: "account",
+    entityId: account.id,
+    detail: `${account.name} hesabına giriş yapıldı`,
+  });
 
   await setActiveAccount(account.id);
   redirect("/admin");
@@ -104,13 +135,14 @@ export async function enterAccount(formData: FormData) {
 
 /** Görüntülemeden çıkar; superadmin yeniden tüm hesapları görür. */
 export async function exitAccount() {
-  await requireSuperadmin();
+  const actor = await requireSuperadmin();
+  await denetimYaz(actor, "account.exit", { detail: "Hesap görüntülemeden çıkıldı" });
   await clearActiveAccount();
   redirect("/admin/hesaplar");
 }
 
 export async function toggleAccount(formData: FormData) {
-  await requireSuperadmin();
+  const actor = await requireSuperadmin();
 
   const id = String(formData.get("accountId") ?? "");
   const account = await prisma.account.findUnique({ where: { id } });
@@ -119,6 +151,13 @@ export async function toggleAccount(formData: FormData) {
   await prisma.account.update({
     where: { id },
     data: { active: !account.active },
+  });
+
+  await denetimYaz(actor, "account.toggle", {
+    accountId: id,
+    entity: "account",
+    entityId: id,
+    detail: `${account.name} ${account.active ? "askıya alındı" : "yeniden aktifleştirildi"}`,
   });
 
   revalidatePath("/admin/hesaplar");
@@ -134,7 +173,7 @@ export async function updateSubscription(
   _prev: AccountFormState,
   formData: FormData,
 ): Promise<AccountFormState> {
-  await requireSuperadmin();
+  const actor = await requireSuperadmin();
 
   const id = String(formData.get("accountId") ?? "");
   const account = await prisma.account.findUnique({ where: { id } });
@@ -148,6 +187,15 @@ export async function updateSubscription(
   await prisma.account.update({
     where: { id },
     data: { expiresAt, menuEnabled: formData.get("menuEnabled") === "on" },
+  });
+
+  await denetimYaz(actor, "account.subscription", {
+    accountId: id,
+    entity: "account",
+    entityId: id,
+    detail: expiresAt
+      ? `Geçerlilik: ${expiresAt.toLocaleDateString("tr-TR")}`
+      : "Geçerlilik: süresiz",
   });
 
   revalidatePath("/admin/hesaplar");

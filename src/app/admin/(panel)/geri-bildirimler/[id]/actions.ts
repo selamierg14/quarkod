@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canAccessBusiness, requireUser } from "@/lib/auth";
+import { canAccessBusiness, requireYazma } from "@/lib/auth";
+import { denetimYaz } from "@/lib/denetim";
 import { prisma } from "@/lib/db";
 import { FEEDBACK_STATUSES } from "@/lib/constants";
 
@@ -11,7 +12,7 @@ export async function updateFeedback(
   _prev: UpdateState,
   formData: FormData,
 ): Promise<UpdateState> {
-  const user = await requireUser();
+  const user = await requireYazma();
   const id = String(formData.get("id") ?? "");
   const status = String(formData.get("status") ?? "");
   const internalNote = String(formData.get("internalNote") ?? "").slice(0, 2000);
@@ -38,6 +39,14 @@ export async function updateFeedback(
       // kapatılırsa yanıt süresi metriği bozulmasın.
       ...(status === "cozuldu" && !feedback.resolvedAt ? { resolvedAt: now } : {}),
     },
+  });
+
+  await denetimYaz(user, "feedback.status", {
+    entity: "feedback",
+    entityId: id,
+    detail: statusChanged
+      ? `${FEEDBACK_STATUSES[feedback.status as keyof typeof FEEDBACK_STATUSES] ?? feedback.status} → ${FEEDBACK_STATUSES[status as keyof typeof FEEDBACK_STATUSES]}`
+      : "Dahili not güncellendi",
   });
 
   revalidatePath(`/admin/geri-bildirimler/${id}`);

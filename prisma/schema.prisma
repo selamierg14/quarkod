@@ -23,8 +23,11 @@ model Account {
   email     String?
   /// Askıya alınan hesabın kullanıcıları panele giremez, QR'ları çalışmaz.
   active    Boolean @default(true)
-  /// "deneme" | "standart" — ileride abonelik kademeleri için.
+  /// "deneme" | "standart" — deneme hesapları self-servis kayıttan gelir.
   plan      String  @default("standart")
+  /// Self-servis kayıtta isteğin geldiği IP'nin karması. Aynı IP'den seri
+  /// deneme hesabı açılmasını sınırlamak için; ham IP saklanmıyor.
+  signupIpHash String?
   /// Aboneliğin bittiği an. Null ise süresiz. Bu tarihten sonra hesap
   /// `active` alanına bakılmaksızın pasif sayılır: kullanıcılar panele
   /// giremez, QR'lar çalışmaz. Veri silinmez — ödeme gelince kaldığı
@@ -92,12 +95,55 @@ model Business {
   menuCategories MenuCategory[]
   menuItems      MenuItem[]
   itemRatings    ItemRating[]
+  bolgeMudurleri UserBusiness[]
 
   @@index([accountId])
   @@map("businesses")
 }
 
 /// Her işletmenin anket kategorileri. Admin panelinden düzenlenebilir.
+/// Kim ne yaptı — çok kiracılı üründe hesap verebilirliğin kaydı.
+///
+/// Aktör adı ve rolü o anki haliyle kopyalanır: kullanıcı sonradan silinse
+/// ya da rolü değişse bile kaydın anlamı bozulmasın.
+model AuditLog {
+  id        String @id @default(cuid())
+  /// Etkilenen kiracı. Platform işlemlerinde null olabilir.
+  accountId String?
+  actorId   String?
+  actorName String
+  actorRole String
+  /// "feedback.status" | "menu.item.create" | "account.enter" gibi.
+  action    String
+  /// İnsan tarafından okunabilir özet: "Masa 12 · yeni → çözüldü".
+  detail    String?
+  entity    String?
+  entityId  String?
+  createdAt DateTime @default(now())
+
+  @@index([accountId, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
+
+/// Zamanlanmış işlerin çalışma kaydı.
+///
+/// KVKK temizliği ya da yedekleme cron'a bağlanmayı unutulduğunda sessizce
+/// hiç çalışmıyordu; bu tablo "en son ne zaman çalıştı" sorusunu panelden
+/// cevaplanabilir hale getiriyor.
+model JobRun {
+  id         String    @id @default(cuid())
+  /// "kvkk-temizle" | "yedekle" | "haftalik-rapor"
+  name       String
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  ok         Boolean   @default(false)
+  detail     String?
+
+  @@index([name, startedAt])
+  @@map("job_runs")
+}
+
 model CategoryTemplate {
   id         String  @id @default(cuid())
   businessId String
@@ -294,9 +340,12 @@ model User {
   passwordHash String
   /// "superadmin" (platformu işleten biz — tüm hesaplar)
   /// "owner"      (hesabın sahibi — kendi hesabındaki tüm işletmeler)
+  /// "bolge"      (bölge müdürü — kendisine atanmış birden çok işletme)
   /// "manager"    (yalnızca kendi işletmesi)
+  /// "viewer"     (salt okunur — hesabın tamamını görür, hiçbir şeyi değiştiremez)
   role         String
-  /// owner ve superadmin için null.
+  /// Yalnızca "manager" için tek işletme. Bölge müdürünün işletmeleri
+  /// UserBusiness tablosunda; owner/viewer/superadmin için null.
   businessId   String?
   active       Boolean @default(true)
 
@@ -307,12 +356,30 @@ model User {
 
   createdAt DateTime @default(now())
 
-  account  Account?  @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  business Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
-  otpCodes OtpCode[]
+  account    Account?       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  business   Business?      @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  otpCodes   OtpCode[]
+  businesses UserBusiness[]
 
   @@index([accountId])
   @@map("users")
+}
+
+/// Bölge müdürünün sorumlu olduğu işletmeler.
+///
+/// Ayrı tablo şart: tek `businessId` alanı bir kullanıcıya yalnızca bir
+/// işletme bağlayabiliyor, zincirde "üç şubeye bakan müdür" temsil
+/// edilemiyordu.
+model UserBusiness {
+  userId     String
+  businessId String
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@id([userId, businessId])
+  @@index([businessId])
+  @@map("user_businesses")
 }
 
 /// Tek kullanımlık SMS kodu (giriş 2. adımı ve şifre sıfırlama).

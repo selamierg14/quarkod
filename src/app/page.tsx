@@ -18,14 +18,14 @@ export default function HomePage() {
       <h1 className="text-2xl font-semibold tracking-tight">
         Müşteri Memnuniyet Sistemi
       </h1>
-      <p className="mt-2 text-slate-600">
+      <p className="mt-2 text-ink-soft">
         Müşteriler masadaki QR kodu okutarak anketi doldurur. Yönetim tarafı için
         panele giriş yapın.
       </p>
 
       <Link
         href="/admin"
-        className="mt-6 rounded-xl bg-slate-900 px-5 py-3.5 text-center font-medium text-white active:scale-[0.99]"
+        className="mt-6 rounded-control bg-ink px-5 py-3.5 text-center font-medium text-white active:scale-[0.99]"
       >
         Yönetim paneline git
       </Link>

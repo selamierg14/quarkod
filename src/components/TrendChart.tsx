@@ -24,7 +24,7 @@ export function TrendChart({
   const withData = points.filter((point) => point.average !== null);
   if (withData.length < 2) {
     return (
-      <p className="py-6 text-center text-sm text-slate-400">
+      <p className="py-6 text-center text-small text-ink-faint">
         Trend için en az iki haftalık veri gerekiyor.
       </p>
     );
@@ -65,7 +65,7 @@ export function TrendChart({
         <text
           x={4}
           y={padding.top - 2}
-          className="fill-slate-400"
+          className="fill-ink-faint"
           style={{ fontSize: 8 }}
         >
           puan
@@ -78,14 +78,14 @@ export function TrendChart({
               x2={width - padding.right}
               y1={y(value)}
               y2={y(value)}
-              stroke={value === 3 ? "#e2e8f0" : "#f1f5f9"}
+              stroke={value === 3 ? "var(--color-line)" : "var(--color-sunken)"}
               strokeWidth={1}
             />
             <text
               x={padding.left - 6}
               y={y(value) + 3}
               textAnchor="end"
-              className="fill-slate-400"
+              className="fill-ink-faint"
               style={{ fontSize: 9 }}
             >
               {value}
@@ -137,7 +137,7 @@ export function TrendChart({
                 x={cx - 6}
                 y={cy - 8}
                 textAnchor="end"
-                className="fill-slate-600"
+                className="fill-ink-soft"
                 style={{ fontSize: 10, fontWeight: 600 }}
               >
                 {son.average!.toFixed(1)}
@@ -153,7 +153,7 @@ export function TrendChart({
               x={x(index)}
               y={height - 6}
               textAnchor="middle"
-              className="fill-slate-400"
+              className="fill-ink-faint"
               style={{ fontSize: 9 }}
             >
               {point.label}
@@ -173,7 +173,7 @@ export function TrendChart({
 export function DeltaBadge({ delta }: { delta: number | null }) {
   if (delta === null) {
     return (
-      <span className="text-xs text-slate-400" title="Karşılaştırma için yeterli veri yok">
+      <span className="text-caption text-ink-faint" title="Karşılaştırma için yeterli veri yok">
         yeni
       </span>
     );
@@ -181,13 +181,13 @@ export function DeltaBadge({ delta }: { delta: number | null }) {
 
   // 0.1'in altındaki oynamalar gürültü; "sabit" demek daha dürüst.
   if (Math.abs(delta) < 0.1) {
-    return <span className="text-xs text-slate-500">önceki aya göre sabit</span>;
+    return <span className="text-caption text-ink-muted">önceki aya göre sabit</span>;
   }
 
   const up = delta > 0;
   return (
     <span
-      className={`text-xs font-medium ${up ? "text-emerald-600" : "text-red-600"}`}
+      className={`text-caption font-medium ${up ? "text-success" : "text-danger"}`}
       title="Son 30 günün ortalaması, önceki 30 güne göre"
     >
       {up ? "▲" : "▼"} {Math.abs(delta).toFixed(2)} önceki aya göre

@@ -11,7 +11,11 @@ import {
   requireUser,
   setSessionCookie,
   userScope,
+  requireYazma,
 } from "@/lib/auth";
+import { denetimYaz } from "@/lib/denetim";
+import { acilabilirRoller } from "@/lib/panel";
+import { gecerliRolMu } from "@/lib/session-token";
 import { prisma } from "@/lib/db";
 import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
 import { uniqueConstraintMessage } from "@/lib/unique-error";
@@ -41,6 +45,7 @@ export async function createUser(
   formData: FormData,
 ): Promise<UserFormState> {
   const actor = await requireOwner();
+  await requireYazma();
 
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
@@ -48,6 +53,11 @@ export async function createUser(
   const rawPhone = String(formData.get("phone") ?? "").trim();
   const role = String(formData.get("role") ?? "");
   const businessId = String(formData.get("businessId") ?? "");
+  // Bölge müdürü birden çok işletmeye atanır; form aynı adla çoklu değer yollar.
+  const bolgeIsletmeleri = formData
+    .getAll("bolgeIsletmeleri")
+    .map((v) => String(v))
+    .filter(Boolean);
   const password = String(formData.get("password") ?? "");
 
   if (!name) return { error: "Ad soyad gerekli." };
@@ -60,9 +70,17 @@ export async function createUser(
   // 2FA kodu buraya gideceği için telefon zorunlu.
   const phone = normalizePhone(rawPhone);
   if (!phone) return { error: "Geçerli bir cep telefonu girin (5XX...)." };
-  if (role !== "owner" && role !== "manager") return { error: "Rol seçin." };
+  if (!gecerliRolMu(role) || !acilabilirRoller(actor.role).includes(role)) {
+    // Hesap sahibi kendine eş yetkide ikinci bir sahip açamaz: sahiplik
+    // aboneliği ve faturayı taşıyan roldür, onu platform tarafı belirler.
+    // Aksi halde bir müşteri hesabında kimin sorumlu olduğu belirsizleşir.
+    return { error: "Bu rolü açma yetkiniz yok." };
+  }
   if (role === "manager" && !businessId) {
     return { error: "İşletme sorumlusu için bir işletme seçin." };
+  }
+  if (role === "bolge" && bolgeIsletmeleri.length === 0) {
+    return { error: "Bölge müdürü için en az bir işletme seçin." };
   }
 
   // Yeni kullanıcı her zaman ekleyenin hesabına açılır ve yalnızca o hesabın
@@ -76,6 +94,13 @@ export async function createUser(
   }
   if (businessId && !(await canAccessBusiness(actor, businessId))) {
     return { error: "Bu işletmeye kullanıcı atama yetkiniz yok." };
+  }
+  // Her işletme tek tek doğrulanıyor: form manipüle edilip başka kiracının
+  // işletmesi eklenemesin.
+  for (const id of bolgeIsletmeleri) {
+    if (!(await canAccessBusiness(actor, id))) {
+      return { error: "Seçilen işletmelerden birine yetkiniz yok." };
+    }
   }
 
   const problem = passwordProblem(password);
@@ -101,6 +126,13 @@ export async function createUser(
         role,
         businessId: role === "manager" ? businessId : null,
         passwordHash: await hashPassword(password),
+        ...(role === "bolge"
+          ? {
+              businesses: {
+                create: bolgeIsletmeleri.map((id) => ({ businessId: id })),
+              },
+            }
+          : {}),
       },
     });
   } catch (error) {
@@ -108,6 +140,11 @@ export async function createUser(
     if (mesaj) return { error: mesaj };
     throw error;
   }
+
+  await denetimYaz(actor, "user.create", {
+    entity: "user",
+    detail: `${name} (${role}) eklendi`,
+  });
 
   revalidatePath("/admin/kullanicilar");
   return { saved: `${name} eklendi. Giriş kullanıcı adı: ${username}` };
@@ -118,6 +155,7 @@ export async function resetPassword(
   formData: FormData,
 ): Promise<UserFormState> {
   const actor = await requireOwner();
+  await requireYazma();
 
   const id = String(formData.get("userId") ?? "");
   const password = String(formData.get("password") ?? "");
@@ -151,12 +189,19 @@ export async function resetPassword(
     },
   });
 
+  await denetimYaz(actor, "user.password", {
+    entity: "user",
+    entityId: id,
+    detail: `${user.name} için şifre sıfırlandı`,
+  });
+
   revalidatePath("/admin/kullanicilar");
   return { saved: `${user.name} için yeni şifre belirlendi.` };
 }
 
 export async function toggleUser(formData: FormData) {
   const owner = await requireOwner();
+  await requireYazma();
   const id = String(formData.get("userId") ?? "");
 
   // Patron kendi hesabını kapatıp sistemden kilitlenmesin.
@@ -168,6 +213,11 @@ export async function toggleUser(formData: FormData) {
   if (!user) return;
 
   await prisma.user.update({ where: { id }, data: { active: !user.active } });
+  await denetimYaz(owner, "user.toggle", {
+    entity: "user",
+    entityId: id,
+    detail: `${user.name} ${user.active ? "pasife alındı" : "aktifleştirildi"}`,
+  });
   revalidatePath("/admin/kullanicilar");
 }
 

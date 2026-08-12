@@ -59,7 +59,7 @@ export function StarRating({
 
   return (
     <div className={big ? "flex flex-col items-center gap-2" : ""}>
-      {label ? <span className="text-[15px] text-slate-700">{label}</span> : null}
+      {label ? <span className="text-body text-ink-soft">{label}</span> : null}
 
       <div
         ref={groupRef}
@@ -82,10 +82,10 @@ export function StarRating({
               className={`
                 flex touch-manipulation items-center justify-center rounded-full
                 transition-transform duration-100 outline-none
-                focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-1
+                focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-1
                 active:scale-90
                 ${big ? "h-12 w-12" : "h-9 w-9"}
-                ${active ? "text-amber-400" : "text-slate-300"}
+                ${active ? "text-rating" : "text-rating-empty"}
               `}
             >
               <svg
@@ -103,7 +103,7 @@ export function StarRating({
 
       {big ? (
         // Yükseklik sabit: seçim yapılınca sayfa zıplamasın.
-        <span className="h-5 text-sm font-medium text-slate-600">
+        <span className="h-5 text-small font-medium text-ink-soft">
           {value > 0 ? LABELS[value - 1] : ""}
         </span>
       ) : null}

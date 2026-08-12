@@ -1,4 +1,4 @@
-import { allowedBusinessIds, requireOwner } from "@/lib/auth";
+import { allowedBusinessIds, requireTenantOwner } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { EmptyState, formatDateTime } from "@/components/ui";
 import { IYS_CHANNELS, type IysChannel } from "@/lib/iys";
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "İleti izinleri" };
 
 export default async function ConsentsPage() {
-  const user = await requireOwner();
+  const user = await requireTenantOwner();
   const ids = await allowedBusinessIds(user);
 
   const [consents, bekleyen] = await Promise.all([
@@ -27,8 +27,8 @@ export default async function ConsentsPage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight">İleti izinleri</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-title font-semibold">İleti izinleri</h1>
+        <p className="mt-1 text-small text-ink-muted">
           Ankette ticari elektronik ileti kutusunu işaretleyen müşteriler. Bu
           liste, geri bildirim için alınan KVKK rızasından ayrıdır — buradaki
           kayıtlar İYS&apos;ye bildirilmek üzere tutulur.
@@ -36,8 +36,8 @@ export default async function ConsentsPage() {
       </div>
 
       {bekleyen > 0 ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-amber-50 px-4 py-3">
-          <p className="text-sm text-amber-800">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-control bg-warning-soft px-4 py-3">
+          <p className="text-small text-warning-ink">
             <span className="font-medium">{bekleyen} izin</span> henüz
             İYS&apos;ye bildirilmedi. Mevzuat izinlerin kısa sürede
             bildirilmesini istiyor — dosyayı indirip İYS panelinize yükleyin.
@@ -45,7 +45,7 @@ export default async function ConsentsPage() {
           <div className="flex flex-wrap items-center gap-2">
             <a
               href="/admin/izinler/disa-aktar"
-              className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white"
+              className="rounded-chip bg-ink px-3 py-1.5 text-small font-medium text-white"
             >
               Bekleyenleri indir
             </a>
@@ -53,13 +53,13 @@ export default async function ConsentsPage() {
           </div>
         </div>
       ) : consents.length > 0 ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-emerald-50 px-4 py-3">
-          <p className="text-sm text-emerald-800">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-control bg-success-soft px-4 py-3">
+          <p className="text-small text-emerald-800">
             Tüm izinler İYS&apos;ye bildirildi olarak işaretli.
           </p>
           <a
             href="/admin/izinler/disa-aktar?kapsam=hepsi"
-            className="rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-sm text-slate-600"
+            className="rounded-chip border border-emerald-200 bg-surface px-3 py-1.5 text-small text-ink-soft"
           >
             Tümünü indir
           </a>
@@ -73,9 +73,9 @@ export default async function ConsentsPage() {
           görünür.
         </EmptyState>
       ) : (
-        <div className="overflow-x-auto rounded-xl bg-white ring-1 ring-slate-200">
-          <table className="w-full min-w-[720px] text-sm">
-            <thead className="border-b border-slate-200 text-left text-xs tracking-wide text-slate-500 uppercase">
+        <div className="overflow-x-auto rounded-control bg-surface ring-1 ring-line">
+          <table className="w-full min-w-[720px] text-small">
+            <thead className="border-b border-line text-left text-caption tracking-wide text-ink-muted uppercase">
               <tr>
                 <th className="px-4 py-3 font-medium">Alıcı</th>
                 <th className="px-4 py-3 font-medium">Kanal</th>
@@ -85,27 +85,27 @@ export default async function ConsentsPage() {
                 <th className="px-4 py-3 font-medium">İYS</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-line">
               {consents.map((consent) => (
                 <tr key={consent.id}>
-                  <td className="px-4 py-3 font-medium tabular-nums">
+                  <td className="px-4 py-3 font-medium tabular">
                     {consent.recipient}
                   </td>
-                  <td className="px-4 py-3 text-slate-600">
+                  <td className="px-4 py-3 text-ink-soft">
                     {IYS_CHANNELS[consent.channel as IysChannel] ?? consent.channel}
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${
+                      className={`inline-flex rounded-full px-2.5 py-0.5 text-caption font-medium ring-1 ${
                         consent.status === "ONAY"
-                          ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
-                          : "bg-slate-100 text-slate-600 ring-slate-200"
+                          ? "bg-success-soft text-success-ink ring-success/20"
+                          : "bg-sunken text-ink-soft ring-line"
                       }`}
                     >
                       {consent.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-slate-600">
+                  <td className="px-4 py-3 text-ink-soft">
                     <span className="flex items-center gap-2">
                       <span
                         className="h-2 w-2 rounded-full"
@@ -114,19 +114,19 @@ export default async function ConsentsPage() {
                       {consent.business.name}
                     </span>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-slate-500">
+                  <td className="px-4 py-3 whitespace-nowrap text-ink-muted">
                     {formatDateTime(consent.consentAt)}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     {consent.reportedAt ? (
                       <span
-                        className="text-xs text-emerald-600"
+                        className="text-caption text-success"
                         title={consent.iysTransactionId ?? undefined}
                       >
                         bildirildi · {formatDateTime(consent.reportedAt)}
                       </span>
                     ) : (
-                      <span className="text-xs text-amber-600">bekliyor</span>
+                      <span className="text-caption text-rating">bekliyor</span>
                     )}
                   </td>
                 </tr>
@@ -136,7 +136,7 @@ export default async function ConsentsPage() {
         </div>
       )}
 
-      <p className="text-xs text-slate-400">
+      <p className="text-caption text-ink-faint">
         Dosyanın sütun adları İYS alan adlarıyla birebir aynıdır: recipient,
         type, recipientType, status, consentDate, source.
       </p>

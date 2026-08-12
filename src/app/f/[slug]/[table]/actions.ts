@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
 import { notifyLowRating } from "@/lib/mail";
+import { validateImageDataUrl } from "@/lib/image";
 import { shiftFromDate } from "@/lib/constants";
 import { foldTr } from "@/lib/text";
 import { CONTACT_TYPES, KVKK_VERSION, type ContactType } from "@/lib/kvkk";
@@ -32,6 +33,8 @@ export type SurveyInput = {
   overallRating: number;
   categoryRatings: Record<string, number>;
   comment: string;
+  /// İsteğe bağlı kanıt fotoğrafı (data URI). "Çorba böyle geldi."
+  photo?: string;
   contactInfo: string;
   contactType: ContactType | "";
   consentGiven: boolean;
@@ -212,6 +215,12 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
   }
 
   const comment = asText(input.comment).trim().slice(0, 2000);
+
+  // Fotoğraf isteğe bağlı; geçersizse anketi reddetmek yerine fotoğrafsız
+  // kaydediyoruz — müşteri 30 saniyelik işini bitirmiş olsun.
+  const rawPhoto = asText(input.photo ?? "").trim();
+  const photoUrl = rawPhoto && !validateImageDataUrl(rawPhoto, "anket") ? rawPhoto : null;
+
   const now = new Date();
   const redirectToGoogle =
     rating === 5 && business.googleRedirect && Boolean(business.googleReviewUrl);
@@ -226,6 +235,7 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
         : null,
       comment: comment || null,
       commentSearch: comment ? foldTr(comment) : null,
+      photoUrl,
       contactInfo: storeContact ? rawContact : null,
       contactType: storeContact ? contactType : null,
       consentGiven: storeContact,

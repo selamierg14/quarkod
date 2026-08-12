@@ -9,6 +9,7 @@ import {
   createSessionToken,
   sessionRevokedReason,
   verifySessionToken,
+  yazabilirMi,
   type Role,
   type SessionUser,
 } from "./session-token";
@@ -113,7 +114,21 @@ export async function requireUser(): Promise<SessionUser> {
 /** Hesap sahibi veya platform yöneticisi gerektiren sayfalar için. */
 export async function requireOwner(): Promise<SessionUser> {
   const user = await requireUser();
-  if (user.role === "manager") redirect("/admin");
+  if (user.role !== "owner" && user.role !== "superadmin") redirect("/admin");
+  return user;
+}
+
+/**
+ * Yazma işlemi yapan her sunucu eyleminin ilk satırı.
+ *
+ * Salt okunur kullanıcının arayüzünde düğmeler gizli ama form doğrudan da
+ * gönderilebilir; yetki kontrolü görünürlüğe değil bu kapıya dayanmalı.
+ */
+export async function requireYazma(): Promise<SessionUser> {
+  const user = await requireUser();
+  if (!yazabilirMi(user.role)) {
+    throw new Error("Bu hesap salt okunur; değişiklik yapamaz.");
+  }
   return user;
 }
 
@@ -131,6 +146,31 @@ export async function actingAccountId(user: SessionUser): Promise<string | null>
 export async function requireSuperadmin(): Promise<SessionUser> {
   const user = await requireUser();
   if (user.role !== "superadmin") redirect("/admin");
+  return user;
+}
+
+/**
+ * Bir kiracının verisini gösteren sayfaların kapısı.
+ *
+ * Platform yöneticisi hiçbir işletmenin sahibi değil; hesap seçmeden bu
+ * ekranlara girerse tüm kiracıların verisi tek potada karışır ve "kimin
+ * ortalaması bu?" sorusunun cevabı olmaz. Önce Hesaplar'dan bir hesaba
+ * girmesi gerekiyor.
+ */
+export async function requireTenant(): Promise<SessionUser> {
+  const user = await requireUser();
+  if (user.role === "superadmin" && !(await effectiveAccountId(user))) {
+    redirect("/admin/hesaplar");
+  }
+  return user;
+}
+
+/** Hem hesap sahibi yetkisi hem de seçili bir kiracı isteyen ekranlar. */
+export async function requireTenantOwner(): Promise<SessionUser> {
+  const user = await requireOwner();
+  if (user.role === "superadmin" && !(await effectiveAccountId(user))) {
+    redirect("/admin/hesaplar");
+  }
   return user;
 }
 
@@ -213,7 +253,7 @@ export async function allowedBusinessIds(user: SessionUser): Promise<string[]> {
       businessId: null,
     });
   }
-  return allowedBusinessIdsFor(prisma, user);
+  return allowedBusinessIdsFor(prisma, { ...user, userId: user.id });
 }
 
 /** Kullanıcının panelde seçebileceği işletmeler. */
@@ -238,7 +278,7 @@ export async function canAccessBusiness(
       businessId,
     );
   }
-  return canAccessBusinessFor(prisma, user, businessId);
+  return canAccessBusinessFor(prisma, { ...user, userId: user.id }, businessId);
 }
 
 /** Kullanıcının yönetebileceği kullanıcılar için Prisma filtresi. */

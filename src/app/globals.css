@@ -1,8 +1,125 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   Tasarım token'ları
+   ---------------------------------------------------------------------------
+   Ürünün iki yüzü var: müşteri ekranları (işletmenin markası baskın) ve
+   yönetim paneli (platformun kendi kimliği baskın). İkisi de aynı token
+   setinden besleniyor; ayrım renk seçiminde değil, hangi token'ın
+   kullanıldığında.
+
+   Kural: paletin tek kromatik rengi işletmenin markasıdır. Arayüzün kendi
+   vurgusu renk değil, koyu mürekkeptir (`ink`) — seçili sekme, seçili hap,
+   odak halkası. Marka rengi müşteri ekranlarında kabuk ve ana aksiyonlarda,
+   panelde ise yalnızca o işletmenin verisini çizen yerlerde (trend çizgisi,
+   kırılım barları, QR kartı, marka ayarları) kullanılır. Böylece panel
+   onlarca kiracıda aynı görünür, veri ise kimin olduğunu belli eder.
+--------------------------------------------------------------------------- */
+
+@theme {
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Yüzeyler ve çizgiler — tasarım dosyasındaki slate ailesi birebir. */
+  --color-canvas: #f8fafc;
+  --color-surface: #ffffff;
+  --color-sunken: #f1f5f9;
+  --color-line: #e2e8f0;
+  --color-line-strong: #cbd5e1;
+
+  /* Metin hiyerarşisi. */
+  --color-ink: #0f172a;
+  --color-ink-strong: #1e293b;
+  --color-ink-soft: #334155;
+  --color-ink-muted: #64748b;
+  --color-ink-faint: #94a3b8;
+
+  /* Platform vurgusu, tasarımda ayrı bir renk değil: seçili sekme, seçili
+     hap ve odak halkası koyu mürekkeple işaretleniyor. Tek kromatik renk
+     işletmenin kendi markası — panel hiçbir kiracıda renk değiştirmesin. */
+  --color-accent-50: #f8fafc;
+  --color-accent-100: #f1f5f9;
+  --color-accent-200: #e2e8f0;
+  --color-accent-300: #cbd5e1;
+  --color-accent-400: #94a3b8;
+  --color-accent-500: #475569;
+  --color-accent-600: #0f172a;
+  --color-accent-700: #0b1220;
+  --color-accent-900: #020617;
+
+  --color-ink-button: #0f172a;
+  --color-ink-button-hover: #1e293b;
+
+  /* Durum renkleri. */
+  --color-success: #059669;
+  --color-success-soft: #ecfdf5;
+  --color-success-ink: #047857;
+  --color-warning: #d97706;
+  --color-warning-soft: #fffbeb;
+  --color-warning-ink: #b45309;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fef2f2;
+  --color-danger-line: #fee2e2;
+  --color-danger-ink: #b91c1c;
+  --color-danger-deep: #7f1d1d;
+  --color-info: #0284c7;
+  --color-info-soft: #f0f9ff;
+  --color-info-ink: #0369a1;
+
+  /* Yıldızlar her yerde aynı sarıda kalır: puan, marka rengine göre
+     değişebilecek bir şey değil. */
+  --color-rating: #fbbf24;
+  --color-rating-empty: #cbd5e1;
+
+  /* Tipografi ölçeği. Gövde 15px: mobilde masadan okunacak kadar büyük,
+     panelde tabloyu şişirmeyecek kadar küçük. */
+  --text-display: 1.375rem;
+  --text-display--line-height: 1.25;
+  --text-display--letter-spacing: -0.01em;
+  --text-metric: 1.625rem;
+  --text-metric--line-height: 1.15;
+  --text-metric--letter-spacing: -0.015em;
+  --text-title: 1.125rem;
+  --text-title--line-height: 1.35;
+  --text-title--letter-spacing: -0.01em;
+  --text-heading: 0.875rem;
+  --text-heading--line-height: 1.45;
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.55;
+  --text-small: 0.875rem;
+  --text-small--line-height: 1.5;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.45;
+  --text-overline: 0.75rem;
+  --text-overline--line-height: 1.3;
+  --text-overline--letter-spacing: 0.03em;
+
+  /* Yarıçaplar: kart / kontrol / hap. */
+  --radius-card: 1rem;
+  --radius-control: 0.75rem;
+  --radius-chip: 0.5rem;
+
+  /* Gölge tek kademe yumuşak; derinliği asıl veren 1px çizgi. */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-raised: 0 4px 10px rgba(15, 23, 42, 0.12);
+  --shadow-pop: 0 12px 32px -8px rgba(15, 23, 42, 0.28);
+}
+
+/* İşletme markası: müşteri ekranlarında kabuk `--brand` ve `--brand-ink`
+   değerlerini satır içi yazar; türevler onlardan hesaplanır. Panelde
+   `--brand` tanımlı olmadığı için `bg-brand` koyu mürekkebe düşer — yani
+   bir bileşen yanlış yerde renksiz kalmaz. */
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-brand: var(--brand, var(--color-ink));
+  --color-brand-ink: var(--brand-ink, #ffffff);
+  --color-brand-soft: var(--brand-soft, var(--color-sunken));
+  --color-brand-line: var(--brand-line, var(--color-line));
+}
+
+[data-marka] {
+  --brand-soft: color-mix(in oklab, var(--brand) 10%, white);
+  --brand-line: color-mix(in oklab, var(--brand) 28%, white);
+  --brand-strong: color-mix(in oklab, var(--brand) 86%, black);
 }
 
 /* Arayüz bilinçli olarak tek temalı (açık) tasarlandı: anket ekranı masada
@@ -12,7 +129,9 @@ html {
 }
 
 body {
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-sans);
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -20,9 +139,16 @@ body {
    odak halkasını kaldırıyor; :focus-visible sayesinde fare kullanıcısını
    rahatsız etmeden yalnızca klavyede görünür. */
 :focus-visible {
-  outline: 2px solid var(--color-slate-900, #0f172a);
+  outline: 2px solid var(--color-ink);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* Rakamlar her yerde aynı genişlikte olsun: tabloda alt alta gelen puanlar
+   ve tutarlar kaymadan okunmalı. */
+.tabular,
+table {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Puan verilince açılan bölümler alttan yumuşakça belirir; ekranın birden
@@ -40,6 +166,32 @@ body {
 
 .mm-rise {
   animation: mm-rise 0.28s ease-out both;
+}
+
+@keyframes mm-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Yükleme iskeletleri: boş kutu yerine "veri geliyor" hissi. */
+@keyframes mm-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.mm-skeleton {
+  animation: mm-pulse 1.6s ease-in-out infinite;
 }
 
 /* Hareket hassasiyeti olan kullanıcılar için geçişleri kapat. */

@@ -67,12 +67,12 @@ export default async function QrPage({
         <div>
           <Link
             href={`/admin/isletmeler/${business.id}`}
-            className="text-sm text-slate-500 hover:text-slate-900"
+            className="text-small text-ink-muted hover:text-ink"
           >
             ← {business.name}
           </Link>
-          <h1 className="mt-1 text-lg font-semibold tracking-tight">QR kodları</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="mt-1 text-title font-semibold">QR kodları</h1>
+          <p className="text-small text-ink-muted">
             {codes.length} QR · renk işletmenin marka renginden alınır
           </p>
         </div>
@@ -80,7 +80,7 @@ export default async function QrPage({
       </div>
 
       {base.includes("localhost") ? (
-        <p className="print-hidden rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <p className="print-hidden rounded-control bg-warning-soft px-4 py-3 text-small text-warning-ink">
           QR&apos;lar <code>{base}</code> adresini gösteriyor. Baskıya vermeden
           önce <code>.env</code> içindeki <code>NEXT_PUBLIC_APP_URL</code> değerini
           gerçek alan adınızla değiştirin.
@@ -88,7 +88,7 @@ export default async function QrPage({
       ) : null}
 
       {codes.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
+        <p className="rounded-control border border-dashed border-line-strong bg-surface p-10 text-center text-small text-ink-muted">
           Aktif masa yok. Önce işletme sayfasından masa ekleyin.
         </p>
       ) : (
@@ -96,7 +96,7 @@ export default async function QrPage({
           {codes.map((code) => (
             <div
               key={code.id}
-              className="print-break flex flex-col items-center rounded-xl bg-white p-4 text-center ring-1 ring-slate-200 print:rounded-none print:p-5 print:ring-0 print:outline print:outline-1 print:outline-dashed print:outline-slate-300"
+              className="print-break flex flex-col items-center rounded-control bg-surface p-4 text-center ring-1 ring-line print:rounded-none print:p-5 print:ring-0 print:outline print:outline-1 print:outline-dashed print:outline-slate-300"
             >
               <p
                 className="text-base font-bold tracking-tight"
@@ -104,7 +104,7 @@ export default async function QrPage({
               >
                 {business.name}
               </p>
-              <p className="mt-1 text-[13px] leading-snug font-medium text-slate-700">
+              <p className="mt-1 text-[13px] leading-snug font-medium text-ink-soft">
                 {cardText}
               </p>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -113,16 +113,16 @@ export default async function QrPage({
                 alt={`${code.label} QR kodu`}
                 className="my-2.5 aspect-square w-full max-w-40"
               />
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-ink-faint">
                 Kamerayı karekoda tutmanız yeterli
               </p>
-              <p className="mt-2 border-t border-slate-100 pt-2 text-xs font-medium text-slate-500">
+              <p className="mt-2 border-t border-line pt-2 text-caption font-medium text-ink-muted">
                 {code.label}
               </p>
               <a
                 href={code.dataUrl}
                 download={code.fileName}
-                className="print-hidden mt-3 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
+                className="print-hidden mt-3 rounded-chip border border-line px-3 py-1.5 text-caption text-ink-soft hover:bg-canvas"
               >
                 PNG indir
               </a>

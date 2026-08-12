@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { isiCalistir } from "./is-kaydi";
 import fs from "node:fs";
 import path from "node:path";
 import { createScriptClient } from "./prisma-client";
@@ -62,7 +63,6 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+// Çalışma kaydı tutuluyor: "cron'a bağlamayı unuttuk" durumu panelde
+// "Hiç çalışmadı" olarak görünsün.
+void isiCalistir("yedekle", main);

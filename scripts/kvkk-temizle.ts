@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { isiCalistir } from "./is-kaydi";
 import { createScriptClient } from "./prisma-client";
 import { CONTACT_RETENTION_DAYS } from "../src/lib/kvkk";
 
@@ -18,30 +19,40 @@ async function main() {
   const cutoff = new Date(Date.now() - CONTACT_RETENTION_DAYS * 24 * 60 * 60 * 1000);
 
   try {
+    // Fotoğraf da kişisel veri sayılabilir (kare içinde insan olabilir) ve
+    // aynı süre sözüne tabi; iletişim bilgisiyle birlikte siliniyor.
     const stale = await prisma.feedback.findMany({
-      where: { contactInfo: { not: null }, createdAt: { lt: cutoff } },
+      where: {
+        createdAt: { lt: cutoff },
+        OR: [{ contactInfo: { not: null } }, { photoUrl: { not: null } }],
+      },
       select: { id: true },
     });
 
     if (stale.length === 0) {
       console.log(
-        `Saklama süresi (${CONTACT_RETENTION_DAYS} gün) dolan iletişim bilgisi yok.`,
+        `Saklama süresi (${CONTACT_RETENTION_DAYS} gün) dolan iletişim bilgisi/fotoğraf yok.`,
       );
-      return;
+      return "Silinecek kayıt yok.";
     }
 
     const result = await prisma.feedback.updateMany({
       where: { id: { in: stale.map((f) => f.id) } },
-      data: { contactInfo: null, contactType: null, contactErasedAt: new Date() },
+      data: {
+        contactInfo: null,
+        contactType: null,
+        photoUrl: null,
+        contactErasedAt: new Date(),
+      },
     });
 
-    console.log(`${result.count} kaydın iletişim bilgisi silindi.`);
+    console.log(`${result.count} kaydın iletişim bilgisi ve fotoğrafı silindi.`);
+    return `${result.count} kayıt temizlendi.`;
   } finally {
     await prisma.$disconnect();
   }
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+// Çalışma kaydı tutuluyor: "cron'a bağlamayı unuttuk" durumu panelde
+// "Hiç çalışmadı" olarak görünsün.
+void isiCalistir("kvkk-temizle", main);
