@@ -4,6 +4,7 @@ import { canAccessBusiness, requireTenant } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { SHIFTS, type Shift } from "@/lib/constants";
 import { CONTACT_RETENTION_DAYS } from "@/lib/kvkk";
+import { detaylariCoz } from "@/lib/anket-detay";
 import { StatusBadge, Stars, formatDateTime } from "@/components/ui";
 import { StatusForm } from "./StatusForm";
 
@@ -33,6 +34,7 @@ export default async function FeedbackDetailPage({
   const ratings: Record<string, number> = feedback.categoryRatings
     ? JSON.parse(feedback.categoryRatings)
     : {};
+  const sorunlar = detaylariCoz(feedback.problemDetails);
 
   return (
     <div className="flex flex-col gap-5">
@@ -97,14 +99,31 @@ export default async function FeedbackDetailPage({
               </h2>
               <ul className="mt-3 divide-y divide-line">
                 {Object.entries(ratings).map(([name, value]) => (
-                  <li key={name} className="flex items-center justify-between py-2">
-                    <span className="text-small text-ink-soft">{name}</span>
-                    <span className="flex items-center gap-2">
-                      <Stars value={value} />
-                      <span className="w-8 text-right text-small tabular text-ink-muted">
-                        {value}/5
+                  <li key={name} className="py-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-small text-ink-soft">{name}</span>
+                      <span className="flex items-center gap-2">
+                        <Stars value={value} />
+                        <span className="w-8 text-right text-small tabular text-ink-muted">
+                          {value}/5
+                        </span>
                       </span>
-                    </span>
+                    </div>
+
+                    {/* Asıl iş burada: "Temizlik 1/5" değil, "Temizlik →
+                        Tuvaletler". Sorumluyu doğru yere gönderen satır. */}
+                    {sorunlar[name]?.length ? (
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {sorunlar[name].map((alan) => (
+                          <span
+                            key={alan}
+                            className="rounded-full bg-danger-soft px-2.5 py-0.5 text-caption font-medium text-danger-ink"
+                          >
+                            {alan}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
                   </li>
                 ))}
               </ul>

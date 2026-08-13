@@ -7,6 +7,7 @@ import { notifyLowRating } from "@/lib/mail";
 import { validateImageDataUrl } from "@/lib/image";
 import { shiftFromDate } from "@/lib/constants";
 import { foldTr } from "@/lib/text";
+import { detaylariDerle, sorunSecenekleri } from "@/lib/anket-detay";
 import { CONTACT_TYPES, KVKK_VERSION, type ContactType } from "@/lib/kvkk";
 import { getOrCreateVisitorId } from "@/lib/visitor";
 import { hesapAktifMi } from "@/lib/abonelik";
@@ -32,6 +33,9 @@ export type SurveyInput = {
   tableNumber: string;
   overallRating: number;
   categoryRatings: Record<string, number>;
+  /// Düşük puan verilen kategoride işaretlenen sorun alanları:
+  /// { "Temizlik": ["Tuvaletler"] }.
+  problemDetails?: Record<string, string[]>;
   comment: string;
   /// İsteğe bağlı kanıt fotoğrafı (data URI). "Çorba böyle geldi."
   photo?: string;
@@ -184,7 +188,7 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
 
   // Sadece işletmenin tanımlı kategorileri kaydedilir; formdan gelen başka
   // anahtarlar yok sayılır.
-  const allowed = new Map(business.categories.map((c) => [c.name, true]));
+  const allowed = new Map(business.categories.map((c) => [c.name, c]));
   const categoryRatings: Record<string, number> = {};
   for (const [name, value] of Object.entries(input.categoryRatings ?? {})) {
     const numeric = Number(value);
@@ -192,6 +196,19 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
       categoryRatings[name] = numeric;
     }
   }
+
+  // Sorun alanları da kategoriler gibi süzülüyor: yalnızca o kategori için
+  // tanımlı seçenekler kabul edilir. Aksi halde form değiştirilerek panele
+  // serbest metin (ve XSS denemesi) yazdırılabilirdi.
+  const temizDetaylar: Record<string, string[]> = {};
+  for (const [name, alanlar] of Object.entries(input.problemDetails ?? {})) {
+    const kategori = allowed.get(name);
+    if (!kategori || !Array.isArray(alanlar)) continue;
+    const gecerli = new Set(sorunSecenekleri(kategori.name, kategori.problemOptions));
+    const secilen = alanlar.filter((a) => typeof a === "string" && gecerli.has(a));
+    if (secilen.length > 0) temizDetaylar[name] = secilen;
+  }
+  const problemDetails = detaylariDerle(temizDetaylar, categoryRatings);
 
   // İletişim bilgisi ancak açık rıza verildiyse saklanır.
   const rawContact = asText(input.contactInfo).trim().slice(0, 200);
@@ -233,6 +250,7 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
       categoryRatings: Object.keys(categoryRatings).length
         ? JSON.stringify(categoryRatings)
         : null,
+      problemDetails,
       comment: comment || null,
       commentSearch: comment ? foldTr(comment) : null,
       photoUrl,

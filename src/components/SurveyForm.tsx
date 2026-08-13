@@ -5,6 +5,7 @@ import Link from "next/link";
 import { StarRating } from "./StarRating";
 import { ImageUpload } from "./ImageUpload";
 import { taslakAnahtari, taslakOku, taslakSil, taslakYaz } from "@/lib/anket-taslak";
+import { DUSUK_PUAN } from "@/lib/anket-detay";
 import { KvkkNotice } from "./KvkkNotice";
 import { CONTACT_TYPES, consentSummary, type ContactType } from "@/lib/kvkk";
 import { marketingConsentText } from "@/lib/iys";
@@ -17,7 +18,8 @@ type Props = {
   logoUrl: string | null;
   tableNumber: string;
   tableLabel: string;
-  categories: { id: string; name: string }[];
+  /** `sorunAlanlari`: düşük puanda açılacak seçenekler; boşsa alt soru çıkmaz. */
+  categories: { id: string; name: string; sorunAlanlari: string[] }[];
   /** QR menüdeki ürünler. Menü modülü kapalıysa boş gelir ve adım hiç çıkmaz. */
   menuItems?: { id: string; name: string; kategori: string }[];
 };
@@ -53,6 +55,10 @@ export function SurveyForm({
   const [urunPuanlari, setUrunPuanlari] = useState<Record<string, number>>(
     taslak.urunPuanlari,
   );
+  // Düşük puan verilen kategoride işaretlenen sorun alanları.
+  const [sorunlar, setSorunlar] = useState<Record<string, string[]>>(
+    taslak.sorunlar,
+  );
   const [comment, setComment] = useState(taslak.yorum);
   // Fotoğraf taslağa yazılmıyor: 400 KB'lik data URI sessionStorage kotasını
   // doldurup diğer cevapların kaydını da bozabilir.
@@ -77,6 +83,7 @@ export function SurveyForm({
     taslakYaz(taslakKaydi, {
       overall,
       kategoriler: categoryRatings,
+      sorunlar,
       secilen: secilenUrunler,
       urunPuanlari,
       yorum: comment,
@@ -89,6 +96,7 @@ export function SurveyForm({
     taslakKaydi,
     overall,
     categoryRatings,
+    sorunlar,
     secilenUrunler,
     urunPuanlari,
     comment,
@@ -130,6 +138,7 @@ export function SurveyForm({
         tableNumber,
         overallRating: overall,
         categoryRatings,
+        problemDetails: sorunlar,
         comment,
         photo,
         contactInfo,
@@ -243,17 +252,36 @@ export function SurveyForm({
           <p className="mt-1 text-small text-ink-faint">İstediğinizi boş bırakabilirsiniz.</p>
           <ul className="mt-4 divide-y divide-line">
             {categories.map((category) => (
-              <li
-                key={category.id}
-                className="flex items-center justify-between gap-3 py-2.5"
-              >
-                <span className="text-body text-ink-soft">{category.name}</span>
-                <StarRating
-                  name={`kategori-${category.id}`}
-                  ariaLabel={`${category.name} puanı`}
-                  value={categoryRatings[category.name] ?? 0}
-                  onChange={(value) =>
-                    setCategoryRatings((prev) => ({ ...prev, [category.name]: value }))
+              <li key={category.id} className="py-2.5">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-body text-ink-soft">{category.name}</span>
+                  <StarRating
+                    name={`kategori-${category.id}`}
+                    ariaLabel={`${category.name} puanı`}
+                    value={categoryRatings[category.name] ?? 0}
+                    onChange={(value) =>
+                      setCategoryRatings((prev) => ({ ...prev, [category.name]: value }))
+                    }
+                  />
+                </div>
+
+                {/* Düşük puanda alt soru: "mekan kötüydü" ile "tuvaletler
+                    kirliydi" arasındaki fark, patronun ne yapacağını bilmesi
+                    demek. Puan yükseltilirse işaretler otomatik düşer
+                    (sunucuda da bir kez daha süzülüyor). */}
+                <SorunAlanlari
+                  kategori={category.name}
+                  secenekler={category.sorunAlanlari}
+                  puan={categoryRatings[category.name] ?? 0}
+                  secilen={sorunlar[category.name] ?? []}
+                  onToggle={(alan) =>
+                    setSorunlar((prev) => {
+                      const mevcut = prev[category.name] ?? [];
+                      const yeni = mevcut.includes(alan)
+                        ? mevcut.filter((x) => x !== alan)
+                        : [...mevcut, alan];
+                      return { ...prev, [category.name]: yeni };
+                    })
                   }
                 />
               </li>
@@ -448,6 +476,62 @@ export function SurveyForm({
         </div>
       ) : null}
     </form>
+  );
+}
+
+/**
+ * Kategoriye düşük puan verildiğinde açılan "hangi alanda?" seçenekleri.
+ *
+ * Puan yükseltilirse blok kapanır ama işaretler bellekte kalır: müşteri
+ * yanlışlıkla yıldıza dokunup geri döndüğünde baştan işaretlemesin.
+ * Gönderirken zaten yalnızca düşük puanlı kategorilerinki yazılıyor.
+ */
+function SorunAlanlari({
+  kategori,
+  secenekler,
+  puan,
+  secilen,
+  onToggle,
+}: {
+  kategori: string;
+  secenekler: string[];
+  puan: number;
+  secilen: string[];
+  onToggle: (alan: string) => void;
+}) {
+  const acik = puan > 0 && puan <= DUSUK_PUAN && secenekler.length > 0;
+  if (!acik) return null;
+
+  return (
+    <div className="mm-rise mt-2.5 rounded-control bg-canvas p-3">
+      <p id={`sorun-${kategori}`} className="text-small text-ink-soft">
+        Hangi konuda sorun yaşadınız?{" "}
+        <span className="text-ink-faint">(isteğe bağlı)</span>
+      </p>
+      <div
+        role="group"
+        aria-labelledby={`sorun-${kategori}`}
+        className="mt-2 flex flex-wrap gap-1.5"
+      >
+        {secenekler.map((alan) => {
+          const isaretli = secilen.includes(alan);
+          return (
+            <button
+              key={alan}
+              type="button"
+              aria-pressed={isaretli}
+              onClick={() => onToggle(alan)}
+              className={`rounded-full px-3 py-1.5 text-small transition ${
+                isaretli ? "bg-ink text-white" : "bg-surface text-ink-soft ring-1 ring-line"
+              }`}
+            >
+              {isaretli ? "✓ " : ""}
+              {alan}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

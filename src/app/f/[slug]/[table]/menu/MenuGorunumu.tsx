@@ -27,6 +27,8 @@ type Props = {
   brandColor: string;
   /** true ise menü "değerlendirmeye ürün seç" modunda açılır. */
   secimModu: boolean;
+  /** İşletmenin açık duyurusu; kapalıysa ya da boşsa null gelir. */
+  duyuru?: string | null;
 };
 
 type DetayUrun = MenuUrun & { kategoriAdi: string };
@@ -37,6 +39,7 @@ export function MenuGorunumu({
   bolumler,
   brandColor,
   secimModu,
+  duyuru = null,
 }: Props) {
   const router = useRouter();
   const anahtar = taslakAnahtari(slug, tableNumber);
@@ -57,26 +60,52 @@ export function MenuGorunumu({
   // düğmeler: müşteri hangi bölümde olduğunu haptan görüyor.
   const [aktifBolum, setAktifBolum] = useState<string>(bolumler[0]?.id ?? "");
   const [arama, setArama] = useState("");
+  const [etiketFiltresi, setEtiketFiltresi] = useState<MenuTag[]>([]);
   const [detay, setDetay] = useState<DetayUrun | null>(null);
 
   const anketAdresi = `/f/${slug}/${encodeURIComponent(tableNumber)}/anket`;
 
-  const aramaSonucu = useMemo(() => {
+  // Menüdeki ürünlerde gerçekten kullanılan etiketler: hiç "vegan" ürün
+  // yoksa "Vegan" filtresi göstermenin anlamı yok, boş sonuca götürür.
+  const kullanilanEtiketler = useMemo(() => {
+    const set = new Set<MenuTag>();
+    for (const bolum of bolumler) {
+      for (const urun of bolum.items) {
+        for (const t of parseTags(urun.tags)) set.add(t);
+      }
+    }
+    return (Object.keys(MENU_TAGS) as MenuTag[]).filter((t) => set.has(t));
+  }, [bolumler]);
+
+  const filtreliBolumler = useMemo(() => {
     const terim = foldTr(arama.trim());
-    if (!terim) return null;
+    const filtreliMi = terim || etiketFiltresi.length > 0;
+    if (!filtreliMi) return null;
     return bolumler
       .map((bolum) => ({
         ...bolum,
-        items: bolum.items.filter(
-          (u) =>
+        items: bolum.items.filter((u) => {
+          const eslesirArama =
+            !terim ||
             foldTr(u.name).includes(terim) ||
-            (u.description && foldTr(u.description).includes(terim)),
-        ),
+            (u.description && foldTr(u.description).includes(terim));
+          const eslesirEtiket =
+            etiketFiltresi.length === 0 ||
+            etiketFiltresi.every((t) => parseTags(u.tags).includes(t));
+          return eslesirArama && eslesirEtiket;
+        }),
       }))
       .filter((bolum) => bolum.items.length > 0);
-  }, [arama, bolumler]);
+  }, [arama, etiketFiltresi, bolumler]);
 
-  const gosterilecek = aramaSonucu ?? bolumler;
+  const aramaSonucu = filtreliBolumler;
+  const gosterilecek = filtreliBolumler ?? bolumler;
+
+  function etiketDegistir(t: MenuTag) {
+    setEtiketFiltresi((prev) =>
+      prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t],
+    );
+  }
 
   function toggle(id: string) {
     setSecilen((prev) =>
@@ -92,6 +121,30 @@ export function MenuGorunumu({
 
   return (
     <>
+      {/* Duyuru şeridi en tepede: menüye giren herkesin gördüğü tek yer
+          burası. Seçim modunda gizli — o ekranda müşterinin tek bir işi var
+          ve araya kampanya sokmak onu dağıtır. */}
+      {duyuru && !secimModu ? (
+        <div className="mb-4 flex items-start gap-2.5 rounded-control bg-brand px-4 py-3 text-brand-ink shadow-card">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="mt-0.5 h-4 w-4 shrink-0"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.8}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3 11v2a1 1 0 0 0 1 1h2.5L12 18V6L6.5 10H4a1 1 0 0 0-1 1Z"
+            />
+            <path strokeLinecap="round" d="M16 9.5a3.5 3.5 0 0 1 0 5M18.5 7a7 7 0 0 1 0 10" />
+          </svg>
+          <p className="text-small leading-snug font-medium">{duyuru}</p>
+        </div>
+      ) : null}
+
       {secimModu ? (
         <div className="mb-5 rounded-control bg-ink px-4 py-3 text-small text-white">
           <p className="font-medium">Ne aldınız?</p>
@@ -117,30 +170,81 @@ export function MenuGorunumu({
         </Link>
       )}
 
-      {/* Arama: uzun menüde ürünü isimden bulmak, bölüm bölüm kaydırmaktan
-          hızlı. Bulunamayan bir şey menüden seçilemesin diye erişilebilir
-          kalsın istiyoruz. */}
+      {/* Arama ve filtreler kaydırırken tepede asılı kalır: 60 ürünlük bir
+          menüde müşteri aramak için başa dönmek zorunda kalmasın. Panelin
+          kenarlarına taşırıp (-mx-4) arkasını kapatıyoruz, yoksa altından
+          geçen kartlar kenarlardan görünüyordu. */}
       {bolumler.length > 0 ? (
-        <div className="relative mb-5">
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-ink-faint"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <circle cx="11" cy="11" r="7" />
-            <path strokeLinecap="round" d="M21 21l-4.35-4.35" />
-          </svg>
-          <input
-            type="search"
-            value={arama}
-            onChange={(event) => setArama(event.target.value)}
-            placeholder="Menüde ara…"
-            aria-label="Menüde ara"
-            className="w-full rounded-full border border-line bg-surface py-2.5 pr-4 pl-10 text-[16px] text-ink shadow-card outline-none placeholder:text-ink-faint focus-visible:border-line-strong sm:text-small"
-          />
+        <div className="sticky top-0 z-20 -mx-4 mb-5 border-b border-line/70 bg-canvas/90 px-4 py-3 backdrop-blur">
+          <div className="relative">
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-ink-faint"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path strokeLinecap="round" d="M21 21l-4.35-4.35" />
+            </svg>
+            <input
+              type="search"
+              value={arama}
+              onChange={(event) => setArama(event.target.value)}
+              placeholder="Menüde ara…"
+              aria-label="Menüde ara"
+              className="w-full rounded-full border border-line bg-surface py-2.5 pr-4 pl-10 text-[16px] text-ink shadow-card outline-none placeholder:text-ink-faint focus-visible:border-line-strong sm:text-small"
+            />
+          </div>
+
+          {/* Diyet/alerjen filtresi: birden fazla seçilirse hepsini karşılayan
+              ürünler kalır ("vegan" + "glutensiz" = ikisi birden). */}
+          {kullanilanEtiketler.length > 0 ? (
+            <div
+              role="group"
+              aria-label="Diyet ve alerjen filtreleri"
+              className="-mx-1 mt-2.5 flex gap-2 overflow-x-auto px-1 pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {kullanilanEtiketler.map((t) => {
+                const secili = etiketFiltresi.includes(t);
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    aria-pressed={secili}
+                    onClick={() => etiketDegistir(t)}
+                    className={`shrink-0 rounded-full border px-3 py-1.5 text-caption font-medium transition ${
+                      secili
+                        ? "border-ink bg-ink text-white"
+                        : "border-line bg-surface text-ink-soft"
+                    }`}
+                  >
+                    {MENU_TAGS[t]}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
+          {/* Kaç ürün kaldığını söylemek, filtre açıkken "menü mü eksik?"
+              tereddüdünü kaldırıyor. */}
+          {filtreliBolumler ? (
+            <p className="mt-2 text-caption text-ink-faint">
+              {filtreliBolumler.reduce((t, b) => t + b.items.length, 0)} ürün
+              bulundu
+              <button
+                type="button"
+                onClick={() => {
+                  setArama("");
+                  setEtiketFiltresi([]);
+                }}
+                className="ml-2 font-medium text-ink-soft underline underline-offset-2"
+              >
+                Temizle
+              </button>
+            </p>
+          ) : null}
         </div>
       ) : null}
 
@@ -199,7 +303,9 @@ export function MenuGorunumu({
 
       {gosterilecek.length === 0 ? (
         <p className="rounded-control border border-dashed border-line-strong bg-surface/60 px-4 py-8 text-center text-small text-ink-muted">
-          &quot;{arama}&quot; için bir sonuç bulunamadı.
+          {arama
+            ? <>&quot;{arama}&quot; için bir sonuç bulunamadı.</>
+            : "Seçili filtrelere uyan ürün yok."}
         </p>
       ) : (
         <div className={`flex flex-col gap-7 ${secimModu ? "pb-28" : ""}`}>

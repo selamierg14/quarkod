@@ -82,6 +82,18 @@ model Business {
   /// gerekçeyle data URI; tarayıcıda ~1200px genişliğe küçültülür.
   coverUrl        String?
 
+  /// QR karşılama ekranında ikon olarak gösterilir.
+  instagramUrl String?
+  /// QR menünün tepesinde görünen duyuru şeridi ("Hafta sonu canlı müzik").
+  /// Metin dolu kalsa da şerit ayrı bir anahtarla kapatılabilir: kampanya
+  /// bittiğinde metni silmek yerine kapatıp sonra geri açmak isteniyor.
+  announcement       String?
+  announcementActive Boolean @default(false)
+  /// QR karşılama ekranındaki Wi-Fi butonu için. İkisi de doluysa buton
+  /// SSID + şifreyi kopyalanabilir şekilde gösterir.
+  wifiSsid     String?
+  wifiPassword String?
+
   createdAt DateTime @default(now())
 
   account        Account            @relation(fields: [accountId], references: [id], onDelete: Cascade)
@@ -150,6 +162,10 @@ model CategoryTemplate {
   name       String
   sortOrder  Int     @default(0)
   active     Boolean @default(true)
+  /// Düşük puan verildiğinde açılan "hangi alanda?" seçenekleri, virgülle
+  /// ayrılmış. Boşsa kategori adına göre akıllı varsayılan kullanılır
+  /// (bkz. src/lib/anket-detay.ts) — işletme hiç ayar yapmadan da çalışsın.
+  problemOptions String?
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
@@ -188,6 +204,10 @@ model Feedback {
 
   /// { "kategori adı": 1-5 } — kategoriler işletmeye göre değiştiği için JSON.
   categoryRatings String?
+  /// { "kategori adı": ["Tuvaletler", "Masalar"] } — düşük puan verilen
+  /// kategoride müşterinin işaretlediği sorun alanları. Şikayeti "mekan
+  /// pisti"ten "tuvaletler pisti"ne indirdiği için ayrı tutuluyor.
+  problemDetails  String?
   comment         String?
   /// Yorumun aramaya hazır kopyası: küçük harf + Türkçe aksanlar sadeleştirilmiş.
   /// SQLite'ın LIKE'ı ş/ğ/ı gibi harflerde büyük-küçük eşleştirmediği için gerekli.

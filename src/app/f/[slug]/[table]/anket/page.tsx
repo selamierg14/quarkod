@@ -4,6 +4,7 @@ import { SurveyForm } from "@/components/SurveyForm";
 import { ViewTracker } from "@/components/ViewTracker";
 import { MusteriKabuk } from "@/components/MusteriKabuk";
 import { menuIcerigi, qrSayfaVerisi } from "@/lib/qr-sayfa";
+import { sorunSecenekleri } from "@/lib/anket-detay";
 
 type Params = { slug: string; table: string };
 
@@ -49,7 +50,13 @@ export default async function AnketPage({ params }: { params: Promise<Params> })
         logoUrl={business.logoUrl}
         tableNumber={table.tableNumber}
         tableLabel={tableLabel}
-        categories={business.categories.map((c) => ({ id: c.id, name: c.name }))}
+        categories={business.categories.map((c) => ({
+          id: c.id,
+          name: c.name,
+          // Seçenekler sunucuda hesaplanıyor: işletme kendi listesini
+          // yazmadıysa kategori adına göre makul bir varsayılan geliyor.
+          sorunAlanlari: sorunSecenekleri(c.name, c.problemOptions),
+        }))}
         menuItems={urunler}
       />
     </MusteriKabuk>

@@ -3,19 +3,12 @@ import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { canAccessBusiness, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { qrCardText } from "@/lib/constants";
+import { appUrl, qrCardText } from "@/lib/constants";
 import { PrintButton } from "./PrintButton";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = { title: "QR kodları" };
-
-function appUrl(): string {
-  return (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(
-    /\/$/,
-    "",
-  );
-}
 
 export default async function QrPage({
   params,
@@ -76,7 +69,17 @@ export default async function QrPage({
             {codes.length} QR · renk işletmenin marka renginden alınır
           </p>
         </div>
-        <PrintButton />
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Matbaaya gidecek dosya: A4 ızgara, kesim kılavuzlu, QR'lar
+              vektörel. Tek tek PNG indirip Word'de dizme işini bitiriyor. */}
+          <a
+            href={`/admin/isletmeler/${business.id}/qr/pdf`}
+            className="rounded-control bg-ink px-4 py-2.5 text-small font-medium text-white"
+          >
+            Matbaa PDF&apos;i indir
+          </a>
+          <PrintButton />
+        </div>
       </div>
 
       {base.includes("localhost") ? (

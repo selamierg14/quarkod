@@ -11,6 +11,8 @@
 export type AnketTaslak = {
   overall: number;
   kategoriler: Record<string, number>;
+  /** Düşük puanlı kategoride işaretlenen sorun alanları. */
+  sorunlar: Record<string, string[]>;
   secilen: string[];
   urunPuanlari: Record<string, number>;
   yorum: string;
@@ -23,6 +25,7 @@ export type AnketTaslak = {
 export const BOS_TASLAK: AnketTaslak = {
   overall: 0,
   kategoriler: {},
+  sorunlar: {},
   secilen: [],
   urunPuanlari: {},
   yorum: "",

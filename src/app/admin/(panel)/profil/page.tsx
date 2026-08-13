@@ -158,6 +158,11 @@ export default async function ProfilePage() {
                 qrCardText: kendiIsletmesi.qrCardText,
                 logoUrl: kendiIsletmesi.logoUrl,
                 coverUrl: kendiIsletmesi.coverUrl,
+                instagramUrl: kendiIsletmesi.instagramUrl,
+                wifiSsid: kendiIsletmesi.wifiSsid,
+                wifiPassword: kendiIsletmesi.wifiPassword,
+                announcement: kendiIsletmesi.announcement,
+                announcementActive: kendiIsletmesi.announcementActive,
               }}
               isOwner={false}
             />
@@ -174,6 +179,7 @@ export default async function ProfilePage() {
                   id: c.id,
                   name: c.name,
                   active: c.active,
+                  problemOptions: c.problemOptions,
                 }))}
               />
             </section>

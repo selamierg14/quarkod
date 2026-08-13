@@ -52,6 +52,9 @@ export default async function MenuPage({
         tableNumber={table.tableNumber}
         brandColor={business.brandColor}
         secimModu={secimModu}
+        duyuru={
+          business.announcementActive ? business.announcement?.trim() || null : null
+        }
         bolumler={dolu.map((k) => ({
           id: k.id,
           name: k.name,

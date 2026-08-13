@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { markaStili } from "@/lib/marka";
+import { IletisimBar } from "@/components/IletisimBar";
 
 /**
  * QR'la açılan sayfaların ortak görünümü.
@@ -22,6 +23,9 @@ export function MusteriKabuk({
     brandColor: string;
     logoUrl: string | null;
     coverUrl: string | null;
+    instagramUrl?: string | null;
+    wifiSsid?: string | null;
+    wifiPassword?: string | null;
   };
   tableLabel: string;
   altBaslik?: string;
@@ -37,35 +41,39 @@ export function MusteriKabuk({
     // data-marka + --brand: müşteri ekranlarında bg-brand / text-brand-ink
     // yardımcıları işletmenin rengine bağlanır, marka rengi tek yerden akar.
     <main data-marka style={markaStili(business.brandColor)} className="min-h-dvh bg-canvas">
-      <div className="relative h-64 w-full overflow-hidden sm:h-72">
-        {backdrop ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={backdrop}
-            alt=""
-            className="absolute inset-0 h-full w-full scale-105 object-cover"
-          />
-        ) : (
-          // Kapak fotoğrafı yoksa bile boş bir kutu yerine markanın kendi
-          // renginden üretilmiş bir gradyan: her işletmede "tasarlanmış"
-          // hissi versin.
+      <div className="relative z-10 h-64 w-full sm:h-72">
+        {/* Kapak/gradyan yalnızca bu katmanda kırpılır; içerik katmanı
+            kırpılmaz, yoksa Wi-Fi açılır paneli hero'nun altında kesilirdi. */}
+        <div className="absolute inset-0 overflow-hidden">
+          {backdrop ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={backdrop}
+              alt=""
+              className="absolute inset-0 h-full w-full scale-105 object-cover"
+            />
+          ) : (
+            // Kapak fotoğrafı yoksa bile boş bir kutu yerine markanın kendi
+            // renginden üretilmiş bir gradyan: her işletmede "tasarlanmış"
+            // hissi versin.
+            <div
+              aria-hidden="true"
+              className="absolute inset-0"
+              style={{
+                backgroundImage:
+                  "linear-gradient(155deg, var(--brand) 0%, color-mix(in oklab, var(--brand) 60%, black) 100%)",
+              }}
+            />
+          )}
+
+          {/* Alttan koyulaşan perde: hem yazı okunur kalır hem de panelin
+              kavisiyle kaynaşacak bir zemin bırakır. */}
           <div
             aria-hidden="true"
-            className="absolute inset-0"
-            style={{
-              backgroundImage:
-                "linear-gradient(155deg, var(--brand) 0%, color-mix(in oklab, var(--brand) 60%, black) 100%)",
-            }}
+            className="absolute inset-0 bg-gradient-to-t from-ink via-ink/30 to-black/10"
           />
-        )}
-
-        {/* Alttan koyulaşan perde: hem yazı okunur kalır hem de panelin
-            kavisiyle kaynaşacak bir zemin bırakır. */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-t from-ink via-ink/30 to-black/10"
-        />
-        <div className="absolute inset-x-0 top-0 h-1 bg-brand" aria-hidden="true" />
+          <div className="absolute inset-x-0 top-0 h-1 bg-brand" aria-hidden="true" />
+        </div>
 
         <div className={`relative mx-auto flex h-full ${genislik} flex-col items-center justify-end px-5 pb-9 text-center`}>
           {business.logoUrl ? (
@@ -93,6 +101,12 @@ export function MusteriKabuk({
             {tableLabel}
             {altBaslik ? <span className="text-white/60">· {altBaslik}</span> : null}
           </p>
+
+          <IletisimBar
+            instagramUrl={business.instagramUrl ?? null}
+            wifiSsid={business.wifiSsid ?? null}
+            wifiPassword={business.wifiPassword ?? null}
+          />
         </div>
       </div>
 

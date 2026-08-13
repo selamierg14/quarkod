@@ -20,6 +20,11 @@ type Business = {
   qrCardText: string | null;
   logoUrl: string | null;
   coverUrl: string | null;
+  instagramUrl: string | null;
+  wifiSsid: string | null;
+  wifiPassword: string | null;
+  announcement: string | null;
+  announcementActive: boolean;
 };
 
 export function SettingsForm({
@@ -153,7 +158,75 @@ export function SettingsForm({
             veren cümleler daha çok okutulur.
           </span>
         </label>
+
+        <label className="flex flex-col gap-1 sm:col-span-2">
+          <span className="text-caption text-ink-muted">Instagram linki</span>
+          <input
+            name="instagramUrl"
+            type="url"
+            placeholder="https://instagram.com/kafeniz"
+            defaultValue={business.instagramUrl ?? ""}
+            className={INPUT}
+          />
+          <span className="text-caption text-ink-faint">
+            Doldurulursa QR karşılama ekranında Instagram simgesi görünür.
+          </span>
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-caption text-ink-muted">Wi-Fi ağ adı (SSID)</span>
+          <input
+            name="wifiSsid"
+            defaultValue={business.wifiSsid ?? ""}
+            className={INPUT}
+          />
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-caption text-ink-muted">Wi-Fi şifresi</span>
+          <input
+            name="wifiPassword"
+            defaultValue={business.wifiPassword ?? ""}
+            className={INPUT}
+          />
+          <span className="text-caption text-ink-faint">
+            İkisi de doluysa QR ekranında müşteri kopyalayabileceği bir Wi-Fi
+            butonu görünür.
+          </span>
+        </label>
+
+        <label className="flex flex-col gap-1 sm:col-span-2">
+          <span className="text-caption text-ink-muted">
+            Duyuru — QR menünün tepesinde görünür
+          </span>
+          <input
+            name="announcement"
+            defaultValue={business.announcement ?? ""}
+            placeholder="Hafta sonu canlı müzik var!"
+            maxLength={120}
+            className={INPUT}
+          />
+          <span className="text-caption text-ink-faint">
+            Kampanya bitince metni silmenize gerek yok; aşağıdaki kutuyu
+            kapatıp sonra geri açabilirsiniz.
+          </span>
+        </label>
       </div>
+
+      <label className="flex items-start gap-3 rounded-chip bg-canvas p-3">
+        <input
+          type="checkbox"
+          name="announcementActive"
+          defaultChecked={business.announcementActive}
+          className="mt-0.5 h-4 w-4"
+        />
+        <span className="text-small">
+          <span className="font-medium">Duyuruyu menüde göster</span>
+          <span className="mt-0.5 block text-caption text-ink-muted">
+            Kapalıyken müşteri şeridi görmez.
+          </span>
+        </span>
+      </label>
 
       <label className="flex items-start gap-3 rounded-chip bg-canvas p-3">
         <input

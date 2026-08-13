@@ -93,3 +93,16 @@ export function shiftFromDate(date: Date): Shift {
   if (hour >= 16 && hour < 23) return "aksam";
   return "gece";
 }
+
+/**
+ * QR'ların ve e-postadaki bağlantıların gösterdiği kök adres.
+ *
+ * Baskıya giden QR bu adresi taşır; yanlış olursa masadaki kart çöp olur.
+ * Bu yüzden tek yerden okunuyor ve QR ekranı localhost'ta uyarı gösteriyor.
+ */
+export function appUrl(): string {
+  return (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(
+    /\/$/,
+    "",
+  );
+}

@@ -11,6 +11,7 @@ import {
   requireYazma,
 } from "@/lib/auth";
 import { denetimYaz } from "@/lib/denetim";
+import { secenekleriAyristir, secenekleriBirlestir } from "@/lib/anket-detay";
 import { prisma } from "@/lib/db";
 import { BUSINESS_TYPES, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/constants";
 import { validateImageDataUrl } from "@/lib/image";
@@ -187,6 +188,14 @@ export async function updateBusiness(
     return { error: "Google linki http:// veya https:// ile başlamalı." };
   }
 
+  const instagramUrl = String(formData.get("instagramUrl") ?? "").trim();
+  if (instagramUrl && !/^https?:\/\//i.test(instagramUrl)) {
+    return { error: "Instagram linki http:// veya https:// ile başlamalı." };
+  }
+
+  const wifiSsid = String(formData.get("wifiSsid") ?? "").trim();
+  const wifiPassword = String(formData.get("wifiPassword") ?? "").trim();
+
   // Görseller data URI olarak gelir; boş dize "kaldır" demek. Sunucu boyut ve
   // biçimi yeniden doğrular — tarayıcının küçültmesine güvenmiyoruz.
   const rawLogo = String(formData.get("logoUrl") ?? "");
@@ -220,6 +229,12 @@ export async function updateBusiness(
       qrCardText: String(formData.get("qrCardText") ?? "").trim().slice(0, 80) || null,
       logoUrl,
       coverUrl,
+      instagramUrl: instagramUrl || null,
+      wifiSsid: wifiSsid || null,
+      wifiPassword: wifiPassword || null,
+      announcement:
+        String(formData.get("announcement") ?? "").trim().slice(0, 120) || null,
+      announcementActive: formData.get("announcementActive") === "on",
     },
   });
 
@@ -269,6 +284,36 @@ export async function addCategory(
 
   revalidatePath(`/admin/isletmeler/${businessId}`);
   return { saved: true };
+}
+
+/**
+ * Kategoriye düşük puan verildiğinde sorulacak seçenekleri günceller.
+ *
+ * Boş bırakılırsa kategori adına göre akıllı varsayılana geri dönülür
+ * (bkz. src/lib/anket-detay.ts) — "temizledim, artık hiç sorulmasın"
+ * demek isteyen için ise seçenekleri tek tek silmek yerine kategoriyi
+ * kapatmak doğru yol.
+ */
+export async function updateCategoryProblems(formData: FormData) {
+  const user = await requireYazma();
+  const id = String(formData.get("categoryId") ?? "");
+
+  const category = await prisma.categoryTemplate.findUnique({ where: { id } });
+  if (!category || !(await canAccessBusiness(user, category.businessId))) return;
+
+  const problemOptions = secenekleriBirlestir(
+    secenekleriAyristir(String(formData.get("problemOptions") ?? "")),
+  );
+
+  await prisma.categoryTemplate.update({ where: { id }, data: { problemOptions } });
+  await denetimYaz(user, "business.category", {
+    entity: "business",
+    entityId: category.businessId,
+    detail: `${category.name} sorun seçenekleri güncellendi`,
+  });
+
+  revalidatePath(`/admin/isletmeler/${category.businessId}`);
+  revalidatePath("/admin/profil");
 }
 
 export async function toggleCategory(formData: FormData) {

@@ -78,6 +78,11 @@ export default async function BusinessDetailPage({
             qrCardText: business.qrCardText,
             logoUrl: business.logoUrl,
             coverUrl: business.coverUrl,
+            instagramUrl: business.instagramUrl,
+            wifiSsid: business.wifiSsid,
+            wifiPassword: business.wifiPassword,
+            announcement: business.announcement,
+            announcementActive: business.announcementActive,
           }}
           isOwner={user.role === "owner"}
         />
@@ -94,6 +99,7 @@ export default async function BusinessDetailPage({
               id: c.id,
               name: c.name,
               active: c.active,
+              problemOptions: c.problemOptions,
             }))}
           />
         </section>
