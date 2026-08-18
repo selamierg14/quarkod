@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, type ReactNode } from "react";
 import {
   createUser,
   resetPassword,
@@ -20,7 +20,49 @@ const ROL_SECENEKLERI: Record<string, string> = {
   owner: "Patron (hesabın tamamını yönetir)",
 };
 
-export function NewUserForm({
+/**
+ * Yeni kullanıcı formu artık liste sayfasıyla aynı anda görünmüyor: kapalı
+ * bir alt modül olarak başlar, "Yeni kullanıcı" düğmesiyle açılır. Sayfa
+ * karışık görünmesin diye — kullanıcı sadece ekleme yapacağı zaman formu
+ * açsın.
+ */
+export function NewUserSection({
+  businesses,
+  roller,
+  hint,
+}: {
+  businesses: Business[];
+  roller: string[];
+  hint: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <section className="rounded-control bg-surface p-5 ring-1 ring-line">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-caption font-medium tracking-wide text-ink-muted uppercase">
+          Yeni kullanıcı
+        </h2>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="rounded-chip border border-line px-3 py-1.5 text-small font-medium text-ink-soft hover:bg-canvas"
+        >
+          {open ? "Kapat" : "+ Yeni kullanıcı ekle"}
+        </button>
+      </div>
+
+      {open ? (
+        <div className="mt-4">
+          <div className="mb-4 text-small text-ink-muted">{hint}</div>
+          <NewUserForm businesses={businesses} roller={roller} />
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function NewUserForm({
   businesses,
   roller,
 }: {

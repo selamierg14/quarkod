@@ -70,7 +70,7 @@ export function SettingsForm({
 
         {/* Form uzun; görselleri seçen kişi en alttaki kaydet düğmesini
             görmüyordu. Aynı formu buradan da gönderebilsin. */}
-        <div className="flex items-center gap-3 sm:col-span-2">
+        <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
           <button
             type="submit"
             disabled={pending}
@@ -78,9 +78,19 @@ export function SettingsForm({
           >
             {pending ? "Kaydediliyor..." : "Görselleri kaydet"}
           </button>
-          <span className="text-caption text-ink-muted">
-            Aşağıdaki ayarlarla birlikte kaydedilir.
-          </span>
+          {state.saved && !pending ? (
+            <span className="text-small font-medium text-success-ink">
+              ✓ Görseller kaydedildi
+            </span>
+          ) : state.error && !pending ? (
+            <span className="text-small font-medium text-danger-ink">
+              Kaydedilemedi — aşağıya bakın
+            </span>
+          ) : (
+            <span className="text-caption text-ink-muted">
+              Aşağıdaki ayarlarla birlikte kaydedilir.
+            </span>
+          )}
         </div>
       </div>
 

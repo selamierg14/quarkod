@@ -5,7 +5,7 @@ import {
   userScope,
   visibleBusinesses,
 } from "@/lib/auth";
-import { NewUserForm, ResetPasswordForm, ToggleUserButton } from "./UserForms";
+import { NewUserSection, ResetPasswordForm, ToggleUserButton } from "./UserForms";
 import { usesSeedPassword } from "./actions";
 import { ROL_ADLARI } from "@/lib/constants";
 import { acilabilirRoller } from "@/lib/panel";
@@ -125,16 +125,14 @@ export default async function UsersPage() {
         </table>
       </div>
 
-      <section className="rounded-control bg-surface p-5 ring-1 ring-line">
-        <h2 className="text-caption font-medium tracking-wide text-ink-muted uppercase">
-          Yeni kullanıcı
-        </h2>
-
-        {/* "Hangi kafeye kullanıcı açıyorum?" sorusu formun en kritik ama en
-            görünmez parçasıydı: kullanıcı her zaman içinde bulunulan hesaba
-            açılır ve o hesabın TÜM işletmelerini görür. */}
-        <p className="mt-1 mb-4 text-small text-ink-muted">
-          {hedefHesap ? (
+      <NewUserSection
+        businesses={businesses.map((b) => ({ id: b.id, name: b.name }))}
+        roller={acilabilirRoller(owner.role)}
+        hint={
+          // "Hangi kafeye kullanıcı açıyorum?" sorusu formun en kritik ama en
+          // görünmez parçasıydı: kullanıcı her zaman içinde bulunulan hesaba
+          // açılır ve o hesabın TÜM işletmelerini görür.
+          hedefHesap ? (
             <>
               Bu kullanıcı{" "}
               <span className="font-medium text-ink">{hedefHesap.name}</span>{" "}
@@ -150,14 +148,9 @@ export default async function UsersPage() {
             </>
           ) : (
             "Kullanıcı, içinde bulunduğunuz hesaba açılır."
-          )}
-        </p>
-
-        <NewUserForm
-          businesses={businesses.map((b) => ({ id: b.id, name: b.name }))}
-          roller={acilabilirRoller(owner.role)}
-        />
-      </section>
+          )
+        }
+      />
     </div>
   );
 }
