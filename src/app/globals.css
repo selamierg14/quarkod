@@ -114,6 +114,7 @@
   --color-brand-ink: var(--brand-ink, #ffffff);
   --color-brand-soft: var(--brand-soft, var(--color-sunken));
   --color-brand-line: var(--brand-line, var(--color-line));
+  --color-brand-strong: var(--brand-strong, var(--color-ink-strong));
 }
 
 [data-marka] {
@@ -202,6 +203,12 @@ table {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Pazarlama sitesi: hafif nokta deseni, arka planı boğmadan derinlik katar. */
+.bg-dot-grid {
+  background-image: radial-gradient(circle, var(--color-line-strong) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 @media print {

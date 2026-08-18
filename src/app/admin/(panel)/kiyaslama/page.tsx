@@ -5,7 +5,7 @@ import { DeltaBadge, TrendChart } from "@/components/TrendChart";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "İşletme kıyaslama" };
+export const metadata = { title: "Şube karşılaştırma" };
 
 export default async function ComparisonPage() {
   const user = await requireTenantOwner();
@@ -16,7 +16,7 @@ export default async function ComparisonPage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="text-title font-semibold">İşletme kıyaslama</h1>
+        <h1 className="text-title font-semibold">Şube karşılaştırma</h1>
         <p className="mt-1 text-small text-ink-muted">
           Kategori setleri işletmeye göre değiştiği için karşılaştırma genel
           yıldız ortalaması üzerinden yapılır. Kategori kırılımı her işletmenin

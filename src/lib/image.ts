@@ -6,6 +6,17 @@
  * sunucu buna güvenemez — kötü niyetli bir istek devasa bir dize gönderebilir.
  */
 
+/**
+ * Kullanıcının seçebileceği ham dosyanın en büyük boyutu — küçültmeden önce.
+ *
+ * Telefon kamerası tek bir fotoğrafı 15-30 MB'a kadar üretebiliyor; bunu
+ * doğrudan canvas'a çizmeye çalışmak (özellikle mobil Safari'de) tarayıcıyı
+ * dondurabilir ya da bellek hatası verebilir. Bu yüzden işlemeye kalkışmadan
+ * önce, tüm görsel alanlarında (logo, kapak, ürün, anket kanıtı) ortak bir
+ * üst sınır uygulanıyor.
+ */
+export const MAX_RAW_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
+
 /** Data URI olarak izin verilen en büyük boyut (yaklaşık; base64 şişmesi dahil). */
 export const MAX_LOGO_BYTES = 200 * 1024; // ~200 KB
 export const MAX_COVER_BYTES = 600 * 1024; // ~600 KB

@@ -8,6 +8,8 @@ import { validateImageDataUrl } from "@/lib/image";
 import { shiftFromDate } from "@/lib/constants";
 import { foldTr } from "@/lib/text";
 import { detaylariDerle, sorunSecenekleri } from "@/lib/anket-detay";
+import { cevir } from "@/lib/ceviriler";
+import { VARSAYILAN_DIL, gecerliDilMi } from "@/lib/diller";
 import { CONTACT_TYPES, KVKK_VERSION, type ContactType } from "@/lib/kvkk";
 import { getOrCreateVisitorId } from "@/lib/visitor";
 import { hesapAktifMi } from "@/lib/abonelik";
@@ -44,6 +46,10 @@ export type SurveyInput = {
   consentGiven: boolean;
   /// KVKK rızasından AYRI: ticari elektronik ileti (İYS) onayı.
   marketingConsent: boolean;
+  /// Anketin doldurulduğu dil. İzin kanıtı, müşterinin gerçekten gördüğü
+  /// metni saklamak zorunda: Türkçe metni kaydedip İngilizce göstermek
+  /// kanıtı geçersiz kılardı.
+  dil?: string;
   /// Müşterinin seçip puanladığı menü ürünleri.
   itemRatings?: { menuItemId: string; rating: number }[];
 };
@@ -274,7 +280,18 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
       // Kanıt üçlüsü: onay anı, gösterilen metnin tam kopyası ve IP adresi.
       // Sürüm numarası tek başına yetmez; metin aynı sürümle değiştirilirse
       // hangi cümlenin onaylandığı ispatlanamaz.
-      const gosterilenMetin = marketingConsentText(business.name, contactType);
+      // Müşteri hangi dilde onayladıysa o cümle saklanır.
+      const dil = gecerliDilMi(String(input.dil ?? "")) ? input.dil : VARSAYILAN_DIL;
+      const gosterilenMetin =
+        dil === VARSAYILAN_DIL
+          ? marketingConsentText(business.name, contactType)
+          : cevir(dil as "en" | "ar" | "ru", "iys.metin", {
+              ad: business.name,
+              kanal: cevir(
+                dil as "en" | "ar" | "ru",
+                contactType === "telefon" ? "iys.sms" : "iys.eposta",
+              ),
+            });
       await prisma.marketingConsent
         .upsert({
           where: {

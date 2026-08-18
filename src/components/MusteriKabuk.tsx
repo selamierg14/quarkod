@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 import { markaStili } from "@/lib/marka";
+import type { MetinAnahtari } from "@/lib/ceviriler";
 import { IletisimBar } from "@/components/IletisimBar";
+import { DilSaglayici } from "@/components/DilSaglayici";
+import { DilSecici } from "@/components/DilSecici";
+import { MasaEtiketi } from "@/components/MasaEtiketi";
 
 /**
  * QR'la açılan sayfaların ortak görünümü.
@@ -13,10 +17,12 @@ import { IletisimBar } from "@/components/IletisimBar";
  */
 export function MusteriKabuk({
   business,
-  tableLabel,
+  masaNo,
+  girisMi,
   altBaslik,
   children,
   dar = true,
+  kompakt = false,
 }: {
   business: {
     name: string;
@@ -27,11 +33,23 @@ export function MusteriKabuk({
     wifiSsid?: string | null;
     wifiPassword?: string | null;
   };
-  tableLabel: string;
-  altBaslik?: string;
+  masaNo: string;
+  /** Masa kavramı olmayan mekânlarda tek ortak giriş QR'ı. */
+  girisMi: boolean;
+  /** Rozetin ikinci yarısı; çeviri anahtarı olarak geliyor. */
+  altBaslik?: MetinAnahtari;
   children: ReactNode;
   /** Menü listesi biraz daha geniş duruyor. */
   dar?: boolean;
+  /**
+   * Hero'yu alçaltır.
+   *
+   * Karşılama ekranı markanın vitrini — orada büyük hero doğru. Ama menü ve
+   * ankette müşterinin işi içerikte: 812 piksellik bir telefonda 500 piksel
+   * hero, yemekleri ve ilk soruyu ekranın altına itiyordu. Bu ekranlarda
+   * logo + ad küçülüp tek satıra iniyor.
+   */
+  kompakt?: boolean;
 }) {
   const backdrop = business.coverUrl ?? business.logoUrl;
   const genislik = dar ? "max-w-md" : "max-w-lg";
@@ -40,8 +58,14 @@ export function MusteriKabuk({
   return (
     // data-marka + --brand: müşteri ekranlarında bg-brand / text-brand-ink
     // yardımcıları işletmenin rengine bağlanır, marka rengi tek yerden akar.
+    <DilSaglayici>
     <main data-marka style={markaStili(business.brandColor)} className="min-h-dvh bg-canvas">
-      <div className="relative z-10 h-64 w-full sm:h-72">
+      <div
+        className={`relative z-10 w-full ${
+          kompakt ? "h-36 sm:h-40" : "h-64 sm:h-72"
+        }`}
+      >
+        <DilSecici />
         {/* Kapak/gradyan yalnızca bu katmanda kırpılır; içerik katmanı
             kırpılmaz, yoksa Wi-Fi açılır paneli hero'nun altında kesilirdi. */}
         <div className="absolute inset-0 overflow-hidden">
@@ -75,32 +99,46 @@ export function MusteriKabuk({
           <div className="absolute inset-x-0 top-0 h-1 bg-brand" aria-hidden="true" />
         </div>
 
-        <div className={`relative mx-auto flex h-full ${genislik} flex-col items-center justify-end px-5 pb-9 text-center`}>
+        {/* Kompakt modda logo, ad ve masa rozeti tek yatay satırda; normal
+            modda dikey yığılıp vitrin hâlini alıyor. */}
+        <div
+          className={`relative mx-auto flex h-full ${genislik} px-5 text-center ${
+            kompakt
+              ? "items-center gap-3 pb-5 text-start"
+              : "flex-col items-center justify-end pb-9"
+          }`}
+        >
           {business.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={business.logoUrl}
               alt={`${business.name} logosu`}
-              className="h-16 w-16 rounded-2xl bg-surface object-cover shadow-pop ring-2 ring-white/70"
+              className={`shrink-0 rounded-2xl bg-surface object-cover shadow-pop ring-2 ring-white/70 ${
+                kompakt ? "h-11 w-11" : "h-16 w-16"
+              }`}
             />
           ) : (
             <div
-              className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand text-title font-bold text-brand-ink shadow-pop ring-2 ring-white/70"
+              className={`flex shrink-0 items-center justify-center rounded-2xl bg-brand font-bold text-brand-ink shadow-pop ring-2 ring-white/70 ${
+                kompakt ? "h-11 w-11 text-body" : "h-16 w-16 text-title"
+              }`}
               aria-hidden="true"
             >
               {bas}
             </div>
           )}
 
-          <h1 className="mt-3 text-title font-semibold tracking-tight text-white drop-shadow-sm">
-            {business.name}
-          </h1>
+          <div className={kompakt ? "min-w-0 flex-1" : "contents"}>
+            <h1
+              className={`font-semibold tracking-tight text-white drop-shadow-sm ${
+                kompakt ? "truncate text-body" : "mt-3 text-title"
+              }`}
+            >
+              {business.name}
+            </h1>
 
-          <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/12 px-3 py-1 text-caption font-medium text-white/90 ring-1 ring-white/20 backdrop-blur-sm">
-            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-brand" />
-            {tableLabel}
-            {altBaslik ? <span className="text-white/60">· {altBaslik}</span> : null}
-          </p>
+            <MasaEtiketi masaNo={masaNo} girisMi={girisMi} altBaslik={altBaslik} />
+          </div>
 
           <IletisimBar
             instagramUrl={business.instagramUrl ?? null}
@@ -116,5 +154,6 @@ export function MusteriKabuk({
         <div className={`mx-auto ${genislik} px-4 pt-6`}>{children}</div>
       </div>
     </main>
+    </DilSaglayici>
   );
 }

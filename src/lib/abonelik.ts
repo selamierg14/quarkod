@@ -1,9 +1,14 @@
 /**
- * Hesabın kullanılabilir olup olmadığı.
+ * Hesabın müşteriye açık ve tam yetkili olup olmadığı.
  *
- * İki ayrı sebep var ve ikisi de aynı sonucu doğuruyor:
+ * İki sebepten biri bunu bozar:
  *   - `active = false`  → elle askıya alındı,
  *   - `expiresAt` geçti → abonelik süresi doldu.
+ *
+ * QR müşteri sayfaları ve yazma işlemleri bunu kullanır: süre dolunca
+ * müşteri menüsü/anketi kapanır ve panelde değişiklik yapılamaz. Panele
+ * *giriş* ayrı bir karardır (bkz. sessionRevokedReason): süresi dolmuş
+ * hesabın sahibi salt okunur girebilir, yalnızca askıya alınan giremez.
  *
  * Karar tek bir yerde duruyor; her çağrı noktası kendi kontrolünü yazsaydı
  * biri unutulur ve süresi dolmuş bir hesap oradan çalışmaya devam ederdi.
@@ -31,6 +36,28 @@ export function kalanGun(hesap: AboneDurumu, simdi = new Date()): number | null 
   return Math.ceil(fark / (24 * 60 * 60 * 1000));
 }
 
+/**
+ * Abonelik takibindeki aciliyet kademesi.
+ *
+ * Ödeme sayfası hesapları bu kademeye göre gruplayıp sıralıyor: dolmuş olanlar
+ * en üstte (gelir kaçıyor), 7 gün içi kritik, 30 gün içi yaklaşıyor. Süresiz
+ * ve bir aydan uzak olanlar "sakin" — takip listesinde yer kaplamasınlar.
+ */
+export type AbonelikKademe = "dolmus" | "kritik" | "yakin" | "sakin" | "suresiz";
+
+/** Kritik eşiği (gün): bu kadar veya daha az kaldıysa acil. */
+export const KRITIK_GUN = 7;
+
+export function abonelikKademe(hesap: AboneDurumu, simdi = new Date()): AbonelikKademe {
+  if (!hesap.expiresAt) return "suresiz";
+  if (hesap.expiresAt <= simdi) return "dolmus";
+  const gun = kalanGun(hesap, simdi);
+  if (gun === null) return "dolmus";
+  if (gun <= KRITIK_GUN) return "kritik";
+  if (gun <= UYARI_GUNU) return "yakin";
+  return "sakin";
+}
+
 export type AbonelikUyarisi = {
   seviye: "bitti" | "yakin";
   mesaj: string;
@@ -39,9 +66,10 @@ export type AbonelikUyarisi = {
 /**
  * Panelde gösterilecek uyarı.
  *
- * Süre dolduğunda kullanıcı zaten giremiyor; bu uyarı **dolmadan önce**
- * görünsün diye var. Kafenin QR'larının bir sabah çalışmadığını müşteriden
- * duyması, satılan hizmete duyulan güveni en hızlı bitiren şey olurdu.
+ * İki işi var: süre dolmadan önce "yenileyin" hatırlatması yapmak (QR'ların
+ * bir sabah çalışmadığını müşteriden duymak güveni en hızlı bitiren şey),
+ * ve süre dolduktan sonra hesabın artık salt okunur olduğunu söylemek —
+ * çünkü sahibi hâlâ girip verisini görebiliyor ve dışa aktarabiliyor.
  */
 export function abonelikUyarisi(
   hesap: AboneDurumu,
@@ -50,7 +78,12 @@ export function abonelikUyarisi(
   if (!hesap.expiresAt) return null;
 
   if (hesap.expiresAt <= simdi) {
-    return { seviye: "bitti", mesaj: "Aboneliğinizin süresi doldu." };
+    return {
+      seviye: "bitti",
+      mesaj:
+        "Aboneliğinizin süresi doldu. Panel şu an salt okunur; kayıtlarınızı " +
+        "görebilir ve dışa aktarabilirsiniz, yenileyince kaldığınız yerden devam eder.",
+    };
   }
 
   const gun = kalanGun(hesap, simdi);

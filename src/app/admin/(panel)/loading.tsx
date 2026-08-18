@@ -9,8 +9,9 @@ export default function Loading() {
     <div className="animate-pulse" aria-busy="true" aria-live="polite">
       <span className="sr-only">Yükleniyor…</span>
 
-      <div className="h-5 w-40 rounded bg-slate-200" />
-      <div className="mt-2 h-4 w-56 rounded bg-sunken" />
+      {/* max-w-*: dar telefonda sabit genişlik yatay taşma yapıyordu. */}
+      <div className="h-5 w-full max-w-40 rounded bg-slate-200" />
+      <div className="mt-2 h-4 w-full max-w-56 rounded bg-sunken" />
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {[0, 1, 2].map((i) => (

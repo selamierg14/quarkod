@@ -8,7 +8,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 /// Kiracı: sistemi satın alan müşteri (bir kafe zinciri ya da tek işletme sahibi).
@@ -40,12 +40,46 @@ model Account {
   /// markalara bildirilir.
   iysCode   String?
 
+  /// Self-servis kayıtta KVKK aydınlatma metninin onaylandığı an ve sürümü.
+  /// Onay kutusu işaretleniyordu ama kanıtı saklanmıyordu; "hangi metne,
+  /// ne zaman rıza verildi" sorusu sonradan cevaplanabilsin diye tutuluyor.
+  kvkkOnayAt   DateTime?
+  kvkkSurum    String?
+
   createdAt DateTime @default(now())
 
   businesses Business[]
   users      User[]
+  payments   Payment[]
 
   @@map("accounts")
+}
+
+/// Bir hesaba işlenen abonelik ödemesi.
+///
+/// Ödeme akışı manuel: müşteri IBAN'a havale yapar, platform yöneticisi bunu
+/// panele kaydeder ve isterse aynı işlemde aboneliği uzatır. Amaç "kim, ne
+/// zaman, ne kadar ödedi ve süre ne kadar uzadı" sorusunun izini tutmak —
+/// aksi hâlde tek dayanak yöneticinin hafızası ve banka ekstresi oluyordu.
+model Payment {
+  id          String    @id @default(cuid())
+  accountId   String
+  /// Kuruş cinsinden ödenen tutar (₺1.290,00 → 129000). Para her zaman tam
+  /// sayı kuruş olarak tutulur; kayan nokta yuvarlama hatası olmasın.
+  amountKurus Int
+  /// "IBAN havale — Ağustos" gibi serbest açıklama.
+  note        String?
+  /// Bu ödemeyle aboneliğin uzatıldığı yeni bitiş tarihi (uzatma yapıldıysa).
+  extendedTo  DateTime?
+  /// Kaydı giren platform yöneticisinin adı — denetim izinden ayrı, listede
+  /// hızlı görünsün diye burada da tutuluyor.
+  recordedBy  String
+  createdAt   DateTime  @default(now())
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, createdAt])
+  @@map("payments")
 }
 
 /// İşletme türü. Kategori şablonlarının varsayılanını ve QR tasarımını belirler.
@@ -93,6 +127,19 @@ model Business {
   /// SSID + şifreyi kopyalanabilir şekilde gösterir.
   wifiSsid     String?
   wifiPassword String?
+
+  /// Online sipariş platformlarının işletmeye özel sayfa linkleri. Dolu
+  /// olanlar QR karşılama ekranında platform butonu olarak görünür; müşteri
+  /// masada değilse (paket/eve sipariş) doğrudan oraya yönlenir.
+  yemeksepetiUrl String?
+  getirUrl       String?
+  trendyolUrl    String?
+  migrosUrl      String?
+
+  /// Menü fiyatlarının en son güncellendiği an. Ürün eklendiğinde ya da
+  /// fiyatı değiştiğinde otomatik güncellenir; menüde "fiyatlar şu tarihte
+  /// güncellendi" olarak gösterilir (fiyat şeffaflığı / yönetmelik).
+  menuPriceUpdatedAt DateTime?
 
   createdAt DateTime @default(now())
 
@@ -223,6 +270,15 @@ model Feedback {
   consentVersion  String?
   /// İletişim bilgisinin saklama süresi dolduğunda silindiği an.
   contactErasedAt DateTime?
+
+  /// Şikayet döngüsünün kapandığı iz: işletmenin müşteriye panelden gönderdiği
+  /// yanıtın anı, metni ve kanalı. Müşteri KVKK rızasıyla "yalnızca bu geri
+  /// bildirim hakkında bana dönülsün" dediği için bu iletişim rızanın tam
+  /// kapsamında; yine de yanıt yalnızca rıza + iletişim bilgisi varken açılır.
+  respondedAt     DateTime?
+  responseText    String?
+  /// "telefon" | "eposta" — yanıtın hangi kanaldan gittiği.
+  responseChannel String?
 
   /// "yeni" | "incelendi" | "cozuldu"
   status          String    @default("yeni")

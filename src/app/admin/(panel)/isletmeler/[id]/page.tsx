@@ -83,6 +83,10 @@ export default async function BusinessDetailPage({
             wifiPassword: business.wifiPassword,
             announcement: business.announcement,
             announcementActive: business.announcementActive,
+            yemeksepetiUrl: business.yemeksepetiUrl,
+            getirUrl: business.getirUrl,
+            trendyolUrl: business.trendyolUrl,
+            migrosUrl: business.migrosUrl,
           }}
           isOwner={user.role === "owner"}
         />

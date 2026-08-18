@@ -19,9 +19,9 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const modu = panelModu(user.role, Boolean(aktifHesap));
   const gruplar = panelMenusu(modu, user.role);
 
-  // Abonelik uyarısı: süre dolduğunda kullanıcı zaten giremiyor, bu yüzden
-  // uyarının değeri DOLMADAN önce görünmesinde. QR'ların bir sabah
-  // çalışmadığını müşteriden duymak, satılan hizmete güveni bitirir.
+  // Abonelik uyarısı: hem süre dolmadan "yenileyin" hatırlatması, hem de
+  // dolduktan sonra "panel salt okunur" bilgisi. Süresi dolan sahip artık
+  // girebildiği için bu bant onun tek yönlendirmesi.
   const hesap = user.accountId
     ? await prisma.account.findUnique({
         where: { id: user.accountId },
@@ -31,7 +31,10 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const uyari = hesap ? abonelikUyarisi(hesap) : null;
 
   return (
-    <div className="flex min-h-dvh bg-canvas">
+    // Mobilde dikey: AdminSidebar'ın mobil başlık çubuğu da bu kabın bir
+    // flex öğesi. Yatay dizilimde başlık, içerikle yan yana düşüp paneli
+    // telefonda ikiye bölüyordu. lg'den itibaren yan çubuk + içerik yan yana.
+    <div className="flex min-h-dvh flex-col bg-canvas lg:flex-row">
       <AdminSidebar
         gruplar={gruplar}
         kullaniciAdi={user.name}
@@ -50,9 +53,11 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Platform yöneticisi bir kiracıyı görüntülüyorsa bu bant hep üstte
-            durur: yanlışlıkla müşterinin verisinde işlem yapmayı önler. */}
+            durur: yanlışlıkla müşterinin verisinde işlem yapmayı önler.
+            `sticky` şart — sayfayla birlikte kayıp gittiğinde uzun bir listede
+            aşağı inen yönetici başkasının hesabında olduğunu unutabiliyordu. */}
         {aktifHesap ? (
-          <div className="print-hidden flex flex-wrap items-center justify-between gap-2 bg-warning-soft px-4 py-2 text-small text-warning-ink">
+          <div className="print-hidden sticky top-0 z-30 flex flex-wrap items-center justify-between gap-2 bg-warning-soft px-4 py-2 text-small text-warning-ink shadow-sm">
             <span>
               <span className="font-semibold">{aktifHesap.name}</span> hesabını
               görüntülüyorsunuz. Yaptığınız işlemler bu hesaba yazılır.

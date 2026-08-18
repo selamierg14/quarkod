@@ -1,3 +1,4 @@
+import type { MetinAnahtari } from "./ceviriler";
 import { foldTr } from "./text";
 
 /**
@@ -61,6 +62,62 @@ const VARSAYILANLAR: { anahtarlar: string[]; secenekler: string[] }[] = [
     secenekler: ["Yer yoktu", "Uzun bekledim", "Ücret"],
   },
 ];
+
+/**
+ * Varsayılan seçeneklerin çeviri anahtarları.
+ *
+ * Bu liste ürünün kendi metni, işletmenin yazdığı içerik değil; turist
+ * "Hangi konuda sorun yaşadınız?" sorusunu okuyup altındaki şıkları
+ * okuyamazsa adım işe yaramaz. Kayıt hep Türkçe değerle yapılıyor:
+ * panel Türkçe ve sunucu doğrulaması bu değerlere bakıyor.
+ */
+const SECENEK_ANAHTARLARI: Record<string, MetinAnahtari> = {
+  "Tuvaletler": "secenek.tuvaletler",
+  "Masalar": "secenek.masalar",
+  "Zemin": "secenek.zemin",
+  "Çatal-bıçak": "secenek.catalBicak",
+  "Bardaklar": "secenek.bardaklar",
+  "Çok beklettiler": "secenek.cokBeklettiler",
+  "İlgisizdi": "secenek.ilgisizdi",
+  "Sipariş yanlış geldi": "secenek.siparisYanlis",
+  "Üslup kötüydü": "secenek.uslupKotu",
+  "Soğuktu": "secenek.soguktu",
+  "Tuzu/baharatı": "secenek.tuzBaharat",
+  "Porsiyon küçüktü": "secenek.porsiyonKucuk",
+  "Tazelik": "secenek.tazelik",
+  "Sunum": "secenek.sunum",
+  "Sipariş alınması": "secenek.siparisAlinmasi",
+  "Yemeğin gelmesi": "secenek.yemeginGelmesi",
+  "Hesap ödemesi": "secenek.hesapOdemesi",
+  "Porsiyona göre pahalı": "secenek.porsiyonaGorePahali",
+  "Menüdeki fiyat farklıydı": "secenek.menuFiyatFarkli",
+  "Servis ücreti": "secenek.servisUcreti",
+  "Gürültü": "secenek.gurultu",
+  "Müzik sesi": "secenek.muzikSesi",
+  "Isı/havalandırma": "secenek.isiHavalandirma",
+  "Aydınlatma": "secenek.aydinlatma",
+  "Koltuklar": "secenek.koltuklar",
+  "Tabak düzeni": "secenek.tabakDuzeni",
+  "Sıcaklık": "secenek.sicaklik",
+  "Porsiyon görünümü": "secenek.porsiyonGorunumu",
+  "Temizlik": "secenek.temizlik",
+  "Kağıt/sabun yok": "secenek.kagitSabunYok",
+  "Koku": "secenek.koku",
+  "Sıra bekledim": "secenek.siraBekledim",
+  "Yer yoktu": "secenek.yerYoktu",
+  "Uzun bekledim": "secenek.uzunBekledim",
+  "Ücret": "secenek.ucret",
+};
+
+/**
+ * Bir seçeneğin çeviri anahtarı; işletmenin kendi yazdığı seçenekte null.
+ *
+ * Özel seçenekler yazıldıkları dilde kalır — onları çevirecek bir sözlük
+ * yok ve makine çevirisi menüdeki gibi burada da güveni sarsardı.
+ */
+export function secenekAnahtari(secenek: string): MetinAnahtari | null {
+  return SECENEK_ANAHTARLARI[secenek] ?? null;
+}
 
 /** Virgülle ayrılmış listeyi temizleyip diziye çevirir. */
 export function secenekleriAyristir(ham: string | null | undefined): string[] {

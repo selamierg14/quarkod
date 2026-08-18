@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "./db";
 import { SHIFTS, type Shift } from "./constants";
+import { detaylariCoz } from "./anket-detay";
 
 export type TrendPoint = {
   /** Hafta başlangıcı (pazartesi). */
@@ -31,6 +32,13 @@ export type BusinessStats = {
   googleClicked: number;
   /** Son 90 günde en zayıf kategoriler (ortalaması düşükten yükseğe). */
   weakCategories: { name: string; average: number; count: number }[];
+  /**
+   * Düşük puanlarda en çok işaretlenen sorun alanları, çoktan aza.
+   *
+   * "Temizlik 2.1/5" patrona nereye bakacağını söylemiyor; "Temizlik →
+   * Tuvaletler, 8 kez" söylüyor. Kategori ortalamasının bir kademe altı.
+   */
+  topProblems: { kategori: string; alan: string; count: number }[];
   trend: TrendPoint[];
   /** Anket ekranını açan tekil ziyaretçi sayısı. */
   views: number;
@@ -226,7 +234,8 @@ export async function getBusinessStats(businessIds: string[]): Promise<BusinessS
             categoryRatings: { not: null },
             createdAt: { gte: daysAgo(CATEGORY_WINDOW_DAYS) },
           },
-          select: { categoryRatings: true },
+          // problemDetails aynı satırlarda duruyor; ayrı sorgu açmaya gerek yok.
+          select: { categoryRatings: true, problemDetails: true },
         }),
         prisma.feedback.findMany({
           where: { businessId: business.id, createdAt: { gte: trendFrom } },
@@ -270,6 +279,26 @@ export async function getBusinessStats(businessIds: string[]): Promise<BusinessS
           count: bucket.count,
         }))
         .sort((a, b) => a.average - b.average);
+
+      // --- En çok işaretlenen sorun alanları
+      const sorunSayaci = new Map<string, { kategori: string; alan: string; count: number }>();
+      for (const row of categoryRows) {
+        for (const [kategori, alanlar] of Object.entries(detaylariCoz(row.problemDetails))) {
+          for (const alan of alanlar) {
+            const anahtar = `${kategori}\u0000${alan}`;
+            const mevcut = sorunSayaci.get(anahtar) ?? { kategori, alan, count: 0 };
+            mevcut.count += 1;
+            sorunSayaci.set(anahtar, mevcut);
+          }
+        }
+      }
+      // Tek kez işaretlenen alan örüntü değil, gürültü: "en çok şikayet
+      // edilen" başlığı altında "1 kez" görmek patronu yanlış yere yönlendirir.
+      // En az iki kez tekrar edenler listeye giriyor.
+      const topProblems = [...sorunSayaci.values()]
+        .filter((s) => s.count >= 2)
+        .sort((a, b) => b.count - a.count || a.kategori.localeCompare(b.kategori, "tr"))
+        .slice(0, 5);
 
       // --- Haftalık trend
       const weekBuckets = new Map<number, { sum: number; count: number }>();
@@ -342,6 +371,7 @@ export async function getBusinessStats(businessIds: string[]): Promise<BusinessS
         googleShown,
         googleClicked,
         weakCategories,
+        topProblems,
         trend,
         views,
         feedbacksSinceTracking,

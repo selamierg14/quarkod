@@ -6,7 +6,7 @@ import { MarkReportedForm } from "./MarkReportedForm";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "İleti izinleri" };
+export const metadata = { title: "Pazarlama izinleri" };
 
 export default async function ConsentsPage() {
   const user = await requireTenantOwner();
@@ -27,7 +27,7 @@ export default async function ConsentsPage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="text-title font-semibold">İleti izinleri</h1>
+        <h1 className="text-title font-semibold">Pazarlama izinleri</h1>
         <p className="mt-1 text-small text-ink-muted">
           Ankette ticari elektronik ileti kutusunu işaretleyen müşteriler. Bu
           liste, geri bildirim için alınan KVKK rızasından ayrıdır — buradaki

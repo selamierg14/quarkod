@@ -85,7 +85,12 @@ export async function getSession(): Promise<SessionUser | null> {
       active: user.active,
       role: user.role,
       accountId: user.accountId,
-      accountActive: user.account ? hesapAktifMi(user.account) : null,
+      // Yalnızca elle askıya alma (active:false) oturumu iptal eder. Süre
+      // dolması artık girişi engellemiyor: hesap sahibi salt okunur girip
+      // verisini görebilsin, dışa aktarabilsin ve yenileyebilsin. Yazma
+      // engeli requireYazma'da; QR müşteri sayfaları ise hesapAktifMi ile
+      // süre dolunca zaten kapanıyor.
+      accountActive: user.account ? user.account.active : null,
       passwordChangedAt: user.passwordChangedAt,
     },
     jeton.issuedAt,
@@ -128,6 +133,22 @@ export async function requireYazma(): Promise<SessionUser> {
   const user = await requireUser();
   if (!yazabilirMi(user.role)) {
     throw new Error("Bu hesap salt okunur; değişiklik yapamaz.");
+  }
+  // Süresi dolmuş hesap salt okunur: sahibi girip verisini görebilir ve dışa
+  // aktarabilir ama menü/anket/kullanıcı üzerinde değişiklik yapamaz. Platform
+  // yöneticisi bu kısıttan muaf (ödemeyi görüp süreyi o uzatıyor).
+  if (user.role !== "superadmin" && user.accountId) {
+    const hesap = await prisma.account.findUnique({
+      where: { id: user.accountId },
+      select: { active: true, expiresAt: true },
+    });
+    // active:false olan zaten giremez; buradaki tek durum "aktif ama süresi
+    // dolmuş" hesap.
+    if (hesap?.active && !hesapAktifMi(hesap)) {
+      throw new Error(
+        "Aboneliğinizin süresi doldu; yenilenene kadar değişiklik yapılamaz.",
+      );
+    }
   }
   return user;
 }
@@ -201,8 +222,12 @@ export async function authenticate(
   });
   if (!user || !user.active) return null;
 
-  // Askıya alınan ya da süresi dolan hesabın kullanıcıları giremez.
-  if (user.role !== "superadmin" && !hesapAktifMi(user.account)) return null;
+  // Yalnızca elle askıya alınan hesabın (active:false) kullanıcıları giremez.
+  // Süresi dolmuş hesabın sahibi salt okunur girebilir: verisini görür, dışa
+  // aktarır, yeniler. Yazma engeli requireYazma'da, QR kapanışı hesapAktifMi'de.
+  if (user.role !== "superadmin" && user.account && !user.account.active) {
+    return null;
+  }
 
   if (!(await bcrypt.compare(password, user.passwordHash))) return null;
 

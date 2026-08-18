@@ -1,10 +1,12 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useDil } from "./DilSaglayici";
 import {
   ANKET_MAX_DIM,
   COVER_MAX_WIDTH,
   LOGO_MAX_DIM,
+  MAX_RAW_UPLOAD_BYTES,
   MENU_MAX_DIM,
   type ImageKind,
 } from "@/lib/image";
@@ -44,6 +46,8 @@ export function ImageUpload({
     setValueState(yeni);
     onChange?.(yeni);
   }
+  // Panelde sağlayıcı yok; useDil o durumda Türkçeye düşüyor.
+  const { t } = useDil();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -51,7 +55,14 @@ export function ImageUpload({
   async function handleFile(file: File) {
     setError(null);
     if (!file.type.startsWith("image/")) {
-      setError("Lütfen bir görsel dosyası seçin.");
+      setError(t("gorsel.hataTur"));
+      return;
+    }
+    // Ham dosyayı canvas'a çizmeden önce boyutu kontrol ediyoruz: telefon
+    // kamerasının ürettiği 15-30 MB'lık bir fotoğrafı işlemeye kalkışmak,
+    // özellikle mobil Safari'de tarayıcıyı dondurabilir.
+    if (file.size > MAX_RAW_UPLOAD_BYTES) {
+      setError(t("gorsel.hataBoyut", { boyut: "10 MB" }));
       return;
     }
     setBusy(true);
@@ -59,7 +70,7 @@ export function ImageUpload({
       const dataUrl = await resizeImage(file, kind);
       setValue(dataUrl);
     } catch {
-      setError("Görsel işlenemedi. Başka bir dosya deneyin.");
+      setError(t("gorsel.hataIsleme"));
     } finally {
       setBusy(false);
     }
@@ -111,7 +122,7 @@ export function ImageUpload({
             disabled={busy}
             className="rounded-chip border border-line bg-surface px-3 py-1.5 text-small text-ink-soft hover:bg-canvas disabled:opacity-60"
           >
-            {busy ? "İşleniyor…" : value ? "Değiştir" : "Görsel seç"}
+            {t(busy ? "gorsel.isleniyor" : value ? "gorsel.degistir" : "gorsel.sec")}
           </button>
           {value ? (
             <button
@@ -119,7 +130,7 @@ export function ImageUpload({
               onClick={() => setValue("")}
               className="rounded-chip px-2.5 py-1.5 text-small text-ink-muted hover:text-danger"
             >
-              Kaldır
+              {t("gorsel.kaldir")}
             </button>
           ) : null}
         </div>

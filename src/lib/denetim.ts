@@ -15,6 +15,7 @@ import type { SessionUser } from "./session-token";
 export type DenetimEylemi =
   | "feedback.status"
   | "feedback.note"
+  | "feedback.respond"
   | "menu.category"
   | "menu.item"
   | "business.create"
@@ -27,6 +28,7 @@ export type DenetimEylemi =
   | "account.create"
   | "account.toggle"
   | "account.subscription"
+  | "account.payment"
   | "account.enter"
   | "account.exit"
   | "consent.reported";
@@ -34,6 +36,7 @@ export type DenetimEylemi =
 export const EYLEM_METNI: Record<DenetimEylemi, string> = {
   "feedback.status": "Geri bildirim durumu",
   "feedback.note": "Dahili not",
+  "feedback.respond": "Müşteriye yanıt",
   "menu.category": "Menü bölümü",
   "menu.item": "Menü ürünü",
   "business.create": "İşletme açıldı",
@@ -46,6 +49,7 @@ export const EYLEM_METNI: Record<DenetimEylemi, string> = {
   "account.create": "Hesap açıldı",
   "account.toggle": "Hesap askıya alma",
   "account.subscription": "Abonelik/geçerlilik",
+  "account.payment": "Ödeme kaydı",
   "account.enter": "Hesaba giriş (platform)",
   "account.exit": "Hesaptan çıkış (platform)",
   "consent.reported": "İYS bildirimi",

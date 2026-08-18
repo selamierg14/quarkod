@@ -103,12 +103,30 @@ export function AdminSidebar({
       </nav>
 
       <div className="border-t border-line p-3">
-        {genis ? (
-          <p className="mb-2 truncate px-1 text-caption text-ink-muted">
-            <span className="block font-medium text-ink-soft">{kullaniciAdi}</span>
-            {rolAdi}
-          </p>
-        ) : null}
+        {/* Kullanıcı kartı profile götürür: tek satırlık "Hesabım" grubunu
+            menüden çıkarıp buraya bağladık, menü bir kalem kısaldı. */}
+        <Link
+          href="/admin/profil"
+          title={genis ? undefined : `${kullaniciAdi} — Profil`}
+          className={`mb-2 flex items-center gap-2 rounded-chip px-1 py-1.5 transition hover:bg-canvas ${
+            genis ? "" : "justify-center"
+          }`}
+        >
+          <span
+            aria-hidden="true"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sunken text-caption font-semibold text-ink-soft"
+          >
+            {kullaniciAdi.trim().charAt(0).toLocaleUpperCase("tr")}
+          </span>
+          {genis ? (
+            <span className="min-w-0 flex-1 truncate text-caption text-ink-muted">
+              <span className="block truncate font-medium text-ink-soft">
+                {kullaniciAdi}
+              </span>
+              {rolAdi}
+            </span>
+          ) : null}
+        </Link>
         {cikis}
       </div>
     </div>
@@ -224,6 +242,14 @@ function Ikon({ ad }: { ad: IkonAdi }) {
         <svg viewBox="0 0 24 24" className={ortak} {...p}>
           <rect x="3" y="5" width="18" height="14" rx="2" />
           <path d="M3 10h18M7 15h4" />
+        </svg>
+      );
+    case "abonelik":
+      return (
+        <svg viewBox="0 0 24 24" className={ortak} {...p}>
+          <rect x="3" y="5" width="18" height="14" rx="2" />
+          <path d="M3 10h18M7 15h3" />
+          <circle cx="17" cy="15" r="1.4" fill="currentColor" stroke="none" />
         </svg>
       );
     case "denetim":

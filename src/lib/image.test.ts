@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  MAX_ANKET_BYTES,
+  MAX_COVER_BYTES,
   MAX_LOGO_BYTES,
+  MAX_MENU_BYTES,
+  MAX_RAW_UPLOAD_BYTES,
   validateImageDataUrl,
 } from "./image";
 
@@ -35,5 +39,22 @@ describe("validateImageDataUrl", () => {
     const orta = fakeDataUrl("image/webp", MAX_LOGO_BYTES + 50_000);
     expect(validateImageDataUrl(orta, "logo")).not.toBeNull();
     expect(validateImageDataUrl(orta, "cover")).toBeNull();
+  });
+});
+
+describe("MAX_RAW_UPLOAD_BYTES", () => {
+  it("tam olarak 10 MB", () => {
+    // ImageUpload.tsx bu sabiti, kullanıcının seçtiği ham dosyayı canvas'a
+    // çizmeden önce reddetmek için kullanıyor — tüm görsel alanlarında
+    // (logo, kapak, ürün, anket kanıtı) ortak, tek bir üst sınır olmalı.
+    expect(MAX_RAW_UPLOAD_BYTES).toBe(10 * 1024 * 1024);
+  });
+
+  it("her alanın işlenmiş görsel sınırından büyük", () => {
+    // Ham dosya sınırı her zaman sıkıştırılmış sonuç sınırından geniş olmalı;
+    // aksi hâlde küçültme sonrası bile geçerli bir görsel reddedilebilirdi.
+    for (const limit of [MAX_LOGO_BYTES, MAX_COVER_BYTES, MAX_MENU_BYTES, MAX_ANKET_BYTES]) {
+      expect(MAX_RAW_UPLOAD_BYTES).toBeGreaterThan(limit);
+    }
   });
 });

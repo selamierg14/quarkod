@@ -5,10 +5,10 @@ import Link from "next/link";
 import { StarRating } from "./StarRating";
 import { ImageUpload } from "./ImageUpload";
 import { taslakAnahtari, taslakOku, taslakSil, taslakYaz } from "@/lib/anket-taslak";
-import { DUSUK_PUAN } from "@/lib/anket-detay";
+import { DUSUK_PUAN, secenekAnahtari } from "@/lib/anket-detay";
+import { useDil } from "./DilSaglayici";
 import { KvkkNotice } from "./KvkkNotice";
-import { CONTACT_TYPES, consentSummary, type ContactType } from "@/lib/kvkk";
-import { marketingConsentText } from "@/lib/iys";
+import { CONTACT_RETENTION_DAYS, CONTACT_TYPES, type ContactType } from "@/lib/kvkk";
 import { markGoogleClick, submitFeedback } from "@/app/f/[slug]/[table]/actions";
 
 type Props = {
@@ -17,7 +17,7 @@ type Props = {
   brandColor: string;
   logoUrl: string | null;
   tableNumber: string;
-  tableLabel: string;
+  girisMi: boolean;
   /** `sorunAlanlari`: düşük puanda açılacak seçenekler; boşsa alt soru çıkmaz. */
   categories: { id: string; name: string; sorunAlanlari: string[] }[];
   /** QR menüdeki ürünler. Menü modülü kapalıysa boş gelir ve adım hiç çıkmaz. */
@@ -35,13 +35,14 @@ export function SurveyForm({
   brandColor,
   logoUrl,
   tableNumber,
-  tableLabel,
+  girisMi,
   categories,
   menuItems = [],
 }: Props) {
   // Müşteri fotoğraflı menüye gidip geri dönebiliyor; o gidiş gelişte
   // verdiği yıldızlar, yorumu ve iletişim bilgisi kaybolmasın diye anketin
   // tamamı taslak olarak tarayıcıda tutuluyor.
+  const { dil, t } = useDil();
   const taslakKaydi = taslakAnahtari(slug, tableNumber);
   const [taslak] = useState(() => taslakOku(taslakKaydi));
 
@@ -124,11 +125,11 @@ export function SurveyForm({
     setError(null);
 
     if (overall === 0) {
-      setError("Lütfen önce genel memnuniyet puanınızı verin.");
+      setError(t("anket.puanGerekli"));
       return;
     }
     if (contactInfo.trim() && !consent) {
-      setError("İletişim bilgisi bırakmak için aydınlatma metnini onaylayın.");
+      setError(t("anket.rizaGerekli"));
       return;
     }
 
@@ -145,6 +146,7 @@ export function SurveyForm({
         contactType: contactInfo.trim() ? contactType : "",
         consentGiven: consent,
         marketingConsent: marketing,
+        dil,
         // Yalnızca puanlanmış ürünler gider; seçilip boş bırakılan ürün
         // "0 puan" değildir, veri yokluğudur.
         itemRatings: secilenUrunler
@@ -175,11 +177,8 @@ export function SurveyForm({
   if (screen.kind === "thanks-google") {
     return (
       <ThanksShell brandColor={brandColor} businessName={businessName} logoUrl={logoUrl}>
-        <h1 className="text-2xl font-semibold text-ink">Çok teşekkürler! 🎉</h1>
-        <p className="mt-3 text-ink-soft">
-          Beğendiğinize sevindik. Bu deneyimi Google&apos;da da paylaşırsanız bizim
-          için çok değerli olur — 30 saniyenizi almaz.
-        </p>
+        <h1 className="text-2xl font-semibold text-ink">{t("tesekkur.googleBaslik")}</h1>
+        <p className="mt-3 text-ink-soft">{t("tesekkur.googleMetin")}</p>
         <a
           href={screen.url}
           target="_blank"
@@ -191,10 +190,10 @@ export function SurveyForm({
           className="mt-6 block w-full rounded-control px-5 py-4 text-center text-base font-semibold text-white shadow-card active:scale-[0.99]"
           style={{ backgroundColor: brandColor }}
         >
-          Google&apos;da yorum bırak
+          {t("tesekkur.googleButon")}
         </a>
         <p className="mt-4 text-center text-small text-ink-faint">
-          İsterseniz bu adımı atlayabilirsiniz.
+          {t("tesekkur.googleAtla")}
         </p>
       </ThanksShell>
     );
@@ -203,13 +202,8 @@ export function SurveyForm({
   if (screen.kind === "thanks-internal") {
     return (
       <ThanksShell brandColor={brandColor} businessName={businessName} logoUrl={logoUrl}>
-        <h1 className="text-2xl font-semibold text-ink">
-          Geri bildiriminiz için teşekkürler
-        </h1>
-        <p className="mt-3 text-ink-soft">
-          Yazdıklarınız doğrudan işletme sorumlusuna iletildi. Eksiğimizi
-          söylediğiniz için teşekkür ederiz — en kısa sürede ilgileneceğiz.
-        </p>
+        <h1 className="text-2xl font-semibold text-ink">{t("tesekkur.icBaslik")}</h1>
+        <p className="mt-3 text-ink-soft">{t("tesekkur.icMetin")}</p>
       </ThanksShell>
     );
   }
@@ -224,32 +218,32 @@ export function SurveyForm({
     <form onSubmit={handleSubmit} className="flex flex-col gap-5 pb-32">
       <section className="rounded-card bg-surface p-6 shadow-card ring-1 ring-line">
         <p className="text-center text-base font-medium text-ink-strong">
-          Deneyiminizi nasıl buldunuz?
+          {t("anket.baslik")}
         </p>
         <div className="mt-5">
           <StarRating name="overall" value={gorunenOverall} onChange={setOverall} size="lg" />
         </div>
         {!basladi ? (
           <p className="mt-4 text-center text-caption text-ink-faint">
-            Puan vermek için bir yıldıza dokunun
+            {t("anket.ipucu")}
           </p>
         ) : null}
       </section>
 
       {!basladi ? (
         <p className="text-center text-caption leading-relaxed text-ink-faint">
-          Görüşünüz doğrudan {businessName} sorumlusuna iletilir.
+          {t("anket.altBilgi1", { ad: businessName })}
           <br />
-          Ad soyad sorulmaz, isim vermek zorunda değilsiniz.
+          {t("anket.altBilgi2")}
         </p>
       ) : null}
 
       {basladi && categories.length > 0 ? (
         <section className="mm-rise rounded-card bg-surface p-5 shadow-card ring-1 ring-line">
           <h2 className="text-small font-semibold tracking-wide text-ink-muted uppercase">
-            Detaylar
+            {t("anket.detaylar")}
           </h2>
-          <p className="mt-1 text-small text-ink-faint">İstediğinizi boş bırakabilirsiniz.</p>
+          <p className="mt-1 text-small text-ink-faint">{t("anket.detayIpucu")}</p>
           <ul className="mt-4 divide-y divide-line">
             {categories.map((category) => (
               <li key={category.id} className="py-2.5">
@@ -257,7 +251,7 @@ export function SurveyForm({
                   <span className="text-body text-ink-soft">{category.name}</span>
                   <StarRating
                     name={`kategori-${category.id}`}
-                    ariaLabel={`${category.name} puanı`}
+                    ariaLabel={t("yildiz.kategori", { ad: category.name })}
                     value={categoryRatings[category.name] ?? 0}
                     onChange={(value) =>
                       setCategoryRatings((prev) => ({ ...prev, [category.name]: value }))
@@ -311,7 +305,7 @@ export function SurveyForm({
             htmlFor="comment"
             className="text-small font-semibold tracking-wide text-ink-muted uppercase"
           >
-            Eklemek istediğiniz bir şey var mı?
+            {t("anket.yorumBaslik")}
           </label>
           <textarea
             id="comment"
@@ -319,11 +313,7 @@ export function SurveyForm({
             onChange={(event) => setComment(event.target.value)}
             rows={4}
             maxLength={2000}
-            placeholder={
-              overall <= 3
-                ? "Ne iyi gitmedi? Yazarsanız düzeltebiliriz."
-                : "Beğendiğiniz veya eksik bulduğunuz şeyler..."
-            }
+            placeholder={t(overall <= 3 ? "anket.yorumDusuk" : "anket.yorumYuksek")}
             className="mt-3 w-full resize-none rounded-control border border-line p-3 text-[16px] text-ink-strong outline-none focus:border-line-strong"
           />
 
@@ -333,8 +323,8 @@ export function SurveyForm({
             <ImageUpload
               name="anket-foto"
               kind="anket"
-              label="Fotoğraf eklemek ister misiniz? (isteğe bağlı)"
-              hint="Yalnızca işletme sorumlusu görür."
+              label={t("anket.fotoBaslik")}
+              hint={t("anket.fotoIpucu")}
               initial={null}
               brandColor={brandColor}
               onChange={setPhoto}
@@ -343,18 +333,16 @@ export function SurveyForm({
 
           <div className="mt-5 border-t border-line pt-4">
             <p className="text-body text-ink-soft">
-              Size dönmemizi ister misiniz?{" "}
-              <span className="text-ink-faint">(isteğe bağlı)</span>
+              {t("anket.iletisimBaslik")}{" "}
+              <span className="text-ink-faint">{t("ortak.istegeBagli")}</span>
             </p>
             <p className="mt-0.5 text-small text-ink-muted">
-              {overall <= 3
-                ? "Bırakırsanız işletme sorumlusu sizinle bizzat ilgilenir."
-                : "Sadece bu geri bildiriminiz için ararız."}
+              {t(overall <= 3 ? "anket.iletisimDusuk" : "anket.iletisimYuksek")}
             </p>
 
             <div
               role="radiogroup"
-              aria-label="İletişim kanalı"
+              aria-label={t("anket.iletisimKanali")}
               className="mt-3 flex gap-2"
             >
               {(Object.keys(CONTACT_TYPES) as ContactType[]).map((type) => (
@@ -373,7 +361,7 @@ export function SurveyForm({
                     }
                   `}
                 >
-                  {CONTACT_TYPES[type]}
+                  {t(type === "telefon" ? "anket.telefon" : "anket.eposta")}
                 </button>
               ))}
             </div>
@@ -385,10 +373,10 @@ export function SurveyForm({
               autoComplete={contactType === "eposta" ? "email" : "tel"}
               value={contactInfo}
               onChange={(event) => setContactInfo(event.target.value)}
-              placeholder={
-                contactType === "eposta" ? "ornek@eposta.com" : "05XX XXX XX XX"
-              }
-              aria-label={CONTACT_TYPES[contactType]}
+              placeholder={t(
+                contactType === "eposta" ? "anket.epostaOrnek" : "anket.telefonOrnek",
+              )}
+              aria-label={t(contactType === "eposta" ? "anket.eposta" : "anket.telefon")}
               className="mt-2 w-full rounded-control border border-line p-3 text-[16px] text-ink-strong outline-none focus:border-line-strong"
             />
 
@@ -403,9 +391,9 @@ export function SurveyForm({
                 className="mt-0.5 h-5 w-5 shrink-0 rounded border-line-strong"
               />
               <span>
-                {consentSummary(businessName)}
+                {t("kvkk.ozet", { ad: businessName, gun: CONTACT_RETENTION_DAYS })}
                 {contactInfo.trim() ? (
-                  <span className="ml-1 text-danger" aria-hidden="true">
+                  <span className="ms-1 text-danger" aria-hidden="true">
                     *
                   </span>
                 ) : null}
@@ -426,9 +414,12 @@ export function SurveyForm({
                   className="mt-0.5 h-5 w-5 shrink-0 rounded border-line-strong"
                 />
                 <span>
-                  {marketingConsentText(businessName, contactType)}
+                  {t("iys.metin", {
+                    ad: businessName,
+                    kanal: t(contactType === "telefon" ? "iys.sms" : "iys.eposta"),
+                  })}
                   <span className="mt-0.5 block text-caption text-ink-faint">
-                    İsteğe bağlı. İşaretlemeseniz de geri bildiriminiz kaydedilir.{" "}
+                    {t("iys.ipucu")}{" "}
                     {/* Mevzuat, onay kutusunun yakınında aydınlatma metnine
                         erişim ister; yukarıdaki açılır metne yönlendiriyoruz. */}
                     <button
@@ -442,7 +433,7 @@ export function SurveyForm({
                       }}
                       className="underline underline-offset-2"
                     >
-                      Aydınlatma metnini oku
+                      {t("iys.metniOku")}
                     </button>
                   </span>
                 </span>
@@ -467,10 +458,11 @@ export function SurveyForm({
               className="w-full rounded-control px-5 py-4 text-base font-semibold text-white shadow-card transition disabled:opacity-60 active:scale-[0.99]"
               style={{ backgroundColor: brandColor }}
             >
-              {pending ? "Gönderiliyor…" : "Gönder"}
+{t(pending ? "anket.gonderiliyor" : "anket.gonder")}
             </button>
             <p className="mt-2 text-center text-caption text-ink-faint">
-              {tableLabel} · {businessName}
+              {girisMi ? t("ortak.giris") : t("ortak.masa", { no: tableNumber })} ·{" "}
+              {businessName}
             </p>
           </div>
         </div>
@@ -499,14 +491,22 @@ function SorunAlanlari({
   secilen: string[];
   onToggle: (alan: string) => void;
 }) {
+  const { t } = useDil();
   const acik = puan > 0 && puan <= DUSUK_PUAN && secenekler.length > 0;
+
+  /** Varsayılan seçenekler çevrilir; işletmenin kendi yazdığı olduğu gibi kalır. */
+  function ceviriliSecenek(secenek: string): string {
+    const anahtar = secenekAnahtari(secenek);
+    return anahtar ? t(anahtar) : secenek;
+  }
+
   if (!acik) return null;
 
   return (
     <div className="mm-rise mt-2.5 rounded-control bg-canvas p-3">
       <p id={`sorun-${kategori}`} className="text-small text-ink-soft">
-        Hangi konuda sorun yaşadınız?{" "}
-        <span className="text-ink-faint">(isteğe bağlı)</span>
+        {t("anket.sorunSoru")}{" "}
+        <span className="text-ink-faint">{t("ortak.istegeBagli")}</span>
       </p>
       <div
         role="group"
@@ -526,7 +526,8 @@ function SorunAlanlari({
               }`}
             >
               {isaretli ? "✓ " : ""}
-              {alan}
+              {/* Kayıt hep Türkçe değerle gider; ekranda çevirisi durur. */}
+              {ceviriliSecenek(alan)}
             </button>
           );
         })}
@@ -568,7 +569,7 @@ function ThanksShell({
           </div>
         )}
         <span
-          className="absolute -right-1 -bottom-1 flex h-7 w-7 items-center justify-center rounded-full text-small text-white ring-2 ring-white"
+          className="absolute -end-1 -bottom-1 flex h-7 w-7 items-center justify-center rounded-full text-small text-white ring-2 ring-white"
           style={{ backgroundColor: brandColor }}
           aria-hidden="true"
         >
@@ -605,6 +606,7 @@ function UrunPuanlama({
   onToggle: (id: string) => void;
   onPuan: (id: string, puan: number) => void;
 }) {
+  const { t } = useDil();
   const [arama, setArama] = useState("");
   const [hepsi, setHepsi] = useState(false);
 
@@ -636,11 +638,9 @@ function UrunPuanlama({
   return (
     <section className="mm-rise rounded-card bg-surface p-5 shadow-card ring-1 ring-line">
       <h2 className="text-small font-semibold tracking-wide text-ink-muted uppercase">
-        Ne aldınız?
+        {t("urun.baslik")}
       </h2>
-      <p className="mt-1 text-small text-ink-faint">
-        Seçtiklerinizi ayrı ayrı puanlayabilirsiniz. İsteğe bağlı.
-      </p>
+      <p className="mt-1 text-small text-ink-faint">{t("urun.aciklama")}</p>
 
       {/* Fotoğraflı menü, isim listesinden çok daha kolay hatırlatıyor:
           ürünü adından bulamayan müşteri menüye gidip görselden işaretler. */}
@@ -649,9 +649,9 @@ function UrunPuanlama({
         className="mt-4 flex items-center justify-between gap-3 rounded-control bg-canvas px-4 py-3 text-small ring-1 ring-line"
       >
         <span>
-          <span className="font-medium text-ink-strong">Menüden seç</span>
+          <span className="font-medium text-ink-strong">{t("urun.menudenSec")}</span>
           <span className="block text-caption text-ink-muted">
-            Fotoğraflı menüden işaretleyip buraya dönün
+            {t("urun.menudenSecAciklama")}
           </span>
         </span>
         <span aria-hidden="true" className="text-ink-faint">
@@ -664,8 +664,8 @@ function UrunPuanlama({
           type="search"
           value={arama}
           onChange={(event) => setArama(event.target.value)}
-          placeholder="Ürün ara..."
-          aria-label="Ürün ara"
+          placeholder={t("urun.ara")}
+          aria-label={t("urun.ara")}
           className="mt-3 w-full rounded-control border border-line p-3 text-[16px] text-ink-strong outline-none focus:border-line-strong"
         />
       ) : null}
@@ -701,7 +701,7 @@ function UrunPuanlama({
 
       {gosterilen.length === 0 ? (
         <p className="mt-3 text-small text-ink-faint">
-          Bu isimde ürün yok. Menüden seçerek de işaretleyebilirsiniz.
+{t("urun.bulunamadi")}
         </p>
       ) : null}
 
@@ -711,7 +711,7 @@ function UrunPuanlama({
           onClick={() => setHepsi(true)}
           className="mt-3 text-small font-medium text-ink-soft underline underline-offset-2"
         >
-          Tüm ürünleri göster ({urunler.length})
+{t("urun.tumunuGoster", { adet: urunler.length })}
         </button>
       ) : null}
 
@@ -724,7 +724,7 @@ function UrunPuanlama({
               </span>
               <StarRating
                 name={`urun-${urun.id}`}
-                ariaLabel={`${urun.name} puanı`}
+                ariaLabel={t("yildiz.kategori", { ad: urun.name })}
                 value={puanlar[urun.id] ?? 0}
                 onChange={(value) => onPuan(urun.id, value)}
               />

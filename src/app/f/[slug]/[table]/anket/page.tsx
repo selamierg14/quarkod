@@ -25,7 +25,7 @@ export async function generateMetadata({
 
 export default async function AnketPage({ params }: { params: Promise<Params> }) {
   const { slug, table: tableParam } = await params;
-  const { business, table, tableLabel, menuAcik } = await qrSayfaVerisi(slug, tableParam);
+  const { business, table, menuAcik } = await qrSayfaVerisi(slug, tableParam);
 
   // Ürün puanlaması yalnızca menü modülü açıkken ve menüde ürün varken
   // sorulur; boş bir adım göstermek anketi uzatmaktan başka işe yaramaz.
@@ -40,7 +40,13 @@ export default async function AnketPage({ params }: { params: Promise<Params> })
     .slice(0, 200);
 
   return (
-    <MusteriKabuk business={business} tableLabel={tableLabel} altBaslik="30 saniyenizi alır">
+    <MusteriKabuk
+      business={business}
+      masaNo={table.tableNumber}
+      girisMi={table.isEntrance}
+      altBaslik="karsilama.anketAciklama"
+      kompakt
+    >
       <ViewTracker slug={business.slug} tableNumber={table.tableNumber} />
 
       <SurveyForm
@@ -49,7 +55,7 @@ export default async function AnketPage({ params }: { params: Promise<Params> })
         brandColor={business.brandColor}
         logoUrl={business.logoUrl}
         tableNumber={table.tableNumber}
-        tableLabel={tableLabel}
+        girisMi={table.isEntrance}
         categories={business.categories.map((c) => ({
           id: c.id,
           name: c.name,

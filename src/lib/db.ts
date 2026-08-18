@@ -1,21 +1,21 @@
-import path from "node:path";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 
 /**
- * SQLite dosya yolu proje köküne göre çözülür; böylece `next dev`, `next start`
- * ve seed script'i aynı veritabanını görür.
+ * DATABASE_URL doğrudan Postgres bağlantı dizesidir (postgres://kullanici:sifre@host:port/db).
+ * SQLite'tan farkı: dosya yolu çözümlemeye gerek yok, adaptör URL'i olduğu
+ * gibi alır. Yerel geliştirmede docker-compose'daki Postgres'i, preprod/prod'da
+ * gerçek sunucuyu hedefler — kod hiç değişmez, yalnızca .env değişir.
  */
-function resolveDatabaseUrl(): string {
-  const raw = process.env.DATABASE_URL ?? "file:./prisma/dev.db";
-  const filePath = raw.startsWith("file:") ? raw.slice("file:".length) : raw;
-  if (path.isAbsolute(filePath)) return filePath;
-  // Yol çalışma zamanında çözülür; derleyicinin tüm projeyi izlemesine gerek yok.
-  return path.join(/* turbopackIgnore: true */ process.cwd(), filePath);
-}
-
 function createClient() {
-  const adapter = new PrismaBetterSqlite3({ url: `file:${resolveDatabaseUrl()}` });
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    throw new Error(
+      "DATABASE_URL tanımlı değil. .env dosyasına Postgres bağlantı dizesini yazın " +
+        "(bkz. .env.example) ya da `docker compose up -d` ile yerel Postgres'i başlatın.",
+    );
+  }
+  const adapter = new PrismaPg({ connectionString: url });
   return new PrismaClient({ adapter });
 }
 

@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { canAccessBusiness, requireYazma } from "@/lib/auth";
 import { denetimYaz } from "@/lib/denetim";
 import { prisma } from "@/lib/db";
@@ -8,6 +8,7 @@ import { validateImageDataUrl } from "@/lib/image";
 import { parsePrice, serializeTags } from "@/lib/menu";
 import { uniqueConstraintMessage } from "@/lib/unique-error";
 import { menuAcikMi } from "@/lib/menu-erisim";
+import { menuEtiketi } from "@/lib/menu-onbellek";
 
 export type MenuFormState = { error?: string; saved?: string };
 
@@ -40,8 +41,25 @@ async function menuDenetim(
   await denetimYaz(user, action, { detail, entity: action, entityId });
 }
 
-function yenile() {
+/**
+ * Panel ekranını ve müşteri menüsünün önbelleğini tazeler.
+ *
+ * `updateTag` anlık geçersizleştirir: mutfaktan "tükendi" haberi gelip
+ * düğmeye basıldığında bir sonraki müşteri o ürünü hâlâ satılıyor
+ * görmemeli. `revalidateTag`'in stale-while-revalidate davranışı burada
+ * yanlış olurdu — bayat menü, sipariş edilemeyen bir ürün demek.
+ */
+function yenile(businessId: string) {
   revalidatePath("/admin/menu");
+  updateTag(menuEtiketi(businessId));
+}
+
+/** Menünün "fiyatlar en son ne zaman güncellendi" damgasını bugüne çeker. */
+async function fiyatTarihiniDamgala(businessId: string) {
+  await prisma.business.update({
+    where: { id: businessId },
+    data: { menuPriceUpdatedAt: new Date() },
+  });
 }
 
 /* --------------------------------------------------------------- kategori */
@@ -74,7 +92,7 @@ export async function addMenuCategory(
   }
 
   await menuDenetim("menu.category", `Bölüm eklendi: ${name}`);
-  yenile();
+  yenile(businessId);
   return { saved: `${name} bölümü eklendi.` };
 }
 
@@ -87,7 +105,7 @@ export async function renameMenuCategory(formData: FormData) {
 
   await prisma.menuCategory.update({ where: { id }, data: { name } }).catch(() => {});
   await menuDenetim("menu.category", `Bölüm adı: ${kategori.name} → ${name}`, id);
-  yenile();
+  yenile(kategori.businessId);
 }
 
 export async function toggleMenuCategory(formData: FormData) {
@@ -107,7 +125,7 @@ export async function toggleMenuCategory(formData: FormData) {
     `Bölüm ${kategori.active ? "gizlendi" : "açıldı"}: ${kategori.name}`,
     id,
   );
-  yenile();
+  yenile(kategori.businessId);
 }
 
 export async function moveMenuCategory(formData: FormData) {
@@ -136,7 +154,7 @@ export async function moveMenuCategory(formData: FormData) {
       data: { sortOrder: kategori.sortOrder },
     }),
   ]);
-  yenile();
+  yenile(kategori.businessId);
 }
 
 /* ------------------------------------------------------------------ ürün */
@@ -209,7 +227,12 @@ export async function addMenuItem(
   });
   await menuDenetim("menu.item", `Ürün eklendi: ${yeniUrun.name}`, yeniUrun.id);
 
-  yenile();
+  // Fiyatlı bir ürün girildiyse menünün "fiyat güncelleme" tarihi ilerler.
+  if (alanlar.veri.priceKurus !== null) {
+    await fiyatTarihiniDamgala(kategori.businessId);
+  }
+
+  yenile(kategori.businessId);
   return { saved: `${alanlar.veri.name} eklendi.` };
 }
 
@@ -229,7 +252,14 @@ export async function updateMenuItem(
 
   await prisma.menuItem.update({ where: { id }, data: alanlar.veri });
   await menuDenetim("menu.item", `Ürün güncellendi: ${urun.name}`, id);
-  yenile();
+
+  // Yalnızca fiyat gerçekten değiştiyse damgalıyoruz: ürün adını düzeltmek
+  // "fiyatlar güncellendi" bilgisini yanlış yere çekmesin.
+  if (urun.priceKurus !== alanlar.veri.priceKurus) {
+    await fiyatTarihiniDamgala(urun.businessId);
+  }
+
+  yenile(urun.businessId);
   return { saved: `${alanlar.veri.name} güncellendi.` };
 }
 
@@ -252,7 +282,7 @@ export async function toggleSoldOut(formData: FormData) {
     `${urun.name}: ${urun.soldOut ? "tekrar var" : "bugün tükendi"}`,
     id,
   );
-  yenile();
+  yenile(urun.businessId);
 }
 
 export async function toggleMenuItem(formData: FormData) {
@@ -267,7 +297,7 @@ export async function toggleMenuItem(formData: FormData) {
     `Ürün ${urun.active ? "gizlendi" : "açıldı"}: ${urun.name}`,
     id,
   );
-  yenile();
+  yenile(urun.businessId);
 }
 
 export async function moveMenuItem(formData: FormData) {
@@ -290,5 +320,5 @@ export async function moveMenuItem(formData: FormData) {
     prisma.menuItem.update({ where: { id: urun.id }, data: { sortOrder: komsu.sortOrder } }),
     prisma.menuItem.update({ where: { id: komsu.id }, data: { sortOrder: urun.sortOrder } }),
   ]);
-  yenile();
+  yenile(urun.businessId);
 }

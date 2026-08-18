@@ -13,6 +13,7 @@ import {
   kayitSorunu,
 } from "@/lib/deneme";
 import { DEFAULT_CATEGORIES } from "@/lib/constants";
+import { KVKK_VERSION } from "@/lib/kvkk";
 import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
 import { uniqueConstraintMessage } from "@/lib/unique-error";
 
@@ -27,7 +28,7 @@ async function ipKarmasi(): Promise<string | null> {
 }
 
 /**
- * 14 günlük deneme hesabı açar ve kullanıcıyı doğrudan panele alır.
+ * Deneme hesabı açar ve kullanıcıyı doğrudan panele alır.
  *
  * Hesap, işletme ve ilk kullanıcı tek işlemde kuruluyor: yarım kalan bir
  * kayıt (işletmesi olmayan hesap) kullanıcıyı boş bir panele düşürür ve
@@ -94,6 +95,9 @@ export async function denemeBaslat(
         // Deneme boyunca QR menü de açık: ürünün tamamını görmeden karar
         // veremiyorlar, kapalı modül "eksik ürün" izlenimi bırakıyor.
         menuEnabled: true,
+        // KVKK onayı formda zorunlu; kanıtı burada saklanıyor.
+        kvkkOnayAt: new Date(),
+        kvkkSurum: KVKK_VERSION,
         signupIpHash: karma,
         businesses: {
           create: {

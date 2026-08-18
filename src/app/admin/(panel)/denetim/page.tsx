@@ -22,7 +22,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Denetim kaydı" };
+export const metadata = { title: "İşlem geçmişi" };
 
 const SAYFA_BOYU = 50;
 
@@ -87,7 +87,7 @@ export default async function DenetimPage({
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        title="Denetim kaydı"
+        title={platformGorunumu ? "Denetim kaydı" : "İşlem geçmişi"}
         description={
           platformGorunumu
             ? "Tüm hesaplardaki işlemler ve platform ekibinin kendi hareketleri. Kayıtlar silinemez."

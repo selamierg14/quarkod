@@ -64,6 +64,22 @@ function kategorileriBirlestir(stats: BusinessStats[]) {
     .sort((a, b) => a.average - b.average);
 }
 
+/** Birden çok işletme seçiliyse sorun alanlarını tek listede toplar. */
+function sorunlariBirlestir(stats: BusinessStats[]) {
+  const kova = new Map<string, { kategori: string; alan: string; count: number }>();
+  for (const s of stats) {
+    for (const p of s.topProblems) {
+      const anahtar = `${p.kategori}\u0000${p.alan}`;
+      const mevcut = kova.get(anahtar) ?? { kategori: p.kategori, alan: p.alan, count: 0 };
+      mevcut.count += p.count;
+      kova.set(anahtar, mevcut);
+    }
+  }
+  return [...kova.values()].sort(
+    (a, b) => b.count - a.count || a.kategori.localeCompare(b.kategori, "tr"),
+  );
+}
+
 const HIZLI_ERISIM = [
   {
     href: "/admin/isletmeler",
@@ -117,6 +133,7 @@ export default async function AdminHomePage({
   // Yalnızca en zayıf altı başlık: liste uzadıkça "önce şuna bak" mesajı
   // kayboluyor, kırılım ekranı zaten tamamını gösteriyor.
   const kategoriler = kategorileriBirlestir(stats).slice(0, 6);
+  const sorunlar = sorunlariBirlestir(stats).slice(0, 5);
 
   // "Ateş var mı?" ekranı: eşiğin altında kalmış ve hâlâ çözülmemiş kayıtlar.
   // Eşik işletmeye göre değiştiği için filtre işletme başına kuruluyor.
@@ -265,6 +282,32 @@ export default async function AdminHomePage({
               ))}
             </ul>
           )}
+
+          {/* Kategori ortalamasının bir kademe altı: "Temizlik 2.1" patrona
+              nereye bakacağını söylemiyor, "Tuvaletler 8 kez" söylüyor. */}
+          {sorunlar.length > 0 ? (
+            <div className="mt-5 border-t border-line pt-4">
+              <p className="text-caption font-medium tracking-wide text-ink-muted uppercase">
+                En çok işaretlenen sorun
+              </p>
+              <ul className="mt-2.5 flex flex-col gap-1.5">
+                {sorunlar.map((p) => (
+                  <li
+                    key={`${p.kategori}-${p.alan}`}
+                    className="flex items-baseline justify-between gap-2"
+                  >
+                    <span className="min-w-0 truncate text-caption text-ink-soft">
+                      <span className="text-ink-faint">{p.kategori} · </span>
+                      {p.alan}
+                    </span>
+                    <span className="shrink-0 text-caption font-semibold tabular text-ink-soft">
+                      {p.count}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </Card>
       </section>
 

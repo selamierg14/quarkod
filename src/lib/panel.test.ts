@@ -45,11 +45,11 @@ describe("platform menüsü", () => {
   it("platform işlerini gösterir", () => {
     expect(platform).toEqual([
       "/admin/hesaplar",
+      "/admin/abonelikler",
       "/admin/isletmeler",
       "/admin/kullanicilar",
       "/admin/denetim",
       "/admin/sistem",
-      "/admin/profil",
     ]);
   });
 });
@@ -82,6 +82,32 @@ describe("kiracı menüsü", () => {
     const iceriden = adresler("kiraci", "superadmin");
     expect(iceriden).toContain("/admin");
     expect(iceriden).toContain("/admin/izinler");
+  });
+});
+
+describe("menü sadeliği", () => {
+  it("kiracı menüsü üç grubu geçmez", () => {
+    // Kafe sahibi günde bir bakıyor; uzun menü onu ilgilendiren iki ekranı
+    // (özet, geri bildirim) gürültüye gömüyordu.
+    expect(panelMenusu("kiraci", "owner").length).toBeLessThanOrEqual(3);
+  });
+
+  it("profil menüde değil ama kullanıcı kartından erişilebilir", () => {
+    // Tek satırlık "Hesabım" grubu kaldırıldı; profil kenar çubuğunun
+    // altındaki kullanıcı kartına taşındı (AdminSidebar).
+    const owner = adresler("kiraci", "owner");
+    expect(owner).not.toContain("/admin/profil");
+  });
+
+  it("başlıklarda teknik jargon kullanılmaz", () => {
+    // "Kırılım", "İleti izinleri", "Denetim kaydı" kafe sahibine bir şey
+    // anlatmıyordu; sade karşılıklarına çevrildi.
+    const etiketler = panelMenusu("kiraci", "owner").flatMap((g) =>
+      g.linkler.map((l) => l.label),
+    );
+    for (const jargon of ["Kırılım", "İleti izinleri", "Denetim kaydı"]) {
+      expect(etiketler).not.toContain(jargon);
+    }
   });
 });
 

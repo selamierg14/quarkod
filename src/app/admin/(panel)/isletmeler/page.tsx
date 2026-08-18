@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireUser, visibleBusinesses } from "@/lib/auth";
+import { actingAccountId, requireUser, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { BUSINESS_TYPES, type BusinessType } from "@/lib/constants";
 import { NewBusinessForm } from "./NewBusinessForm";
@@ -11,6 +11,15 @@ export const metadata = { title: "İşletmeler" };
 export default async function BusinessListPage() {
   const user = await requireUser();
   const businesses = await visibleBusinesses(user);
+
+  // Sahip her zaman ekleyebilir; platform yöneticisi yalnızca bir hesaba
+  // "geçtiğinde" ekleyebilir — createBusiness action'ı zaten bunu böyle
+  // kabul ediyor, form da aynı kurala uymalı. Aksi hâlde Hesaplar sayfasının
+  // verdiği "panel tam olarak o müşterinin gördüğü hale gelir" sözü
+  // burada tutmuyordu: sysadmin bir hesabı görüntülerken işletme ekleme
+  // formu hiç görünmüyordu.
+  const isletmeEklenebilir =
+    user.role === "owner" || (await actingAccountId(user)) !== null;
 
   // İşletme başına üç ayrı sorgu yerine üç toplu sorgu: 10 işletmede
   // 31 sorgudan 4'e iner.
@@ -86,7 +95,7 @@ export default async function BusinessListPage() {
         })}
       </ul>
 
-      {user.role === "owner" ? <NewBusinessForm /> : null}
+      {isletmeEklenebilir ? <NewBusinessForm /> : null}
     </div>
   );
 }

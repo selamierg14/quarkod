@@ -12,6 +12,7 @@ import {
 } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { issueOtp, maskPhone, twoFactorEnabled, verifyOtp } from "@/lib/otp";
+import { sifreSorunu } from "@/lib/sifre";
 import {
   checkLoginAllowed,
   pruneLoginAttempts,
@@ -85,7 +86,8 @@ async function clearChallenge() {
 }
 
 function passwordProblem(password: string): string | null {
-  if (password.length < 8) return "Şifre en az 8 karakter olmalı.";
+  const sifreHatasi = sifreSorunu(password);
+  if (sifreHatasi) return sifreHatasi;
   if (/^\d+$/.test(password)) return "Şifre sadece rakamlardan oluşmasın.";
   return null;
 }

@@ -5,7 +5,7 @@ import { EmptyState } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Kırılım" };
+export const metadata = { title: "Vardiya & masa" };
 
 const PERIODS = [
   { days: 7, label: "Son 7 gün" },
@@ -57,7 +57,7 @@ export default async function BreakdownPage({
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="text-title font-semibold">Kırılım</h1>
+        <h1 className="text-title font-semibold">Vardiya &amp; masa</h1>
         <p className="mt-1 text-small text-ink-muted">
           Aynı ortalama, farklı yerlerde farklı sebeplerden düşer. Vardiya
           personel sorununu, masa ise mekânla ilgili sorunu (gürültü, ısı,

@@ -1,34 +1,44 @@
-import Link from "next/link";
+import type { Metadata } from "next";
+import { markaStili } from "@/lib/marka";
+import { AnnouncementBar } from "./_landing/AnnouncementBar";
+import { BusinessTypes } from "./_landing/BusinessTypes";
+import { Faq } from "./_landing/Faq";
+import { FinalCta } from "./_landing/FinalCta";
+import { Footer } from "./_landing/Footer";
+import { Header } from "./_landing/Header";
+import { Hero } from "./_landing/Hero";
+import { HowItWorks } from "./_landing/HowItWorks";
+import { PanelPreview } from "./_landing/PanelPreview";
+import { Pricing } from "./_landing/Pricing";
+import { QrAnketShowcase } from "./_landing/QrAnketShowcase";
+import { QrMenuShowcase } from "./_landing/QrMenuShowcase";
+import { TrustBar } from "./_landing/TrustBar";
 
-export const metadata = {
-  title: "Müşteri Memnuniyet Sistemi",
-  robots: { index: false },
+export const metadata: Metadata = {
+  title: "Müşteri Memnuniyet Sistemi — QR ile Anında Geri Bildirim",
+  description:
+    "Masaya koyduğunuz QR kod ile müşteri memnuniyetini ölçün, düşük puanı anında haber alın, yüksek puanı Google yorumuna yönlendirin. 7 gün ücretsiz deneyin.",
 };
 
-/**
- * Genel karşılama sayfası.
- *
- * Bilerek hiçbir işletme listelenmiyor: sistem artık çok kiracılı ve burası
- * herkese açık. Kiracıların isim listesini yayınlamak, müşteri listemizi
- * yayınlamak demek olurdu.
- */
+/** Pazarlama sitesinin kendi ürün rengi: panelin nötr mürekkebinden ayrı, canlı bir kimlik. */
+const MARKA_RENGI = "#4f46e5";
+
 export default function HomePage() {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-5 py-12">
-      <h1 className="text-2xl font-semibold tracking-tight">
-        Müşteri Memnuniyet Sistemi
-      </h1>
-      <p className="mt-2 text-ink-soft">
-        Müşteriler masadaki QR kodu okutarak anketi doldurur. Yönetim tarafı için
-        panele giriş yapın.
-      </p>
-
-      <Link
-        href="/admin"
-        className="mt-6 rounded-control bg-ink px-5 py-3.5 text-center font-medium text-white active:scale-[0.99]"
-      >
-        Yönetim paneline git
-      </Link>
+    <main data-marka style={markaStili(MARKA_RENGI)} className="min-h-dvh bg-canvas">
+      <AnnouncementBar />
+      <Header />
+      <Hero />
+      <TrustBar />
+      <BusinessTypes />
+      <QrAnketShowcase />
+      <QrMenuShowcase />
+      <HowItWorks />
+      <PanelPreview />
+      <Pricing />
+      <Faq />
+      <FinalCta />
+      <Footer />
     </main>
   );
 }

@@ -1,9 +1,7 @@
 import { execFileSync } from "node:child_process";
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
+import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 import { buildFeedbackWhere } from "./feedback-filters";
 import { yazabilirMi } from "./session-token";
@@ -24,7 +22,8 @@ import {
  */
 
 let prisma: PrismaClient;
-let dbFile: string;
+let schemaUrl: string;
+const schemaName = `test_tenancy_${randomBytes(6).toString("hex")}`;
 
 // A hesabı: iki işletme. B hesabı: bir işletme.
 const ids = {
@@ -71,19 +70,30 @@ const okuyucuA: TenantScope = {
 };
 
 beforeAll(async () => {
-  dbFile = path.join(
-    fs.mkdtempSync(path.join(os.tmpdir(), "mm-test-")),
-    "test.db",
-  );
+  const base = process.env.DATABASE_URL;
+  if (!base) {
+    throw new Error(
+      "DATABASE_URL tanımlı değil. Testler de aynı Postgres'i kullanır " +
+        "(docker compose up -d ile yerel Postgres'i başlatın).",
+    );
+  }
+  // Rastgele bir Postgres şeması (namespace): geliştirme verisine dokunmadan
+  // izole bir alanda tablo kurup testleri koşuyoruz, sonunda şemayı düşürüyoruz.
+  const url = new URL(base);
+  url.searchParams.set("schema", schemaName);
+  schemaUrl = url.toString();
 
-  // Geçici, boş bir veritabanına şemayı bas. --url ile açıkça hedef verildiği
-  // için gerçek geliştirme veritabanına hiçbir koşulda dokunulmaz.
-  execFileSync("npx", ["prisma", "db", "push", `--url=file:${dbFile}`], {
+  execFileSync("npx", ["prisma", "db", "push", `--url=${schemaUrl}`], {
     stdio: "pipe",
   });
 
+  // `@prisma/adapter-pg` URL'deki "?schema=" parametresini kendiliğinden
+  // okumuyor (bu yalnızca CLI'nin migrate/push komutlarında geçerli) — çalışma
+  // zamanında hangi şemayı kullanacağını ikinci argümandan öğreniyor. Bunu
+  // atlarsak client sessizce "public" şemaya, yani gerçek geliştirme
+  // verisine bağlanır.
   prisma = new PrismaClient({
-    adapter: new PrismaBetterSqlite3({ url: `file:${dbFile}` }),
+    adapter: new PrismaPg({ connectionString: base }, { schema: schemaName }),
   });
 
   await prisma.account.create({ data: { id: ids.hesapA, name: "A Kafe Zinciri" } });
@@ -118,8 +128,10 @@ beforeAll(async () => {
 }, 120000);
 
 afterAll(async () => {
+  // Şemayı düşür, sonra bağlantıyı kapat — sırayı değiştirirsek düşürme
+  // isteği kapanmış bağlantıdan gider.
+  await prisma?.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schemaName}" CASCADE`);
   await prisma?.$disconnect();
-  fs.rmSync(path.dirname(dbFile), { recursive: true, force: true });
 });
 
 describe("hesap sahibinin kapsamı", () => {

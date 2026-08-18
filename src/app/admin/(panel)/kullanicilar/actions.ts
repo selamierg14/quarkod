@@ -16,6 +16,7 @@ import {
 import { denetimYaz } from "@/lib/denetim";
 import { acilabilirRoller } from "@/lib/panel";
 import { gecerliRolMu } from "@/lib/session-token";
+import { sifreSorunu } from "@/lib/sifre";
 import { prisma } from "@/lib/db";
 import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
 import { uniqueConstraintMessage } from "@/lib/unique-error";
@@ -27,18 +28,6 @@ import {
 } from "@/lib/pending-password";
 
 export type UserFormState = { error?: string; saved?: string };
-
-const MIN_PASSWORD = 8;
-
-function passwordProblem(password: string): string | null {
-  if (password.length < MIN_PASSWORD) {
-    return `Şifre en az ${MIN_PASSWORD} karakter olmalı.`;
-  }
-  if (/^\d+$/.test(password)) {
-    return "Şifre sadece rakamlardan oluşmasın.";
-  }
-  return null;
-}
 
 export async function createUser(
   _prev: UserFormState,
@@ -103,7 +92,7 @@ export async function createUser(
     }
   }
 
-  const problem = passwordProblem(password);
+  const problem = sifreSorunu(password);
   if (problem) return { error: problem };
 
   if (await prisma.user.findUnique({ where: { email } })) {
@@ -171,7 +160,7 @@ export async function resetPassword(
     };
   }
 
-  const problem = passwordProblem(password);
+  const problem = sifreSorunu(password);
   if (problem) return { error: problem };
 
   const user = await prisma.user.findFirst({
@@ -309,7 +298,7 @@ export async function changeOwnPassword(
     return { step: "form", error: "Yeni şifreler birbiriyle uyuşmuyor." };
   }
 
-  const problem = passwordProblem(next);
+  const problem = sifreSorunu(next);
   if (problem) return { step: "form", error: problem };
 
   if (await bcrypt.compare(next, user.passwordHash)) {

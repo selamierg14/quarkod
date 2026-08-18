@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { DIL_LISTESI } from "./diller";
+import { cevir } from "./ceviriler";
 import {
   DUSUK_PUAN,
   EN_FAZLA_SECIM,
   detaylariCoz,
   detaylariDerle,
   secenekleriAyristir,
+  secenekAnahtari,
   secenekleriBirlestir,
   sorunSecenekleri,
 } from "./anket-detay";
@@ -118,5 +121,53 @@ describe("kayıtlı detayların çözülmesi", () => {
 
   it("beklenmeyen değerleri eler", () => {
     expect(detaylariCoz('{"A":"metin","B":["x"],"C":[]}')).toEqual({ B: ["x"] });
+  });
+});
+
+describe("seçeneklerin çevrilmesi", () => {
+  /** Ada göre varsayılan üreten tüm kategoriler. */
+  const KATEGORILER = [
+    "Temizlik",
+    "Servis hızı",
+    "Yemek kalitesi",
+    "Fiyat/performans",
+    "Ambiyans",
+    "Sunum",
+    "Tuvaletler",
+    "Otopark",
+    "Personel ilgisi",
+  ];
+
+  it("her varsayılan seçeneğin çevirisi var", () => {
+    // Çevirisi olmayan bir varsayılan, Rusça ankette Türkçe görünür ve
+    // turist neyi işaretlediğini bilemez.
+    for (const kategori of KATEGORILER) {
+      for (const secenek of sorunSecenekleri(kategori, null)) {
+        expect(secenekAnahtari(secenek), `${kategori} → ${secenek}`).not.toBeNull();
+      }
+    }
+  });
+
+  it("çeviriler her dilde dolu", () => {
+    for (const kategori of KATEGORILER) {
+      for (const secenek of sorunSecenekleri(kategori, null)) {
+        const anahtar = secenekAnahtari(secenek);
+        if (!anahtar) continue;
+        for (const dil of DIL_LISTESI) {
+          expect(cevir(dil, anahtar).length, `${dil}/${secenek}`).toBeGreaterThan(0);
+        }
+      }
+    }
+  });
+
+  it("işletmenin kendi yazdığı seçenek çevrilmez", () => {
+    // Sözlüğümüzde olmayan metni uydurmak yerine olduğu gibi gösteriyoruz.
+    expect(secenekAnahtari("Bahçe")).toBeNull();
+  });
+
+  it("Türkçe karşılık kayıtla birebir aynı kalır", () => {
+    // Kayıt Türkçe değerle yapılıyor; sözlük onu değiştirirse sunucu
+    // doğrulaması seçimi reddeder.
+    expect(cevir("tr", secenekAnahtari("Tuvaletler")!)).toBe("Tuvaletler");
   });
 });

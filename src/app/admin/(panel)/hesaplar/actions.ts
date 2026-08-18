@@ -9,8 +9,92 @@ import { clearActiveAccount, setActiveAccount } from "@/lib/impersonation";
 import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
 import { uniqueConstraintMessage } from "@/lib/unique-error";
 import { tarihGirdisi } from "@/lib/abonelik";
+import { sifreSorunu } from "@/lib/sifre";
+import { parsePrice, formatPrice } from "@/lib/menu";
 
 export type AccountFormState = { error?: string; saved?: string };
+
+/** Aboneliği uzatmak için izin verilen ay seçenekleri. 0 = sadece kaydet. */
+const UZATMA_AYLARI = [0, 1, 3, 6, 12];
+
+/**
+ * Bir aboneliğe ödeme işler ve isteğe bağlı olarak süreyi uzatır.
+ *
+ * Ödeme ve uzatma tek transaction: uzatma yazılıp ödeme kaydı düşmezse (ya da
+ * tersi) hesabın gelir geçmişi tutarsız kalırdı. Uzatma, hesabın kalan
+ * süresine eklenir — süresi henüz dolmadıysa müşteri hakkını kaybetmesin;
+ * dolduysa bugünden başlar.
+ */
+export async function recordPayment(
+  _prev: AccountFormState,
+  formData: FormData,
+): Promise<AccountFormState> {
+  const actor = await requireSuperadmin();
+
+  const accountId = String(formData.get("accountId") ?? "");
+  const account = await prisma.account.findUnique({ where: { id: accountId } });
+  if (!account) return { error: "Hesap bulunamadı." };
+
+  const amountKurus = parsePrice(String(formData.get("amount") ?? ""));
+  if (amountKurus === undefined) {
+    return { error: "Tutar anlaşılmadı. Örnek: 1290 ya da 1290,00" };
+  }
+  if (amountKurus === null || amountKurus <= 0) {
+    return { error: "Sıfırdan büyük bir tutar girin." };
+  }
+
+  const ay = Number(formData.get("uzatmaAy") ?? "0");
+  if (!UZATMA_AYLARI.includes(ay)) {
+    return { error: "Geçersiz uzatma süresi." };
+  }
+
+  const note = String(formData.get("note") ?? "").trim().slice(0, 200) || null;
+
+  // Uzatma tabanı: kalan süre varsa onun üstüne, yoksa bugünden.
+  let extendedTo: Date | null = null;
+  if (ay > 0) {
+    const simdi = new Date();
+    const taban =
+      account.expiresAt && account.expiresAt > simdi ? account.expiresAt : simdi;
+    extendedTo = new Date(taban);
+    extendedTo.setMonth(extendedTo.getMonth() + ay);
+    // Ay sonu taşması ("31 Ocak + 1 ay") gün kaydırmasın diye gün sonuna sabitle.
+    extendedTo.setHours(23, 59, 59, 999);
+  }
+
+  await prisma.$transaction([
+    prisma.payment.create({
+      data: {
+        accountId,
+        amountKurus,
+        note,
+        extendedTo,
+        recordedBy: actor.name,
+      },
+    }),
+    ...(extendedTo
+      ? [
+          prisma.account.update({
+            where: { id: accountId },
+            data: { expiresAt: extendedTo },
+          }),
+        ]
+      : []),
+  ]);
+
+  await denetimYaz(actor, "account.payment", {
+    accountId,
+    entity: "account",
+    entityId: accountId,
+    detail: extendedTo
+      ? `${formatPrice(amountKurus)} · ${ay} ay uzatıldı (→ ${extendedTo.toLocaleDateString("tr-TR")})`
+      : `${formatPrice(amountKurus)} · uzatma yok`,
+  });
+
+  revalidatePath("/admin/abonelikler");
+  revalidatePath("/admin/hesaplar");
+  return { saved: `${formatPrice(amountKurus)} ödeme kaydedildi.` };
+}
 
 /**
  * Yeni kiracı açar ve ilk sahibini oluşturur.
@@ -50,9 +134,8 @@ export async function createAccount(
     return { error: "Hesap sahibi için geçerli bir cep telefonu girin (5XX...)." };
   }
 
-  if (password.length < 8) {
-    return { error: "Şifre en az 8 karakter olmalı." };
-  }
+  const sifreHatasi = sifreSorunu(password);
+  if (sifreHatasi) return { error: sifreHatasi };
   if (expiresAt === undefined) {
     return { error: "Geçerlilik tarihi hatalı. Takvimden seçin ya da boş bırakın." };
   }

@@ -25,6 +25,10 @@ type Business = {
   wifiPassword: string | null;
   announcement: string | null;
   announcementActive: boolean;
+  yemeksepetiUrl: string | null;
+  getirUrl: string | null;
+  trendyolUrl: string | null;
+  migrosUrl: string | null;
 };
 
 export function SettingsForm({
@@ -194,6 +198,46 @@ export function SettingsForm({
             butonu görünür.
           </span>
         </label>
+
+        <div className="flex flex-col gap-1 sm:col-span-2">
+          <span className="text-caption text-ink-muted">
+            Online sipariş linkleri
+          </span>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <input
+              name="yemeksepetiUrl"
+              type="url"
+              placeholder="Yemeksepeti sayfa linki"
+              defaultValue={business.yemeksepetiUrl ?? ""}
+              className={INPUT}
+            />
+            <input
+              name="getirUrl"
+              type="url"
+              placeholder="Getir sayfa linki"
+              defaultValue={business.getirUrl ?? ""}
+              className={INPUT}
+            />
+            <input
+              name="trendyolUrl"
+              type="url"
+              placeholder="Trendyol Yemek linki"
+              defaultValue={business.trendyolUrl ?? ""}
+              className={INPUT}
+            />
+            <input
+              name="migrosUrl"
+              type="url"
+              placeholder="Migros Yemek linki"
+              defaultValue={business.migrosUrl ?? ""}
+              className={INPUT}
+            />
+          </div>
+          <span className="text-caption text-ink-faint">
+            Doldurduğunuz platformlar QR karşılama ekranında sipariş butonu
+            olarak görünür. Boş bıraktıklarınız gösterilmez.
+          </span>
+        </div>
 
         <label className="flex flex-col gap-1 sm:col-span-2">
           <span className="text-caption text-ink-muted">

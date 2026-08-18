@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { canAccessBusiness, requireTenant } from "@/lib/auth";
+import { yazabilirMi } from "@/lib/session-token";
 import { prisma } from "@/lib/db";
 import { SHIFTS, type Shift } from "@/lib/constants";
 import { CONTACT_RETENTION_DAYS } from "@/lib/kvkk";
 import { detaylariCoz } from "@/lib/anket-detay";
+import { yanitlanabilir } from "@/lib/yanit";
 import { StatusBadge, Stars, formatDateTime } from "@/components/ui";
 import { StatusForm } from "./StatusForm";
+import { RespondForm } from "./RespondForm";
 
 export const dynamic = "force-dynamic";
 
@@ -192,6 +195,18 @@ export default async function FeedbackDetailPage({
                   <p className="mt-0.5 text-caption text-ink-faint">
                     {CONTACT_RETENTION_DAYS} gün sonra otomatik silinir.
                   </p>
+
+                  {/* Şikayet döngüsünü kapatan yanıt kutusu: yalnızca yazma
+                      yetkisi olan kullanıcıya ve KVKK kuralı izin verdiğinde
+                      (rıza + iletişim + silinmemiş). Sunucu koşulu yeniden
+                      denetliyor. */}
+                  {yazabilirMi(user.role) && yanitlanabilir(feedback) ? (
+                    <RespondForm
+                      id={feedback.id}
+                      channel={feedback.contactType === "eposta" ? "eposta" : "telefon"}
+                      alreadyResponded={Boolean(feedback.respondedAt)}
+                    />
+                  ) : null}
                 </div>
               ) : feedback.contactErasedAt ? (
                 <p className="mt-1 text-small text-ink-faint">
@@ -209,11 +224,40 @@ export default async function FeedbackDetailPage({
 
         <aside className="flex flex-col gap-5">
           <section className="rounded-control bg-surface p-5 ring-1 ring-line">
-            <StatusForm
-              id={feedback.id}
-              status={feedback.status}
-              internalNote={feedback.internalNote}
-            />
+            {/* Salt okunur kullanıcıya düzenleme formu gösterilmez: sunucu
+                zaten reddediyor ama kapalı bir kapıya yönlendirmek kafa
+                karıştırır. Durumu ve notu okunur halde gösteriyoruz. */}
+            {yazabilirMi(user.role) ? (
+              <StatusForm
+                id={feedback.id}
+                status={feedback.status}
+                internalNote={feedback.internalNote}
+              />
+            ) : (
+              <div className="flex flex-col gap-3">
+                <div>
+                  <span className="text-caption font-medium tracking-wide text-ink-muted uppercase">
+                    Durum
+                  </span>
+                  <div className="mt-2">
+                    <StatusBadge status={feedback.status} />
+                  </div>
+                </div>
+                <div>
+                  <span className="text-caption font-medium tracking-wide text-ink-muted uppercase">
+                    İç not
+                  </span>
+                  <p className="mt-1 text-small whitespace-pre-wrap text-ink-soft">
+                    {feedback.internalNote || (
+                      <span className="text-ink-faint">Not eklenmemiş.</span>
+                    )}
+                  </p>
+                </div>
+                <p className="text-caption text-ink-faint">
+                  Hesabınız salt okunur; durum ve notu değiştiremezsiniz.
+                </p>
+              </div>
+            )}
           </section>
 
           <section className="rounded-control bg-surface p-5 ring-1 ring-line">

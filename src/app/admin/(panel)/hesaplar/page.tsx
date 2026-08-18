@@ -81,11 +81,13 @@ export default async function AccountsPage() {
               }`}
             >
               {/* --- Hesap başlığı */}
+              {/* min-w-0 + flex-wrap: telefonda uzun hesap adı ve rozetler
+                  satırı taşırıp kartı ekranın dışına itiyordu. */}
               <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-3">
-                <div>
-                  <span className="flex items-center gap-2">
+                <div className="min-w-0 flex-1 basis-full sm:basis-auto">
+                  <span className="flex flex-wrap items-center gap-2">
                     <span
-                      className={`font-semibold ${calisiyor ? "" : "text-ink-faint line-through"}`}
+                      className={`min-w-0 truncate font-semibold ${calisiyor ? "" : "text-ink-faint line-through"}`}
                     >
                       {account.name}
                     </span>
@@ -147,15 +149,21 @@ export default async function AccountsPage() {
                   </p>
                 ) : (
                   <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+                    {/* Satır içi flex-wrap: ad + kullanıcı adı + rol dar
+                        telefonda tek satıra sığmayıp kartı ekran dışına
+                        itiyordu. */}
                     {sahipler.map((u) => (
-                      <li key={u.id} className="text-small">
+                      <li
+                        key={u.id}
+                        className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-small"
+                      >
                         <span className={u.active ? "" : "text-ink-faint line-through"}>
                           {u.name}
                         </span>
-                        <code className="ml-1.5 rounded bg-sunken px-1 text-caption text-ink-soft">
+                        <code className="rounded bg-sunken px-1 text-caption text-ink-soft">
                           {u.username}
                         </code>
-                        <span className="ml-1.5 text-caption text-ink-faint">
+                        <span className="text-caption text-ink-faint">
                           {ROL_ADLARI[u.role] ?? u.role}
                         </span>
                       </li>

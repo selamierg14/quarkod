@@ -1,0 +1,58 @@
+name: cafe-projesi
+
+# Yerel geliştirme ve preprod öncesi test için Postgres + pgAdmin.
+#
+# Gerçek preprod/prod sunucusunda bu dosya KULLANILMAZ — orada yönetilen bir
+# Postgres (RDS, Neon, DigitalOcean Managed DB, Supabase vb.) ya da sunucunun
+# kendi Postgres kurulumu hedeflenir. Bu compose sadece "makinemde Postgres
+# çalıştırıp pgAdmin'den bakayım" ihtiyacı için.
+#
+# Kullanım:
+#   docker compose up -d
+#   pgAdmin: http://localhost:5051  (aşağıdaki e-posta/şifre ile giriş)
+#   Postgres: localhost:5433, db=cafe_projesi, user=cafe, şifre aşağıda
+#
+# Sunucu adı olarak pgAdmin içinde "db" yazın (compose ağı içindeki servis
+# adı) — "localhost" değil, pgAdmin de container içinde çalışıyor.
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cafe_projesi
+      POSTGRES_USER: cafe
+      POSTGRES_PASSWORD: cafe_local_dev_sifre
+    ports:
+      # Sağdaki 5432 container içi; soldaki 5433 makinenizde. Başka bir
+      # Postgres zaten 5432'yi kullanıyor olabileceği için kaydırıldı.
+      - "5433:5432"
+    volumes:
+      - cafe_projesi_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cafe -d cafe_projesi"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    restart: unless-stopped
+    environment:
+      # pgAdmin ".test/.example/.invalid/.local" gibi rezerve alan adlarını
+      # e-posta olarak kabul etmiyor; bu yalnızca pgAdmin'e giriş kimliği,
+      # dışarıya posta atılmaz — kendi e-postanızla değiştirebilirsiniz.
+      PGADMIN_DEFAULT_EMAIL: muhammedselami14@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: pgadmin_local_dev_sifre
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5051:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - cafe_projesi_pgadmin:/var/lib/pgadmin
+
+volumes:
+  cafe_projesi_pgdata:
+  cafe_projesi_pgadmin:

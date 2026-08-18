@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useDil } from "./DilSaglayici";
 
 /**
  * QR karşılama ekranındaki Instagram + Wi-Fi ikon satırı.
@@ -18,6 +19,7 @@ export function IletisimBar({
   wifiSsid: string | null;
   wifiPassword: string | null;
 }) {
+  const { t } = useDil();
   const [acik, setAcik] = useState(false);
   const [kopyalanan, setKopyalanan] = useState<"ssid" | "sifre" | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -42,7 +44,7 @@ export function IletisimBar({
           href={instagramUrl}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="Instagram"
+          aria-label={t("iletisim.instagram")}
           className="flex h-9 w-9 items-center justify-center rounded-full bg-white/12 text-white ring-1 ring-white/20 backdrop-blur-sm transition active:scale-95"
         >
           <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" stroke="currentColor" strokeWidth={1.8}>
@@ -58,7 +60,7 @@ export function IletisimBar({
           <button
             type="button"
             onClick={() => setAcik((v) => !v)}
-            aria-label="Wi-Fi bilgisi"
+            aria-label={t("iletisim.wifiButon")}
             aria-expanded={acik}
             className="flex h-9 w-9 items-center justify-center rounded-full bg-white/12 text-white ring-1 ring-white/20 backdrop-blur-sm transition active:scale-95"
           >
@@ -73,29 +75,29 @@ export function IletisimBar({
           {acik ? (
             <div
               ref={dialogRef}
-              className="absolute left-1/2 top-full z-30 mt-2 w-56 -translate-x-1/2 rounded-card bg-surface p-3 text-left text-ink shadow-pop ring-1 ring-line"
+              className="absolute left-1/2 top-full z-30 mt-2 w-56 -translate-x-1/2 rounded-card bg-surface p-3 text-start text-ink shadow-pop ring-1 ring-line"
             >
-              <p className="text-caption font-medium text-ink-muted">Wi-Fi ağı</p>
+              <p className="text-caption font-medium text-ink-muted">{t("iletisim.wifiAgi")}</p>
               <button
                 type="button"
                 onClick={() => kopyala(wifiSsid as string, "ssid")}
-                className="mt-1 flex w-full items-center justify-between rounded-chip bg-canvas px-2.5 py-2 text-left text-small"
+                className="mt-1 flex w-full items-center justify-between rounded-chip bg-canvas px-2.5 py-2 text-start text-small"
               >
                 <span className="truncate font-medium">{wifiSsid}</span>
                 <span className="shrink-0 text-caption text-ink-faint">
-                  {kopyalanan === "ssid" ? "Kopyalandı" : "Kopyala"}
+                  {t(kopyalanan === "ssid" ? "iletisim.kopyalandi" : "iletisim.kopyala")}
                 </span>
               </button>
 
-              <p className="mt-2 text-caption font-medium text-ink-muted">Şifre</p>
+              <p className="mt-2 text-caption font-medium text-ink-muted">{t("iletisim.wifiSifre")}</p>
               <button
                 type="button"
                 onClick={() => kopyala(wifiPassword as string, "sifre")}
-                className="mt-1 flex w-full items-center justify-between rounded-chip bg-canvas px-2.5 py-2 text-left text-small"
+                className="mt-1 flex w-full items-center justify-between rounded-chip bg-canvas px-2.5 py-2 text-start text-small"
               >
                 <span className="truncate font-medium">{wifiPassword}</span>
                 <span className="shrink-0 text-caption text-ink-faint">
-                  {kopyalanan === "sifre" ? "Kopyalandı" : "Kopyala"}
+                  {t(kopyalanan === "sifre" ? "iletisim.kopyalandi" : "iletisim.kopyala")}
                 </span>
               </button>
             </div>

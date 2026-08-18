@@ -6,7 +6,9 @@
  * arayüzden bağımsız ve test edilebilir duruyor.
  */
 
-export const DENEME_GUN = 14;
+import { sifreSorunu } from "./sifre";
+
+export const DENEME_GUN = 7;
 
 /** Aynı IP'den 24 saatte açılabilecek deneme hesabı sayısı. */
 export const IP_BASINA_GUNLUK_SINIR = 3;
@@ -39,7 +41,8 @@ export function kayitSorunu(girdi: KayitGirdisi): string | null {
   if (girdi.firma.trim().length < 2) return "İşletme adı gerekli.";
   if (girdi.adSoyad.trim().length < 3) return "Ad soyad gerekli.";
   if (!/^\S+@\S+\.\S+$/.test(girdi.eposta)) return "Geçerli bir e-posta girin.";
-  if (girdi.sifre.length < 8) return "Şifre en az 8 karakter olmalı.";
+  const sifreHatasi = sifreSorunu(girdi.sifre);
+  if (sifreHatasi) return sifreHatasi;
   // Rıza olmadan iletişim bilgisi saklayamayız; kaydın kendisi de o bilgiye
   // dayandığı için bu kutu isteğe bağlı değil.
   if (!girdi.kvkkOnay) return "Devam etmek için aydınlatma metnini onaylayın.";

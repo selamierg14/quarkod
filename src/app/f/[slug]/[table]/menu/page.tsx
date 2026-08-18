@@ -31,7 +31,7 @@ export default async function MenuPage({
 }) {
   const { slug, table: tableParam } = await params;
   const { sec } = await searchParams;
-  const { business, table, tableLabel, menuAcik } = await qrSayfaVerisi(slug, tableParam);
+  const { business, table, menuAcik } = await qrSayfaVerisi(slug, tableParam);
   if (!menuAcik) notFound();
 
   const kategoriler = await menuIcerigi(business.id);
@@ -43,9 +43,11 @@ export default async function MenuPage({
   return (
     <MusteriKabuk
       business={business}
-      tableLabel={tableLabel}
-      altBaslik={secimModu ? "Aldıklarınızı seçin" : "Menü"}
+      masaNo={table.tableNumber}
+      girisMi={table.isEntrance}
+      altBaslik={secimModu ? "menu.secimAltBaslik" : "ortak.menu"}
       dar={false}
+      kompakt
     >
       <MenuGorunumu
         slug={business.slug}
@@ -54,6 +56,15 @@ export default async function MenuPage({
         secimModu={secimModu}
         duyuru={
           business.announcementActive ? business.announcement?.trim() || null : null
+        }
+        fiyatTarihi={
+          business.menuPriceUpdatedAt
+            ? business.menuPriceUpdatedAt.toLocaleDateString("tr-TR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              })
+            : null
         }
         bolumler={dolu.map((k) => ({
           id: k.id,

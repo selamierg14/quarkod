@@ -6,7 +6,7 @@ import { getItemRatings } from "@/lib/stats";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Ürünler" };
+export const metadata = { title: "Ürün puanları" };
 
 const DONEMLER = [
   { gun: 30, label: "Son 30 gün" },

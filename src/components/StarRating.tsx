@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef } from "react";
+import type { MetinAnahtari } from "@/lib/ceviriler";
+import { useDil } from "./DilSaglayici";
 
 type Props = {
   value: number;
@@ -17,7 +19,14 @@ type Props = {
   name: string;
 };
 
-const LABELS = ["Çok kötü", "Kötü", "İdare eder", "İyi", "Harika"];
+/** 1-5 yıldızın sözle karşılığı; çeviri anahtarı olarak tutuluyor. */
+const PUAN_ANAHTARLARI: MetinAnahtari[] = [
+  "yildiz.1",
+  "yildiz.2",
+  "yildiz.3",
+  "yildiz.4",
+  "yildiz.5",
+];
 
 export function StarRating({
   value,
@@ -27,6 +36,7 @@ export function StarRating({
   ariaLabel,
   name,
 }: Props) {
+  const { t } = useDil();
   const big = size === "lg";
   const groupRef = useRef<HTMLDivElement>(null);
 
@@ -64,7 +74,7 @@ export function StarRating({
       <div
         ref={groupRef}
         role="radiogroup"
-        aria-label={ariaLabel ?? label ?? "Genel memnuniyet puanı"}
+        aria-label={ariaLabel ?? label ?? t("yildiz.genel")}
         className={`flex ${big ? "gap-1.5" : "gap-0.5"}`}
       >
         {[1, 2, 3, 4, 5].map((star) => {
@@ -75,7 +85,7 @@ export function StarRating({
               type="button"
               role="radio"
               aria-checked={value === star}
-              aria-label={`${star} yıldız — ${LABELS[star - 1]}`}
+              aria-label={t("yildiz.etiket", { sayi: star, ad: t(PUAN_ANAHTARLARI[star - 1]) })}
               tabIndex={star === tabStop ? 0 : -1}
               onClick={() => onChange(star)}
               onKeyDown={(event) => handleKeyDown(event, star)}
@@ -104,7 +114,7 @@ export function StarRating({
       {big ? (
         // Yükseklik sabit: seçim yapılınca sayfa zıplamasın.
         <span className="h-5 text-small font-medium text-ink-soft">
-          {value > 0 ? LABELS[value - 1] : ""}
+          {value > 0 ? t(PUAN_ANAHTARLARI[value - 1]) : ""}
         </span>
       ) : null}
 

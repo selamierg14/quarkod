@@ -32,6 +32,7 @@ export type IkonAdi =
   | "izin"
   | "kisi"
   | "hesap"
+  | "abonelik"
   | "denetim"
   | "sistem"
   | "profil";
@@ -72,6 +73,7 @@ export function panelMenusu(modu: PanelModu, role: Role): NavGrup[] {
         baslik: "Platform",
         linkler: [
           { href: "/admin/hesaplar", label: "Hesaplar", ikon: "hesap" },
+          { href: "/admin/abonelikler", label: "Abonelikler", ikon: "abonelik" },
           { href: "/admin/isletmeler", label: "İşletmeler", ikon: "bina" },
           { href: "/admin/kullanicilar", label: "Kullanıcılar", ikon: "kisi" },
         ],
@@ -83,10 +85,6 @@ export function panelMenusu(modu: PanelModu, role: Role): NavGrup[] {
           { href: "/admin/sistem", label: "Sistem sağlığı", ikon: "sistem" },
         ],
       },
-      {
-        baslik: "Hesabım",
-        linkler: [{ href: "/admin/profil", label: "Profil", ikon: "profil" }],
-      },
     ];
   }
 
@@ -96,11 +94,11 @@ export function panelMenusu(modu: PanelModu, role: Role): NavGrup[] {
   ];
 
   const analiz: NavLink[] = [
-    { href: "/admin/kirilim", label: "Kırılım", ikon: "grafik" },
-    { href: "/admin/urunler", label: "Ürünler", ikon: "yildiz" },
+    { href: "/admin/kirilim", label: "Vardiya & masa", ikon: "grafik" },
+    { href: "/admin/urunler", label: "Ürün puanları", ikon: "yildiz" },
   ];
   if (yonetici(role)) {
-    analiz.push({ href: "/admin/kiyaslama", label: "İşletme kıyaslama", ikon: "kiyas" });
+    analiz.push({ href: "/admin/kiyaslama", label: "Şube karşılaştırma", ikon: "kiyas" });
   }
 
   const yonetim: NavLink[] = [{ href: "/admin/menu", label: "QR Menü", ikon: "menu" }];
@@ -108,19 +106,18 @@ export function panelMenusu(modu: PanelModu, role: Role): NavGrup[] {
     yonetim.push(
       { href: "/admin/isletmeler", label: "İşletmeler", ikon: "bina" },
       { href: "/admin/kullanicilar", label: "Kullanıcılar", ikon: "kisi" },
-      { href: "/admin/izinler", label: "İleti izinleri", ikon: "izin" },
-      { href: "/admin/denetim", label: "Denetim kaydı", ikon: "denetim" },
+      { href: "/admin/izinler", label: "Pazarlama izinleri", ikon: "izin" },
+      { href: "/admin/denetim", label: "İşlem geçmişi", ikon: "denetim" },
     );
   }
 
+  // "Hesabım/Profil" grubu yok: profile kenar çubuğunun altındaki kullanıcı
+  // kartından gidiliyor. Tek satırlık bir grup, menüyü uzatmaktan başka işe
+  // yaramıyordu.
   return [
     { baslik: "Günlük", linkler: gunluk },
-    { baslik: "Analiz", linkler: analiz },
+    { baslik: "Raporlar", linkler: analiz },
     { baslik: "Yönetim", linkler: yonetim },
-    {
-      baslik: "Hesabım",
-      linkler: [{ href: "/admin/profil", label: "Profil", ikon: "profil" }],
-    },
   ];
 }
 

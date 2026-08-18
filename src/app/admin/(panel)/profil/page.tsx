@@ -163,6 +163,10 @@ export default async function ProfilePage() {
                 wifiPassword: kendiIsletmesi.wifiPassword,
                 announcement: kendiIsletmesi.announcement,
                 announcementActive: kendiIsletmesi.announcementActive,
+            yemeksepetiUrl: kendiIsletmesi.yemeksepetiUrl,
+            getirUrl: kendiIsletmesi.getirUrl,
+            trendyolUrl: kendiIsletmesi.trendyolUrl,
+            migrosUrl: kendiIsletmesi.migrosUrl,
               }}
               isOwner={false}
             />

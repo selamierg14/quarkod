@@ -12,6 +12,7 @@ import {
 } from "@/lib/auth";
 import { denetimYaz } from "@/lib/denetim";
 import { secenekleriAyristir, secenekleriBirlestir } from "@/lib/anket-detay";
+import { sifreSorunu } from "@/lib/sifre";
 import { prisma } from "@/lib/db";
 import { BUSINESS_TYPES, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/constants";
 import { validateImageDataUrl } from "@/lib/image";
@@ -87,9 +88,8 @@ export async function createBusiness(
     if (!/^\S+@\S+\.\S+$/.test(managerEmail)) {
       return { error: "Sorumlu için geçerli bir e-posta girin." };
     }
-    if (managerPassword.length < 8) {
-      return { error: "Sorumlu şifresi en az 8 karakter olmalı." };
-    }
+    const sifreHatasi = sifreSorunu(managerPassword);
+    if (sifreHatasi) return { error: `Sorumlu şifresi: ${sifreHatasi}` };
 
     username = managerUsername || toUsername(managerEmail.split("@")[0]);
     const usernameSorun = usernameProblem(username);
@@ -196,6 +196,17 @@ export async function updateBusiness(
   const wifiSsid = String(formData.get("wifiSsid") ?? "").trim();
   const wifiPassword = String(formData.get("wifiPassword") ?? "").trim();
 
+  // Sipariş platformu linkleri: her biri isteğe bağlı, doluysa http(s) olmalı.
+  const siparisAlanlari = ["yemeksepetiUrl", "getirUrl", "trendyolUrl", "migrosUrl"] as const;
+  const siparisLinkleri: Record<string, string | null> = {};
+  for (const alan of siparisAlanlari) {
+    const deger = String(formData.get(alan) ?? "").trim();
+    if (deger && !/^https?:\/\//i.test(deger)) {
+      return { error: "Sipariş linkleri http:// veya https:// ile başlamalı." };
+    }
+    siparisLinkleri[alan] = deger || null;
+  }
+
   // Görseller data URI olarak gelir; boş dize "kaldır" demek. Sunucu boyut ve
   // biçimi yeniden doğrular — tarayıcının küçültmesine güvenmiyoruz.
   const rawLogo = String(formData.get("logoUrl") ?? "");
@@ -235,6 +246,10 @@ export async function updateBusiness(
       announcement:
         String(formData.get("announcement") ?? "").trim().slice(0, 120) || null,
       announcementActive: formData.get("announcementActive") === "on",
+      yemeksepetiUrl: siparisLinkleri.yemeksepetiUrl,
+      getirUrl: siparisLinkleri.getirUrl,
+      trendyolUrl: siparisLinkleri.trendyolUrl,
+      migrosUrl: siparisLinkleri.migrosUrl,
     },
   });
 
@@ -348,9 +363,13 @@ export async function moveCategory(formData: FormData) {
   if (target < 0 || target >= siblings.length) return;
 
   // Sıra numaralarını baştan yazmak, eşit sortOrder'ları da düzeltir.
+  //
+  // Tek transaction: yarıda kalan bir yeniden sıralama, iki kategoriye aynı
+  // sortOrder'ı bırakıp listeyi kalıcı olarak karıştırırdı ve bunu ancak
+  // müşteri anketi tuhaf sırada görünce fark ederdik. Ya hepsi ya hiçbiri.
   const reordered = [...siblings];
   [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
-  await Promise.all(
+  await prisma.$transaction(
     reordered.map((item, order) =>
       prisma.categoryTemplate.update({
         where: { id: item.id },

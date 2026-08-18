@@ -75,7 +75,7 @@ export function DenemeForm() {
       <Checkbox
         name="kvkkOnay"
         label="Aydınlatma metnini okudum, bilgilerimin hesabımın açılması ve bana dönüş yapılması amacıyla işlenmesini kabul ediyorum."
-        description="Deneme süresi sonunda hesap kendiliğinden kapanır; verilerinizi silmemizi istediğinizde tek e-posta yeter."
+        description="Deneme süresi sonunda dilediğiniz paketi seçip devam edebilirsiniz; verilerinizi silmemizi istediğinizde tek e-posta yeter."
       />
 
       {state.error ? (
@@ -89,7 +89,7 @@ export function DenemeForm() {
       </Button>
 
       <p className="text-center text-caption text-ink-muted">
-        Kredi kartı istemiyoruz. Deneme bitince hesap kendiliğinden kapanır.
+        Kredi kartı istemiyoruz. Deneme bitince dilediğiniz paketi seçip devam edebilirsiniz.
       </p>
     </form>
   );

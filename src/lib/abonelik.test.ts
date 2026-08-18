@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { abonelikUyarisi, hesapAktifMi, kalanGun, tarihGirdisi } from "./abonelik";
+import {
+  abonelikKademe,
+  abonelikUyarisi,
+  hesapAktifMi,
+  kalanGun,
+  tarihGirdisi,
+} from "./abonelik";
 
 const simdi = new Date("2026-08-10T12:00:00Z");
 const gunSonra = (n: number) => new Date(simdi.getTime() + n * 24 * 60 * 60 * 1000);
@@ -59,6 +65,9 @@ describe("abonelikUyarisi", () => {
   it("süresi dolduğunu ayrı seviyede bildirir", () => {
     const uyari = abonelikUyarisi({ active: true, expiresAt: gunSonra(-1) }, simdi);
     expect(uyari?.seviye).toBe("bitti");
+    // Süresi dolan sahip artık girip görebiliyor; bant bunu söylemeli,
+    // yoksa kullanıcı "neden düzenleyemiyorum" diye takılır.
+    expect(uyari?.mesaj).toMatch(/salt okunur/i);
   });
 
   it("süresiz hesapta uyarı yok", () => {
@@ -85,5 +94,30 @@ describe("tarihGirdisi", () => {
     expect(tarihGirdisi("2026-02-31")).toBeUndefined();
     expect(tarihGirdisi("yarın")).toBeUndefined();
     expect(tarihGirdisi("31-12-2026")).toBeUndefined();
+  });
+});
+
+describe("abonelikKademe", () => {
+  it("süresiz hesap 'suresiz'", () => {
+    expect(abonelikKademe({ active: true, expiresAt: null }, simdi)).toBe("suresiz");
+  });
+
+  it("geçmiş tarih 'dolmus'", () => {
+    expect(abonelikKademe({ active: true, expiresAt: gunSonra(-1) }, simdi)).toBe("dolmus");
+  });
+
+  it("7 gün ve altı 'kritik'", () => {
+    expect(abonelikKademe({ active: true, expiresAt: gunSonra(3) }, simdi)).toBe("kritik");
+    expect(abonelikKademe({ active: true, expiresAt: gunSonra(7) }, simdi)).toBe("kritik");
+  });
+
+  it("8-14 gün arası 'yakin'", () => {
+    expect(abonelikKademe({ active: true, expiresAt: gunSonra(10) }, simdi)).toBe("yakin");
+    expect(abonelikKademe({ active: true, expiresAt: gunSonra(14) }, simdi)).toBe("yakin");
+  });
+
+  it("14 günden uzağı 'sakin'", () => {
+    // Takip listesini uzak tarihlerle doldurmamak için.
+    expect(abonelikKademe({ active: true, expiresAt: gunSonra(40) }, simdi)).toBe("sakin");
   });
 });

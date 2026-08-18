@@ -7,6 +7,8 @@ import { Dialog } from "@/components/ui";
 import { MENU_TAGS, formatPrice, parseTags, type MenuTag } from "@/lib/menu";
 import { taslakAnahtari, taslakGuncelle, taslakOku } from "@/lib/anket-taslak";
 import { foldTr } from "@/lib/text";
+import { useDil } from "@/components/DilSaglayici";
+import type { MetinAnahtari } from "@/lib/ceviriler";
 
 export type MenuUrun = {
   id: string;
@@ -29,9 +31,16 @@ type Props = {
   secimModu: boolean;
   /** İşletmenin açık duyurusu; kapalıysa ya da boşsa null gelir. */
   duyuru?: string | null;
+  /** Fiyatların en son güncellendiği tarih (gg.aa.yyyy); yoksa null. */
+  fiyatTarihi?: string | null;
 };
 
 type DetayUrun = MenuUrun & { kategoriAdi: string };
+
+/** "vegan" → "etiket.vegan"; etiket adları da çevriliyor. */
+function etiketAnahtari(etiket: MenuTag): MetinAnahtari {
+  return `etiket.${etiket}`;
+}
 
 export function MenuGorunumu({
   slug,
@@ -40,8 +49,10 @@ export function MenuGorunumu({
   brandColor,
   secimModu,
   duyuru = null,
+  fiyatTarihi = null,
 }: Props) {
   const router = useRouter();
+  const { t } = useDil();
   const anahtar = taslakAnahtari(slug, tableNumber);
   // Menüye anketten gelinmiş olabilir: önceki seçim işaretli açılsın ki
   // müşteri aynı ürünleri baştan bulmak zorunda kalmasın.
@@ -147,10 +158,9 @@ export function MenuGorunumu({
 
       {secimModu ? (
         <div className="mb-5 rounded-control bg-ink px-4 py-3 text-small text-white">
-          <p className="font-medium">Ne aldınız?</p>
+          <p className="font-medium">{t("menu.secimBaslik")}</p>
           <p className="mt-0.5 text-caption text-white/70">
-            Yediklerinize dokunup işaretleyin, sonra aşağıdan değerlendirmeye
-            ekleyin.
+{t("menu.secimAciklama")}
           </p>
         </div>
       ) : (
@@ -159,9 +169,9 @@ export function MenuGorunumu({
           className="mb-5 flex items-center justify-between gap-3 rounded-control border border-line bg-surface px-4 py-3 text-small shadow-card transition hover:border-line-strong"
         >
           <span>
-            <span className="font-medium text-ink">Deneyiminizi değerlendirin</span>
+            <span className="font-medium text-ink">{t("menu.anketKisayolBaslik")}</span>
             <span className="block text-caption text-ink-muted">
-              Yediklerinizi tek tek puanlayabilirsiniz
+{t("menu.anketKisayolAciklama")}
             </span>
           </span>
           <span aria-hidden="true" className="text-ink-faint">
@@ -180,7 +190,7 @@ export function MenuGorunumu({
             <svg
               aria-hidden="true"
               viewBox="0 0 24 24"
-              className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-ink-faint"
+              className="pointer-events-none absolute top-1/2 start-3.5 h-4 w-4 -translate-y-1/2 text-ink-faint"
               fill="none"
               stroke="currentColor"
               strokeWidth={2}
@@ -192,35 +202,37 @@ export function MenuGorunumu({
               type="search"
               value={arama}
               onChange={(event) => setArama(event.target.value)}
-              placeholder="Menüde ara…"
-              aria-label="Menüde ara"
-              className="w-full rounded-full border border-line bg-surface py-2.5 pr-4 pl-10 text-[16px] text-ink shadow-card outline-none placeholder:text-ink-faint focus-visible:border-line-strong sm:text-small"
+              placeholder={t("menu.ara")}
+              aria-label={t("menu.aramaEtiket")}
+              className="w-full rounded-full border border-line bg-surface py-2.5 pe-4 ps-10 text-[16px] text-ink shadow-card outline-none placeholder:text-ink-faint focus-visible:border-line-strong sm:text-small"
             />
           </div>
 
           {/* Diyet/alerjen filtresi: birden fazla seçilirse hepsini karşılayan
               ürünler kalır ("vegan" + "glutensiz" = ikisi birden). */}
           {kullanilanEtiketler.length > 0 ? (
+            // Sağ kenardaki solma: çipler taştığında yarım kesilen bir çip
+            // "bozuk" görünüyordu; bu maske kaydırılabildiğini gösteriyor.
             <div
               role="group"
-              aria-label="Diyet ve alerjen filtreleri"
-              className="-mx-1 mt-2.5 flex gap-2 overflow-x-auto px-1 pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              aria-label={t("menu.filtreler")}
+              className="-mx-1 mt-2.5 flex gap-2 overflow-x-auto px-1 pb-0.5 [-ms-overflow-style:none] [mask-image:linear-gradient(to_right,black_calc(100%-2rem),transparent)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
-              {kullanilanEtiketler.map((t) => {
-                const secili = etiketFiltresi.includes(t);
+              {kullanilanEtiketler.map((etiket) => {
+                const secili = etiketFiltresi.includes(etiket);
                 return (
                   <button
-                    key={t}
+                    key={etiket}
                     type="button"
                     aria-pressed={secili}
-                    onClick={() => etiketDegistir(t)}
+                    onClick={() => etiketDegistir(etiket)}
                     className={`shrink-0 rounded-full border px-3 py-1.5 text-caption font-medium transition ${
                       secili
                         ? "border-ink bg-ink text-white"
                         : "border-line bg-surface text-ink-soft"
                     }`}
                   >
-                    {MENU_TAGS[t]}
+                    {t(etiketAnahtari(etiket))}
                   </button>
                 );
               })}
@@ -231,17 +243,16 @@ export function MenuGorunumu({
               tereddüdünü kaldırıyor. */}
           {filtreliBolumler ? (
             <p className="mt-2 text-caption text-ink-faint">
-              {filtreliBolumler.reduce((t, b) => t + b.items.length, 0)} ürün
-              bulundu
+{t("menu.sonucSayisi", { adet: filtreliBolumler.reduce((n, b) => n + b.items.length, 0) })}
               <button
                 type="button"
                 onClick={() => {
                   setArama("");
                   setEtiketFiltresi([]);
                 }}
-                className="ml-2 font-medium text-ink-soft underline underline-offset-2"
+                className="ms-2 font-medium text-ink-soft underline underline-offset-2"
               >
-                Temizle
+                {t("menu.temizle")}
               </button>
             </p>
           ) : null}
@@ -252,7 +263,7 @@ export function MenuGorunumu({
           kaydırmayı kısaltıyor ve nerede olduğumuzu görsel olarak gösteriyor. */}
       {!aramaSonucu && bolumler.length > 1 ? (
         <nav
-          aria-label="Menü bölümleri"
+          aria-label={t("menu.bolumler")}
           className="-mx-1 mb-5 flex gap-3 overflow-x-auto px-1 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {bolumler.map((k) => {
@@ -303,9 +314,7 @@ export function MenuGorunumu({
 
       {gosterilecek.length === 0 ? (
         <p className="rounded-control border border-dashed border-line-strong bg-surface/60 px-4 py-8 text-center text-small text-ink-muted">
-          {arama
-            ? <>&quot;{arama}&quot; için bir sonuç bulunamadı.</>
-            : "Seçili filtrelere uyan ürün yok."}
+{arama ? t("menu.aramaBos", { terim: arama }) : t("menu.filtreBos")}
         </p>
       ) : (
         <div className={`flex flex-col gap-7 ${secimModu ? "pb-28" : ""}`}>
@@ -341,14 +350,16 @@ export function MenuGorunumu({
         <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur">
           <div className="mx-auto flex max-w-3xl items-center gap-3">
             <span className="text-small text-ink-soft">
-              {isaretli.length > 0 ? `${isaretli.length} ürün seçildi` : "Henüz seçim yok"}
+              {isaretli.length > 0
+                ? t("menu.secilenSayisi", { adet: isaretli.length })
+                : t("menu.secimYok")}
             </span>
             <button
               type="button"
               onClick={tamamla}
               className="ml-auto rounded-control bg-brand px-5 py-3 text-small font-semibold text-brand-ink shadow-card active:scale-[0.99]"
             >
-              {isaretli.length > 0 ? "Değerlendirmeye ekle" : "Değerlendirmeye dön"}
+{t(isaretli.length > 0 ? "menu.secimTamamla" : "menu.secimBos")}
             </button>
           </div>
         </div>
@@ -358,10 +369,16 @@ export function MenuGorunumu({
             href={anketAdresi}
             className="mt-7 flex w-full items-center justify-center rounded-control bg-brand px-4 py-3.5 font-semibold text-brand-ink shadow-card active:scale-[0.99]"
           >
-            Deneyiminizi değerlendirin
+            {t("menu.anketKisayolBaslik")}
           </Link>
           <p className="mt-3 text-center text-caption text-ink-faint">
-            Fiyatlara KDV dahildir. Menü içeriği işletme tarafından güncellenir.
+            {t("menu.kdv")}
+            {fiyatTarihi ? (
+              <>
+                <br />
+                {t("menu.fiyatGuncelleme", { tarih: fiyatTarihi })}
+              </>
+            ) : null}
           </p>
         </>
       )}
@@ -396,6 +413,7 @@ function UrunKarti({
   onToggle: () => void;
   onDetay: () => void;
 }) {
+  const { t } = useDil();
   const etiketler = parseTags(urun.tags);
   // Tükenen ürün bugün yenmedi; puanlanacak ürünler arasına girmemeli.
   const secilebilir = secimModu && !urun.soldOut;
@@ -422,15 +440,15 @@ function UrunKarti({
         )}
 
         {urun.soldOut ? (
-          <span className="absolute top-2 left-2 rounded-full bg-ink-strong/90 px-2 py-0.5 text-[11px] font-medium text-white">
-            Bugün yok
+          <span className="absolute top-2 start-2 rounded-full bg-ink-strong/90 px-2 py-0.5 text-[11px] font-medium text-white">
+            {t("menu.bugunYok")}
           </span>
         ) : null}
 
         {secilebilir ? (
           <span
             aria-hidden="true"
-            className={`absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full text-small font-bold shadow-card ring-1 ${
+            className={`absolute top-2 end-2 flex h-7 w-7 items-center justify-center rounded-full text-small font-bold shadow-card ring-1 ${
               secili
                 ? "bg-ink text-white ring-ink"
                 : "bg-surface/90 text-transparent ring-line-strong"
@@ -441,7 +459,7 @@ function UrunKarti({
         ) : null}
       </div>
 
-      <div className="flex flex-1 flex-col p-3 text-left">
+      <div className="flex flex-1 flex-col p-3 text-start">
         {/* İki sütunlu kartta ad ve fiyat aynı satıra sığmıyor; fiyatı alta
             alıyoruz ki uzun ürün adlarında kırpılmasın. */}
         <div className="flex flex-col gap-0.5">
@@ -469,12 +487,12 @@ function UrunKarti({
 
         {etiketler.length > 0 ? (
           <div className="mt-2 flex flex-wrap gap-1">
-            {etiketler.map((t: MenuTag) => (
+            {etiketler.map((etiket) => (
               <span
-                key={t}
+                key={etiket}
                 className="rounded-full bg-sunken px-2 py-0.5 text-[11px] text-ink-soft"
               >
-                {MENU_TAGS[t]}
+                {t(etiketAnahtari(etiket))}
               </span>
             ))}
           </div>
@@ -493,9 +511,9 @@ function UrunKarti({
         <button
           type="button"
           aria-pressed={secili}
-          aria-label={`${urun.name} — değerlendirmeye ekle`}
+          aria-label={t("menu.secimEkle", { ad: urun.name })}
           onClick={onToggle}
-          className="flex h-full flex-col text-left"
+          className="flex h-full flex-col text-start"
         >
           {govde}
         </button>
@@ -503,8 +521,8 @@ function UrunKarti({
         <button
           type="button"
           onClick={onDetay}
-          aria-label={`${urun.name} — ayrıntıları gör`}
-          className="flex h-full flex-col text-left active:opacity-90"
+          aria-label={t("menu.ayrinti", { ad: urun.name })}
+          className="flex h-full flex-col text-start active:opacity-90"
         >
           {govde}
         </button>
@@ -516,8 +534,8 @@ function UrunKarti({
         <button
           type="button"
           onClick={onDetay}
-          aria-label={`${urun.name} — ayrıntıları gör`}
-          className="absolute top-2 left-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-ink/55 text-white shadow-card backdrop-blur-sm"
+          aria-label={t("menu.ayrinti", { ad: urun.name })}
+          className="absolute top-2 start-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-ink/55 text-white shadow-card backdrop-blur-sm"
         >
           <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2}>
             <circle cx="12" cy="12" r="9" />
@@ -545,6 +563,7 @@ function UrunDetayi({
   onKapat: () => void;
   onToggle: () => void;
 }) {
+  const { t } = useDil();
   const etiketler = urun ? parseTags(urun.tags) : [];
   const secilebilir = Boolean(urun) && secimModu && !urun?.soldOut;
 
@@ -574,7 +593,7 @@ function UrunDetayi({
             onClick={onToggle}
             className="w-full rounded-control bg-brand px-4 py-2.5 text-small font-semibold text-brand-ink shadow-card active:scale-[0.99]"
           >
-            {secili ? "Seçimden çıkar" : "Değerlendirmeye ekle"}
+{t(secili ? "menu.secimdenCikar" : "menu.secimTamamla")}
           </button>
         ) : (
           <button
@@ -582,7 +601,7 @@ function UrunDetayi({
             onClick={onKapat}
             className="w-full rounded-control border border-line bg-surface px-4 py-2.5 text-small font-medium text-ink-soft"
           >
-            Kapat
+            {t("ortak.kapat")}
           </button>
         )
       }
@@ -595,15 +614,15 @@ function UrunDetayi({
             </span>
             {urun.soldOut ? (
               <span className="rounded-full bg-ink-strong px-2.5 py-0.5 text-caption font-medium text-white">
-                Bugün yok
+                {t("menu.bugunYok")}
               </span>
             ) : null}
-            {etiketler.map((t) => (
+            {etiketler.map((etiket) => (
               <span
-                key={t}
+                key={etiket}
                 className="rounded-full bg-sunken px-2.5 py-0.5 text-caption text-ink-soft"
               >
-                {MENU_TAGS[t]}
+                {t(etiketAnahtari(etiket))}
               </span>
             ))}
           </div>
@@ -614,7 +633,9 @@ function UrunDetayi({
 
           {urun.priceKurus !== null ? (
             <div className="flex items-baseline justify-between border-t border-line pt-3">
-              <span className="text-caption font-medium text-ink-muted uppercase">Fiyat</span>
+              <span className="text-caption font-medium text-ink-muted uppercase">
+                {t("menu.fiyat")}
+              </span>
               <span className="text-title font-semibold text-ink tabular">
                 {formatPrice(urun.priceKurus)}
               </span>

@@ -169,6 +169,18 @@ müşteriden duyması, satılan hizmete duyulan güveni en hızlı bitiren şeyd
 npm install
 ```
 
+Veritabanı **Postgres**'tir (bkz. [Veritabanı](#veritabanı)). Yerel bir
+kopyayı Docker ile ayağa kaldırın:
+
+```bash
+docker compose up -d
+```
+
+Bu, `localhost:5433`'te bir Postgres ve `localhost:5051`'de bir pgAdmin
+açar (giriş bilgileri `docker-compose.yml` içinde). pgAdmin'de sunucu
+eklerken host olarak makinenizin adını değil `db` yazın — pgAdmin de aynı
+Docker ağı içinde çalışıyor.
+
 Ayarları kopyalayın ve doldurun:
 
 ```bash
@@ -179,6 +191,7 @@ En azından şu değerler girilmeli:
 
 | Değişken | Açıklama |
 | --- | --- |
+| `DATABASE_URL` | Postgres bağlantı dizesi. `.env.example`'daki değer yukarıdaki docker-compose ile birebir eşleşir. |
 | `AUTH_SECRET` | Oturum çerezini imzalar. En az 32 karakter, rastgele. |
 | `NEXT_PUBLIC_APP_URL` | QR kodlarına gömülen taban adres. Baskıdan önce gerçek alan adı olmalı. |
 | `SMTP_*` | E-posta bildirimi için. Boş bırakılırsa bildirimler konsola yazılır, sistem çalışmaya devam eder. |
@@ -194,6 +207,36 @@ Geliştirme sunucusu:
 ```bash
 npm run dev
 ```
+
+## Veritabanı
+
+Postgres — driver adapter olarak [`@prisma/adapter-pg`](https://www.npmjs.com/package/@prisma/adapter-pg)
+kullanılır. `DATABASE_URL` her ortamda (yerel, preprod, prod) aynı formatta
+bir bağlantı dizesidir; kod hiç değişmez.
+
+**pgAdmin** ile bağlanmak için: yerelde yukarıdaki docker-compose zaten
+kurulu geliyor. Gerçek bir sunucuya bağlanacaksanız pgAdmin'i o sunucudan
+ayrı, kendi makinenizde çalıştırıp sunucunun dışa açık adresi + portuyla
+ekleyebilirsiniz — ya da sunucuda yönetilen bir Postgres kullanıyorsanız
+(RDS, Neon, Supabase, DigitalOcean Managed DB) sağlayıcının kendi panelini
+tercih edin, çoğu pgAdmin'den daha az bakım ister.
+
+Migration'lar `prisma/migrations/` altında, sürüm kontrolüne dahildir.
+Yeni bir şema değişikliği yaptığınızda:
+
+```bash
+npm run db:migrate    # yerelde migration oluşturur ve uygular
+```
+
+Preprod/prod'da migration'ları **oluşturmayın, sadece uygulayın**:
+
+```bash
+npx prisma migrate deploy
+```
+
+(`npm run setup` bunu zaten içeriyor.) `migrate dev` prod'da asla
+çalıştırılmamalı — şema sapması olup olmadığını kontrol edip gerekirse
+migration geçmişini sıfırlamaya kalkışabilir.
 
 ## Yayına alma
 
@@ -212,11 +255,11 @@ durdurmayı seçtik:
 QR kodları basılmadan önce `NEXT_PUBLIC_APP_URL` kesinleşmiş olmalı — adres
 sonradan değişirse basılı bütün kartlar çöpe gider.
 
-**Veritabanı.** SQLite tek dosyadır (`prisma/dev.db`); diskin kalıcı olduğu
-bir sunucuda çalıştırın. Konteyner her dağıtımda sıfırlanan bir platformda
-(dosya sistemi geçici olan kurulumlar) veri kaybolur — orada kalıcı disk
-bağlayın ya da Postgres'e geçin. Prisma tarafında geçiş, `schema.prisma`
-içindeki sağlayıcıyı ve adaptörü değiştirmekten ibaret; sorgular aynı kalır.
+**Veritabanı.** Postgres. Vercel/Netlify gibi sunucusuz platformlarda
+yönetilen bir Postgres kullanın (Neon, Supabase, RDS, DigitalOcean Managed
+DB); kendi sunucunuzda çalıştırıyorsanız Postgres'i orada kurun ya da
+yönetilen bir servise bağlanın. `DATABASE_URL` bağlantı dizesini
+değiştirmek yeterli — kod hiçbir koşulda ortama göre değişmez.
 
 **Zamanlanmış işler.** Bunlar kendiliğinden çalışmaz, sunucuda cron'a
 eklenmeli. Üçünü birden çalıştıran tek satır yeterli:
@@ -437,25 +480,60 @@ görür. Nötr varyanta geçmek kod değişikliği gerektirmez.
 
 ## Teknoloji
 
-Next.js 16 (App Router, server actions) · Prisma 7 + SQLite · Tailwind CSS 4 ·
-jose (JWT oturum) · nodemailer · qrcode.
+Next.js 16 (App Router, server actions) · Prisma 7 + Postgres (`@prisma/adapter-pg`)
+· Tailwind CSS 4 · jose (JWT oturum) · nodemailer · qrcode.
 
-Postgres'e geçiş: `prisma/schema.prisma` içinde `provider`'ı `postgresql` yapıp
-`@prisma/adapter-pg` adaptörünü `src/lib/db.ts` içinde kullanmak yeterli;
-sorgular değişmez.
+## Ortamlar ve dağıtım (preprod/prod)
 
-## Yayına alırken — önce bunu okuyun
+**Mimari: tek uygulama, ayrı bir "backend" yok.** Next.js App Router'da sayfa
+render'ı, server action'lar (`"use server"`) ve route handler'lar (`route.ts`)
+hepsi aynı Node.js sürecinde çalışır. Bu bir monolit — bilinçli tercih, ayrıca
+kurulacak bir "API sunucusu" yok. Ayırmanız gereken tek şey **veritabanı**:
+Postgres, uygulamanın dışında ayrı bir servis olarak durur; ölçeklenmesi,
+yedeklenmesi ve erişimi uygulamadan bağımsızdır. Repo'yu frontend/backend diye
+ikiye bölmek bu proje için gereksiz karmaşıklık katardı — App Router zaten bu
+ayrımı içeride yapıyor.
 
-**SQLite tek bir dosyadır.** Vercel, Netlify gibi sunucusuz platformlarda dosya
-sistemi kalıcı değildir: her dağıtımda veritabanı sıfırlanır ve tüm geri
-bildirimler kaybolur, üstelik bunu fark etmeniz haftalar sürebilir. İki seçenek:
+**Ortam ayrımı, kod değil konfigürasyonla yapılır.** Preprod ve prod aynı
+kod tabanını çalıştırır; farkları `.env`'de yaşar:
 
-1. **Kalıcı diski olan bir sunucu** (VPS, Railway volume, Fly.io volume) — SQLite
-   olduğu gibi kalır, `npm run yedekle` cron'a bağlanır.
-2. **Postgres'e geçiş** — yukarıdaki iki satırlık değişiklik.
+| | Preprod | Prod |
+| --- | --- | --- |
+| `DATABASE_URL` | ayrı bir Postgres (ayrı veritabanı adı ya da ayrı sunucu) | ayrı bir Postgres |
+| `NEXT_PUBLIC_APP_URL` | preprod alt alan adı (örn. `preprod.alanadiniz.com`) | gerçek alan adı |
+| `AUTH_SECRET` | preprod'a özel, farklı bir değer | prod'a özel, farklı bir değer |
+| Diğer her şey | aynı kod, aynı davranış | aynı kod, aynı davranış |
 
-Hangisini seçerseniz seçin, `yedekler/` klasörünü makine dışına da senkronlayın.
-Aynı diskte duran yedek, disk gittiğinde beraber gider.
+Preprod ve prod'un **aynı veritabanını asla paylaşmaması** kritik — preprod'da
+denenen bir işlem gerçek müşteri verisini bozabilir. İki ayrı Postgres
+veritabanı (aynı sunucuda iki `CREATE DATABASE` de olabilir, ya da iki ayrı
+sunucu) yeterli; iki ayrı kod deposu gerekmez.
+
+**Git branch stratejisi.** Bu ölçekte (tek geliştirici + ajan) karmaşık bir
+gitflow yerine en basit model önerilir:
+
+- `main` — her zaman dağıtılabilir durumda. Doğrudan buraya push edilir ya
+  da küçük özellik dallarından (`feature/...`) buraya merge edilir.
+- **Preprod dağıtımı**: `main`'i preprod ortamına (preprod domain + preprod DB)
+  dağıtın. Burada gezinip gerçek domain/HTTPS/e-posta/SMS akışlarını deneyin.
+- **Prod dağıtımı**: preprod'da sorun çıkmayan `main`'i prod ortamına (gerçek
+  domain + prod DB) dağıtın.
+
+Yani branch'i değil, **dağıtım hedefini** ikiye ayırıyorsunuz — aynı `main`,
+iki farklı ortama, iki farklı zamanda gidiyor. Ayrı bir `preprod` branch'i
+ancak preprod'da prod'dan farklı, henüz onaylanmamış değişiklikler tutmak
+isterseniz gerekir; başlangıç için gerekli değil.
+
+**Dağıtım tek dokunuşla yapılır:** `npm run build` + `npm start` (ya da
+tercih ettiğiniz platformun eşdeğeri — Docker, PM2, systemd, Railway/Fly.io/
+Render gibi PaaS'lar hepsi bunu destekler).
+
+`npm run yedekle` Postgres'e karşı `pg_dump` çalıştırır (bağlantı dizesini
+`DATABASE_URL`'den okur). Yedekleri makine dışına da senkronlayın — aynı
+diskte/sunucuda duran yedek, sunucu gittiğinde beraber gider. Yönetilen bir
+Postgres kullanıyorsanız (Neon, Supabase, RDS) sağlayıcı genelde kendi
+otomatik yedeklemesini de sunar; `npm run yedekle`'yi buna ek güvence olarak
+düşünün, tek dayanak olarak değil.
 
 ### Canlıya geçiş kontrol listesi
 
@@ -470,16 +548,24 @@ Aynı diskte duran yedek, disk gittiğinde beraber gider.
 
 ## Kapsamda olmayanlar
 
-Spesifikasyona uygun olarak bu sürümde yok: çok dillilik (veri modeli buna kapalı
-değil), acil durum/personel çağır butonu, Yemeksepeti/Trendyol yorumları, native
-mobil uygulama.
+Bilinçli olarak yok: acil durum/personel çağır butonu, native mobil uygulama,
+masadan sipariş/ödeme (yalnızca geri bildirim + fotoğraflı menü — sipariş
+platformlarına yönlendirme var, sipariş almıyor).
 
-Hâlâ eksik olanlar: fotoğraf yükleme, geri kazanma kuponları (tablo hazır,
-arayüz yok), WhatsApp/Telegram bildirimi, aylık rapor (haftalık var), QR süre
-aşımı (`qr_expires_at` alanı ve kontrolü hazır, süre atayan arayüz yok).
+Hâlâ eksik olanlar: geri kazanma kuponları (tablo hazır, üretim/gösterim
+arayüzü yok), WhatsApp/Telegram bildirimi (`Notification.channel` bu ikisini
+destekliyor ama yalnızca e-posta gönderiliyor), aylık rapor (haftalık var),
+QR süre aşımı (`qrExpiresAt` alanı ve kontrolü hazır, süre atayan arayüz yok),
+Gizlilik Politikası/Kullanım Koşulları gibi ayrı yasal sayfalar (KVKK
+aydınlatma metni kayıt akışında var, ayrı statik sayfa değil).
 
 Vardiya etiketi her kayda otomatik yazılır (sabah/akşam/gece) ve detayda görünür;
-vardiya bazlı raporlama henüz yok.
+vardiya bazlı raporlama var (`/admin/kirilim`).
+
+**Var olanlar (bu bölümde "yok" sanılmasın diye):** çok dilli müşteri ekranı
+(TR/EN/AR/RU, otomatik algılama + elle seçim), müşteriye panelden SMS/e-posta
+yanıtı, sysadmin ödeme/abonelik takibi, ürün bazlı puanlama, şartlı anket
+dallanması, Instagram/Wi-Fi/online sipariş linkleri karşılama ekranında.
 
 ## Bakım komutları
 

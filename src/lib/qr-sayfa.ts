@@ -39,15 +39,5 @@ export async function qrSayfaVerisi(slug: string, tableParam: string) {
   };
 }
 
-/** Menüde gösterilecek bölümler ve ürünler (tükenenler dahil, pasifler hariç). */
-export async function menuIcerigi(businessId: string) {
-  return prisma.menuCategory.findMany({
-    where: { businessId, active: true },
-    orderBy: { sortOrder: "asc" },
-    include: {
-      // Tükenen ürün menüde kalır ama işaretli görünür: "vardı ama bugün yok"
-      // bilgisi, ürünün hiç olmaması kadar değerli.
-      items: { where: { active: true }, orderBy: { sortOrder: "asc" } },
-    },
-  });
-}
+// Menü içeriği önbellekten okunuyor; bkz. src/lib/menu-onbellek.ts.
+export { menuIcerigi } from "./menu-onbellek";
