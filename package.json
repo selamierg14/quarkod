@@ -23,7 +23,8 @@
     "demo:menu": "tsx scripts/demo-menu.ts",
     "sifre:sifirla": "tsx scripts/sifre-sifirla.ts",
     "isler:gunluk": "tsx scripts/isler.ts",
-    "demo:kullanicilar": "tsx scripts/demo-kullanicilar.ts"
+    "demo:kullanicilar": "tsx scripts/demo-kullanicilar.ts",
+    "version:info": "node -e \"console.log('Quarkod v' + require('./package.json').version)\""
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",

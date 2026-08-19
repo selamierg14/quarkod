@@ -1,3 +1,8 @@
+import packageJson from "../../package.json";
+
+/** Uygulama sürümü — package.json ile senkron */
+export const APP_VERSION = packageJson.version;
+
 /** Rollerin panelde görünen adları. Tek yerde dursun ki ekranlar ayrışmasın. */
 export const ROL_ADLARI: Record<string, string> = {
   superadmin: "Platform yöneticisi",

@@ -1,3 +1,4 @@
+import { APP_VERSION } from "@/lib/constants";
 import { requireSuperadmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { DURUM_METNI, ZAMANLI_ISLER, isDurumu, type IsDurumu } from "@/lib/isler";
@@ -49,9 +50,41 @@ export default async function SistemPage() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        title="Sistem sağlığı"
-        description="Zamanlanmış bakım işleri. Bunlar sunucuda cron'a bağlanmazsa hiç çalışmaz ve kimse fark etmez — bu ekran o sessiz arızayı görünür kılar."
+        title="Sistem sağlığı ve Bilgileri"
+        description="Sistem sürümü, ortam durumu ve zamanlanmış arka plan işleri."
       />
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Card>
+          <p className="text-caption text-ink-muted">Uygulama Sürümü</p>
+          <div className="mt-1 flex items-center gap-2">
+            <span className="text-xl font-bold tracking-tight text-ink font-mono">
+              v{APP_VERSION}
+            </span>
+            <Badge tone="notr">SemVer</Badge>
+          </div>
+        </Card>
+        <Card>
+          <p className="text-caption text-ink-muted">Çalışma Ortamı</p>
+          <div className="mt-1 flex items-center gap-2">
+            <span className="text-xl font-bold tracking-tight text-ink capitalize">
+              {process.env.NODE_ENV ?? "development"}
+            </span>
+            <Badge tone={process.env.NODE_ENV === "production" ? "basari" : "bilgi"}>
+              {process.env.VERCEL ? "Vercel" : "Node.js"}
+            </Badge>
+          </div>
+        </Card>
+        <Card>
+          <p className="text-caption text-ink-muted">Veritabanı</p>
+          <div className="mt-1 flex items-center gap-2">
+            <span className="text-xl font-bold tracking-tight text-ink">
+              PostgreSQL
+            </span>
+            <Badge tone="basari">Neon Cloud</Badge>
+          </div>
+        </Card>
+      </div>
 
       {sorunlu.length > 0 ? (
         <Alert tone="hata" baslik={`${sorunlu.length} iş beklendiği gibi çalışmıyor`}>

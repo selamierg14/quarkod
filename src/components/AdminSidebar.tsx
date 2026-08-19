@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { aktifMi, type IkonAdi, type NavGrup } from "@/lib/panel";
+import { APP_VERSION } from "@/lib/constants";
 
 /**
  * Panelin sol gezinme çubuğu.
@@ -54,9 +55,14 @@ export function AdminSidebar({
           </svg>
         </button>
         {genis ? (
-          <Link href="/admin" className="truncate font-semibold tracking-tight text-ink">
-            Memnuniyet Paneli
-          </Link>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <Link href="/admin" className="truncate font-semibold tracking-tight text-ink">
+              Memnuniyet Paneli
+            </Link>
+            <span className="shrink-0 rounded-chip bg-sunken px-1.5 py-0.5 font-mono text-[10px] font-medium text-ink-muted">
+              v{APP_VERSION}
+            </span>
+          </div>
         ) : null}
       </div>
 
@@ -128,6 +134,11 @@ export function AdminSidebar({
           ) : null}
         </Link>
         {cikis}
+        {genis ? (
+          <p className="mt-2.5 text-center font-mono text-[11px] text-ink-faint">
+            Quarkod v{APP_VERSION}
+          </p>
+        ) : null}
       </div>
     </div>
   );
