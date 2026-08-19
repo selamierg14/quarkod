@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { aktifMi, grupAktifMi, type IkonAdi, type NavGrup } from "@/lib/panel";
 import { APP_VERSION } from "@/lib/constants";
+import { ProfilAvatarButton } from "./ProfilAvatarButton";
 
 /**
  * Panelin sol gezinme çubuğu.
@@ -239,9 +240,10 @@ export function AdminSidebar({
             <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <Link href="/admin" className="font-semibold tracking-tight text-ink">
+        <Link href="/admin" className="flex-1 font-semibold tracking-tight text-ink">
           Memnuniyet Paneli
         </Link>
+        <ProfilAvatarButton ad={kullaniciAdi} />
       </div>
 
       {/* Mobil çekmece */}

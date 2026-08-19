@@ -1,8 +1,9 @@
-import { requireUser } from "@/lib/auth";
+import { requireUser, visibleBusinesses } from "@/lib/auth";
 import { getActiveAccount } from "@/lib/impersonation";
 import { exitAccount } from "./hesaplar/actions";
 import { logout } from "../giris/actions";
 import { AdminSidebar } from "@/components/AdminSidebar";
+import { ProfilAvatarButton } from "@/components/ProfilAvatarButton";
 import { prisma } from "@/lib/db";
 import { ROL_ADLARI } from "@/lib/constants";
 import { abonelikUyarisi } from "@/lib/abonelik";
@@ -17,10 +18,15 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   // Menü, kullanıcının gerçekten girebildiği sayfaları göstermeli: platform
   // yöneticisi bir hesaba girmediği sürece kiracı ekranlarını hiç görmüyor.
   const modu = panelModu(user.role, Boolean(aktifHesap));
-  const gruplar = panelMenusu(modu, user.role, {
-    menuIzni: user.menuIzni ?? true,
-    anketIzni: user.anketIzni ?? true,
-  });
+  // "İşletmeler" menüsündeki "Düzenle" kısayolu için: tek işletmeli hesapta
+  // doğrudan o işletmenin ayarlarına gider.
+  const isletmeler = modu === "kiraci" ? await visibleBusinesses(user) : [];
+  const gruplar = panelMenusu(
+    modu,
+    user.role,
+    { menuIzni: user.menuIzni ?? true, anketIzni: user.anketIzni ?? true },
+    isletmeler.length === 1 ? isletmeler[0].id : null,
+  );
 
   // Abonelik uyarısı: hem süre dolmadan "yenileyin" hatırlatması, hem de
   // dolduktan sonra "panel salt okunur" bilgisi. Süresi dolan sahip artık
@@ -55,6 +61,15 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
+        {/* Sağ üstte sabit profil rozeti: uzun bir listede kendi satırını
+            görüp "profilime nasıl gidiyordum" diye sidebar'ın altını
+            aramak yerine buradan tek tıkla gidilsin. Mobilde bu rozet
+            AdminSidebar'ın kendi başlık çubuğunda — burada tekrar
+            göstermek iki üst üste çubuk demek olurdu. */}
+        <div className="print-hidden hidden items-center justify-end border-b border-line bg-surface px-4 py-2.5 lg:flex lg:px-8">
+          <ProfilAvatarButton ad={user.name} />
+        </div>
+
         {/* Platform yöneticisi bir kiracıyı görüntülüyorsa bu bant hep üstte
             durur: yanlışlıkla müşterinin verisinde işlem yapmayı önler.
             `sticky` şart — sayfayla birlikte kayıp gittiğinde uzun bir listede

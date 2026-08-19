@@ -81,6 +81,8 @@ export function panelMenusu(
   modu: PanelModu,
   role: Role,
   izinler: ModulIzinleri = { menuIzni: true, anketIzni: true },
+  /** Hesabın tek işletmesi varsa kimliği — "Düzenle" kısayolu doğrudan ona gider. */
+  tekIsletmeId: string | null = null,
 ): NavGrup[] {
   if (modu === "platform") {
     return [
@@ -140,7 +142,21 @@ export function panelMenusu(
   }
   if (yonetici(role)) {
     yonetim.push(
-      { href: "/admin/isletmeler", label: "İşletmeler", ikon: "bina" },
+      {
+        href: "/admin/isletmeler",
+        label: "İşletmeler",
+        ikon: "bina",
+        // Birden fazla işletmesi olan hesapta "Düzenle" tek bir hedefe
+        // gidemez — o zaman listeden seçilir, alt link eklenmez.
+        ...(tekIsletmeId
+          ? {
+              altLinkler: [
+                { href: "/admin/isletmeler", label: "Listele", exact: true },
+                { href: `/admin/isletmeler/${tekIsletmeId}`, label: "Düzenle" },
+              ],
+            }
+          : {}),
+      },
       {
         href: "/admin/kullanicilar",
         label: "Kullanıcılar",
