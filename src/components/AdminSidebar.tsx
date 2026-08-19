@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { aktifMi, type IkonAdi, type NavGrup } from "@/lib/panel";
+import { aktifMi, grupAktifMi, type IkonAdi, type NavGrup } from "@/lib/panel";
 import { APP_VERSION } from "@/lib/constants";
 
 /**
@@ -32,6 +32,20 @@ export function AdminSidebar({
   const pathname = usePathname();
   const [genis, setGenis] = useState(true);
   const [mobilAcik, setMobilAcik] = useState(false);
+  // Alt listesi olan satırlar (ör. Kullanıcılar > Listele/Ekle) açılır-
+  // kapanır. İçindeki bir sayfa aktifse grup varsayılan açık gelir; kullanıcı
+  // elle açıp kapatınca bu tercih (override) pathname değişse de korunur.
+  const [acikOverride, setAcikOverride] = useState<Map<string, boolean>>(
+    () => new Map(),
+  );
+
+  function grupAcikMi(href: string, varsayilanAktif: boolean): boolean {
+    return acikOverride.has(href) ? acikOverride.get(href)! : varsayilanAktif;
+  }
+
+  function grupAc(href: string, suankiAcikMi: boolean) {
+    setAcikOverride((mevcut) => new Map(mevcut).set(href, !suankiAcikMi));
+  }
 
   const govde = (
     <div className="flex h-full flex-col">
@@ -81,6 +95,74 @@ export function AdminSidebar({
 
             <ul className="flex flex-col gap-0.5">
               {grup.linkler.map((link) => {
+                if (link.altLinkler) {
+                  const grupAktif = grupAktifMi(link, pathname);
+                  const acik = grupAcikMi(link.href, grupAktif);
+                  return (
+                    <li key={link.href}>
+                      <button
+                        type="button"
+                        onClick={() => grupAc(link.href, acik)}
+                        title={genis ? undefined : link.label}
+                        className={`flex w-full items-center gap-2.5 rounded-chip px-2.5 py-2 text-small font-medium transition ${
+                          genis ? "" : "lg:justify-center"
+                        } ${
+                          grupAktif
+                            ? "text-ink"
+                            : "text-ink-soft hover:bg-sunken hover:text-ink"
+                        }`}
+                      >
+                        <Ikon ad={link.ikon} />
+                        <span className={genis ? "flex-1 truncate text-left" : "lg:hidden"}>
+                          {link.label}
+                        </span>
+                        {genis ? (
+                          <svg
+                            viewBox="0 0 24 24"
+                            className={`h-4 w-4 shrink-0 transition-transform ${acik ? "rotate-90" : ""}`}
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                            aria-hidden="true"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 6l6 6-6 6" />
+                          </svg>
+                        ) : null}
+                      </button>
+
+                      {acik && genis ? (
+                        <ul className="mt-0.5 mb-1 flex flex-col gap-0.5 border-l border-line pl-4">
+                          {link.altLinkler.map((alt) => {
+                            const altAktif = aktifMi(alt, pathname);
+                            return (
+                              <li key={alt.href}>
+                                <Link
+                                  href={alt.href}
+                                  aria-current={altAktif ? "page" : undefined}
+                                  onClick={() => setMobilAcik(false)}
+                                  className={`flex items-center justify-between gap-2 rounded-chip px-2.5 py-1.5 text-small transition ${
+                                    altAktif
+                                      ? "bg-ink text-white font-medium"
+                                      : "text-ink-soft hover:bg-sunken hover:text-ink"
+                                  }`}
+                                >
+                                  <span className="truncate">{alt.label}</span>
+                                  {altAktif ? (
+                                    <span
+                                      aria-hidden="true"
+                                      className="h-1.5 w-1.5 shrink-0 rounded-full bg-success"
+                                    />
+                                  ) : null}
+                                </Link>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : null}
+                    </li>
+                  );
+                }
+
                 const aktif = aktifMi(link, pathname);
                 return (
                   <li key={link.href}>

@@ -1,14 +1,9 @@
+import Link from "next/link";
 import { prisma } from "@/lib/db";
-import {
-  actingAccountId,
-  requireOwner,
-  userScope,
-  visibleBusinesses,
-} from "@/lib/auth";
-import { NewUserSection, ResetPasswordForm, ToggleUserButton } from "./UserForms";
+import { requireOwner, userScope } from "@/lib/auth";
+import { ResetPasswordForm, ToggleUserButton } from "./UserForms";
 import { usesSeedPassword } from "./actions";
 import { ROL_ADLARI } from "@/lib/constants";
-import { acilabilirRoller } from "@/lib/panel";
 
 export const dynamic = "force-dynamic";
 
@@ -17,26 +12,11 @@ export const metadata = { title: "Kullanıcılar" };
 export default async function UsersPage() {
   const owner = await requireOwner();
 
-  // Her iki sorgu da hesap kapsamıyla sınırlı: bir kiracı diğerinin
-  // kullanıcılarını veya işletmelerini göremez.
-  const [users, businesses] = await Promise.all([
-    prisma.user.findMany({
-      where: await userScope(owner),
-      orderBy: [{ role: "asc" }, { name: "asc" }],
-      include: { business: true, businesses: { include: { business: true } } },
-    }),
-    visibleBusinesses(owner),
-  ]);
-
-  // Yeni kullanıcının açılacağı hesap: platform yöneticisi için "girilen"
-  // hesap, diğerleri için kendi hesabı.
-  const hedefHesapId = await actingAccountId(owner);
-  const hedefHesap = hedefHesapId
-    ? await prisma.account.findUnique({
-        where: { id: hedefHesapId },
-        select: { name: true },
-      })
-    : null;
+  const users = await prisma.user.findMany({
+    where: await userScope(owner),
+    orderBy: [{ role: "asc" }, { name: "asc" }],
+    include: { business: true, businesses: { include: { business: true } } },
+  });
 
   const seedFlags = await Promise.all(
     users.map(async (user) => [user.id, await usesSeedPassword(user.id)] as const),
@@ -46,7 +26,15 @@ export default async function UsersPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="text-title font-semibold">Kullanıcılar</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-title font-semibold">Kullanıcılar</h1>
+        <Link
+          href="/admin/kullanicilar/ekle"
+          className="rounded-control bg-ink px-4 py-2 text-small font-medium text-white hover:bg-ink-button-hover"
+        >
+          + Yeni kullanıcı
+        </Link>
+      </div>
 
       {seedCount > 0 ? (
         <p className="rounded-control bg-warning-soft px-4 py-3 text-small text-warning-ink">
@@ -124,33 +112,6 @@ export default async function UsersPage() {
           </tbody>
         </table>
       </div>
-
-      <NewUserSection
-        businesses={businesses.map((b) => ({ id: b.id, name: b.name }))}
-        roller={acilabilirRoller(owner.role)}
-        hint={
-          // "Hangi kafeye kullanıcı açıyorum?" sorusu formun en kritik ama en
-          // görünmez parçasıydı: kullanıcı her zaman içinde bulunulan hesaba
-          // açılır ve o hesabın TÜM işletmelerini görür.
-          hedefHesap ? (
-            <>
-              Bu kullanıcı{" "}
-              <span className="font-medium text-ink">{hedefHesap.name}</span>{" "}
-              hesabına açılacak ve bu hesaptaki{" "}
-              {businesses.length > 0 ? (
-                <span className="font-medium text-ink">
-                  {businesses.map((b) => b.name).join(", ")}
-                </span>
-              ) : (
-                "işletmeleri"
-              )}{" "}
-              görebilecek.
-            </>
-          ) : (
-            "Kullanıcı, içinde bulunduğunuz hesaba açılır."
-          )
-        }
-      />
     </div>
   );
 }

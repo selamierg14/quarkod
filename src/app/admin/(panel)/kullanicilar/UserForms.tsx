@@ -21,54 +21,19 @@ const ROL_SECENEKLERI: Record<string, string> = {
 };
 
 /**
- * Yeni kullanıcı formu artık liste sayfasıyla aynı anda görünmüyor: kapalı
- * bir alt modül olarak başlar, "Yeni kullanıcı" düğmesiyle açılır. Sayfa
- * karışık görünmesin diye — kullanıcı sadece ekleme yapacağı zaman formu
- * açsın.
+ * Yeni kullanıcı formu artık liste sayfasıyla aynı sayfada değil, kendi
+ * rotasında (/admin/kullanicilar/ekle) yaşıyor — sol menüde "Kullanıcılar"
+ * altında "Listele" ve "Ekle" ayrı satırlar olarak görünüyor.
  */
-export function NewUserSection({
+export function NewUserForm({
   businesses,
   roller,
   hint,
 }: {
   businesses: Business[];
-  roller: string[];
-  hint: ReactNode;
-}) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <section className="rounded-control bg-surface p-5 ring-1 ring-line">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-caption font-medium tracking-wide text-ink-muted uppercase">
-          Yeni kullanıcı
-        </h2>
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="rounded-chip border border-line px-3 py-1.5 text-small font-medium text-ink-soft hover:bg-canvas"
-        >
-          {open ? "Kapat" : "+ Yeni kullanıcı ekle"}
-        </button>
-      </div>
-
-      {open ? (
-        <div className="mt-4">
-          <div className="mb-4 text-small text-ink-muted">{hint}</div>
-          <NewUserForm businesses={businesses} roller={roller} />
-        </div>
-      ) : null}
-    </section>
-  );
-}
-
-function NewUserForm({
-  businesses,
-  roller,
-}: {
-  businesses: Business[];
   /** Ekleyen kişinin açmaya yetkili olduğu roller — sunucuda da doğrulanır. */
   roller: string[];
+  hint?: ReactNode;
 }) {
   const [role, setRole] = useState(roller[0] ?? "manager");
   const [state, formAction, pending] = useActionState<UserFormState, FormData>(
@@ -78,6 +43,8 @@ function NewUserForm({
 
   return (
     <form action={formAction} className="flex flex-col gap-3">
+      {hint ? <div className="text-small text-ink-muted">{hint}</div> : null}
+
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Ad soyad</span>

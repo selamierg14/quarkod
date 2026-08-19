@@ -37,12 +37,21 @@ export type IkonAdi =
   | "sistem"
   | "profil";
 
+export type AltNavLink = {
+  href: string;
+  label: string;
+  /** Yalnızca tam eşleşmede aktif sayılır (liste kökü, "Ekle" ile karışmasın). */
+  exact?: boolean;
+};
+
 export type NavLink = {
   href: string;
   label: string;
   ikon: IkonAdi;
   /** Yalnızca tam eşleşmede aktif sayılır (kök adres için). */
   exact?: boolean;
+  /** Doluysa satır kendisi bir sayfa değil, açılır bir alt liste başlığıdır. */
+  altLinkler?: AltNavLink[];
 };
 
 export type NavGrup = { baslik: string; linkler: NavLink[] };
@@ -75,7 +84,15 @@ export function panelMenusu(modu: PanelModu, role: Role): NavGrup[] {
           { href: "/admin/hesaplar", label: "Hesaplar", ikon: "hesap" },
           { href: "/admin/abonelikler", label: "Abonelikler", ikon: "abonelik" },
           { href: "/admin/isletmeler", label: "İşletmeler", ikon: "bina" },
-          { href: "/admin/kullanicilar", label: "Kullanıcılar", ikon: "kisi" },
+          {
+            href: "/admin/kullanicilar",
+            label: "Kullanıcılar",
+            ikon: "kisi",
+            altLinkler: [
+              { href: "/admin/kullanicilar", label: "Listele", exact: true },
+              { href: "/admin/kullanicilar/ekle", label: "Ekle" },
+            ],
+          },
         ],
       },
       {
@@ -105,7 +122,15 @@ export function panelMenusu(modu: PanelModu, role: Role): NavGrup[] {
   if (yonetici(role)) {
     yonetim.push(
       { href: "/admin/isletmeler", label: "İşletmeler", ikon: "bina" },
-      { href: "/admin/kullanicilar", label: "Kullanıcılar", ikon: "kisi" },
+      {
+        href: "/admin/kullanicilar",
+        label: "Kullanıcılar",
+        ikon: "kisi",
+        altLinkler: [
+          { href: "/admin/kullanicilar", label: "Listele", exact: true },
+          { href: "/admin/kullanicilar/ekle", label: "Ekle" },
+        ],
+      },
       { href: "/admin/izinler", label: "Pazarlama izinleri", ikon: "izin" },
       { href: "/admin/denetim", label: "İşlem geçmişi", ikon: "denetim" },
     );
@@ -122,6 +147,12 @@ export function panelMenusu(modu: PanelModu, role: Role): NavGrup[] {
 }
 
 /** Adres çubuğundaki yola göre hangi bağlantının aktif olduğunu bulur. */
-export function aktifMi(link: NavLink, pathname: string): boolean {
+export function aktifMi(link: NavLink | AltNavLink, pathname: string): boolean {
   return link.exact ? pathname === link.href : pathname.startsWith(link.href);
+}
+
+/** Bir üst menünün alt linklerinden biri aktifse üst de "açık/aktif" sayılır. */
+export function grupAktifMi(link: NavLink, pathname: string): boolean {
+  if (!link.altLinkler) return aktifMi(link, pathname);
+  return link.altLinkler.some((alt) => aktifMi(alt, pathname));
 }
