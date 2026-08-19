@@ -51,7 +51,7 @@ export function AdminSidebar({
   const govde = (
     <div className="flex h-full flex-col">
       <div
-        className={`flex items-center gap-2 border-b border-line px-3 py-3.5 ${
+        className={`flex items-center gap-2 bg-gradient-to-r from-ink via-ink-strong to-slate-700 px-3 py-3.5 ${
           genis ? "" : "lg:justify-center"
         }`}
       >
@@ -63,7 +63,7 @@ export function AdminSidebar({
             setMobilAcik(false);
           }}
           aria-label={genis ? "Menüyü daralt" : "Menüyü genişlet"}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-chip text-ink-soft transition hover:bg-sunken hover:text-ink"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-chip text-white/80 transition hover:bg-white/10 hover:text-white"
         >
           <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
@@ -71,10 +71,10 @@ export function AdminSidebar({
         </button>
         {genis ? (
           <div className="flex min-w-0 items-center gap-1.5">
-            <Link href="/admin" className="truncate font-semibold tracking-tight text-ink">
+            <Link href="/admin" className="truncate font-semibold tracking-tight text-white">
               Memnuniyet Paneli
             </Link>
-            <span className="shrink-0 rounded-chip bg-sunken px-1.5 py-0.5 font-mono text-[10px] font-medium text-ink-muted">
+            <span className="shrink-0 rounded-chip bg-white/15 px-1.5 py-0.5 font-mono text-[10px] font-medium text-white/80">
               v{APP_VERSION}
             </span>
           </div>
@@ -365,6 +365,13 @@ function Ikon({ ad }: { ad: IkonAdi }) {
         <svg viewBox="0 0 24 24" className={ortak} {...p}>
           <circle cx="12" cy="8" r="3.5" />
           <path d="M5 20a7 7 0 0114 0" />
+        </svg>
+      );
+    case "entegrasyon":
+      return (
+        <svg viewBox="0 0 24 24" className={ortak} {...p}>
+          <path d="M9 3v4M15 3v4M6 7h12l-1 4a5 5 0 01-10 0z" />
+          <path d="M12 15v3m-3 0h6" />
         </svg>
       );
   }

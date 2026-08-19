@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { requireAnketErisim, visibleBusinesses } from "@/lib/auth";
 import { getShiftBreakdown, getTableBreakdown } from "@/lib/stats";
 import { EmptyState } from "@/components/ui";
 import { RaporSekmeleri } from "@/components/RaporSekmeleri";
+import { PeriyotFiltre } from "@/components/PeriyotFiltre";
 
 export const dynamic = "force-dynamic";
 
@@ -47,14 +47,6 @@ export default async function BreakdownPage({
 
   const shiftTotal = shifts.reduce((acc, row) => acc + row.count, 0);
 
-  function href(next: { isletme?: string; gun?: number }) {
-    const params = new URLSearchParams();
-    const isletme = next.isletme ?? (query.isletme && allowedIds.includes(query.isletme) ? query.isletme : "");
-    if (isletme) params.set("isletme", isletme);
-    params.set("gun", String(next.gun ?? days));
-    return `/admin/kirilim?${params.toString()}`;
-  }
-
   return (
     <div className="flex flex-col gap-5">
       <RaporSekmeleri aktif="vardiya" />
@@ -68,47 +60,11 @@ export default async function BreakdownPage({
         </p>
       </div>
 
-      <div className="print-hidden flex flex-wrap gap-2">
-        {businesses.length > 1 ? (
-          <div className="flex flex-wrap gap-1 rounded-control bg-surface p-1 ring-1 ring-line">
-            <Link
-              href={href({ isletme: "" })}
-              className={`rounded-chip px-3 py-1.5 text-small ${
-                !query.isletme ? "bg-ink text-white" : "text-ink-soft"
-              }`}
-            >
-              Hepsi
-            </Link>
-            {businesses.map((business) => (
-              <Link
-                key={business.id}
-                href={href({ isletme: business.id })}
-                className={`rounded-chip px-3 py-1.5 text-small ${
-                  query.isletme === business.id
-                    ? "bg-ink text-white"
-                    : "text-ink-soft"
-                }`}
-              >
-                {business.name}
-              </Link>
-            ))}
-          </div>
-        ) : null}
-
-        <div className="flex gap-1 rounded-control bg-surface p-1 ring-1 ring-line">
-          {PERIODS.map((period) => (
-            <Link
-              key={period.days}
-              href={href({ gun: period.days })}
-              className={`rounded-chip px-3 py-1.5 text-small ${
-                days === period.days ? "bg-ink text-white" : "text-ink-soft"
-              }`}
-            >
-              {period.label}
-            </Link>
-          ))}
-        </div>
-      </div>
+      <PeriyotFiltre
+        baseHref="/admin/kirilim"
+        businesses={businesses}
+        donemler={PERIODS.map((p) => ({ gun: p.days, label: p.label }))}
+      />
 
       <section className="rounded-control bg-surface p-5 ring-1 ring-line">
         <h2 className="text-caption font-medium tracking-wide text-ink-muted uppercase">

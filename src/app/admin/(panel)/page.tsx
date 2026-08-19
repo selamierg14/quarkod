@@ -221,6 +221,7 @@ export default async function AdminHomePage({
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
+            renk="mavi"
             label="Bu haftaki ortalama"
             value={ortalama !== null ? `${ortalama.toFixed(1)} / 5` : "—"}
             trend={
@@ -234,17 +235,20 @@ export default async function AdminHomePage({
             }
           />
           <StatCard
+            renk="mor"
             label="Toplam geri bildirim"
             value={String(toplam)}
             hint={`Son 7 günde ${son7}`}
           />
           <StatCard
+            renk="amber"
             label="Yanıt bekleyen"
             value={String(acik)}
             hint={acik > 0 ? "Eşiğin altında, çözülmemiş" : "Bekleyen şikayet yok"}
             tone={acik > 0 ? "dikkat" : "default"}
           />
           <StatCard
+            renk="yesil"
             label="Google dönüşümü"
             value={googleShown ? `%${Math.round((googleClicked / googleShown) * 100)}` : "—"}
             hint={`${googleClicked} / ${googleShown} müşteri gitti`}

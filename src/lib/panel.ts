@@ -35,7 +35,8 @@ export type IkonAdi =
   | "abonelik"
   | "denetim"
   | "sistem"
-  | "profil";
+  | "profil"
+  | "entegrasyon";
 
 export type AltNavLink = {
   href: string;
@@ -138,7 +139,15 @@ export function panelMenusu(
 
   const yonetim: NavLink[] = [];
   if (izinler.menuIzni) {
-    yonetim.push({ href: "/admin/menu", label: "QR Menü", ikon: "menu" });
+    yonetim.push({
+      href: "/admin/menu",
+      label: "QR Menü",
+      ikon: "menu",
+      altLinkler: [
+        { href: "/admin/menu", label: "Düzenle", exact: true },
+        { href: "/admin/menu/onizle", label: "Listele" },
+      ],
+    });
   }
   if (yonetici(role)) {
     yonetim.push(
@@ -167,6 +176,7 @@ export function panelMenusu(
         ],
       },
       { href: "/admin/izinler", label: "Pazarlama izinleri", ikon: "izin" },
+      { href: "/admin/entegrasyonlar", label: "Entegrasyonlar", ikon: "entegrasyon" },
       { href: "/admin/denetim", label: "İşlem geçmişi", ikon: "denetim" },
     );
   }

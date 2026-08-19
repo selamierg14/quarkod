@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { requireAnketErisim, visibleBusinesses } from "@/lib/auth";
 import { EmptyState } from "@/components/ui";
 import { RaporSekmeleri } from "@/components/RaporSekmeleri";
+import { PeriyotFiltre } from "@/components/PeriyotFiltre";
 import { GUVENILIR_OY_SINIRI, enIyiEnKotu, urunPuanlari } from "@/lib/menu";
 import { getItemRatings } from "@/lib/stats";
 
@@ -42,14 +42,6 @@ export default async function UrunlerPage({
   const { enIyi, enKotu } = enIyiEnKotu(puanlar);
   const toplamOy = satirlar.length;
 
-  const linkTabani = (yeni: Record<string, string>) => {
-    const p = new URLSearchParams();
-    if (query.isletme) p.set("isletme", query.isletme);
-    p.set("gun", String(gun));
-    for (const [k, v] of Object.entries(yeni)) p.set(k, v);
-    return `/admin/urunler?${p.toString()}`;
-  };
-
   return (
     <div className="flex flex-col gap-5">
       <RaporSekmeleri aktif="urunler" />
@@ -62,51 +54,11 @@ export default async function UrunlerPage({
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        {businesses.length > 1 ? (
-          <div className="flex flex-wrap gap-1">
-            <Link
-              href={`/admin/urunler?gun=${gun}`}
-              className={`rounded-chip px-3 py-1.5 text-small ${
-                !query.isletme
-                  ? "bg-ink text-white"
-                  : "bg-surface text-ink-soft ring-1 ring-line"
-              }`}
-            >
-              Tümü
-            </Link>
-            {businesses.map((b) => (
-              <Link
-                key={b.id}
-                href={`/admin/urunler?isletme=${b.id}&gun=${gun}`}
-                className={`rounded-chip px-3 py-1.5 text-small ${
-                  query.isletme === b.id
-                    ? "bg-ink text-white"
-                    : "bg-surface text-ink-soft ring-1 ring-line"
-                }`}
-              >
-                {b.name}
-              </Link>
-            ))}
-          </div>
-        ) : null}
-
-        <div className="flex flex-wrap gap-1">
-          {DONEMLER.map((d) => (
-            <Link
-              key={d.gun}
-              href={linkTabani({ gun: String(d.gun) })}
-              className={`rounded-chip px-3 py-1.5 text-small ${
-                gun === d.gun
-                  ? "bg-ink text-white"
-                  : "bg-surface text-ink-soft ring-1 ring-line"
-              }`}
-            >
-              {d.label}
-            </Link>
-          ))}
-        </div>
-      </div>
+      <PeriyotFiltre
+        baseHref="/admin/urunler"
+        businesses={businesses}
+        donemler={DONEMLER}
+      />
 
       {puanlar.length === 0 ? (
         <EmptyState>
