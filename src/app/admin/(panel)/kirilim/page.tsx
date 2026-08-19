@@ -1,8 +1,10 @@
 import { requireAnketErisim, visibleBusinesses } from "@/lib/auth";
 import { getShiftBreakdown, getTableBreakdown } from "@/lib/stats";
+import { prisma } from "@/lib/db";
 import { EmptyState } from "@/components/ui";
 import { RaporSekmeleri } from "@/components/RaporSekmeleri";
 import { PeriyotFiltre } from "@/components/PeriyotFiltre";
+import { gunEkle, gunBaslangici } from "@/lib/gun";
 
 export const dynamic = "force-dynamic";
 
@@ -40,12 +42,29 @@ export default async function BreakdownPage({
     ? Number(query.gun)
     : 30;
 
-  const [shifts, tables] = await Promise.all([
+  const [shifts, tables, atamalar] = await Promise.all([
     getShiftBreakdown(selected, days),
     getTableBreakdown(selected, days),
+    // "Akşam vardiyasında puan neden düşük" sorusuna cevap vermek için:
+    // o dönemde vardiyaya kimin atandığını da yanına yazıyoruz. Bu bir
+    // istatistik değil, yöneticinin gözle karşılaştırması için ipucu.
+    prisma.shiftAssignment.findMany({
+      where: {
+        businessId: { in: selected },
+        date: { gte: gunBaslangici(gunEkle(new Date(), -days)) },
+      },
+      distinct: ["userId", "shift"],
+      include: { user: { select: { name: true } } },
+    }),
   ]);
 
   const shiftTotal = shifts.reduce((acc, row) => acc + row.count, 0);
+  const personelByShift = new Map<string, string[]>();
+  for (const atama of atamalar) {
+    const liste = personelByShift.get(atama.shift) ?? [];
+    if (!liste.includes(atama.user.name)) liste.push(atama.user.name);
+    personelByShift.set(atama.shift, liste);
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -91,6 +110,11 @@ export default async function BreakdownPage({
                     style={{ width: `${((row.average ?? 0) / 5) * 100}%` }}
                   />
                 </div>
+                {personelByShift.get(row.shift)?.length ? (
+                  <p className="mt-1 text-caption text-ink-faint">
+                    Bu dönem çizelgede: {personelByShift.get(row.shift)!.join(", ")}
+                  </p>
+                ) : null}
               </li>
             ))}
           </ul>

@@ -110,7 +110,7 @@ describe("jeton rolleri", () => {
   });
 
   it("tanımsız rolü reddeder", () => {
-    expect(gecerliRolMu("garson")).toBe(false);
+    expect(gecerliRolMu("kasiyer")).toBe(false);
     expect(gecerliRolMu("viewer")).toBe(true);
   });
 });

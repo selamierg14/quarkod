@@ -47,7 +47,7 @@ export async function allowedBusinessIdsFor(
   db: TenantDb,
   scope: TenantScope,
 ): Promise<string[]> {
-  if (scope.role === "manager") {
+  if (scope.role === "manager" || scope.role === "garson") {
     return scope.businessId ? [scope.businessId] : [IMPOSSIBLE_ID];
   }
 
@@ -84,7 +84,9 @@ export async function canAccessBusinessFor(
   businessId: string,
 ): Promise<boolean> {
   if (!businessId) return false;
-  if (scope.role === "manager") return scope.businessId === businessId;
+  if (scope.role === "manager" || scope.role === "garson") {
+    return scope.businessId === businessId;
+  }
 
   if (scope.role === "bolge") {
     const atanan = await bolgeIsletmeleri(db, scope);

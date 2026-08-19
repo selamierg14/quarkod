@@ -19,7 +19,13 @@ const ROL_SECENEKLERI: Record<string, string> = {
   bolge: "Bölge müdürü (seçili işletmeler)",
   viewer: "Salt okunur (rapor görür, değiştiremez)",
   owner: "Patron (hesabın tamamını yönetir)",
+  garson: "Saha personeli (yalnızca kendi vardiyasını/görevlerini görür)",
 };
+
+/** İşletme seçimi gerektiren roller — tek işletmeye bağlanır. */
+function isletmeGerekir(rol: string): boolean {
+  return rol === "manager" || rol === "garson";
+}
 
 /**
  * Yeni kullanıcı formu artık liste sayfasıyla aynı sayfada değil, kendi
@@ -93,7 +99,7 @@ export function NewUserForm({
           </select>
         </label>
 
-        {role === "manager" ? (
+        {isletmeGerekir(role) ? (
           <label className="flex flex-col gap-1">
             <span className="text-caption text-ink-muted">İşletme</span>
             <select name="businessId" required className={INPUT}>
@@ -267,7 +273,7 @@ export function EditUserForm({
           )}
         </label>
 
-        {!rolSabit && role === "manager" ? (
+        {!rolSabit && isletmeGerekir(role) ? (
           <label className="flex flex-col gap-1">
             <span className="text-caption text-ink-muted">İşletme</span>
             <select name="businessId" defaultValue={user.businessId ?? ""} required className={INPUT}>
@@ -307,7 +313,9 @@ export function EditUserForm({
         ) : null}
       </div>
 
-      {!rolSabit ? (
+      {/* Garson zaten rapor/menü modüllerine hiç giremiyor (kendi vardiya
+          ekranına düşüyor) — bu izinler onun için anlamsız. */}
+      {!rolSabit && role !== "garson" ? (
         <fieldset className="flex flex-col gap-2 rounded-chip border border-line bg-canvas p-3">
           <legend className="px-1 text-caption font-medium tracking-wide text-ink-muted uppercase">
             Modül izinleri

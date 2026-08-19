@@ -374,5 +374,19 @@ function Ikon({ ad }: { ad: IkonAdi }) {
           <path d="M12 15v3m-3 0h6" />
         </svg>
       );
+    case "takvim":
+      return (
+        <svg viewBox="0 0 24 24" className={ortak} {...p}>
+          <rect x="3" y="5" width="18" height="16" rx="2" />
+          <path d="M3 10h18M8 3v4M16 3v4" />
+        </svg>
+      );
+    case "gorev":
+      return (
+        <svg viewBox="0 0 24 24" className={ortak} {...p}>
+          <path d="M9 11l2 2 4-4" />
+          <rect x="3" y="4" width="18" height="17" rx="2" />
+        </svg>
+      );
   }
 }

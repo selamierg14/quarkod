@@ -17,14 +17,14 @@ datasource db {
 /// dayanağı budur — bir hesabın kullanıcısı hiçbir koşulda başka bir hesabın
 /// verisini göremez.
 model Account {
-  id        String  @id @default(cuid())
-  name      String
+  id           String    @id @default(cuid())
+  name         String
   /// Faturalama ve iletişim için hesap sahibinin adresi.
-  email     String?
+  email        String?
   /// Askıya alınan hesabın kullanıcıları panele giremez, QR'ları çalışmaz.
-  active    Boolean @default(true)
+  active       Boolean   @default(true)
   /// "deneme" | "standart" — deneme hesapları self-servis kayıttan gelir.
-  plan      String  @default("standart")
+  plan         String    @default("standart")
   /// Self-servis kayıtta isteğin geldiği IP'nin karması. Aynı IP'den seri
   /// deneme hesabı açılmasını sınırlamak için; ham IP saklanmıyor.
   signupIpHash String?
@@ -32,19 +32,19 @@ model Account {
   /// `active` alanına bakılmaksızın pasif sayılır: kullanıcılar panele
   /// giremez, QR'lar çalışmaz. Veri silinmez — ödeme gelince kaldığı
   /// yerden devam eder.
-  expiresAt DateTime?
+  expiresAt    DateTime?
   /// QR menü modülü. Ayrı satıldığı için hesap düzeyinde açılır; kapalıyken
   /// müşteri karşılama ekranını hiç görmez, doğrudan ankete gider.
-  menuEnabled Boolean @default(false)
+  menuEnabled  Boolean   @default(false)
   /// İYS'de hizmet sağlayıcı kodu. Ticari ileti izinleri bu kodun altındaki
   /// markalara bildirilir.
-  iysCode   String?
+  iysCode      String?
 
   /// Self-servis kayıtta KVKK aydınlatma metninin onaylandığı an ve sürümü.
   /// Onay kutusu işaretleniyordu ama kanıtı saklanmıyordu; "hangi metne,
   /// ne zaman rıza verildi" sorusu sonradan cevaplanabilsin diye tutuluyor.
-  kvkkOnayAt   DateTime?
-  kvkkSurum    String?
+  kvkkOnayAt DateTime?
+  kvkkSurum  String?
 
   createdAt DateTime @default(now())
 
@@ -117,7 +117,7 @@ model Business {
   coverUrl        String?
 
   /// QR karşılama ekranında ikon olarak gösterilir.
-  instagramUrl String?
+  instagramUrl       String?
   /// QR menünün tepesinde görünen duyuru şeridi ("Hafta sonu canlı müzik").
   /// Metin dolu kalsa da şerit ayrı bir anahtarla kapatılabilir: kampanya
   /// bittiğinde metni silmek yerine kapatıp sonra geri açmak isteniyor.
@@ -125,8 +125,8 @@ model Business {
   announcementActive Boolean @default(false)
   /// QR karşılama ekranındaki Wi-Fi butonu için. İkisi de doluysa buton
   /// SSID + şifreyi kopyalanabilir şekilde gösterir.
-  wifiSsid     String?
-  wifiPassword String?
+  wifiSsid           String?
+  wifiPassword       String?
 
   /// Online sipariş platformlarının işletmeye özel sayfa linkleri. Dolu
   /// olanlar QR karşılama ekranında platform butonu olarak görünür; müşteri
@@ -143,21 +143,104 @@ model Business {
 
   createdAt DateTime @default(now())
 
-  account        Account            @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  categories     CategoryTemplate[]
-  tables         Table[]
-  feedbacks      Feedback[]
-  users          User[]
-  coupons        Coupon[]
-  surveyViews    SurveyView[]
-  consents       MarketingConsent[]
-  menuCategories MenuCategory[]
-  menuItems      MenuItem[]
-  itemRatings    ItemRating[]
-  bolgeMudurleri UserBusiness[]
+  account              Account               @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  categories           CategoryTemplate[]
+  tables               Table[]
+  feedbacks            Feedback[]
+  users                User[]
+  coupons              Coupon[]
+  surveyViews          SurveyView[]
+  consents             MarketingConsent[]
+  menuCategories       MenuCategory[]
+  menuItems            MenuItem[]
+  itemRatings          ItemRating[]
+  bolgeMudurleri       UserBusiness[]
+  shiftAssignments     ShiftAssignment[]
+  shiftNotes           ShiftNote[]
+  checklistItems       ChecklistItem[]
+  checklistCompletions ChecklistCompletion[]
 
   @@index([accountId])
   @@map("businesses")
+}
+
+/// Bir personelin belirli bir güne ve vardiyaya atanması.
+///
+/// Vardiya etiketi geri bildirimde zaten tutuluyordu ama "o vardiyada kim
+/// çalışıyordu" hiçbir yerde yoktu — bu ikisi birleşmeden "akşam vardiyasında
+/// puanlar neden düşük" sorusu cevaplanamıyordu.
+model ShiftAssignment {
+  id         String   @id @default(cuid())
+  businessId String
+  userId     String
+  /// Saat kısmı önemsiz; sadece gün. Yerel saatle 00:00'a sabitlenir.
+  date       DateTime
+  /// "sabah" | "aksam" | "gece" — SHIFTS ile aynı sözlük.
+  shift      String
+  createdAt  DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, userId, date, shift])
+  @@index([businessId, date])
+  @@index([userId, date])
+  @@map("shift_assignments")
+}
+
+/// Vardiya devir notu: "masa 5'te sorun oldu, dikkat" gibi bir sonraki
+/// vardiyaya bırakılan kısa not.
+model ShiftNote {
+  id         String   @id @default(cuid())
+  businessId String
+  date       DateTime
+  shift      String
+  authorId   String
+  text       String
+  createdAt  DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  author   User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, date])
+  @@map("shift_notes")
+}
+
+/// Açılış/kapanış görev şablonu — işletme bazında tanımlanır, her gün aynı
+/// liste tekrar sorulur.
+model ChecklistItem {
+  id         String  @id @default(cuid())
+  businessId String
+  label      String
+  /// "acilis" | "kapanis"
+  gorev      String
+  sortOrder  Int     @default(0)
+  active     Boolean @default(true)
+
+  business    Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  completions ChecklistCompletion[]
+
+  @@index([businessId, gorev, sortOrder])
+  @@map("checklist_items")
+}
+
+/// Bir görevin belirli bir günde tamamlandığı kayıt. Aynı gün aynı görev
+/// yalnızca bir kez işaretlenir — kim, ne zaman tamamladı burada durur.
+model ChecklistCompletion {
+  id            String   @id @default(cuid())
+  itemId        String
+  businessId    String
+  date          DateTime
+  completedById String
+  completedAt   DateTime @default(now())
+
+  item        ChecklistItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  business    Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  completedBy User          @relation(fields: [completedById], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, date])
+  @@index([businessId, date])
+  @@map("checklist_completions")
 }
 
 /// Her işletmenin anket kategorileri. Admin panelinden düzenlenebilir.
@@ -166,7 +249,7 @@ model Business {
 /// Aktör adı ve rolü o anki haliyle kopyalanır: kullanıcı sonradan silinse
 /// ya da rolü değişse bile kaydın anlamı bozulmasın.
 model AuditLog {
-  id        String @id @default(cuid())
+  id        String   @id @default(cuid())
   /// Etkilenen kiracı. Platform işlemlerinde null olabilir.
   accountId String?
   actorId   String?
@@ -204,11 +287,11 @@ model JobRun {
 }
 
 model CategoryTemplate {
-  id         String  @id @default(cuid())
-  businessId String
-  name       String
-  sortOrder  Int     @default(0)
-  active     Boolean @default(true)
+  id             String  @id @default(cuid())
+  businessId     String
+  name           String
+  sortOrder      Int     @default(0)
+  active         Boolean @default(true)
   /// Düşük puan verildiğinde açılan "hangi alanda?" seçenekleri, virgülle
   /// ayrılmış. Boşsa kategori adına göre akıllı varsayılan kullanılır
   /// (bkz. src/lib/anket-detay.ts) — işletme hiç ayar yapmadan da çalışsın.
@@ -244,7 +327,7 @@ model Table {
 }
 
 model Feedback {
-  id            String @id @default(cuid())
+  id            String  @id @default(cuid())
   businessId    String
   tableId       String?
   overallRating Int
@@ -377,12 +460,12 @@ model MenuItem {
 /// Genel puandan ayrı tutuluyor: "servis yavaştı ama tatlı harikaydı"
 /// diyebilmek, işletmenin sorunu nerede arayacağını bilmesi demek.
 model ItemRating {
-  id         String @id @default(cuid())
+  id         String  @id @default(cuid())
   feedbackId String
   businessId String
   menuItemId String?
 
-  rating Int
+  rating   Int
   /// Puanlandığı andaki ürün adı. Ürün sonradan silinse ya da adı değişse
   /// eski raporlar anlamsızlaşmasın diye kayda kopyalanıyor; menuItemId
   /// silinmede null'a düşer, isim kalır.
@@ -419,9 +502,11 @@ model User {
   /// "bolge"      (bölge müdürü — kendisine atanmış birden çok işletme)
   /// "manager"    (yalnızca kendi işletmesi)
   /// "viewer"     (salt okunur — hesabın tamamını görür, hiçbir şeyi değiştiremez)
+  /// "garson"     (saha personeli — yalnızca kendi vardiyasını ve görevlerini
+  ///               görür; rapor/ayar ekranlarına hiç girmez)
   role         String
-  /// Yalnızca "manager" için tek işletme. Bölge müdürünün işletmeleri
-  /// UserBusiness tablosunda; owner/viewer/superadmin için null.
+  /// Yalnızca "manager"/"garson" için tek işletme. Bölge müdürünün
+  /// işletmeleri UserBusiness tablosunda; owner/viewer/superadmin için null.
   businessId   String?
   active       Boolean @default(true)
 
@@ -440,10 +525,13 @@ model User {
 
   createdAt DateTime @default(now())
 
-  account    Account?       @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  business   Business?      @relation(fields: [businessId], references: [id], onDelete: SetNull)
-  otpCodes   OtpCode[]
-  businesses UserBusiness[]
+  account              Account?              @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  business             Business?             @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  otpCodes             OtpCode[]
+  businesses           UserBusiness[]
+  shiftAssignments     ShiftAssignment[]
+  shiftNotes           ShiftNote[]
+  checklistCompletions ChecklistCompletion[]
 
   @@index([accountId])
   @@map("users")
@@ -557,11 +645,11 @@ model MarketingConsent {
   /// İYS "type": ARAMA | MESAJ | EPOSTA
   channel       String
   /// İYS "recipientType": BIREYSEL | TACIR
-  recipientType String @default("BIREYSEL")
+  recipientType String   @default("BIREYSEL")
   /// İYS "status": ONAY | RET
-  status        String @default("ONAY")
+  status        String   @default("ONAY")
   /// İYS "source": izin nereden alındı (HS_WEB, HS_MOBIL...).
-  source        String @default("HS_WEB")
+  source        String   @default("HS_WEB")
   /// İYS "consentDate" — izin/ret anı.
   consentAt     DateTime
   /// Onaylanan metnin sürümü.

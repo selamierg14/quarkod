@@ -136,7 +136,7 @@ describe("açılabilir roller", () => {
     // bizim göremediğimiz sahipler türemesin.
     const owner = acilabilirRoller("owner");
     expect(owner).not.toContain("owner");
-    expect(owner).toEqual(["bolge", "manager", "viewer"]);
+    expect(owner).toEqual(["bolge", "manager", "viewer", "garson"]);
   });
 
   it("platform yöneticisi sahip açabilir", () => {

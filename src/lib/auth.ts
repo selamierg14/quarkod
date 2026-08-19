@@ -187,6 +187,10 @@ export async function requireSuperadmin(): Promise<SessionUser> {
  */
 export async function requireTenant(): Promise<SessionUser> {
   const user = await requireUser();
+  // Saha personeli (garson) rapor/ayar ekranlarına hiç girmez — kendi
+  // vardiya/görev ekranına düşer. Bu kapı olmasaydı requireTenant'a bağlı
+  // her sayfa (Özet, Geri bildirimler, QR Menü...) garsona da açık kalırdı.
+  if (user.role === "garson") redirect("/admin/vardiyalarim");
   if (user.role === "superadmin" && !(await effectiveAccountId(user))) {
     redirect("/admin/hesaplar");
   }
@@ -213,6 +217,16 @@ export async function requireMenuErisim(): Promise<SessionUser> {
 export async function requireAnketErisim(): Promise<SessionUser> {
   const user = await requireTenant();
   if (!user.anketIzni) redirect("/admin");
+  return user;
+}
+
+/**
+ * Vardiya çizelgesi ve görev şablonu — planlayan taraf. Salt okunur
+ * kullanıcı buradan da yazamaz; garson zaten requireTenant'ta ayrılıyor.
+ */
+export async function requirePersonelYonetimi(): Promise<SessionUser> {
+  const user = await requireTenant();
+  if (user.role === "viewer") redirect("/admin");
   return user;
 }
 

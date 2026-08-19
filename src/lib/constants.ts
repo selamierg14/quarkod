@@ -10,6 +10,7 @@ export const ROL_ADLARI: Record<string, string> = {
   bolge: "Bölge müdürü",
   manager: "İşletme sorumlusu",
   viewer: "Salt okunur",
+  garson: "Saha personeli",
 };
 
 /** İşletme türleri — kategori şablonlarının varsayılanını belirler. */

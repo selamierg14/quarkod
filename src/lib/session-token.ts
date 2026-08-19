@@ -12,6 +12,8 @@ export const SESSION_MAX_AGE = 60 * 60 * 12; // 12 saat
  * superadmin — platformu işleten taraf; tüm hesapları yönetir.
  * owner      — hesabın sahibi; yalnızca kendi hesabındaki işletmeler.
  * manager    — yalnızca kendi işletmesi.
+ * garson     — saha personeli; yalnızca kendi vardiyasını ve günlük
+ *              görevlerini görür, rapor/ayar ekranlarına hiç girmez.
  */
 export const ROLLER = [
   "superadmin",
@@ -19,6 +21,7 @@ export const ROLLER = [
   "bolge",
   "manager",
   "viewer",
+  "garson",
 ] as const;
 
 export type Role = (typeof ROLLER)[number];

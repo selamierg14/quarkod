@@ -65,8 +65,8 @@ export async function createUser(
     // Aksi halde bir müşteri hesabında kimin sorumlu olduğu belirsizleşir.
     return { error: "Bu rolü açma yetkiniz yok." };
   }
-  if (role === "manager" && !businessId) {
-    return { error: "İşletme sorumlusu için bir işletme seçin." };
+  if ((role === "manager" || role === "garson") && !businessId) {
+    return { error: "Bir işletme seçin." };
   }
   if (role === "bolge" && bolgeIsletmeleri.length === 0) {
     return { error: "Bölge müdürü için en az bir işletme seçin." };
@@ -113,7 +113,7 @@ export async function createUser(
         email,
         phone,
         role,
-        businessId: role === "manager" ? businessId : null,
+        businessId: role === "manager" || role === "garson" ? businessId : null,
         passwordHash: await hashPassword(password),
         ...(role === "bolge"
           ? {
@@ -194,8 +194,8 @@ export async function updateUser(
   }
   const etkinRol = target.role === "owner" ? "owner" : role;
 
-  if (etkinRol === "manager" && !businessId) {
-    return { error: "İşletme sorumlusu için bir işletme seçin." };
+  if ((etkinRol === "manager" || etkinRol === "garson") && !businessId) {
+    return { error: "Bir işletme seçin." };
   }
   if (etkinRol === "bolge" && bolgeIsletmeleri.length === 0) {
     return { error: "Bölge müdürü için en az bir işletme seçin." };
@@ -219,7 +219,7 @@ export async function updateUser(
           email,
           phone,
           role: etkinRol,
-          businessId: etkinRol === "manager" ? businessId : null,
+          businessId: etkinRol === "manager" || etkinRol === "garson" ? businessId : null,
           menuIzni,
           anketIzni,
         },

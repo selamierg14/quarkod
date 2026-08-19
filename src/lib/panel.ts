@@ -11,13 +11,16 @@ import type { Role } from "./session-token";
  *   kaydına ve sistem sağlığına bakar. Kiracı verisi görmez.
  * - `kiraci`:   bir işletmenin günlük işi. Platform yöneticisi bir hesaba
  *   "girdiğinde" (impersonation) o da bu modu görür.
+ * - `personel`: saha personeli (garson). Rapor, ayar, kullanıcı ekranı
+ *   yok — yalnızca kendi vardiyasını ve günlük görevleri görür.
  *
  * Menü ile sayfa korumaları aynı kaynaktan beslenmeli: burada görünen her
  * bağlantının arkasında o rolü kabul eden bir `require*` kapısı var.
  */
-export type PanelModu = "platform" | "kiraci";
+export type PanelModu = "platform" | "kiraci" | "personel";
 
 export function panelModu(role: Role, aktifHesapVar: boolean): PanelModu {
+  if (role === "garson") return "personel";
   return role === "superadmin" && !aktifHesapVar ? "platform" : "kiraci";
 }
 
@@ -36,7 +39,9 @@ export type IkonAdi =
   | "denetim"
   | "sistem"
   | "profil"
-  | "entegrasyon";
+  | "entegrasyon"
+  | "takvim"
+  | "gorev";
 
 export type AltNavLink = {
   href: string;
@@ -71,8 +76,8 @@ function yonetici(role: Role): boolean {
  * müşterinin kendi hesabından bizim göremediğimiz sahipler türeyebiliyordu.
  */
 export function acilabilirRoller(actorRole: Role): Role[] {
-  if (actorRole === "superadmin") return ["owner", "bolge", "manager", "viewer"];
-  if (actorRole === "owner") return ["bolge", "manager", "viewer"];
+  if (actorRole === "superadmin") return ["owner", "bolge", "manager", "viewer", "garson"];
+  if (actorRole === "owner") return ["bolge", "manager", "viewer", "garson"];
   return [];
 }
 
@@ -85,6 +90,18 @@ export function panelMenusu(
   /** Hesabın tek işletmesi varsa kimliği — "Düzenle" kısayolu doğrudan ona gider. */
   tekIsletmeId: string | null = null,
 ): NavGrup[] {
+  if (modu === "personel") {
+    return [
+      {
+        baslik: "Ben",
+        linkler: [
+          { href: "/admin/vardiyalarim", label: "Vardiyalarım", ikon: "takvim", exact: true },
+          { href: "/admin/gorevlerim", label: "Görevlerim", ikon: "gorev" },
+        ],
+      },
+    ];
+  }
+
   if (modu === "platform") {
     return [
       {
@@ -181,11 +198,28 @@ export function panelMenusu(
     );
   }
 
+  // Vardiya çizelgesi ve görev şablonu yalnızca planlayan tarafta (yazma
+  // yetkisi olan owner/bölge/manager); garson zaten "personel" moduna
+  // düşüyor, viewer salt okunur olduğu için buraya girmiyor.
+  const personel: NavLink[] = [];
+  if (role === "owner" || role === "bolge" || role === "manager" || role === "superadmin") {
+    personel.push({
+      href: "/admin/vardiya-planlama",
+      label: "Personel operasyonu",
+      ikon: "takvim",
+      altLinkler: [
+        { href: "/admin/vardiya-planlama", label: "Çizelge", exact: true },
+        { href: "/admin/vardiya-planlama/sablon", label: "Görev şablonu" },
+      ],
+    });
+  }
+
   // "Hesabım/Profil" grubu yok: profile kenar çubuğunun altındaki kullanıcı
   // kartından gidiliyor. Tek satırlık bir grup, menüyü uzatmaktan başka işe
   // yaramıyordu.
   return [
     { baslik: "Günlük", linkler: gunluk },
+    { baslik: "Personel", linkler: personel },
     { baslik: "Yönetim", linkler: yonetim },
     // Her iki modül izni de kapalı bir personel için "Yönetim" boş kalabilir;
     // boş başlık göstermenin anlamı yok.
