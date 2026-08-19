@@ -3,7 +3,9 @@ import { acilabilirRoller, aktifMi, panelMenusu, panelModu } from "./panel";
 
 /** Menüdeki tüm bağlantı adreslerini düz listeye indirger. */
 function adresler(modu: Parameters<typeof panelMenusu>[0], role: Parameters<typeof panelMenusu>[1]) {
-  return panelMenusu(modu, role).flatMap((g) => g.linkler.map((l) => l.href));
+  return panelMenusu(modu, role).flatMap((g) =>
+    g.linkler.flatMap((l) => [l.href, ...(l.altLinkler?.map((alt) => alt.href) ?? [])]),
+  );
 }
 
 describe("panel modu", () => {
@@ -48,6 +50,8 @@ describe("platform menüsü", () => {
       "/admin/abonelikler",
       "/admin/isletmeler",
       "/admin/kullanicilar",
+      "/admin/kullanicilar",
+      "/admin/kullanicilar/ekle",
       "/admin/denetim",
       "/admin/sistem",
     ]);

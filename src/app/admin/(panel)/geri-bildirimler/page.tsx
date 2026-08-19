@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAnketErisim, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { EmptyState, StatusBadge, Stars, formatDateTime } from "@/components/ui";
+import { RaporSekmeleri } from "@/components/RaporSekmeleri";
 import { buildFeedbackWhere, type FeedbackQuery } from "@/lib/feedback-filters";
 import { FilterBar } from "./FilterBar";
 
@@ -50,6 +51,8 @@ export default async function FeedbackListPage({
 
   return (
     <div className="flex flex-col gap-4">
+      <RaporSekmeleri aktif="liste" />
+
       <div className="flex items-baseline justify-between">
         <h1 className="text-title font-semibold">Geri bildirimler</h1>
         <span className="flex items-center gap-3">

@@ -11,6 +11,7 @@ import {
   StatCard,
   StatusBadge,
   Stars,
+  TabLink,
   formatDateTime,
 } from "@/components/ui";
 import { TrendChart } from "@/components/TrendChart";
@@ -173,8 +174,24 @@ export default async function AdminHomePage({
     );
   }
 
+  // Şube karşılaştırma yalnızca birden fazla işletmesi olan sahip/platform
+  // yöneticisi için anlamlı; tek işletmeli hesap bu sekmeyi hiç görmez.
+  const kiyaslamaGoster =
+    businesses.length > 1 && (user.role === "owner" || user.role === "superadmin");
+
   return (
     <div className="flex flex-col gap-7">
+      {kiyaslamaGoster ? (
+        <div className="print-hidden -mb-2 flex gap-1 border-b border-line">
+          <TabLink href="/admin" active>
+            Genel
+          </TabLink>
+          <TabLink href="/admin/kiyaslama" active={false}>
+            Şube karşılaştırma
+          </TabLink>
+        </div>
+      ) : null}
+
       <section>
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h1 className="text-display font-semibold text-ink">{kapsamAdi} — Bugün</h1>

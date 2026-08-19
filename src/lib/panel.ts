@@ -116,16 +116,22 @@ export function panelMenusu(
   ];
   // Geri bildirimler ve QR Menü modül bazlı kısıtlanabilir; sahip/platform
   // yöneticisi her zaman görür (izinler zaten getSession'da true'ya sabitlenir).
+  //
+  // Vardiya & masa ve Ürün puanları eskiden ayrı üst düzey sekmelerdi; aynı
+  // geri bildirim verisinin farklı kesitleri olduğu için tek başlık altında
+  // toplandı — beş dağınık rapor sekmesi yerine tek bir "Geri bildirimler"
+  // modülü, içinde üç görünüm.
   if (izinler.anketIzni) {
-    gunluk.push({ href: "/admin/geri-bildirimler", label: "Geri bildirimler", ikon: "mesaj" });
-  }
-
-  const analiz: NavLink[] = [
-    { href: "/admin/kirilim", label: "Vardiya & masa", ikon: "grafik" },
-    { href: "/admin/urunler", label: "Ürün puanları", ikon: "yildiz" },
-  ];
-  if (yonetici(role)) {
-    analiz.push({ href: "/admin/kiyaslama", label: "Şube karşılaştırma", ikon: "kiyas" });
+    gunluk.push({
+      href: "/admin/geri-bildirimler",
+      label: "Geri bildirimler",
+      ikon: "mesaj",
+      altLinkler: [
+        { href: "/admin/geri-bildirimler", label: "Liste" },
+        { href: "/admin/kirilim", label: "Vardiya & masa" },
+        { href: "/admin/urunler", label: "Ürünler" },
+      ],
+    });
   }
 
   const yonetim: NavLink[] = [];
@@ -154,7 +160,6 @@ export function panelMenusu(
   // yaramıyordu.
   return [
     { baslik: "Günlük", linkler: gunluk },
-    { baslik: "Raporlar", linkler: analiz },
     { baslik: "Yönetim", linkler: yonetim },
     // Her iki modül izni de kapalı bir personel için "Yönetim" boş kalabilir;
     // boş başlık göstermenin anlamı yok.

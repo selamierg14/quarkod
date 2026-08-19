@@ -1,6 +1,6 @@
 import { allowedBusinessIds, requireTenantOwner } from "@/lib/auth";
 import { getBusinessStats } from "@/lib/stats";
-import { EmptyState } from "@/components/ui";
+import { EmptyState, TabLink } from "@/components/ui";
 import { DeltaBadge, TrendChart } from "@/components/TrendChart";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +15,15 @@ export default async function ComparisonPage() {
 
   return (
     <div className="flex flex-col gap-5">
+      <div className="print-hidden -mb-2 flex gap-1 border-b border-line">
+        <TabLink href="/admin" active={false}>
+          Genel
+        </TabLink>
+        <TabLink href="/admin/kiyaslama" active>
+          Şube karşılaştırma
+        </TabLink>
+      </div>
+
       <div>
         <h1 className="text-title font-semibold">Şube karşılaştırma</h1>
         <p className="mt-1 text-small text-ink-muted">

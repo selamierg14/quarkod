@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { requireTenant, visibleBusinesses } from "@/lib/auth";
+import { requireAnketErisim, visibleBusinesses } from "@/lib/auth";
 import { EmptyState } from "@/components/ui";
+import { RaporSekmeleri } from "@/components/RaporSekmeleri";
 import { GUVENILIR_OY_SINIRI, enIyiEnKotu, urunPuanlari } from "@/lib/menu";
 import { getItemRatings } from "@/lib/stats";
 
@@ -26,7 +27,7 @@ export default async function UrunlerPage({
 }: {
   searchParams: Promise<{ isletme?: string; gun?: string }>;
 }) {
-  const user = await requireTenant();
+  const user = await requireAnketErisim();
   const businesses = await visibleBusinesses(user);
   const allowedIds = businesses.map((b) => b.id);
   const query = await searchParams;
@@ -51,6 +52,8 @@ export default async function UrunlerPage({
 
   return (
     <div className="flex flex-col gap-5">
+      <RaporSekmeleri aktif="urunler" />
+
       <div>
         <h1 className="text-title font-semibold">Ürün puanları</h1>
         <p className="mt-1 text-small text-ink-muted">

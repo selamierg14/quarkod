@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { requireTenant, visibleBusinesses } from "@/lib/auth";
+import { requireAnketErisim, visibleBusinesses } from "@/lib/auth";
 import { getShiftBreakdown, getTableBreakdown } from "@/lib/stats";
 import { EmptyState } from "@/components/ui";
+import { RaporSekmeleri } from "@/components/RaporSekmeleri";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ export default async function BreakdownPage({
 }: {
   searchParams: Promise<{ isletme?: string; gun?: string }>;
 }) {
-  const user = await requireTenant();
+  const user = await requireAnketErisim();
   const businesses = await visibleBusinesses(user);
   const allowedIds = businesses.map((b) => b.id);
   const query = await searchParams;
@@ -56,6 +57,8 @@ export default async function BreakdownPage({
 
   return (
     <div className="flex flex-col gap-5">
+      <RaporSekmeleri aktif="vardiya" />
+
       <div>
         <h1 className="text-title font-semibold">Vardiya &amp; masa</h1>
         <p className="mt-1 text-small text-ink-muted">
