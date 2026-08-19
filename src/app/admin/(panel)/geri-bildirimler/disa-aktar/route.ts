@@ -12,6 +12,9 @@ export async function GET(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
   }
+  if (!user.anketIzni) {
+    return NextResponse.json({ error: "Bu modüle erişim izniniz yok." }, { status: 403 });
+  }
 
   const businesses = await visibleBusinesses(user);
   const allowedIds = businesses.map((b) => b.id);

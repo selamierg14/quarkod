@@ -17,7 +17,10 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   // Menü, kullanıcının gerçekten girebildiği sayfaları göstermeli: platform
   // yöneticisi bir hesaba girmediği sürece kiracı ekranlarını hiç görmüyor.
   const modu = panelModu(user.role, Boolean(aktifHesap));
-  const gruplar = panelMenusu(modu, user.role);
+  const gruplar = panelMenusu(modu, user.role, {
+    menuIzni: user.menuIzni ?? true,
+    anketIzni: user.anketIzni ?? true,
+  });
 
   // Abonelik uyarısı: hem süre dolmadan "yenileyin" hatırlatması, hem de
   // dolduktan sonra "panel salt okunur" bilgisi. Süresi dolan sahip artık
@@ -95,7 +98,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
           </div>
         ) : null}
 
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 lg:px-8 lg:py-8">
+        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 lg:px-8 lg:py-8">
           {children}
         </main>
       </div>

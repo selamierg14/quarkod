@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { canAccessBusiness, requireTenant } from "@/lib/auth";
+import { canAccessBusiness, requireAnketErisim } from "@/lib/auth";
 import { yazabilirMi } from "@/lib/session-token";
 import { prisma } from "@/lib/db";
 import { SHIFTS, type Shift } from "@/lib/constants";
@@ -20,7 +20,7 @@ export default async function FeedbackDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const user = await requireTenant();
+  const user = await requireAnketErisim();
   const { id } = await params;
 
   const feedback = await prisma.feedback.findUnique({

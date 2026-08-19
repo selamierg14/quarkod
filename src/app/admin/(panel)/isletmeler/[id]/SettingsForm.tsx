@@ -18,6 +18,7 @@ type Business = {
   notifyThreshold: number;
   googleRedirect: boolean;
   qrCardText: string | null;
+  iysBrandCode: string | null;
   logoUrl: string | null;
   coverUrl: string | null;
   instagramUrl: string | null;
@@ -170,6 +171,19 @@ export function SettingsForm({
           <span className="text-caption text-ink-faint">
             Boş bırakırsanız varsayılan kullanılır. Kısa, karşılığı belli ve süre
             veren cümleler daha çok okutulur.
+          </span>
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-caption text-ink-muted">İYS marka kodu</span>
+          <input
+            name="iysBrandCode"
+            defaultValue={business.iysBrandCode ?? ""}
+            placeholder="ör. 654321"
+            className={INPUT}
+          />
+          <span className="text-caption text-ink-faint">
+            İYS&apos;de bu işletmenin bağlı olduğu marka kodu.
           </span>
         </label>
 

@@ -139,6 +139,119 @@ export async function createUser(
   return { saved: `${name} eklendi. Giriş kullanıcı adı: ${username}` };
 }
 
+/**
+ * Var olan bir kullanıcının bilgilerini, rolünü ve modül izinlerini günceller.
+ *
+ * Şifre burada değişmez — o, ayrı ve denetimi daha sıkı olan "Şifre sıfırla"
+ * akışında kalıyor. Kişi kendi kaydını bu formdan düzenleyemez: rolünü ya da
+ * iznini yanlışlıkla kısıtlayıp kendini kilitleyebilirdi; kendi bilgilerini
+ * Profil sayfasından değiştirir.
+ */
+export async function updateUser(
+  _prev: UserFormState,
+  formData: FormData,
+): Promise<UserFormState> {
+  const actor = await requireOwner();
+  await requireYazma();
+
+  const id = String(formData.get("id") ?? "");
+  if (id === actor.id) {
+    return { error: "Kendi kaydınızı buradan düzenleyemezsiniz. Profil sayfasını kullanın." };
+  }
+
+  const target = await prisma.user.findFirst({ where: { id, ...await userScope(actor) } });
+  if (!target) return { error: "Kullanıcı bulunamadı." };
+
+  const name = String(formData.get("name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const rawUsername = String(formData.get("username") ?? "").trim().toLowerCase();
+  const rawPhone = String(formData.get("phone") ?? "").trim();
+  const role = String(formData.get("role") ?? "");
+  const businessId = String(formData.get("businessId") ?? "");
+  const bolgeIsletmeleri = formData
+    .getAll("bolgeIsletmeleri")
+    .map((v) => String(v))
+    .filter(Boolean);
+  const menuIzni = formData.get("menuIzni") === "on";
+  const anketIzni = formData.get("anketIzni") === "on";
+
+  if (!name) return { error: "Ad soyad gerekli." };
+  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: "Geçerli bir e-posta girin." };
+
+  const username = rawUsername || toUsername(email.split("@")[0]);
+  const usernameSorun = usernameProblem(username);
+  if (usernameSorun) return { error: usernameSorun };
+
+  const phone = normalizePhone(rawPhone);
+  if (!phone) return { error: "Geçerli bir cep telefonu girin (5XX...)." };
+
+  // Hedef kullanıcı zaten "owner" ise rolü değiştirtmiyoruz: sahiplik
+  // aboneliği taşıyan roldür, panelden düşürülmesi platform tarafının işi.
+  if (target.role !== "owner") {
+    if (!gecerliRolMu(role) || !acilabilirRoller(actor.role).includes(role)) {
+      return { error: "Bu rolü atama yetkiniz yok." };
+    }
+  }
+  const etkinRol = target.role === "owner" ? "owner" : role;
+
+  if (etkinRol === "manager" && !businessId) {
+    return { error: "İşletme sorumlusu için bir işletme seçin." };
+  }
+  if (etkinRol === "bolge" && bolgeIsletmeleri.length === 0) {
+    return { error: "Bölge müdürü için en az bir işletme seçin." };
+  }
+  if (businessId && !(await canAccessBusiness(actor, businessId))) {
+    return { error: "Bu işletmeye kullanıcı atama yetkiniz yok." };
+  }
+  for (const bid of bolgeIsletmeleri) {
+    if (!(await canAccessBusiness(actor, bid))) {
+      return { error: "Seçilen işletmelerden birine yetkiniz yok." };
+    }
+  }
+
+  try {
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id },
+        data: {
+          name,
+          username,
+          email,
+          phone,
+          role: etkinRol,
+          businessId: etkinRol === "manager" ? businessId : null,
+          menuIzni,
+          anketIzni,
+        },
+      }),
+      // Bölge atamaları tamamen yeniden yazılır: form o an ekranda ne
+      // gösteriyorsa veritabanı da onu yansıtmalı.
+      prisma.userBusiness.deleteMany({ where: { userId: id } }),
+      ...(etkinRol === "bolge"
+        ? [
+            prisma.userBusiness.createMany({
+              data: bolgeIsletmeleri.map((bid) => ({ userId: id, businessId: bid })),
+            }),
+          ]
+        : []),
+    ]);
+  } catch (error) {
+    const mesaj = uniqueConstraintMessage(error);
+    if (mesaj) return { error: mesaj };
+    throw error;
+  }
+
+  await denetimYaz(actor, "user.update", {
+    entity: "user",
+    entityId: id,
+    detail: `${name} güncellendi`,
+  });
+
+  revalidatePath("/admin/kullanicilar");
+  revalidatePath(`/admin/kullanicilar/${id}/duzenle`);
+  return { saved: "Kullanıcı güncellendi." };
+}
+
 export async function resetPassword(
   _prev: UserFormState,
   formData: FormData,

@@ -55,6 +55,13 @@ export type SessionUser = {
   accountId: string | null;
   /** manager için dolu; owner ve superadmin için null. */
   businessId: string | null;
+  /**
+   * Etkin izinler — yalnızca `getSession()` doldurur (DB'den taze okur);
+   * owner/superadmin için kısıttan bağımsız her zaman true. Jetona
+   * yazılmaz, diğer üretim yerlerinde boş bırakılabilir.
+   */
+  menuIzni?: boolean;
+  anketIzni?: boolean;
 };
 
 /** Jetonun hâlâ geçerli sayılıp sayılmayacağını belirleyen kullanıcı hâli. */

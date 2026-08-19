@@ -156,6 +156,7 @@ export default async function ProfilePage() {
                 notifyThreshold: kendiIsletmesi.notifyThreshold,
                 googleRedirect: kendiIsletmesi.googleRedirect,
                 qrCardText: kendiIsletmesi.qrCardText,
+                iysBrandCode: kendiIsletmesi.iysBrandCode,
                 logoUrl: kendiIsletmesi.logoUrl,
                 coverUrl: kendiIsletmesi.coverUrl,
                 instagramUrl: kendiIsletmesi.instagramUrl,

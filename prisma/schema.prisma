@@ -425,6 +425,14 @@ model User {
   businessId   String?
   active       Boolean @default(true)
 
+  /// Personelin QR Menü modülüne erişip erişemeyeceği. Sahip/platform
+  /// yöneticisi bu kısıtın dışındadır — her zaman erişebilirler; bu yalnızca
+  /// ekip üyelerini (manager/bölge/viewer) modül bazında kısıtlamak için.
+  menuIzni  Boolean @default(true)
+  /// Personelin geri bildirim/anket sonuçlarını görüp göremeyeceği. Aynı
+  /// istisna: sahip/platform yöneticisi her zaman görebilir.
+  anketIzni Boolean @default(true)
+
   /// Şifrenin en son ne zaman değiştiği. Bu andan ÖNCE üretilmiş oturum
   /// jetonları geçersiz sayılır: şifresi çalınan kullanıcı şifresini
   /// değiştirdiğinde saldırganın açık oturumu da kapansın diye.

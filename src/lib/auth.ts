@@ -76,6 +76,8 @@ export async function getSession(): Promise<SessionUser | null> {
       businessId: true,
       active: true,
       passwordChangedAt: true,
+      menuIzni: true,
+      anketIzni: true,
       account: { select: { active: true, expiresAt: true } },
     },
   });
@@ -98,6 +100,9 @@ export async function getSession(): Promise<SessionUser | null> {
   if (iptal || !user) return null;
 
   const role = user.role as Role;
+  // Sahip ve platform yöneticisi modül kısıtının dışında: kısıt yalnızca
+  // ekip üyelerini (manager/bölge/viewer) sınırlamak için var.
+  const sinirsiz = role === "owner" || role === "superadmin";
 
   return {
     id: user.id,
@@ -106,6 +111,8 @@ export async function getSession(): Promise<SessionUser | null> {
     role,
     accountId: user.accountId,
     businessId: user.businessId,
+    menuIzni: sinirsiz || user.menuIzni,
+    anketIzni: sinirsiz || user.anketIzni,
   };
 }
 
@@ -192,6 +199,20 @@ export async function requireTenantOwner(): Promise<SessionUser> {
   if (user.role === "superadmin" && !(await effectiveAccountId(user))) {
     redirect("/admin/hesaplar");
   }
+  return user;
+}
+
+/** QR Menü modülüne erişim izni olmayan personel bu sayfalara giremez. */
+export async function requireMenuErisim(): Promise<SessionUser> {
+  const user = await requireTenant();
+  if (!user.menuIzni) redirect("/admin");
+  return user;
+}
+
+/** Geri bildirim/anket sonuçlarına erişim izni olmayan personel bu sayfalara giremez. */
+export async function requireAnketErisim(): Promise<SessionUser> {
+  const user = await requireTenant();
+  if (!user.anketIzni) redirect("/admin");
   return user;
 }
 

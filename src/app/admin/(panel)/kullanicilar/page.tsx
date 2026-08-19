@@ -98,7 +98,15 @@ export default async function UsersPage() {
                       (user.role === "owner" || user.role === "viewer" ? "Hepsi" : "—"))}
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex items-center justify-end gap-2">
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    {user.id === owner.id ? null : (
+                      <Link
+                        href={`/admin/kullanicilar/${user.id}/duzenle`}
+                        className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas"
+                      >
+                        Düzenle
+                      </Link>
+                    )}
                     <ResetPasswordForm userId={user.id} />
                     <ToggleUserButton
                       userId={user.id}

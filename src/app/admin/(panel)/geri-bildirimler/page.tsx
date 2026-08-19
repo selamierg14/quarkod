@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireTenant, visibleBusinesses } from "@/lib/auth";
+import { requireAnketErisim, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { EmptyState, StatusBadge, Stars, formatDateTime } from "@/components/ui";
 import { buildFeedbackWhere, type FeedbackQuery } from "@/lib/feedback-filters";
@@ -16,7 +16,7 @@ export default async function FeedbackListPage({
 }: {
   searchParams: Promise<FeedbackQuery>;
 }) {
-  const user = await requireTenant();
+  const user = await requireAnketErisim();
   const businesses = await visibleBusinesses(user);
   const allowedIds = businesses.map((b) => b.id);
   const query = await searchParams;

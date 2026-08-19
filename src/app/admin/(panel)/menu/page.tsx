@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireTenant, visibleBusinesses } from "@/lib/auth";
+import { requireMenuErisim, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { EmptyState } from "@/components/ui";
 import { CategoryHeader, ItemRow, NewCategoryForm, NewItemForm } from "./MenuForms";
@@ -13,7 +13,7 @@ export default async function MenuPage({
 }: {
   searchParams: Promise<{ isletme?: string }>;
 }) {
-  const user = await requireTenant();
+  const user = await requireMenuErisim();
   const businesses = await visibleBusinesses(user);
   const query = await searchParams;
 

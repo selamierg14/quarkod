@@ -136,6 +136,7 @@ export default async function AccountsPage() {
                 accountId={account.id}
                 expiresAt={dateInputValue(account.expiresAt)}
                 menuEnabled={account.menuEnabled}
+                iysCode={account.iysCode ?? ""}
               />
 
               {/* --- Hesap sahipleri */}

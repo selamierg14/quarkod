@@ -238,6 +238,7 @@ export async function updateBusiness(
       notifyThreshold: threshold,
       googleRedirect: formData.get("googleRedirect") === "on",
       qrCardText: String(formData.get("qrCardText") ?? "").trim().slice(0, 80) || null,
+      iysBrandCode: String(formData.get("iysBrandCode") ?? "").trim() || null,
       logoUrl,
       coverUrl,
       instagramUrl: instagramUrl || null,

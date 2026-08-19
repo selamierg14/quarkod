@@ -191,11 +191,13 @@ export function SubscriptionForm({
   accountId,
   expiresAt,
   menuEnabled,
+  iysCode,
 }: {
   accountId: string;
   /** yyyy-aa-gg biçiminde ya da boş. */
   expiresAt: string;
   menuEnabled: boolean;
+  iysCode: string;
 }) {
   const [state, formAction, pending] = useActionState<AccountFormState, FormData>(
     updateSubscription,
@@ -219,6 +221,16 @@ export function SubscriptionForm({
           className="h-4 w-4 accent-[var(--color-ink)]"
         />
         QR menü modülü
+      </label>
+
+      <label className="flex flex-col gap-1 pb-2">
+        <span className="text-caption text-ink-muted">İYS hizmet sağlayıcı kodu</span>
+        <input
+          name="iysCode"
+          defaultValue={iysCode}
+          placeholder="ör. 123456"
+          className={`${INPUT} w-36 py-1.5`}
+        />
       </label>
 
       <button

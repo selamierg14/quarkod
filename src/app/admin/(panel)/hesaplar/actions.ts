@@ -267,9 +267,15 @@ export async function updateSubscription(
     return { error: "Tarih geçersiz. Takvimden seçin ya da boş bırakın." };
   }
 
+  const iysCode = String(formData.get("iysCode") ?? "").trim();
+
   await prisma.account.update({
     where: { id },
-    data: { expiresAt, menuEnabled: formData.get("menuEnabled") === "on" },
+    data: {
+      expiresAt,
+      menuEnabled: formData.get("menuEnabled") === "on",
+      iysCode: iysCode || null,
+    },
   });
 
   await denetimYaz(actor, "account.subscription", {

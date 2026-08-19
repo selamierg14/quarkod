@@ -76,6 +76,7 @@ export default async function BusinessDetailPage({
             notifyThreshold: business.notifyThreshold,
             googleRedirect: business.googleRedirect,
             qrCardText: business.qrCardText,
+            iysBrandCode: business.iysBrandCode,
             logoUrl: business.logoUrl,
             coverUrl: business.coverUrl,
             instagramUrl: business.instagramUrl,

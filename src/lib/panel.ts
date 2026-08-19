@@ -75,7 +75,13 @@ export function acilabilirRoller(actorRole: Role): Role[] {
   return [];
 }
 
-export function panelMenusu(modu: PanelModu, role: Role): NavGrup[] {
+export type ModulIzinleri = { menuIzni: boolean; anketIzni: boolean };
+
+export function panelMenusu(
+  modu: PanelModu,
+  role: Role,
+  izinler: ModulIzinleri = { menuIzni: true, anketIzni: true },
+): NavGrup[] {
   if (modu === "platform") {
     return [
       {
@@ -107,8 +113,12 @@ export function panelMenusu(modu: PanelModu, role: Role): NavGrup[] {
 
   const gunluk: NavLink[] = [
     { href: "/admin", label: "Özet", ikon: "pano", exact: true },
-    { href: "/admin/geri-bildirimler", label: "Geri bildirimler", ikon: "mesaj" },
   ];
+  // Geri bildirimler ve QR Menü modül bazlı kısıtlanabilir; sahip/platform
+  // yöneticisi her zaman görür (izinler zaten getSession'da true'ya sabitlenir).
+  if (izinler.anketIzni) {
+    gunluk.push({ href: "/admin/geri-bildirimler", label: "Geri bildirimler", ikon: "mesaj" });
+  }
 
   const analiz: NavLink[] = [
     { href: "/admin/kirilim", label: "Vardiya & masa", ikon: "grafik" },
@@ -118,7 +128,10 @@ export function panelMenusu(modu: PanelModu, role: Role): NavGrup[] {
     analiz.push({ href: "/admin/kiyaslama", label: "Şube karşılaştırma", ikon: "kiyas" });
   }
 
-  const yonetim: NavLink[] = [{ href: "/admin/menu", label: "QR Menü", ikon: "menu" }];
+  const yonetim: NavLink[] = [];
+  if (izinler.menuIzni) {
+    yonetim.push({ href: "/admin/menu", label: "QR Menü", ikon: "menu" });
+  }
   if (yonetici(role)) {
     yonetim.push(
       { href: "/admin/isletmeler", label: "İşletmeler", ikon: "bina" },
@@ -143,7 +156,9 @@ export function panelMenusu(modu: PanelModu, role: Role): NavGrup[] {
     { baslik: "Günlük", linkler: gunluk },
     { baslik: "Raporlar", linkler: analiz },
     { baslik: "Yönetim", linkler: yonetim },
-  ];
+    // Her iki modül izni de kapalı bir personel için "Yönetim" boş kalabilir;
+    // boş başlık göstermenin anlamı yok.
+  ].filter((grup) => grup.linkler.length > 0);
 }
 
 /** Adres çubuğundaki yola göre hangi bağlantının aktif olduğunu bulur. */
