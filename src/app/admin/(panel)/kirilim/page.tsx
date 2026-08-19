@@ -16,9 +16,9 @@ const PERIODS = [
 /** Ortalamaya göre renk: 3'ün altı kırmızı, 4'ün altı sarı. */
 function toneFor(average: number | null): string {
   if (average === null) return "bg-slate-200";
-  if (average < 3) return "bg-danger-soft0";
+  if (average < 3) return "bg-danger";
   if (average < 4) return "bg-rating";
-  return "bg-success-soft0";
+  return "bg-success";
 }
 
 export default async function BreakdownPage({

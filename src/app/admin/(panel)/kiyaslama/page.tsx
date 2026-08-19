@@ -129,10 +129,10 @@ export default async function ComparisonPage() {
                           <div
                             className={`h-full rounded-full ${
                               category.average < 3
-                                ? "bg-danger-soft0"
+                                ? "bg-danger"
                                 : category.average < 4
                                   ? "bg-rating"
-                                  : "bg-success-soft0"
+                                  : "bg-success"
                             }`}
                             style={{ width: `${(category.average / 5) * 100}%` }}
                           />

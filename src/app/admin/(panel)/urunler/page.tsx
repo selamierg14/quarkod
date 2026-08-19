@@ -16,9 +16,9 @@ const DONEMLER = [
 
 /** Ortalamaya göre renk: 3'ün altı kırmızı, 4'ün altı sarı. */
 function renk(ortalama: number): string {
-  if (ortalama < 3) return "bg-danger-soft0";
+  if (ortalama < 3) return "bg-danger";
   if (ortalama < 4) return "bg-rating";
-  return "bg-success-soft0";
+  return "bg-success";
 }
 
 export default async function UrunlerPage({
