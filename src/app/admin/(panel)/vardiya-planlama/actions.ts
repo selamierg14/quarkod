@@ -49,3 +49,41 @@ export async function vardiyaKaldir(formData: FormData): Promise<void> {
   await prisma.shiftAssignment.delete({ where: { id } });
   revalidatePath("/admin/vardiya-planlama");
 }
+
+/**
+ * Değişim talebine karar: onaylanırsa atama tamamen kaldırılır (yöneticinin
+ * çizelgeden yeniden atamasını bekler), reddedilirse personel aynı
+ * vardiyada kalır.
+ */
+export async function degisimKararVer(formData: FormData): Promise<void> {
+  const actor = await requirePersonelYonetimi();
+  await requireYazma();
+
+  const id = String(formData.get("id") ?? "");
+  const karar = String(formData.get("karar") ?? "");
+  if (!["onayla", "reddet"].includes(karar)) return;
+
+  const talep = await prisma.shiftSwapRequest.findUnique({
+    where: { id },
+    include: { assignment: true },
+  });
+  if (!talep || talep.status !== "bekliyor") return;
+  if (!(await canAccessBusiness(actor, talep.assignment.businessId))) return;
+
+  await prisma.$transaction([
+    prisma.shiftSwapRequest.update({
+      where: { id },
+      data: {
+        status: karar === "onayla" ? "onaylandi" : "reddedildi",
+        decidedById: actor.id,
+        decidedAt: new Date(),
+      },
+    }),
+    ...(karar === "onayla"
+      ? [prisma.shiftAssignment.delete({ where: { id: talep.assignmentId } })]
+      : []),
+  ]);
+
+  revalidatePath("/admin/vardiya-planlama");
+  revalidatePath("/admin/vardiyalarim");
+}

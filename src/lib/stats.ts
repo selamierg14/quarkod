@@ -106,6 +106,80 @@ async function averageBetween(
 }
 
 /**
+ * Ortalama "doldurma süresi": anketin açıldığı an (SurveyView) ile
+ * gönderildiği an (Feedback.createdAt) arasındaki fark. Gerçek masa devir
+ * hızı değil — müşterinin QR'ı okutup anketi tamamlamasının ne kadar
+ * sürdüğünün kaba bir göstergesi. Aynı ziyaretçi+masa eşleşmesi üzerinden
+ * hesaplanır; bir saatten uzun aralıklar (muhtemelen alakasız bir önceki
+ * ziyaret) elenir.
+ */
+export async function getDoldurmaSuresi(
+  businessIds: string[],
+  days = 30,
+): Promise<{ ortalamaSaniye: number; adet: number } | null> {
+  const since = daysAgo(days);
+
+  const [feedbacks, views] = await Promise.all([
+    prisma.feedback.findMany({
+      where: {
+        businessId: { in: businessIds },
+        createdAt: { gte: since },
+        visitorId: { not: null },
+        tableId: { not: null },
+      },
+      select: { tableId: true, visitorId: true, createdAt: true },
+    }),
+    prisma.surveyView.findMany({
+      where: {
+        businessId: { in: businessIds },
+        createdAt: { gte: since },
+        visitorId: { not: null },
+        tableId: { not: null },
+      },
+      select: { tableId: true, visitorId: true, createdAt: true },
+    }),
+  ]);
+
+  if (feedbacks.length === 0 || views.length === 0) return null;
+
+  const gorenler = new Map<string, Date[]>();
+  for (const v of views) {
+    const anahtar = `${v.visitorId}:${v.tableId}`;
+    const liste = gorenler.get(anahtar) ?? [];
+    liste.push(v.createdAt);
+    gorenler.set(anahtar, liste);
+  }
+  for (const liste of gorenler.values()) liste.sort((a, b) => a.getTime() - b.getTime());
+
+  let toplamSaniye = 0;
+  let adet = 0;
+  const BIR_SAAT = 60 * 60;
+
+  for (const f of feedbacks) {
+    const anahtar = `${f.visitorId}:${f.tableId}`;
+    const liste = gorenler.get(anahtar);
+    if (!liste) continue;
+
+    // O anketten önceki en yakın görüntüleme.
+    let enYakin: Date | null = null;
+    for (const t of liste) {
+      if (t.getTime() <= f.createdAt.getTime()) enYakin = t;
+      else break;
+    }
+    if (!enYakin) continue;
+
+    const fark = (f.createdAt.getTime() - enYakin.getTime()) / 1000;
+    if (fark > 0 && fark < BIR_SAAT) {
+      toplamSaniye += fark;
+      adet += 1;
+    }
+  }
+
+  if (adet === 0) return null;
+  return { ortalamaSaniye: toplamSaniye / adet, adet };
+}
+
+/**
  * Vardiyaya göre kırılım. Vardiya etiketi her kayda otomatik yazılıyor;
  * "gece vardiyasında puan düşüyor" gibi bir bulgu doğrudan personel kararına
  * dönüştüğü için ayrı bir görünüm hak ediyor.

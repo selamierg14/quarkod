@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { SHIFTS } from "@/lib/constants";
 import { gunAdi, gunBaslangici, gunEkle } from "@/lib/gun";
 import { EmptyState } from "@/components/ui";
+import { DegisimTalebi } from "./DegisimTalebi";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,14 @@ export default async function VardiyalarimPage() {
     orderBy: [{ date: "asc" }, { shift: "asc" }],
     include: { business: { select: { name: true, brandColor: true } } },
   });
+
+  const bekleyenTalepler = atamalar.length
+    ? await prisma.shiftSwapRequest.findMany({
+        where: { assignmentId: { in: atamalar.map((a) => a.id) }, status: "bekliyor" },
+        select: { assignmentId: true },
+      })
+    : [];
+  const bekleyenSet = new Set(bekleyenTalepler.map((t) => t.assignmentId));
 
   const gunler = new Map<string, typeof atamalar>();
   for (const atama of atamalar) {
@@ -72,17 +81,13 @@ export default async function VardiyalarimPage() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {gunAtamalari.map((a) => (
-                    <span
+                    <DegisimTalebi
                       key={a.id}
-                      className={`rounded-chip px-3 py-1.5 text-small font-medium ${
-                        bugunMu
-                          ? "bg-white/15 text-white"
-                          : "bg-sunken text-ink-soft"
-                      }`}
-                    >
-                      {SHIFTS[a.shift as keyof typeof SHIFTS] ?? a.shift}
-                      {gunAtamalari.length > 0 ? ` · ${a.business.name}` : ""}
-                    </span>
+                      assignmentId={a.id}
+                      label={`${SHIFTS[a.shift as keyof typeof SHIFTS] ?? a.shift} · ${a.business.name}`}
+                      bekliyor={bekleyenSet.has(a.id)}
+                      koyu={bugunMu}
+                    />
                   ))}
                 </div>
               </li>

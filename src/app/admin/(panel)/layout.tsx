@@ -3,6 +3,7 @@ import { getActiveAccount } from "@/lib/impersonation";
 import { exitAccount } from "./hesaplar/actions";
 import { logout } from "../giris/actions";
 import { AdminSidebar } from "@/components/AdminSidebar";
+import { PersonelKabuk } from "@/components/PersonelKabuk";
 import { ProfilAvatarButton } from "@/components/ProfilAvatarButton";
 import { prisma } from "@/lib/db";
 import { ROL_ADLARI } from "@/lib/constants";
@@ -38,6 +39,12 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
       })
     : null;
   const uyari = hesap ? abonelikUyarisi(hesap) : null;
+
+  // Saha personeli (garson) tamamen ayrı, sade bir kabuk görüyor — yönetici
+  // sidebar'ının onda karşılığı yok, iki ekranı var.
+  if (modu === "personel") {
+    return <PersonelKabuk ad={user.name}>{children}</PersonelKabuk>;
+  }
 
   return (
     // Mobilde dikey: AdminSidebar'ın mobil başlık çubuğu da bu kabın bir

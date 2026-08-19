@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireUser, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { EmptyState } from "@/components/ui";
@@ -64,9 +65,24 @@ export default async function GorevlerimPage({
       <IsletmeSecici businesses={businesses} seciliId={secili.id} taban="/admin/gorevlerim" />
 
       {gorevler.length === 0 ? (
-        <EmptyState>
-          Bu işletme için henüz görev tanımlı değil. Yöneticiniz &quot;Personel
-          operasyonu → Görev şablonu&quot;ndan ekleyebilir.
+        <EmptyState
+          baslik="Henüz görev tanımlı değil"
+          ikon="☐"
+          aksiyon={
+            user.role === "owner" ||
+            user.role === "manager" ||
+            user.role === "bolge" ||
+            user.role === "superadmin" ? (
+              <Link
+                href="/admin/vardiya-planlama/sablon"
+                className="rounded-control bg-ink px-4 py-2 text-small font-medium text-white hover:bg-ink-button-hover"
+              >
+                + İlk görevi ekle
+              </Link>
+            ) : undefined
+          }
+        >
+          Açılış/kapanış kontrol listesi burada görünecek.
         </EmptyState>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
@@ -90,6 +106,7 @@ export default async function GorevlerimPage({
                       businessId={secili.id}
                       label={item.label}
                       tamamlayan={tamamlanmaMap.get(item.id)?.completedBy.name ?? null}
+                      benim={user.name}
                     />
                   ))}
                 </ul>

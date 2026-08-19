@@ -1,5 +1,5 @@
 import { requireAnketErisim, visibleBusinesses } from "@/lib/auth";
-import { getShiftBreakdown, getTableBreakdown } from "@/lib/stats";
+import { getDoldurmaSuresi, getShiftBreakdown, getTableBreakdown } from "@/lib/stats";
 import { prisma } from "@/lib/db";
 import { EmptyState } from "@/components/ui";
 import { RaporSekmeleri } from "@/components/RaporSekmeleri";
@@ -42,9 +42,10 @@ export default async function BreakdownPage({
     ? Number(query.gun)
     : 30;
 
-  const [shifts, tables, atamalar] = await Promise.all([
+  const [shifts, tables, doldurmaSuresi, atamalar] = await Promise.all([
     getShiftBreakdown(selected, days),
     getTableBreakdown(selected, days),
+    getDoldurmaSuresi(selected, days),
     // "Akşam vardiyasında puan neden düşük" sorusuna cevap vermek için:
     // o dönemde vardiyaya kimin atandığını da yanına yazıyoruz. Bu bir
     // istatistik değil, yöneticinin gözle karşılaştırması için ipucu.
@@ -77,6 +78,18 @@ export default async function BreakdownPage({
           personel sorununu, masa ise mekânla ilgili sorunu (gürültü, ısı,
           servise uzaklık) ele verir.
         </p>
+        {doldurmaSuresi ? (
+          <p className="mt-2 inline-flex items-center gap-1.5 rounded-chip bg-sunken px-3 py-1.5 text-caption text-ink-soft">
+            <span aria-hidden="true">⏱</span>
+            Ortalama doldurma süresi:{" "}
+            <span className="font-medium text-ink">
+              {doldurmaSuresi.ortalamaSaniye < 60
+                ? `${Math.round(doldurmaSuresi.ortalamaSaniye)} sn`
+                : `${(doldurmaSuresi.ortalamaSaniye / 60).toFixed(1)} dk`}
+            </span>
+            <span className="text-ink-faint">({doldurmaSuresi.adet} kayıt)</span>
+          </p>
+        ) : null}
       </div>
 
       <PeriyotFiltre

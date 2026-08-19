@@ -179,13 +179,36 @@ model ShiftAssignment {
   shift      String
   createdAt  DateTime @default(now())
 
-  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business     Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  swapRequests ShiftSwapRequest[]
 
   @@unique([businessId, userId, date, shift])
   @@index([businessId, date])
   @@index([userId, date])
   @@map("shift_assignments")
+}
+
+/// Bir personelin kendi vardiyasını bırakma talebi. Onay/red yöneticide;
+/// onaylanırsa atama kaldırılır, kim başka biri koyacaksa çizelgeden ayrıca
+/// atanır — talep otomatik yer değiştirme yapmaz, yalnızca boşaltır.
+model ShiftSwapRequest {
+  id            String    @id @default(cuid())
+  assignmentId  String
+  requestedById String
+  note          String?
+  /// "bekliyor" | "onaylandi" | "reddedildi"
+  status        String    @default("bekliyor")
+  decidedById   String?
+  decidedAt     DateTime?
+  createdAt     DateTime  @default(now())
+
+  assignment  ShiftAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  requestedBy User            @relation("ShiftSwapRequester", fields: [requestedById], references: [id], onDelete: Cascade)
+  decidedBy   User?           @relation("ShiftSwapDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  @@index([assignmentId])
+  @@map("shift_swap_requests")
 }
 
 /// Vardiya devir notu: "masa 5'te sorun oldu, dikkat" gibi bir sonraki
@@ -532,6 +555,8 @@ model User {
   shiftAssignments     ShiftAssignment[]
   shiftNotes           ShiftNote[]
   checklistCompletions ChecklistCompletion[]
+  shiftSwapRequests    ShiftSwapRequest[]    @relation("ShiftSwapRequester")
+  shiftSwapDecisions   ShiftSwapRequest[]    @relation("ShiftSwapDecider")
 
   @@index([accountId])
   @@map("users")

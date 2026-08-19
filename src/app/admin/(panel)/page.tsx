@@ -15,6 +15,7 @@ import {
   formatDateTime,
 } from "@/components/ui";
 import { TrendChart } from "@/components/TrendChart";
+import { OnboardingKarti } from "./OnboardingKarti";
 
 export const dynamic = "force-dynamic";
 
@@ -191,6 +192,8 @@ export default async function AdminHomePage({
           </TabLink>
         </div>
       ) : null}
+
+      <OnboardingKarti user={user} businesses={businesses} />
 
       <section>
         <div className="flex flex-wrap items-baseline justify-between gap-2">
