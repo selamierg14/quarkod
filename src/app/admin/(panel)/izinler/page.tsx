@@ -83,6 +83,7 @@ export default async function ConsentsPage() {
                 <th className="px-4 py-3 font-medium">İşletme</th>
                 <th className="px-4 py-3 font-medium">İzin tarihi</th>
                 <th className="px-4 py-3 font-medium">İYS</th>
+                <th className="px-4 py-3 font-medium"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -128,6 +129,14 @@ export default async function ConsentsPage() {
                     ) : (
                       <span className="text-caption text-rating">bekliyor</span>
                     )}
+                  </td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <a
+                      href={`/admin/izinler/${consent.id}/kanit`}
+                      className="text-caption text-ink-muted underline underline-offset-2 hover:text-ink"
+                    >
+                      Kanıt indir
+                    </a>
                   </td>
                 </tr>
               ))}

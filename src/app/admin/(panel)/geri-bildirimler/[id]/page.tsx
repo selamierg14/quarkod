@@ -191,6 +191,13 @@ export default async function FeedbackDetailPage({
                       ? ` · ${formatDateTime(feedback.consentAt)}`
                       : ""}
                     {feedback.consentVersion ? ` · metin ${feedback.consentVersion}` : ""}
+                    {" · "}
+                    <a
+                      href={`/admin/geri-bildirimler/${feedback.id}/kanit`}
+                      className="underline underline-offset-2"
+                    >
+                      kanıt indir
+                    </a>
                   </p>
                   <p className="mt-0.5 text-caption text-ink-faint">
                     {CONTACT_RETENTION_DAYS} gün sonra otomatik silinir.
