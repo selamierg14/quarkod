@@ -1,5 +1,0 @@
-{
-  "crons": [
-    { "path": "/api/cron/kvkk-temizle", "schedule": "0 3 * * *" }
-  ]
-}
