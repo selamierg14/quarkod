@@ -2,8 +2,9 @@ import Link from "next/link";
 import { requireUser, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { EmptyState } from "@/components/ui";
-import { SHIFTS, shiftFromDate } from "@/lib/constants";
+import { SHIFTS } from "@/lib/constants";
 import { gunBaslangici, gunEkle } from "@/lib/gun";
+import { etkinVardiyalar, vardiyaHesapla } from "@/lib/vardiya";
 import { IsletmeSecici } from "../menu/MenuUst";
 import { GorevKutusu, ShiftNotuFormu } from "./GorevForms";
 
@@ -127,7 +128,8 @@ export default async function GorevlerimPage({
 
         <ShiftNotuFormu
           businessId={secili.id}
-          varsayilanVardiya={shiftFromDate(new Date())}
+          vardiyalar={etkinVardiyalar(secili)}
+          varsayilanVardiya={vardiyaHesapla(new Date(), secili) ?? etkinVardiyalar(secili)[0]}
         />
 
         {notlar.length > 0 ? (

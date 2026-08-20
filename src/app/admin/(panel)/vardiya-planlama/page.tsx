@@ -4,14 +4,14 @@ import { prisma } from "@/lib/db";
 import { EmptyState, TabLink } from "@/components/ui";
 import { SHIFTS } from "@/lib/constants";
 import { gunAdi, gunEkle, gunGirdisi, haftaBaslangici } from "@/lib/gun";
+import { etkinVardiyalar } from "@/lib/vardiya";
 import { IsletmeSecici } from "../menu/MenuUst";
 import { degisimKararVer, vardiyaAta, vardiyaKaldir } from "./actions";
+import { VardiyaAyarForm } from "./VardiyaAyarForm";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Vardiya çizelgesi" };
-
-const VARDIYALAR = Object.entries(SHIFTS) as [keyof typeof SHIFTS, string][];
 
 export default async function VardiyaPlanlamaPage({
   searchParams,
@@ -27,6 +27,9 @@ export default async function VardiyaPlanlamaPage({
   }
 
   const secili = businesses.find((b) => b.id === query.isletme) ?? businesses[0];
+  const vardiyalar = etkinVardiyalar(secili).map(
+    (deger) => [deger, SHIFTS[deger]] as const,
+  );
   const haftaBasi = query.baslangic
     ? haftaBaslangici(new Date(query.baslangic))
     : haftaBaslangici(new Date());
@@ -91,6 +94,20 @@ export default async function VardiyaPlanlamaPage({
       </div>
 
       <IsletmeSecici businesses={businesses} seciliId={secili.id} taban="/admin/vardiya-planlama" />
+
+      <VardiyaAyarForm
+        businessId={secili.id}
+        ayarlar={{
+          vardiyaSabahAktif: secili.vardiyaSabahAktif,
+          vardiyaSabahSaat: secili.vardiyaSabahSaat,
+          vardiyaOgleAktif: secili.vardiyaOgleAktif,
+          vardiyaOgleSaat: secili.vardiyaOgleSaat,
+          vardiyaAksamAktif: secili.vardiyaAksamAktif,
+          vardiyaAksamSaat: secili.vardiyaAksamSaat,
+          vardiyaGeceAktif: secili.vardiyaGeceAktif,
+          vardiyaGeceSaat: secili.vardiyaGeceSaat,
+        }}
+      />
 
       {bekleyenTalepler.length > 0 ? (
         <section className="rounded-control bg-warning-soft p-4 ring-1 ring-warning/25">
@@ -187,7 +204,7 @@ export default async function VardiyaPlanlamaPage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {VARDIYALAR.map(([deger, etiket]) => (
+                {vardiyalar.map(([deger, etiket]) => (
                   <tr key={deger}>
                     <td className="px-3 py-3 align-top font-medium text-ink-soft">{etiket}</td>
                     {gunler.map((gun) => (
@@ -224,7 +241,7 @@ export default async function VardiyaPlanlamaPage({
                   </p>
 
                   <div className="mt-3 flex flex-col gap-3">
-                    {VARDIYALAR.map(([deger, etiket]) => (
+                    {vardiyalar.map(([deger, etiket]) => (
                       <div key={deger}>
                         <p className="text-caption font-medium text-ink-muted">{etiket}</p>
                         <div className="mt-1">

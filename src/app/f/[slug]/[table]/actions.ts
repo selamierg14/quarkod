@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
 import { notifyLowRating } from "@/lib/mail";
 import { validateImageDataUrl } from "@/lib/image";
-import { shiftFromDate } from "@/lib/constants";
+import { vardiyaHesapla } from "@/lib/vardiya";
 import { foldTr } from "@/lib/text";
 import { detaylariDerle, sorunSecenekleri } from "@/lib/anket-detay";
 import { cevir } from "@/lib/ceviriler";
@@ -266,7 +266,7 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
       consentAt: storeContact ? now : null,
       consentVersion: storeContact ? KVKK_VERSION : null,
       redirectedToGoogle: redirectToGoogle,
-      shift: shiftFromDate(now),
+      shift: vardiyaHesapla(now, business),
       ipHash,
       visitorId,
     },

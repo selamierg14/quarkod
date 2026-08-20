@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { canAccessBusiness, requirePersonelYonetimi, requireYazma } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { gunBaslangici } from "@/lib/gun";
+import { gecerliVardiyaMi } from "@/lib/vardiya";
 
 export async function vardiyaAta(formData: FormData): Promise<void> {
   const actor = await requirePersonelYonetimi();
@@ -14,7 +15,7 @@ export async function vardiyaAta(formData: FormData): Promise<void> {
   const tarihStr = String(formData.get("date") ?? "");
   const shift = String(formData.get("shift") ?? "");
 
-  if (!userId || !tarihStr || !["sabah", "aksam", "gece"].includes(shift)) return;
+  if (!userId || !tarihStr || !gecerliVardiyaMi(shift)) return;
   if (!(await canAccessBusiness(actor, businessId))) return;
 
   // Atanan kişi gerçekten bu işletmenin personeli mi — form manipüle
@@ -86,4 +87,52 @@ export async function degisimKararVer(formData: FormData): Promise<void> {
 
   revalidatePath("/admin/vardiya-planlama");
   revalidatePath("/admin/vardiyalarim");
+}
+
+export type VardiyaAyarFormState = { error?: string; saved?: string };
+
+const SAAT_DESENI = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/**
+ * Hangi vardiyaların kullanıldığı ve saat kaçta başladığı — her işletme
+ * kendine göre ayarlar. Sabit üçlü (sabah/akşam/gece) gece çalışmayan bir
+ * kafeye ya da öğle vardiyası olan bir yere uymuyordu.
+ */
+export async function vardiyaAyarlariniGuncelle(
+  _prev: VardiyaAyarFormState,
+  formData: FormData,
+): Promise<VardiyaAyarFormState> {
+  const actor = await requirePersonelYonetimi();
+  await requireYazma();
+
+  const businessId = String(formData.get("businessId") ?? "");
+  if (!(await canAccessBusiness(actor, businessId))) {
+    return { error: "Bu işletmeye yetkiniz yok." };
+  }
+
+  const alanlar = ["Sabah", "Ogle", "Aksam", "Gece"] as const;
+  const veri: Record<string, boolean | string> = {};
+  let aktifSayisi = 0;
+
+  for (const alan of alanlar) {
+    const aktif = formData.get(`aktif${alan}`) === "on";
+    const saat = String(formData.get(`saat${alan}`) ?? "");
+    if (aktif) {
+      if (!SAAT_DESENI.test(saat)) {
+        return { error: `${alan} vardiyası için geçerli bir saat girin (ss:dd).` };
+      }
+      aktifSayisi += 1;
+    }
+    veri[`vardiya${alan}Aktif`] = aktif;
+    veri[`vardiya${alan}Saat`] = saat || "00:00";
+  }
+
+  if (aktifSayisi === 0) {
+    return { error: "En az bir vardiya açık kalmalı." };
+  }
+
+  await prisma.business.update({ where: { id: businessId }, data: veri });
+
+  revalidatePath("/admin/vardiya-planlama");
+  return { saved: "Vardiya ayarları kaydedildi." };
 }

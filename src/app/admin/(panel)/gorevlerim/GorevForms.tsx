@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { SHIFTS } from "@/lib/constants";
+import { SHIFTS, type Shift } from "@/lib/constants";
 import { shiftNotuEkle, toggleGorev, type GorevFormState } from "./actions";
 
 const INPUT =
@@ -79,10 +79,12 @@ export function GorevKutusu({
 
 export function ShiftNotuFormu({
   businessId,
+  vardiyalar,
   varsayilanVardiya,
 }: {
   businessId: string;
-  varsayilanVardiya: string;
+  vardiyalar: Shift[];
+  varsayilanVardiya: Shift;
 }) {
   const [state, formAction, pending] = useActionState<GorevFormState, FormData>(
     shiftNotuEkle,
@@ -96,9 +98,9 @@ export function ShiftNotuFormu({
       <label className="flex flex-col gap-1">
         <span className="text-caption text-ink-muted">Vardiya</span>
         <select name="shift" defaultValue={varsayilanVardiya} className={INPUT}>
-          {Object.entries(SHIFTS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
+          {vardiyalar.map((deger) => (
+            <option key={deger} value={deger}>
+              {SHIFTS[deger]}
             </option>
           ))}
         </select>

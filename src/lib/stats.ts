@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "./db";
 import { SHIFTS, type Shift } from "./constants";
 import { detaylariCoz } from "./anket-detay";
+import { etkinVardiyalar } from "./vardiya";
 
 export type TrendPoint = {
   /** Hafta başlangıcı (pazartesi). */
@@ -188,29 +189,42 @@ export async function getShiftBreakdown(
   businessIds: string[],
   days = 30,
 ): Promise<ShiftBreakdown[]> {
-  const grouped = await prisma.feedback.groupBy({
-    by: ["shift"],
-    where: {
-      businessId: { in: businessIds },
-      createdAt: { gte: daysAgo(days) },
-      shift: { not: null },
-    },
-    _avg: { overallRating: true },
-    _count: { _all: true },
-  });
+  const [grouped, businesses] = await Promise.all([
+    prisma.feedback.groupBy({
+      by: ["shift"],
+      where: {
+        businessId: { in: businessIds },
+        createdAt: { gte: daysAgo(days) },
+        shift: { not: null },
+      },
+      _avg: { overallRating: true },
+      _count: { _all: true },
+    }),
+    prisma.business.findMany({ where: { id: { in: businessIds } } }),
+  ]);
 
   const map = new Map(grouped.map((row) => [row.shift, row]));
 
-  return (Object.keys(SHIFTS) as Shift[]).map((shift) => {
-    const row = map.get(shift);
-    return {
-      shift,
-      label: SHIFTS[shift],
-      count: row?._count._all ?? 0,
-      average:
-        row?._avg.overallRating != null ? round(row._avg.overallRating, 2) : null,
-    };
-  });
+  // Birden fazla işletme seçiliyse birleşim gösterilir: hangi vardiyayı
+  // en az biri kullanıyorsa satırı vardır — aksi halde tek işletmenin
+  // kapattığı bir vardiya diğerlerinde veri varken gizlenirdi.
+  const kullanilanlar = new Set<Shift>();
+  for (const business of businesses) {
+    for (const shift of etkinVardiyalar(business)) kullanilanlar.add(shift);
+  }
+
+  return (Object.keys(SHIFTS) as Shift[])
+    .filter((shift) => kullanilanlar.has(shift))
+    .map((shift) => {
+      const row = map.get(shift);
+      return {
+        shift,
+        label: SHIFTS[shift],
+        count: row?._count._all ?? 0,
+        average:
+          row?._avg.overallRating != null ? round(row._avg.overallRating, 2) : null,
+      };
+    });
 }
 
 /** Masaya göre kırılım — hangi masa/bölge sürekli şikayet alıyor. */

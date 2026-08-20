@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { canAccessBusiness, requireUser, requireYazma } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { gunBaslangici } from "@/lib/gun";
+import { gecerliVardiyaMi } from "@/lib/vardiya";
 
 export type GorevFormState = { error?: string; saved?: string };
 
@@ -57,7 +58,7 @@ export async function shiftNotuEkle(
     return { error: "Bu işletmeye erişiminiz yok." };
   }
   if (!text) return { error: "Not boş olamaz." };
-  if (!["sabah", "aksam", "gece"].includes(shift)) {
+  if (!gecerliVardiyaMi(shift)) {
     return { error: "Vardiya seçin." };
   }
 

@@ -86,6 +86,7 @@ export const FEEDBACK_STATUS_LIST = Object.entries(FEEDBACK_STATUSES).map(
 
 export const SHIFTS = {
   sabah: "Sabah",
+  ogle: "Öğle",
   aksam: "Akşam",
   gece: "Gece",
 } as const;

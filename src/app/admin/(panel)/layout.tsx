@@ -120,7 +120,11 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
           </div>
         ) : null}
 
-        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 lg:px-8 lg:py-8">
+        {/* Üst sınır yok: geniş ekranda tablolar (Kullanıcılar, Ürünler,
+            Vardiya çizelgesi) kalan tüm genişliği kullansın diye kaldırıldı
+            — kutuya sıkışmış görünüyordu. Mobilde zaten viewport dar olduğu
+            için etkisi yok. */}
+        <main className="w-full flex-1 px-4 py-6 lg:px-8 lg:py-8">
           {children}
         </main>
       </div>

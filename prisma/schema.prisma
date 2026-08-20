@@ -141,6 +141,20 @@ model Business {
   /// güncellendi" olarak gösterilir (fiyat şeffaflığı / yönetmelik).
   menuPriceUpdatedAt DateTime?
 
+  /// Vardiya planlaması ve otomatik etiketleme için: hangi vardiyalar
+  /// kullanılıyor ve saat kaçta başlıyor. Sabit üçlü (sabah/akşam/gece) her
+  /// işletmeye uymuyor — gece çalışmayan bir kafe ya da öğle vardiyası olan
+  /// bir yer bunu kendine göre ayarlar. Bitiş saati tutulmaz: bir sonraki
+  /// aktif vardiyanın başlangıcı örtük bitiştir.
+  vardiyaSabahAktif Boolean @default(true)
+  vardiyaSabahSaat  String  @default("06:00")
+  vardiyaOgleAktif  Boolean @default(false)
+  vardiyaOgleSaat   String  @default("12:00")
+  vardiyaAksamAktif Boolean @default(true)
+  vardiyaAksamSaat  String  @default("16:00")
+  vardiyaGeceAktif  Boolean @default(true)
+  vardiyaGeceSaat   String  @default("23:00")
+
   createdAt DateTime @default(now())
 
   account              Account               @relation(fields: [accountId], references: [id], onDelete: Cascade)
