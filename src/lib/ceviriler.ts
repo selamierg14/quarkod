@@ -110,6 +110,9 @@ const tr = {
   "anket.gonder": "Gönder",
   "anket.gonderiliyor": "Gönderiliyor…",
   "anket.puanGerekli": "Lütfen önce genel memnuniyet puanınızı verin.",
+  "anket.besYildizBaslik": "Bizi 5 yıldızla değerlendirdiniz, teşekkürler! 🎉",
+  "anket.besYildizMetin":
+    "Google'da da birkaç saniyenizi ayırıp yorum bırakır mısınız? Öncesinde, size ulaşabilmemiz için isterseniz bilgilerinizi bırakabilirsiniz.",
   "anket.rizaGerekli": "İletişim bilgisi bırakmak için aydınlatma metnini onaylayın.",
 
   // --- ürün puanlama adımı
@@ -304,6 +307,9 @@ const en: Sozluk = {
   "anket.gonder": "Send",
   "anket.gonderiliyor": "Sending…",
   "anket.puanGerekli": "Please give an overall rating first.",
+  "anket.besYildizBaslik": "You rated us 5 stars, thank you! 🎉",
+  "anket.besYildizMetin":
+    "Would you take a few seconds to leave a review on Google too? Before that, you can optionally leave your contact info so we can reach you.",
   "anket.rizaGerekli": "To leave contact details, please accept the privacy notice.",
 
   "urun.baslik": "What did you have?",
@@ -486,6 +492,9 @@ const ar: Sozluk = {
   "anket.gonder": "إرسال",
   "anket.gonderiliyor": "جارٍ الإرسال…",
   "anket.puanGerekli": "يرجى إعطاء التقييم العام أولاً.",
+  "anket.besYildizBaslik": "قيّمتنا بـ 5 نجوم، شكرًا لك! 🎉",
+  "anket.besYildizMetin":
+    "هل يمكنك تخصيص بضع ثوانٍ لترك تقييم على جوجل أيضًا؟ قبل ذلك، يمكنك ترك معلومات التواصل الخاصة بك إذا أردت حتى نتمكن من الوصول إليك.",
   "anket.rizaGerekli": "لترك بيانات التواصل، يرجى الموافقة على إشعار الخصوصية.",
 
   "urun.baslik": "ماذا تناولت؟",
@@ -667,6 +676,9 @@ const ru: Sozluk = {
   "anket.gonder": "Отправить",
   "anket.gonderiliyor": "Отправляем…",
   "anket.puanGerekli": "Сначала поставьте общую оценку.",
+  "anket.besYildizBaslik": "Вы поставили нам 5 звёзд, спасибо! 🎉",
+  "anket.besYildizMetin":
+    "Не могли бы вы уделить пару секунд, чтобы оставить отзыв и на Google? Перед этим вы можете по желанию оставить свои контактные данные, чтобы мы могли с вами связаться.",
   "anket.rizaGerekli":
     "Чтобы оставить контакты, примите уведомление о конфиденциальности.",
 

@@ -128,6 +128,26 @@ export async function toggleMenuCategory(formData: FormData) {
   yenile(kategori.businessId);
 }
 
+/**
+ * Bölümü kalıcı olarak siler (içindeki ürünlerle birlikte).
+ *
+ * "Gizle" farklı bir şey: menüde görünmesin ama kaydı dursun (mevsimlik
+ * bölüm) diyorsanız o. Bu buton "artık hiç olmasın, tekrar boş menüye
+ * dönüp şablon uygulayabileyim" dediğinizde. Ürün puanları (ItemRating)
+ * etkilenmez — kayıtları kalır, yalnızca hangi üründen geldiği "menüden
+ * kaldırılmış" olarak görünür.
+ */
+export async function deleteMenuCategory(formData: FormData) {
+  const id = String(formData.get("categoryId") ?? "");
+  const kategori = await prisma.menuCategory.findUnique({ where: { id } });
+  if (!kategori) return;
+  if (await menuIzni(kategori.businessId)) return;
+
+  await prisma.menuCategory.delete({ where: { id } });
+  await menuDenetim("menu.category", `Bölüm silindi: ${kategori.name}`, id);
+  yenile(kategori.businessId);
+}
+
 export async function moveMenuCategory(formData: FormData) {
   const id = String(formData.get("categoryId") ?? "");
   const yon = String(formData.get("direction") ?? "");
@@ -297,6 +317,18 @@ export async function toggleMenuItem(formData: FormData) {
     `Ürün ${urun.active ? "gizlendi" : "açıldı"}: ${urun.name}`,
     id,
   );
+  yenile(urun.businessId);
+}
+
+/** Ürünü kalıcı olarak siler. Puan geçmişi kalır, ürün adı "kaldırılmış" görünür. */
+export async function deleteMenuItem(formData: FormData) {
+  const id = String(formData.get("itemId") ?? "");
+  const urun = await prisma.menuItem.findUnique({ where: { id } });
+  if (!urun) return;
+  if (await menuIzni(urun.businessId)) return;
+
+  await prisma.menuItem.delete({ where: { id } });
+  await menuDenetim("menu.item", `Ürün silindi: ${urun.name}`, id);
   yenile(urun.businessId);
 }
 

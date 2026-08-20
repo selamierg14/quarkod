@@ -6,6 +6,8 @@ import { MENU_TAGS, formatPrice, parseTags, priceInputValue } from "@/lib/menu";
 import {
   addMenuCategory,
   addMenuItem,
+  deleteMenuCategory,
+  deleteMenuItem,
   moveMenuCategory,
   moveMenuItem,
   renameMenuCategory,
@@ -132,6 +134,16 @@ export function CategoryHeader({
           <input type="hidden" name="categoryId" value={id} />
           <button type="submit" className={KUCUK_BUTON}>
             {active ? "Gizle" : "Göster"}
+          </button>
+        </form>
+        <form action={deleteMenuCategory}>
+          <input type="hidden" name="categoryId" value={id} />
+          <button
+            type="submit"
+            title="Bölümü ve içindeki tüm ürünleri kalıcı olarak siler"
+            className={`${KUCUK_BUTON} text-danger`}
+          >
+            Sil
           </button>
         </form>
       </div>
@@ -395,7 +407,17 @@ export function ItemRow({
         <form action={toggleMenuItem}>
           <input type="hidden" name="itemId" value={urun.id} />
           <button type="submit" className={KUCUK_BUTON}>
-            {urun.active ? "Kaldır" : "Geri koy"}
+            {urun.active ? "Gizle" : "Geri koy"}
+          </button>
+        </form>
+        <form action={deleteMenuItem}>
+          <input type="hidden" name="itemId" value={urun.id} />
+          <button
+            type="submit"
+            title="Ürünü kalıcı olarak siler"
+            className={`${KUCUK_BUTON} text-danger`}
+          >
+            Sil
           </button>
         </form>
       </div>

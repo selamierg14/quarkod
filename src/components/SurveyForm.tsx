@@ -213,6 +213,10 @@ export function SurveyForm({
   // — yoksa ekranın yarısı ölü boşluk, dikkat de işe yaramayan gri bir düğmede
   // kalıyordu.
   const basladi = gorunenOverall > 0;
+  // 5 yıldız veren müşteri zaten memnun; kategori/ürün/yorum gibi tanı
+  // sorularıyla oyalamak dönüşümü düşürür. Onun için form kısalır: doğrudan
+  // (isteğe bağlı) iletişim/KVKK adımına, oradan da Google'a gider.
+  const besYildiz = gorunenOverall === 5;
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5 pb-32">
@@ -238,7 +242,7 @@ export function SurveyForm({
         </p>
       ) : null}
 
-      {basladi && categories.length > 0 ? (
+      {basladi && !besYildiz && categories.length > 0 ? (
         <section className="mm-rise rounded-card bg-surface p-5 shadow-card ring-1 ring-line">
           <h2 className="text-small font-semibold tracking-wide text-ink-muted uppercase">
             {t("anket.detaylar")}
@@ -284,7 +288,7 @@ export function SurveyForm({
         </section>
       ) : null}
 
-      {basladi && menuItems.length > 0 ? (
+      {basladi && !besYildiz && menuItems.length > 0 ? (
         <UrunPuanlama
           urunler={menuItems}
           menuAdresi={`/f/${slug}/${encodeURIComponent(tableNumber)}/menu?sec=1`}
@@ -299,7 +303,7 @@ export function SurveyForm({
         />
       ) : null}
 
-      {basladi ? (
+      {basladi && !besYildiz ? (
         <section className="mm-rise rounded-card bg-surface p-5 shadow-card ring-1 ring-line">
           <label
             htmlFor="comment"
@@ -330,8 +334,26 @@ export function SurveyForm({
               onChange={setPhoto}
             />
           </div>
+        </section>
+      ) : null}
 
-          <div className="mt-5 border-t border-line pt-4">
+      {basladi ? (
+        <section className="mm-rise rounded-card bg-surface p-5 shadow-card ring-1 ring-line">
+          <div>
+            {/* 5 yıldızda kategori/yorum/foto adımları hiç görünmüyor —
+                doğrudan buraya (isteğe bağlı iletişim) ve ardından Google'a
+                gidiyor. Neden kısa kaldığını burada açıklıyoruz. */}
+            {besYildiz ? (
+              <div className="mb-4 rounded-control bg-success-soft p-4 text-center">
+                <p className="font-semibold text-success-ink">
+                  {t("anket.besYildizBaslik")}
+                </p>
+                <p className="mt-1 text-small text-success-ink/80">
+                  {t("anket.besYildizMetin")}
+                </p>
+              </div>
+            ) : null}
+
             <p className="text-body text-ink-soft">
               {t("anket.iletisimBaslik")}{" "}
               <span className="text-ink-faint">{t("ortak.istegeBagli")}</span>
