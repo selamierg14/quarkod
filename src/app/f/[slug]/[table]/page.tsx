@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { MusteriKabuk } from "@/components/MusteriKabuk";
 import { qrSayfaVerisi } from "@/lib/qr-sayfa";
+import { duyuruAktifMi } from "@/lib/duyuru";
 import { KarsilamaSecenekleri } from "./KarsilamaSecenekleri";
 
 type Params = { slug: string; table: string };
@@ -42,6 +43,14 @@ export default async function KarsilamaPage({ params }: { params: Promise<Params
   });
   if (urunVar === 0) redirect(`${taban}/anket`);
 
+  // Tıklanması gereken kart sadece gerçekten aktif bir duyuru varsa çıksın —
+  // boş bir "Duyurular" sayfasına yönlendirmenin anlamı yok.
+  const tumDuyurular = await prisma.duyuru.findMany({
+    where: { businessId: business.id, aktif: true },
+    orderBy: { sortOrder: "desc" },
+  });
+  const aktifDuyurular = tumDuyurular.filter((d) => duyuruAktifMi(d));
+
   return (
     <MusteriKabuk
       business={business}
@@ -57,6 +66,11 @@ export default async function KarsilamaPage({ params }: { params: Promise<Params
           trendyolUrl: business.trendyolUrl,
           migrosUrl: business.migrosUrl,
         }}
+        duyuru={
+          aktifDuyurular.length > 0
+            ? { baslik: aktifDuyurular[0].baslik, adet: aktifDuyurular.length }
+            : null
+        }
       />
     </MusteriKabuk>
   );

@@ -27,6 +27,9 @@ const tr = {
   "karsilama.anketBaslik": "Deneyiminizi değerlendirin",
   "karsilama.anketAciklama": "30 saniyenizi alır",
   "karsilama.dipnot": "Görüşleriniz doğrudan işletme sahibine ulaşır.",
+  "duyurular.baslik": "Duyurular",
+  "duyurular.geriDon": "← Geri",
+  "duyurular.bosDurum": "Şu an aktif duyuru yok.",
   "siparis.baslik": "Online sipariş",
   "menu.fiyatGuncelleme": "Fiyatlar {tarih} tarihinde güncellendi.",
 
@@ -224,6 +227,9 @@ const en: Sozluk = {
   "karsilama.anketBaslik": "Rate your experience",
   "karsilama.anketAciklama": "Takes 30 seconds",
   "karsilama.dipnot": "Your feedback goes straight to the owner.",
+  "duyurular.baslik": "Announcements",
+  "duyurular.geriDon": "← Back",
+  "duyurular.bosDurum": "No active announcements right now.",
   "siparis.baslik": "Order online",
   "menu.fiyatGuncelleme": "Prices last updated on {tarih}.",
 
@@ -403,6 +409,9 @@ const ar: Sozluk = {
   "karsilama.anketBaslik": "قيّم تجربتك",
   "karsilama.anketAciklama": "يستغرق ٣٠ ثانية",
   "karsilama.dipnot": "ملاحظاتك تصل مباشرة إلى صاحب المكان.",
+  "duyurular.baslik": "الإعلانات",
+  "duyurular.geriDon": "← رجوع",
+  "duyurular.bosDurum": "لا توجد إعلانات نشطة حاليًا.",
   "siparis.baslik": "الطلب عبر الإنترنت",
   "menu.fiyatGuncelleme": "آخر تحديث للأسعار بتاريخ {tarih}.",
 
@@ -581,6 +590,9 @@ const ru: Sozluk = {
   "karsilama.anketBaslik": "Оцените ваш визит",
   "karsilama.anketAciklama": "Займёт 30 секунд",
   "karsilama.dipnot": "Ваш отзыв попадёт напрямую к владельцу.",
+  "duyurular.baslik": "Объявления",
+  "duyurular.geriDon": "← Назад",
+  "duyurular.bosDurum": "Сейчас нет активных объявлений.",
   "siparis.baslik": "Заказ онлайн",
   "menu.fiyatGuncelleme": "Цены обновлены {tarih}.",
 

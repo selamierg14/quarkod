@@ -5,6 +5,7 @@ import { useDil } from "./DilSaglayici";
 import {
   ANKET_MAX_DIM,
   COVER_MAX_WIDTH,
+  DUYURU_MAX_WIDTH,
   LOGO_MAX_DIM,
   MAX_RAW_UPLOAD_BYTES,
   MENU_MAX_DIM,
@@ -191,7 +192,8 @@ function resizeImage(file: File, kind: ImageKind): Promise<string> {
 
         // Kapak ve anket fotoğrafı: oranı koru, uzun kenarı sınırla.
         // Kanıt fotoğrafını kare kırpmak sorunun yarısını kesebilir.
-        const enBoy = kind === "anket" ? ANKET_MAX_DIM : COVER_MAX_WIDTH;
+        const enBoy =
+          kind === "anket" ? ANKET_MAX_DIM : kind === "duyuru" ? DUYURU_MAX_WIDTH : COVER_MAX_WIDTH;
         if (Math.max(width, height) > enBoy) {
           const oran = enBoy / Math.max(width, height);
           width = Math.round(width * oran);

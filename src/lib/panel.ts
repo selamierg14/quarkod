@@ -41,7 +41,8 @@ export type IkonAdi =
   | "profil"
   | "entegrasyon"
   | "takvim"
-  | "gorev";
+  | "gorev"
+  | "duyuru";
 
 export type AltNavLink = {
   href: string;
@@ -156,15 +157,18 @@ export function panelMenusu(
 
   const yonetim: NavLink[] = [];
   if (izinler.menuIzni) {
-    yonetim.push({
-      href: "/admin/menu",
-      label: "QR Menü",
-      ikon: "menu",
-      altLinkler: [
-        { href: "/admin/menu", label: "Düzenle", exact: true },
-        { href: "/admin/menu/onizle", label: "Listele" },
-      ],
-    });
+    yonetim.push(
+      {
+        href: "/admin/menu",
+        label: "QR Menü",
+        ikon: "menu",
+        altLinkler: [
+          { href: "/admin/menu", label: "Düzenle", exact: true },
+          { href: "/admin/menu/onizle", label: "Listele" },
+        ],
+      },
+      { href: "/admin/duyurular", label: "Duyurular", ikon: "duyuru" },
+    );
   }
   if (yonetici(role)) {
     yonetim.push(

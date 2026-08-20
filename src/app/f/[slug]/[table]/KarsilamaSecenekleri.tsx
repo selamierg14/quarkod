@@ -18,12 +18,17 @@ export type SiparisLinkleri = {
  * Ayrı bir istemci bileşeni: metinler seçili dile göre değişiyor, sayfanın
  * geri kalanı sunucuda kalabiliyor.
  */
+export type DuyuruTeaser = { baslik: string; adet: number };
+
 export function KarsilamaSecenekleri({
   taban,
   siparis,
+  duyuru,
 }: {
   taban: string;
   siparis: SiparisLinkleri;
+  /** Aktif duyuru varsa en yenisinin başlığı + toplam sayı — kart tıklanınca listeye gider. */
+  duyuru?: DuyuruTeaser | null;
 }) {
   const { t } = useDil();
 
@@ -37,6 +42,26 @@ export function KarsilamaSecenekleri({
         trendyolUrl={siparis.trendyolUrl}
         migrosUrl={siparis.migrosUrl}
       />
+
+      {duyuru ? (
+        <Link
+          href={`${taban}/duyurular`}
+          className="group mb-3.5 flex items-center gap-3 rounded-card bg-brand p-4 text-start text-brand-ink shadow-card transition active:scale-[0.99]"
+        >
+          <span aria-hidden="true" className="shrink-0 text-heading">
+            📣
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-small font-semibold">{duyuru.baslik}</span>
+            <span className="block text-caption opacity-80">
+              {duyuru.adet > 1 ? `${duyuru.adet} duyuru — dokun` : "Detaylar için dokun"}
+            </span>
+          </span>
+          <span aria-hidden="true" className="shrink-0 transition group-active:translate-x-0.5 rtl:rotate-180">
+            →
+          </span>
+        </Link>
+      ) : null}
 
       <div className="flex flex-col gap-3.5">
         <Link

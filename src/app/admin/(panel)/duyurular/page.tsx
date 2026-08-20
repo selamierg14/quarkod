@@ -1,0 +1,73 @@
+import { requireMenuErisim, visibleBusinesses } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { EmptyState } from "@/components/ui";
+import { IsletmeSecici } from "../menu/MenuUst";
+import { DuyuruSatiri, NewDuyuruForm } from "./DuyuruForms";
+
+export const dynamic = "force-dynamic";
+
+export const metadata = { title: "Duyurular" };
+
+function tarihGirdisi(d: Date | null): string | null {
+  if (!d) return null;
+  return d.toLocaleDateString("tr-TR");
+}
+
+export default async function DuyurularPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ isletme?: string }>;
+}) {
+  const user = await requireMenuErisim();
+  const businesses = await visibleBusinesses(user);
+  const query = await searchParams;
+
+  if (businesses.length === 0) {
+    return <EmptyState>Önce bir işletme ekleyin.</EmptyState>;
+  }
+
+  const secili = businesses.find((b) => b.id === query.isletme) ?? businesses[0];
+
+  const duyurular = await prisma.duyuru.findMany({
+    where: { businessId: secili.id },
+    orderBy: [{ aktif: "desc" }, { sortOrder: "desc" }],
+  });
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div>
+        <h1 className="text-title font-semibold">Duyurular</h1>
+        <p className="mt-1 text-small text-ink-muted">
+          QR karşılama ekranında ayrı, tıklanan bir kart olarak çıkar —
+          menünün tepesindeki tek satırlık duyuru şeridinden farklı olarak
+          görsel taşıyabilir, birden fazla olabilir ve tarih aralığına
+          bağlanabilir (ör. sadece hafta sonu göster).
+        </p>
+      </div>
+
+      <IsletmeSecici businesses={businesses} seciliId={secili.id} taban="/admin/duyurular" />
+
+      <div className="rounded-control bg-surface p-4 ring-1 ring-line">
+        <NewDuyuruForm businessId={secili.id} />
+      </div>
+
+      {duyurular.length === 0 ? (
+        <EmptyState>Henüz duyuru eklenmedi.</EmptyState>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {duyurular.map((d) => (
+            <DuyuruSatiri
+              key={d.id}
+              id={d.id}
+              baslik={d.baslik}
+              aciklama={d.aciklama}
+              aktif={d.aktif}
+              baslangic={tarihGirdisi(d.baslangic)}
+              bitis={tarihGirdisi(d.bitis)}
+            />
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}

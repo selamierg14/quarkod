@@ -173,9 +173,33 @@ model Business {
   shiftNotes           ShiftNote[]
   checklistItems       ChecklistItem[]
   checklistCompletions ChecklistCompletion[]
+  duyurular            Duyuru[]
 
   @@index([accountId])
   @@map("businesses")
+}
+
+/// Karşılama ekranında ayrı, tıklanması gereken bir kart olarak çıkan
+/// etkinlik/kampanya duyurusu. Menünün tepesindeki tek satırlık `announcement`
+/// şeridinden farkı: birden fazla olabilir, görsel taşıyabilir, tarih
+/// aralığına bağlanabilir (ör. "sadece hafta sonu göster").
+model Duyuru {
+  id         String    @id @default(cuid())
+  businessId String
+  baslik     String
+  aciklama   String?
+  imageUrl   String?
+  /// Boşsa hemen başlar / hiç bitmez.
+  baslangic  DateTime?
+  bitis      DateTime?
+  aktif      Boolean   @default(true)
+  sortOrder  Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, aktif])
+  @@map("duyurular")
 }
 
 /// Bir personelin belirli bir güne ve vardiyaya atanması.

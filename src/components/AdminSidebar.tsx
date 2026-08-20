@@ -388,5 +388,12 @@ function Ikon({ ad }: { ad: IkonAdi }) {
           <rect x="3" y="4" width="18" height="17" rx="2" />
         </svg>
       );
+    case "duyuru":
+      return (
+        <svg viewBox="0 0 24 24" className={ortak} {...p}>
+          <path d="M3 11v2a2 2 0 002 2h1l3 5V6L6 11H5a2 2 0 00-2 2z" />
+          <path d="M11 8l7-3v14l-7-3M18 10v4" />
+        </svg>
+      );
   }
 }
