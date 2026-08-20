@@ -20,12 +20,15 @@
   --font-sans: var(--font-geist-sans), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
-  /* Yüzeyler ve çizgiler — tasarım dosyasındaki slate ailesi birebir. */
-  --color-canvas: #f8fafc;
+  /* Yüzeyler ve çizgiler.
+     Zemin bilinçli olarak beyaz değil: kartlar beyaz kaldığında aralarındaki
+     fark ancak zemin bir tık koyu olunca görünüyor. Saf beyaz zeminde panel
+     "tasarlanmamış bir doküman" gibi duruyordu. */
+  --color-canvas: #eef1f7;
   --color-surface: #ffffff;
-  --color-sunken: #f1f5f9;
-  --color-line: #e2e8f0;
-  --color-line-strong: #cbd5e1;
+  --color-sunken: #f1f4fa;
+  --color-line: #dfe4ee;
+  --color-line-strong: #c3cbdb;
 
   /* Metin hiyerarşisi. */
   --color-ink: #0f172a;
@@ -102,10 +105,11 @@
   --radius-control: 0.75rem;
   --radius-chip: 0.5rem;
 
-  /* Gölge tek kademe yumuşak; derinliği asıl veren 1px çizgi. */
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06);
-  --shadow-raised: 0 4px 10px rgba(15, 23, 42, 0.12);
-  --shadow-pop: 0 12px 32px -8px rgba(15, 23, 42, 0.28);
+  /* Gölgeler iki katmanlı: yakın/sert bir kenar + uzak/yumuşak bir alan.
+     Tek katmanlı 1px gölge kartı zeminden ayırmaya yetmiyordu. */
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px -4px rgba(15, 23, 42, 0.08);
+  --shadow-raised: 0 2px 4px rgba(15, 23, 42, 0.06), 0 10px 24px -8px rgba(15, 23, 42, 0.14);
+  --shadow-pop: 0 4px 8px rgba(15, 23, 42, 0.08), 0 20px 48px -12px rgba(15, 23, 42, 0.26);
 }
 
 /* İşletme markası: müşteri ekranlarında kabuk `--brand` ve `--brand-ink`

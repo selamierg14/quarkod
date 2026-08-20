@@ -437,10 +437,52 @@ export async function addTables(
     detail: `${added} masa eklendi`,
   });
 
-  revalidatePath(`/admin/isletmeler/${businessId}`);
+  revalidatePath(`/admin/isletmeler/${businessId}/masalar`);
   return added > 0
     ? { saved: true }
     : { error: "Girilen masaların hepsi zaten tanımlı." };
+}
+
+/**
+ * Masa kavramı olmayan işletmeler için tek ortak QR.
+ *
+ * Gece kulübü, büfe, kuaför gibi yerlerde "masa 7" diye bir şey yok; tek bir
+ * kod basılıp kapıya/kasaya asılıyor. Bunu masa listesine "giriş" adında tek
+ * bir kayıt olarak yazıyoruz — raporlar zaten masa alanı boş olan kayıtları
+ * tolere ediyor, ayrı bir veri modeli gerekmiyor.
+ */
+export async function tekQrOlustur(formData: FormData): Promise<void> {
+  const user = await requireYazma();
+  const businessId = String(formData.get("businessId") ?? "");
+  if (!(await canAccessBusiness(user, businessId))) return;
+
+  const mevcut = await prisma.table.findFirst({
+    where: { businessId, isEntrance: true },
+  });
+  if (mevcut) {
+    if (!mevcut.active) {
+      await prisma.table.update({ where: { id: mevcut.id }, data: { active: true } });
+    }
+    revalidatePath(`/admin/isletmeler/${businessId}/masalar`);
+    return;
+  }
+
+  await prisma.table.create({
+    data: {
+      businessId,
+      tableNumber: "giris",
+      isEntrance: true,
+      qrToken: newQrToken(),
+    },
+  });
+
+  await denetimYaz(user, "business.table", {
+    entity: "business",
+    entityId: businessId,
+    detail: "Tek ortak QR oluşturuldu",
+  });
+
+  revalidatePath(`/admin/isletmeler/${businessId}/masalar`);
 }
 
 export async function toggleTable(formData: FormData) {

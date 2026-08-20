@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireMenuErisim } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { EmptyState, PageHeader } from "@/components/ui";
+import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
 import {
   CategoryHeader,
   ItemRow,
@@ -10,9 +10,7 @@ import {
   TumMenuyuSil,
 } from "./MenuForms";
 import { IsletmeSecici, MenuSekmeleri } from "./MenuUst";
-import { SablonSecici } from "./SablonSecici";
 import { menuSecimi } from "./_secim";
-import type { BusinessType } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -67,80 +65,109 @@ export default async function MenuPage({
       <PageHeader
         ikon="🍽️"
         renk="amber"
-        title="QR Menü"
-        description={
-          <>
-            Müşteri masadaki kodu okuttuğunda bu menüyü görür ve yediklerini
-            puanlayabilir.{" "}
-            <Link
-              href={`/f/${secili.slug}/1/menu`}
-              target="_blank"
-              className="font-medium text-accent-700 underline underline-offset-2"
-            >
-              Yeni sekmede aç
-            </Link>
-          </>
+        title="Menümü düzenle"
+        description="Bölümler ve içindeki ürünler. Müşteri masadaki kodu okutunca burada gördüklerinizi görür ve yediklerini puanlayabilir."
+        action={
+          <Link
+            href={`/f/${secili.slug}/1/menu`}
+            target="_blank"
+            className="rounded-control border border-line bg-surface px-3.5 py-2 text-small font-medium text-ink-soft transition hover:bg-canvas"
+          >
+            Müşteri gözüyle aç ↗
+          </Link>
         }
       />
 
       <IsletmeSecici businesses={businesses} seciliId={secili.id} taban="/admin/menu" />
 
-      <p className="text-small text-ink-muted">
-        {kategoriler.length} bölüm · {toplamUrun} ürün
-        {tukenen > 0 ? (
-          <span className="text-warning-ink"> · {tukenen} ürün tükendi olarak işaretli</span>
-        ) : null}
-      </p>
-
       {kategoriler.length === 0 ? (
-        <div className="flex flex-col gap-4">
-          <EmptyState>
-            Menü boş. Aşağıdan hazır bir şablon seçin ya da elle bir bölüm
-            ekleyin (Kahveler, Tatlılar…), sonra içine ürünleri girin.
-          </EmptyState>
-          <SablonSecici businessId={secili.id} businessType={secili.type as BusinessType} />
-        </div>
-      ) : (
-        <ul className="flex flex-col gap-4">
-          {kategoriler.map((kategori) => (
-            <li key={kategori.id} className="overflow-hidden rounded-control bg-surface ring-1 ring-line">
-              <CategoryHeader
-                id={kategori.id}
-                name={kategori.name}
-                active={kategori.active}
-                urunSayisi={kategori.items.length}
-              />
+        <EmptyState
+          baslik="Menünüz henüz boş"
+          ikon="🍽️"
+          aksiyon={
+            <Link
+              href="/admin/menu/sablonlar"
+              className="rounded-control bg-gradient-to-r from-accent-600 to-accent-700 px-4 py-2.5 text-small font-semibold text-white shadow-card transition hover:brightness-110"
+            >
+              Hazır şablonlara göz at →
+            </Link>
+          }
+        >
+          En hızlı yol: sektörünüze uygun bir şablon seçin, bölümler ve örnek
+          fiyatlar hazır gelsin. Ya da aşağıdan kendi bölümünüzü ekleyip
+          sıfırdan kurun.
+        </EmptyState>
+      ) : null}
 
-              {kategori.items.length === 0 ? (
-                <p className="px-4 pt-3 text-small text-ink-faint">Bu bölümde ürün yok.</p>
-              ) : (
-                <ul className="divide-y divide-line">
-                  {kategori.items.map((urun) => (
-                    <ItemRow key={urun.id} urun={urun} brandColor={secili.brandColor} />
-                  ))}
-                </ul>
-              )}
-
-              <div className="flex">
-                <NewItemForm categoryId={kategori.id} brandColor={secili.brandColor} />
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <div className="rounded-control bg-surface p-5 ring-1 ring-line">
+      {/* Sık yapılan iş en üstte: yeni bölüm eklemek için sayfanın sonuna
+          kadar inmek gerekiyordu. */}
+      <SectionCard
+        ikon="➕"
+        renk="emerald"
+        title="Yeni bölüm ekle"
+        description="Kahveler, Tatlılar, Ana Yemekler… Ürünler bu bölümlerin içine girer."
+      >
         <NewCategoryForm businessId={secili.id} />
-      </div>
+      </SectionCard>
 
-      {/* Menü doluyken şablon seçilemiyor; sıfırdan kurmak isteyen önce
-          buradan boşaltır. Boş menüde göstermenin anlamı yok. */}
       {kategoriler.length > 0 ? (
-        <TumMenuyuSil
-          businessId={secili.id}
-          bolumSayisi={kategoriler.length}
-          urunSayisi={toplamUrun}
-        />
+        <>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-chip bg-surface px-3 py-1.5 text-small font-semibold text-ink shadow-card ring-1 ring-line">
+              {kategoriler.length} bölüm
+            </span>
+            <span className="rounded-chip bg-surface px-3 py-1.5 text-small font-semibold text-ink shadow-card ring-1 ring-line">
+              {toplamUrun} ürün
+            </span>
+            {tukenen > 0 ? (
+              <span className="rounded-chip bg-warning-soft px-3 py-1.5 text-small font-semibold text-warning-ink ring-1 ring-warning/25">
+                {tukenen} ürün bugün tükendi
+              </span>
+            ) : null}
+          </div>
+
+          {/* Menü doluyken şablon uygulanamıyor; sıfırdan kurmak isteyen
+              önce buradan boşaltıyor. Uzun ürün listesinin dibinde
+              aranmasın diye listenin üstünde duruyor. */}
+          <TumMenuyuSil
+            businessId={secili.id}
+            bolumSayisi={kategoriler.length}
+            urunSayisi={toplamUrun}
+          />
+
+          <ul className="flex flex-col gap-4">
+            {kategoriler.map((kategori) => (
+              <li
+                key={kategori.id}
+                className="overflow-hidden rounded-card bg-surface shadow-card ring-1 ring-line"
+              >
+                <CategoryHeader
+                  id={kategori.id}
+                  name={kategori.name}
+                  active={kategori.active}
+                  urunSayisi={kategori.items.length}
+                />
+
+                {kategori.items.length === 0 ? (
+                  <p className="px-5 pt-4 text-small text-ink-muted">
+                    Bu bölümde henüz ürün yok — aşağıdan ekleyin.
+                  </p>
+                ) : (
+                  <ul className="divide-y divide-line">
+                    {kategori.items.map((urun) => (
+                      <ItemRow key={urun.id} urun={urun} brandColor={secili.brandColor} />
+                    ))}
+                  </ul>
+                )}
+
+                <div className="flex border-t border-line bg-canvas/50">
+                  <NewItemForm categoryId={kategori.id} brandColor={secili.brandColor} />
+                </div>
+              </li>
+            ))}
+          </ul>
+
+        </>
       ) : null}
     </div>
   );

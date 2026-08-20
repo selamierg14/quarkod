@@ -6,6 +6,7 @@ import { PasswordForm } from "../sifre/PasswordForm";
 import { SettingsForm } from "../isletmeler/[id]/SettingsForm";
 import { CategoryManager } from "../isletmeler/[id]/CategoryManager";
 import { TableManager } from "../isletmeler/[id]/TableManager";
+import { masaSirala } from "@/lib/masa";
 
 export const dynamic = "force-dynamic";
 
@@ -195,7 +196,7 @@ export default async function ProfilePage() {
               </h3>
               <TableManager
                 businessId={kendiIsletmesi.id}
-                tables={kendiIsletmesi.tables.map((t) => ({
+                tables={masaSirala(kendiIsletmesi.tables).map((t) => ({
                   id: t.id,
                   tableNumber: t.tableNumber,
                   isEntrance: t.isEntrance,

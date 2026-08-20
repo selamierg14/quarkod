@@ -163,8 +163,9 @@ export function panelMenusu(
         label: "QR Menü",
         ikon: "menu",
         altLinkler: [
-          { href: "/admin/menu", label: "Düzenle", exact: true },
-          { href: "/admin/menu/onizle", label: "Listele" },
+          { href: "/admin/menu", label: "Menümü düzenle", exact: true },
+          { href: "/admin/menu/sablonlar", label: "Hazır şablonlar" },
+          { href: "/admin/menu/onizle", label: "Menü görünümüm" },
         ],
       },
       { href: "/admin/duyurular", label: "Duyurular", ikon: "duyuru" },
@@ -178,11 +179,22 @@ export function panelMenusu(
         ikon: "bina",
         // Birden fazla işletmesi olan hesapta "Düzenle" tek bir hedefe
         // gidemez — o zaman listeden seçilir, alt link eklenmez.
+        // Masa/QR yönetimi en sık dokunulan ekran ama önce işletmeyi bulup
+        // sonra sayfa içinde aramak gerekiyordu; tek işletmeli hesapta
+        // doğrudan menüden erişilebilir.
         ...(tekIsletmeId
           ? {
               altLinkler: [
                 { href: "/admin/isletmeler", label: "Listele", exact: true },
-                { href: `/admin/isletmeler/${tekIsletmeId}`, label: "Düzenle" },
+                { href: `/admin/isletmeler/${tekIsletmeId}`, label: "Ayarlar", exact: true },
+                {
+                  href: `/admin/isletmeler/${tekIsletmeId}/masalar`,
+                  label: "Masalar & QR",
+                },
+                {
+                  href: `/admin/isletmeler/${tekIsletmeId}/qr`,
+                  label: "QR kodlarını yazdır",
+                },
               ],
             }
           : {}),

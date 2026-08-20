@@ -86,15 +86,23 @@ const HIZLI_ERISIM = [
   {
     href: "/admin/isletmeler",
     ikon: "▦",
-    baslik: "QR kod yönetimi",
+    baslik: "QR kodları",
     alt: "Masalar için üret, yazdır",
+    tema: "bg-indigo-100 text-indigo-700 ring-indigo-200",
   },
-  { href: "/admin/menu", ikon: "☰", baslik: "Menüyü düzenle", alt: "Ürün, fiyat, tükendi" },
+  {
+    href: "/admin/menu",
+    ikon: "☰",
+    baslik: "Menüyü düzenle",
+    alt: "Ürün, fiyat, tükendi",
+    tema: "bg-amber-100 text-amber-700 ring-amber-200",
+  },
   {
     href: "/admin/geri-bildirimler",
     ikon: "✉",
     baslik: "Geri bildirimler",
     alt: "Tüm kayıtları gör",
+    tema: "bg-sky-100 text-sky-700 ring-sky-200",
   },
 ];
 
@@ -192,6 +200,35 @@ export default async function AdminHomePage({
           </TabLink>
         </div>
       ) : null}
+
+      {/* "Hızlı erişim" adı sayfanın dibinde anlamsızdı: oraya inen kişi
+          zaten aradığını bulmuş oluyordu. Artık üstte, tek satır. */}
+      <div className="print-hidden grid gap-2.5 sm:grid-cols-3">
+        {HIZLI_ERISIM.map((h) => (
+          <Link
+            key={h.href}
+            href={h.href}
+            className="group flex items-center gap-3 rounded-card bg-surface p-3.5 shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-raised"
+          >
+            <span
+              aria-hidden="true"
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-chip text-heading ring-1 ${h.tema}`}
+            >
+              {h.ikon}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-small font-semibold text-ink">{h.baslik}</span>
+              <span className="block text-caption text-ink-muted">{h.alt}</span>
+            </span>
+            <span
+              aria-hidden="true"
+              className="shrink-0 text-ink-faint transition group-hover:translate-x-0.5 group-hover:text-accent-700"
+            >
+              →
+            </span>
+          </Link>
+        ))}
+      </div>
 
       <OnboardingKarti user={user} businesses={businesses} />
 
@@ -441,29 +478,6 @@ export default async function AdminHomePage({
         )}
       </section>
 
-      <section>
-        <h2 className="mb-3 text-heading font-semibold text-ink">Hızlı erişim</h2>
-        <div className="grid gap-3 sm:grid-cols-3">
-          {HIZLI_ERISIM.map((h) => (
-            <Link
-              key={h.href}
-              href={h.href}
-              className="flex items-center gap-3 rounded-card bg-surface p-4 shadow-card ring-1 ring-line transition hover:ring-line-strong"
-            >
-              <span
-                aria-hidden="true"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-chip bg-sunken text-heading text-ink-soft"
-              >
-                {h.ikon}
-              </span>
-              <span className="min-w-0">
-                <span className="block text-small font-medium text-ink">{h.baslik}</span>
-                <span className="block text-caption text-ink-faint">{h.alt}</span>
-              </span>
-            </Link>
-          ))}
-        </div>
-      </section>
     </div>
   );
 }

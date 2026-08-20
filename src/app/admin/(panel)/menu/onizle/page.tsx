@@ -1,11 +1,11 @@
 import { requireMenuErisim } from "@/lib/auth";
-import { EmptyState } from "@/components/ui";
+import { EmptyState, PageHeader } from "@/components/ui";
 import { IsletmeSecici, MenuSekmeleri } from "../MenuUst";
 import { menuSecimi } from "../_secim";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "QR Menü — Listele" };
+export const metadata = { title: "Menü görünümüm" };
 
 export default async function MenuOnizlePage({
   searchParams,
@@ -22,14 +22,14 @@ export default async function MenuOnizlePage({
 
   return (
     <div className="flex flex-col gap-5">
-      <MenuSekmeleri aktif="liste" />
+      <MenuSekmeleri aktif="gorunum" />
 
-      <div>
-        <h1 className="text-title font-semibold">QR Menü — Listele</h1>
-        <p className="mt-1 text-small text-ink-muted">
-          Müşterinin masadaki kodu okuttuğunda gördüğü ekranın birebir aynısı.
-        </p>
-      </div>
+      <PageHeader
+        ikon="📱"
+        renk="sky"
+        title="Menü görünümüm"
+        description="Müşteri masadaki kodu okuttuğunda tam olarak bunu görüyor. Aşağıdaki ekran canlı — dokunup gezinebilirsiniz."
+      />
 
       <IsletmeSecici businesses={businesses} seciliId={secili.id} taban="/admin/menu/onizle" />
 

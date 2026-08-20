@@ -12,7 +12,7 @@ import {
   denemeBitisi,
   kayitSorunu,
 } from "@/lib/deneme";
-import { DEFAULT_CATEGORIES } from "@/lib/constants";
+import { BUSINESS_TYPES, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/constants";
 import { KVKK_VERSION } from "@/lib/kvkk";
 import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
 import { uniqueConstraintMessage } from "@/lib/unique-error";
@@ -40,6 +40,10 @@ export async function denemeBaslat(
 ): Promise<DenemeState> {
   const girdi = {
     firma: String(formData.get("firma") ?? "").trim(),
+    // Kayıtta sorulan işletme türü: panele girdiğinde ona uygun anket
+    // kategorileri ve menü şablonu önerilebilsin diye. Boş/tanınmayan
+    // değer "yeme_icme"ye düşer — kayıt bu yüzden başarısız olmasın.
+    tur: String(formData.get("tur") ?? ""),
     adSoyad: String(formData.get("adSoyad") ?? "").trim(),
     eposta: String(formData.get("eposta") ?? "").trim().toLowerCase(),
     telefon: String(formData.get("telefon") ?? "").trim(),
@@ -81,6 +85,9 @@ export async function denemeBaslat(
     return { error: `"${kullaniciAdi}" kullanıcı adı alınmış, başka bir tane seçin.` };
   }
 
+  const tur: BusinessType =
+    girdi.tur in BUSINESS_TYPES ? (girdi.tur as BusinessType) : "yeme_icme";
+
   const slug = toUsername(girdi.firma) || `isletme-${Date.now()}`;
   const bitis = denemeBitisi();
 
@@ -103,9 +110,9 @@ export async function denemeBaslat(
           create: {
             name: girdi.firma,
             slug: `${slug}-${Math.random().toString(36).slice(2, 6)}`,
-            type: "yeme_icme",
+            type: tur,
             categories: {
-              create: DEFAULT_CATEGORIES.yeme_icme.map((name, i) => ({
+              create: DEFAULT_CATEGORIES[tur].map((name, i) => ({
                 name,
                 sortOrder: (i + 1) * 10,
               })),

@@ -1,10 +1,11 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { canAccessBusiness, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { appUrl, qrCardText } from "@/lib/constants";
 import { PrintButton } from "./PrintButton";
+import { masaSirala } from "@/lib/masa";
+import { IsletmeUst } from "../IsletmeUst";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +37,7 @@ export default async function QrPage({
   // QR'lar sunucuda üretilip data URI olarak gömülür: hem yazdırmada hem
   // tek tek indirmede ek istek gerekmez.
   const codes = await Promise.all(
-    business.tables.map(async (table) => {
+    masaSirala(business.tables).map(async (table) => {
       const url = `${base}/f/${business.slug}/${encodeURIComponent(table.tableNumber)}`;
       const dataUrl = await QRCode.toDataURL(url, {
         errorCorrectionLevel: "M",
@@ -56,25 +57,22 @@ export default async function QrPage({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="print-hidden flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Link
-            href={`/admin/isletmeler/${business.id}`}
-            className="text-small text-ink-muted hover:text-ink"
-          >
-            ← {business.name}
-          </Link>
-          <h1 className="mt-1 text-title font-semibold">QR kodları</h1>
-          <p className="text-small text-ink-muted">
-            {codes.length} QR · renk işletmenin marka renginden alınır
-          </p>
-        </div>
+      <div className="print-hidden">
+        <IsletmeUst business={business} aktif="qr" />
+      </div>
+
+      <div className="print-hidden flex flex-wrap items-center justify-between gap-3 rounded-control bg-gradient-to-r from-accent-50 to-transparent px-5 py-4 ring-1 ring-accent-100">
+        <p className="text-small text-ink-soft">
+          <strong className="text-ink">{codes.length} QR kodu</strong> hazır —
+          renkleri işletmenin marka renginden alınıyor. Matbaaya vereceksen
+          PDF&apos;i indir; kendin basacaksan yazdırmaya bas.
+        </p>
         <div className="flex flex-wrap items-center gap-2">
           {/* Matbaaya gidecek dosya: A4 ızgara, kesim kılavuzlu, QR'lar
               vektörel. Tek tek PNG indirip Word'de dizme işini bitiriyor. */}
           <a
             href={`/admin/isletmeler/${business.id}/qr/pdf`}
-            className="rounded-control bg-ink px-4 py-2.5 text-small font-medium text-white"
+            className="rounded-control bg-gradient-to-r from-accent-600 to-accent-700 px-4 py-2.5 text-small font-semibold text-white shadow-card transition hover:brightness-110"
           >
             Matbaa PDF&apos;i indir
           </a>

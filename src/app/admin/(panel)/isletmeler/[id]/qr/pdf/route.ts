@@ -3,6 +3,7 @@ import { canAccessBusiness, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { appUrl, qrCardText } from "@/lib/constants";
 import { qrPdfUret } from "@/lib/qr-pdf";
+import { masaSirala } from "@/lib/masa";
 
 /**
  * Matbaaya gönderilecek toplu QR PDF'i.
@@ -36,7 +37,7 @@ export async function GET(
     isletmeAdi: business.name,
     cagriMetni: qrCardText(business.type, business.qrCardText),
     markaRengi: business.brandColor,
-    kartlar: business.tables.map((table) => ({
+    kartlar: masaSirala(business.tables).map((table) => ({
       etiket: table.isEntrance ? "Giriş" : `Masa ${table.tableNumber}`,
       url: `${base}/f/${business.slug}/${encodeURIComponent(table.tableNumber)}`,
     })),

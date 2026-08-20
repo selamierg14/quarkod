@@ -1,7 +1,7 @@
 import { requireAnketErisim, visibleBusinesses } from "@/lib/auth";
 import { getDoldurmaSuresi, getShiftBreakdown, getTableBreakdown } from "@/lib/stats";
 import { prisma } from "@/lib/db";
-import { EmptyState } from "@/components/ui";
+import { EmptyState, SectionCard } from "@/components/ui";
 import { RaporSekmeleri } from "@/components/RaporSekmeleri";
 import { PeriyotFiltre } from "@/components/PeriyotFiltre";
 import { gunEkle, gunBaslangici } from "@/lib/gun";
@@ -59,6 +59,13 @@ export default async function BreakdownPage({
     }),
   ]);
 
+  // Masa kavramı olmayan işletmeler (tek giriş QR'ı kullananlar) için
+  // "Masaya göre" başlığı yanıltıcı olurdu — orada tek bir nokta var.
+  const masaliNoktaSayisi = await prisma.table.count({
+    where: { businessId: { in: selected }, active: true, isEntrance: false },
+  });
+  const masaVarMi = masaliNoktaSayisi > 0;
+
   const shiftTotal = shifts.reduce((acc, row) => acc + row.count, 0);
   const personelByShift = new Map<string, string[]>();
   for (const atama of atamalar) {
@@ -106,86 +113,138 @@ export default async function BreakdownPage({
         donemler={PERIODS.map((p) => ({ gun: p.days, label: p.label }))}
       />
 
-      <section className="rounded-control bg-surface p-5 ring-1 ring-line">
-        <h2 className="text-caption font-medium tracking-wide text-ink-muted uppercase">
-          Vardiyaya göre
-        </h2>
+      <SectionCard
+        ikon="🕐"
+        renk="sky"
+        title="Vardiyaya göre"
+        description="Hangi vardiyada puan düşüyor — personel planlamasının girdisi."
+      >
         {shiftTotal === 0 ? (
-          <p className="mt-3 text-small text-ink-faint">
+          <p className="text-small text-ink-faint">
             Bu dönemde vardiya etiketli geri bildirim yok.
           </p>
         ) : (
-          <ul className="mt-4 space-y-4">
+          <ul className="flex flex-col gap-3">
             {shifts.map((row) => (
-              <li key={row.shift}>
-                <div className="flex items-baseline justify-between text-small">
-                  <span className="font-medium">{row.label}</span>
-                  <span className="tabular text-ink-muted">
-                    {row.average !== null ? `${row.average.toFixed(2)} / 5` : "—"}
-                    <span className="ml-2 text-ink-faint">{row.count} kayıt</span>
+              <li
+                key={row.shift}
+                className="rounded-control border border-line bg-canvas/60 p-4"
+              >
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <span className="text-body font-semibold text-ink">{row.label}</span>
+                  <span className="flex items-baseline gap-2">
+                    <span className="text-title font-bold tabular text-ink">
+                      {row.average !== null ? row.average.toFixed(2) : "—"}
+                    </span>
+                    <span className="text-caption text-ink-faint">/ 5</span>
+                    <span className="ms-1 rounded-chip bg-surface px-2 py-0.5 text-caption font-medium text-ink-muted ring-1 ring-line">
+                      {row.count} kayıt
+                    </span>
                   </span>
                 </div>
-                <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-sunken">
+                <div className="mt-2.5 h-2.5 overflow-hidden rounded-full bg-surface ring-1 ring-line">
                   <div
-                    className={`h-full rounded-full ${toneFor(row.average)}`}
+                    className={`h-full rounded-full transition-[width] duration-500 ${toneFor(row.average)}`}
                     style={{ width: `${((row.average ?? 0) / 5) * 100}%` }}
                   />
                 </div>
                 {personelByShift.get(row.shift)?.length ? (
-                  <p className="mt-1 text-caption text-ink-faint">
-                    Bu dönem çizelgede: {personelByShift.get(row.shift)!.join(", ")}
+                  <p className="mt-2 flex flex-wrap items-center gap-1.5 text-caption text-ink-muted">
+                    <span className="text-ink-faint">Bu dönem çizelgede:</span>
+                    {personelByShift.get(row.shift)!.map((ad) => (
+                      <span
+                        key={ad}
+                        className="rounded-chip bg-sky-50 px-2 py-0.5 font-medium text-sky-700 ring-1 ring-sky-100"
+                      >
+                        {ad}
+                      </span>
+                    ))}
                   </p>
                 ) : null}
               </li>
             ))}
           </ul>
         )}
-      </section>
+      </SectionCard>
 
-      <section className="rounded-control bg-surface p-5 ring-1 ring-line">
-        <h2 className="text-caption font-medium tracking-wide text-ink-muted uppercase">
-          Masaya göre — en düşükten başlayarak
-        </h2>
+      <SectionCard
+        ikon="📍"
+        renk="rose"
+        title={masaVarMi ? "Masaya göre" : "QR noktasına göre"}
+        description="En düşükten başlayarak — üstteki satır ilk bakılacak yer."
+        padded={false}
+      >
         {tables.length === 0 ? (
-          <EmptyState>Bu dönemde masa etiketli geri bildirim yok.</EmptyState>
+          <div className="p-5">
+            <EmptyState>
+              Bu dönemde {masaVarMi ? "masa" : "QR noktası"} etiketli geri bildirim
+              yok.
+            </EmptyState>
+          </div>
         ) : (
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[420px] text-small">
-              <thead className="border-b border-line text-left text-caption tracking-wide text-ink-muted uppercase">
-                <tr>
-                  <th className="py-2 font-medium">Masa</th>
-                  <th className="py-2 font-medium">Ortalama</th>
-                  <th className="py-2 font-medium">Kayıt</th>
-                  <th className="w-1/3 py-2 font-medium"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {tables.map((row) => (
-                  <tr key={row.tableId}>
-                    <td className="py-2.5 font-medium">{row.label}</td>
-                    <td className="py-2.5 tabular text-ink-soft">
-                      {row.average !== null ? row.average.toFixed(2) : "—"}
-                    </td>
-                    <td className="py-2.5 tabular text-ink-faint">{row.count}</td>
-                    <td className="py-2.5">
-                      <div className="h-2 overflow-hidden rounded-full bg-sunken">
-                        <div
-                          className={`h-full rounded-full ${toneFor(row.average)}`}
-                          style={{ width: `${((row.average ?? 0) / 5) * 100}%` }}
-                        />
-                      </div>
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[520px] text-small">
+                <thead className="bg-sunken/70 text-left text-caption font-semibold tracking-wide text-ink-soft uppercase">
+                  <tr>
+                    <th className="px-5 py-3">{masaVarMi ? "Masa" : "Nokta"}</th>
+                    <th className="px-5 py-3">Ortalama</th>
+                    <th className="px-5 py-3">Kayıt</th>
+                    <th className="w-2/5 px-5 py-3"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            <p className="mt-3 text-caption text-ink-faint">
-              Az kayıtlı masaların ortalaması yanıltıcı olabilir — kayıt sayısına
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {tables.map((row, i) => (
+                    <tr
+                      key={row.tableId}
+                      className={i % 2 === 1 ? "bg-canvas/40" : undefined}
+                    >
+                      <td className="px-5 py-3">
+                        <span className="flex items-center gap-2">
+                          {/* İlk üç satır zaten en düşükler; sıra numarası
+                              "önce buraya bak" mesajını görünür kılıyor. */}
+                          <span
+                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                              i < 3
+                                ? "bg-danger-soft text-danger-ink"
+                                : "bg-sunken text-ink-faint"
+                            }`}
+                          >
+                            {i + 1}
+                          </span>
+                          <span className="font-semibold text-ink">{row.label}</span>
+                        </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className="text-body font-bold tabular text-ink">
+                          {row.average !== null ? row.average.toFixed(2) : "—"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className="rounded-chip bg-sunken px-2 py-0.5 text-caption font-medium tabular text-ink-muted">
+                          {row.count}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <div className="h-2.5 overflow-hidden rounded-full bg-sunken ring-1 ring-line">
+                          <div
+                            className={`h-full rounded-full transition-[width] duration-500 ${toneFor(row.average)}`}
+                            style={{ width: `${((row.average ?? 0) / 5) * 100}%` }}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="border-t border-line bg-sunken/40 px-5 py-3 text-caption text-ink-muted">
+              Az kayıtlı satırların ortalaması yanıltıcı olabilir — kayıt sayısına
               da bakın.
             </p>
-          </div>
+          </>
         )}
-      </section>
+      </SectionCard>
     </div>
   );
 }

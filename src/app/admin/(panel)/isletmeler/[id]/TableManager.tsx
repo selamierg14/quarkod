@@ -45,7 +45,7 @@ export function TableManager({
           </form>
         ))}
         {tables.length === 0 ? (
-          <p className="text-small text-ink-faint">Henüz masa tanımlanmamış.</p>
+          <p className="text-small text-ink-muted">Henüz masa yok — aşağıdan ekleyin.</p>
         ) : null}
       </div>
 
@@ -69,10 +69,12 @@ export function TableManager({
             Ekle
           </button>
         </div>
-        <label className="flex items-center gap-2 text-small text-ink-soft">
-          <input type="checkbox" name="isEntrance" className="h-4 w-4" />
-          Giriş/kapı QR&apos;ı olarak ekle (masa numarası göstermez)
-        </label>
+        <p className="text-caption text-ink-muted">
+          Aralık girin (<code className="rounded bg-sunken px-1 py-0.5">1-20</code>)
+          ya da virgülle ayırıp isim verin
+          (<code className="rounded bg-sunken px-1 py-0.5">VIP-1, Teras, Bahçe 3</code>).
+          Tek seferde en fazla 300 masa.
+        </p>
       </form>
 
       {state.error ? (

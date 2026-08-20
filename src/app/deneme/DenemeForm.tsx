@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { Button, Checkbox, Field, Input } from "@/components/ui";
+import { Button, Checkbox, Field, Input, Select } from "@/components/ui";
+import { BUSINESS_TYPE_LIST } from "@/lib/constants";
 import { denemeBaslat, type DenemeState } from "./actions";
 
 export function DenemeForm() {
@@ -13,8 +14,26 @@ export function DenemeForm() {
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="İşletme adı" htmlFor="firma" required className="sm:col-span-2">
+        <Field label="İşletme adı" htmlFor="firma" required>
           <Input id="firma" name="firma" required placeholder="Kırıntı Fırın & Kahve" />
+        </Field>
+
+        {/* Tür kayıtta soruluyor ki panele ilk girişte anket kategorileri ve
+            menü şablonu ona göre önerilsin; aksi halde her şablon "önerilen"
+            görünüyor ve öneri hiçbir şey söylemiyor. */}
+        <Field
+          label="İşletme türü"
+          htmlFor="tur"
+          required
+          hint="Anket başlıkları ve menü şablonu buna göre hazırlanır."
+        >
+          <Select id="tur" name="tur" required defaultValue="yeme_icme">
+            {BUSINESS_TYPE_LIST.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </Select>
         </Field>
 
         <Field label="Ad soyad" htmlFor="adSoyad" required>

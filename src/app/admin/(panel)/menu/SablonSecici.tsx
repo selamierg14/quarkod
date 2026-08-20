@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { sablonuUygula, type MenuFormState } from "./actions";
 import { MENU_SABLONLARI, type SablonRenk } from "@/lib/menu-sablonlari";
 import type { BusinessType } from "@/lib/constants";
@@ -80,14 +80,22 @@ const TEMA: Record<SablonRenk, { kart: string; rozet: string; serit: string; say
 export function SablonSecici({
   businessId,
   businessType,
+  mevcutBolumSayisi = 0,
 }: {
   businessId: string;
   businessType: BusinessType;
+  /** Menü zaten doluysa şablon uygulanamaz; kullanıcıya sebebini söylüyoruz. */
+  mevcutBolumSayisi?: number;
 }) {
   const [state, formAction, pending] = useActionState<MenuFormState, FormData>(
     sablonuUygula,
     {},
   );
+  // Karta tıklamak şablonu uygulamıyor: önce içeriği açılıyor, uygulama
+  // ayrı ve açık bir düğmeyle oluyor. Tek tıkla 45 ürün eklenmesi geri
+  // alınamaz bir işlemdi ve kimse ne geleceğini görmeden basıyordu.
+  const [acikId, setAcikId] = useState<string | null>(null);
+  const doluMu = mevcutBolumSayisi > 0;
 
   const siralanmis = [...MENU_SABLONLARI].sort((a, b) => {
     const aUygun = a.onerilenTurler.includes(businessType) ? 0 : 1;
@@ -97,87 +105,131 @@ export function SablonSecici({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-start gap-3 rounded-control bg-gradient-to-r from-accent-50 to-transparent p-4 ring-1 ring-accent-100">
-        <span
-          aria-hidden="true"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-chip bg-accent-600 text-lg text-white shadow-sm"
-        >
-          ✨
-        </span>
-        <div>
-          <h2 className="font-semibold text-ink">Hazır şablonla başlayın</h2>
-          <p className="mt-0.5 text-small text-ink-muted">
-            Bir şablon seçin; bölümler, ürünler ve örnek fiyatlar saniyeler
-            içinde kurulur. Sonrasında hepsini tek tek düzenleyebilirsiniz.
+      {doluMu ? (
+        <div className="flex items-start gap-3 rounded-control bg-warning-soft p-4 ring-1 ring-warning/25">
+          <span
+            aria-hidden="true"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-warning text-white"
+          >
+            !
+          </span>
+          <p className="text-small text-warning-ink">
+            Menünüzde zaten <strong>{mevcutBolumSayisi} bölüm</strong> var.
+            Şablon yalnızca boş menüye uygulanabilir — aynı bölümler iki kez
+            oluşmasın diye. Şablona geçmek istiyorsanız önce{" "}
+            <strong>Menümü düzenle</strong> sekmesindeki &quot;Tüm menüyü
+            sil&quot; ile temizleyin.
           </p>
         </div>
-      </div>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {siralanmis.map((sablon) => {
           const tema = TEMA[sablon.renk];
           const urunSayisi = sablon.kategoriler.reduce((t, k) => t + k.urunler.length, 0);
           const onerilen = sablon.onerilenTurler.includes(businessType);
+          const acik = acikId === sablon.id;
 
           return (
-            <form key={sablon.id} action={formAction}>
-              <input type="hidden" name="businessId" value={businessId} />
-              <input type="hidden" name="sablonId" value={sablon.id} />
+            <div
+              key={sablon.id}
+              className={`flex h-full flex-col overflow-hidden rounded-card border bg-surface shadow-card transition ${
+                acik
+                  ? "border-accent-300 shadow-pop ring-2 ring-accent-200"
+                  : `border-line hover:-translate-y-0.5 hover:shadow-raised ${tema.kart}`
+              }`}
+            >
+              <span className={`h-1.5 w-full bg-gradient-to-r ${tema.serit}`} aria-hidden="true" />
+
               <button
-                type="submit"
-                disabled={pending}
-                className={`group flex h-full w-full flex-col overflow-hidden rounded-card border border-line bg-surface text-start shadow-card transition hover:-translate-y-0.5 hover:shadow-pop disabled:opacity-60 disabled:hover:translate-y-0 ${tema.kart}`}
+                type="button"
+                onClick={() => setAcikId(acik ? null : sablon.id)}
+                aria-expanded={acik}
+                className="flex flex-1 cursor-pointer flex-col p-4 text-start"
               >
-                <span className={`h-1.5 w-full bg-gradient-to-r ${tema.serit}`} aria-hidden="true" />
-
-                <span className="flex flex-1 flex-col p-4">
-                  <span className="flex items-start justify-between gap-2">
-                    <span
-                      aria-hidden="true"
-                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-chip text-xl ring-1 ${tema.rozet}`}
-                    >
-                      {sablon.ikon}
-                    </span>
-                    {onerilen ? (
-                      <span className="rounded-full bg-accent-50 px-2 py-0.5 text-caption font-medium text-accent-700 ring-1 ring-accent-200">
-                        Önerilen
-                      </span>
-                    ) : null}
+                <span className="flex items-start justify-between gap-2">
+                  <span
+                    aria-hidden="true"
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-chip text-xl ring-1 ${tema.rozet}`}
+                  >
+                    {sablon.ikon}
                   </span>
+                  {onerilen ? (
+                    <span className="rounded-full bg-accent-50 px-2 py-0.5 text-caption font-semibold text-accent-700 ring-1 ring-accent-200">
+                      Size uygun
+                    </span>
+                  ) : null}
+                </span>
 
-                  <span className="mt-3 block font-semibold text-ink">{sablon.ad}</span>
-                  <span className="mt-1 block flex-1 text-small leading-relaxed text-ink-muted">
-                    {sablon.aciklama}
+                <span className="mt-3 block font-semibold text-ink">{sablon.ad}</span>
+                <span className="mt-1 block flex-1 text-small leading-relaxed text-ink-muted">
+                  {sablon.aciklama}
+                </span>
+
+                <span className="mt-3 flex items-center gap-2">
+                  <span className={`rounded-chip px-2 py-1 text-caption font-semibold ${tema.sayac}`}>
+                    {sablon.kategoriler.length} bölüm
                   </span>
-
-                  <span className="mt-3 flex items-center gap-2">
-                    <span className={`rounded-chip px-2 py-1 text-caption font-medium ${tema.sayac}`}>
-                      {sablon.kategoriler.length} bölüm
-                    </span>
-                    <span className={`rounded-chip px-2 py-1 text-caption font-medium ${tema.sayac}`}>
-                      {urunSayisi} ürün
-                    </span>
-                    <span
-                      aria-hidden="true"
-                      className="ms-auto text-ink-faint transition group-hover:translate-x-0.5 group-hover:text-ink"
-                    >
-                      →
-                    </span>
+                  <span className={`rounded-chip px-2 py-1 text-caption font-semibold ${tema.sayac}`}>
+                    {urunSayisi} ürün
+                  </span>
+                  <span className="ms-auto text-caption font-medium text-accent-700">
+                    {acik ? "Gizle ▴" : "İçindekiler ▾"}
                   </span>
                 </span>
               </button>
-            </form>
+
+              {acik ? (
+                <div className="border-t border-line bg-canvas/60 px-4 py-3">
+                  <ul className="flex max-h-56 flex-col gap-2 overflow-y-auto">
+                    {sablon.kategoriler.map((k) => (
+                      <li key={k.ad}>
+                        <p className="text-caption font-semibold text-ink-soft">
+                          {k.ad}{" "}
+                          <span className="font-normal text-ink-faint">
+                            ({k.urunler.length})
+                          </span>
+                        </p>
+                        <p className="text-caption leading-relaxed text-ink-muted">
+                          {k.urunler
+                            .slice(0, 5)
+                            .map((u) => u.ad)
+                            .join(", ")}
+                          {k.urunler.length > 5 ? ` +${k.urunler.length - 5} ürün` : ""}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <form action={formAction} className="mt-3">
+                    <input type="hidden" name="businessId" value={businessId} />
+                    <input type="hidden" name="sablonId" value={sablon.id} />
+                    <button
+                      type="submit"
+                      disabled={pending || doluMu}
+                      className="w-full rounded-control bg-gradient-to-r from-accent-600 to-accent-700 px-4 py-2.5 text-small font-semibold text-white shadow-card transition hover:brightness-110 disabled:from-slate-300 disabled:to-slate-300"
+                    >
+                      {pending
+                        ? "Kuruluyor…"
+                        : doluMu
+                          ? "Önce mevcut menüyü silin"
+                          : `Bu menüyü kullan (${urunSayisi} ürün)`}
+                    </button>
+                  </form>
+                </div>
+              ) : null}
+            </div>
           );
         })}
       </div>
 
       {state.error ? (
-        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
+        <p className="rounded-control bg-danger-soft px-4 py-3 text-small font-medium text-danger-ink ring-1 ring-danger/20">
           {state.error}
         </p>
       ) : null}
       {state.saved ? (
-        <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink">
+        <p className="rounded-control bg-success-soft px-4 py-3 text-small font-medium text-success-ink ring-1 ring-success/20">
           {state.saved}
         </p>
       ) : null}

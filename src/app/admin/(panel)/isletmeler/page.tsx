@@ -2,7 +2,7 @@ import Link from "next/link";
 import { actingAccountId, requireUser, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { BUSINESS_TYPES, type BusinessType } from "@/lib/constants";
-import { PageHeader } from "@/components/ui";
+import { EmptyState, PageHeader } from "@/components/ui";
 import { NewBusinessForm } from "./NewBusinessForm";
 
 export const dynamic = "force-dynamic";
@@ -60,41 +60,76 @@ export default async function BusinessListPage() {
       />
 
       {businesses.length === 0 ? (
-        <p className="rounded-control border border-dashed border-line-strong bg-surface p-8 text-center text-small text-ink-muted">
-          Henüz işletme eklenmemiş. Aşağıdan ilk işletmenizi açın; kategori
-          şablonu ve QR kodları otomatik hazırlanır.
-        </p>
+        <EmptyState baslik="Henüz işletme yok" ikon="🏪">
+          Aşağıdan ilk işletmenizi açın; anket kategorileri ve QR kodları
+          otomatik hazırlanır.
+        </EmptyState>
       ) : null}
 
-      <ul className="grid gap-3 sm:grid-cols-2">
+      <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {businesses.map((business) => {
           return (
             <li key={business.id}>
               <Link
                 href={`/admin/isletmeler/${business.id}`}
-                className="block rounded-control bg-surface p-5 ring-1 ring-line hover:ring-line-strong"
+                className="group flex h-full flex-col overflow-hidden rounded-card bg-surface shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-raised"
               >
-                <span className="flex items-center gap-2 font-medium">
-                  <span
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: business.brandColor }}
-                  />
-                  {business.name}
+                {/* Marka rengi şeridi: onlarca şubesi olan zincirde kartlar
+                    birbirinden ancak böyle ayrılıyor. */}
+                <span
+                  aria-hidden="true"
+                  className="h-1.5 w-full"
+                  style={{ backgroundColor: business.brandColor }}
+                />
+                <span className="flex flex-1 flex-col p-5">
+                  <span className="flex items-start gap-3">
+                    <span
+                      aria-hidden="true"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-chip text-base text-white shadow-sm"
+                      style={{ backgroundColor: business.brandColor }}
+                    >
+                      🏪
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-semibold text-ink">
+                        {business.name}
+                      </span>
+                      <span className="block text-small text-ink-muted">
+                        {BUSINESS_TYPES[business.type as BusinessType] ?? business.type}
+                        {business.address ? ` · ${business.address}` : ""}
+                      </span>
+                    </span>
+                  </span>
+
+                  <span className="mt-4 flex flex-wrap gap-1.5">
+                    <span className="rounded-chip bg-indigo-50 px-2 py-1 text-caption font-semibold text-indigo-700">
+                      {tables.get(business.id) ?? 0} QR noktası
+                    </span>
+                    <span className="rounded-chip bg-amber-50 px-2 py-1 text-caption font-semibold text-amber-700">
+                      {categories.get(business.id) ?? 0} kategori
+                    </span>
+                    <span className="rounded-chip bg-sky-50 px-2 py-1 text-caption font-semibold text-sky-700">
+                      {feedbacks.get(business.id) ?? 0} geri bildirim
+                    </span>
+                  </span>
+
+                  {!business.googleReviewUrl ? (
+                    <span className="mt-3 flex items-start gap-1.5 rounded-chip bg-warning-soft px-2.5 py-1.5 text-caption text-warning-ink">
+                      <span aria-hidden="true">⚠</span>
+                      Google yorum linki yok — 5 yıldız yönlendirmesi çalışmaz.
+                    </span>
+                  ) : null}
+
+                  <span className="mt-4 flex items-center gap-1 text-caption font-medium text-accent-700">
+                    Ayarları aç
+                    <span
+                      aria-hidden="true"
+                      className="transition group-hover:translate-x-0.5"
+                    >
+                      →
+                    </span>
+                  </span>
                 </span>
-                <p className="mt-1 text-small text-ink-muted">
-                  {BUSINESS_TYPES[business.type as BusinessType] ?? business.type}
-                  {business.address ? ` · ${business.address}` : ""}
-                </p>
-                <p className="mt-3 text-caption text-ink-faint">
-                  {tables.get(business.id) ?? 0} QR noktası ·{" "}
-                  {categories.get(business.id) ?? 0} kategori ·{" "}
-                  {feedbacks.get(business.id) ?? 0} geri bildirim
-                </p>
-                {!business.googleReviewUrl ? (
-                  <p className="mt-2 text-caption text-rating">
-                    Google yorum linki tanımlı değil — 5 yıldız yönlendirmesi çalışmaz.
-                  </p>
-                ) : null}
               </Link>
             </li>
           );

@@ -58,6 +58,63 @@ export function CardHeader({
 }
 
 /**
+ * Başlığı renkli bir şeritte duran bölüm kartı.
+ *
+ * Panelde her bölüm "beyaz kutu + gri küçük başlık" kalıbıyla yazılıyordu;
+ * on tanesi alt alta gelince hepsi aynı görünüyor, göz nereye bakacağını
+ * bilemiyordu. Burada başlık kendi zeminine oturuyor: bölümün nerede
+ * başladığı bir çizgiyle değil bir yüzeyle belli oluyor.
+ */
+export function SectionCard({
+  title,
+  description,
+  action,
+  ikon,
+  renk = "slate",
+  children,
+  className = "",
+  padded = true,
+}: {
+  title: ReactNode;
+  description?: ReactNode;
+  action?: ReactNode;
+  ikon?: ReactNode;
+  renk?: SayfaRengi;
+  children: ReactNode;
+  className?: string;
+  padded?: boolean;
+}) {
+  return (
+    <section
+      className={`overflow-hidden rounded-card bg-surface shadow-card ring-1 ring-line ${className}`}
+    >
+      <div
+        className={`flex flex-wrap items-center justify-between gap-3 border-b px-5 py-3.5 ${SERIT[renk]}`}
+      >
+        <div className="flex min-w-0 items-center gap-2.5">
+          {ikon ? (
+            <span
+              aria-hidden="true"
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-chip text-small ring-1 ${ROZET[renk]}`}
+            >
+              {ikon}
+            </span>
+          ) : null}
+          <div className="min-w-0">
+            <h2 className="text-body font-semibold text-ink">{title}</h2>
+            {description ? (
+              <p className="mt-0.5 text-caption text-ink-muted">{description}</p>
+            ) : null}
+          </div>
+        </div>
+        {action ? <div className="shrink-0">{action}</div> : null}
+      </div>
+      <div className={padded ? "p-5" : ""}>{children}</div>
+    </section>
+  );
+}
+
+/**
  * Sayfa başlığı rozetinin renk temaları.
  *
  * Her ekranın kendi rengi var: yönetici gün içinde on farklı sayfa
@@ -85,6 +142,18 @@ const ROZET: Record<SayfaRengi, string> = {
   violet: "bg-violet-100 text-violet-700 ring-violet-200",
   teal: "bg-teal-100 text-teal-700 ring-teal-200",
   slate: "bg-slate-100 text-slate-700 ring-slate-200",
+};
+
+/** Bölüm başlığı şeridi — rozetle aynı aileden, çok daha soluk bir zemin. */
+const SERIT: Record<SayfaRengi, string> = {
+  indigo: "border-indigo-100 bg-indigo-50/60",
+  sky: "border-sky-100 bg-sky-50/60",
+  emerald: "border-emerald-100 bg-emerald-50/60",
+  amber: "border-amber-100 bg-amber-50/60",
+  rose: "border-rose-100 bg-rose-50/60",
+  violet: "border-violet-100 bg-violet-50/60",
+  teal: "border-teal-100 bg-teal-50/60",
+  slate: "border-line bg-sunken",
 };
 
 /** Sayfa başlığı: her ekranın tepesinde aynı ritim, kendi rengi. */

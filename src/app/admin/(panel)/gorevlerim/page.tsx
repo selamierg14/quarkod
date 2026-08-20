@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUser, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { EmptyState, PageHeader } from "@/components/ui";
+import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
 import { SHIFTS } from "@/lib/constants";
 import { gunBaslangici, gunEkle } from "@/lib/gun";
 import { etkinVardiyalar, vardiyaHesapla } from "@/lib/vardiya";
@@ -92,14 +92,18 @@ export default async function GorevlerimPage({
             { gorev: "kapanis", liste: kapanis },
           ].map(({ gorev, liste }) =>
             liste.length === 0 ? null : (
-              <section
+              <SectionCard
                 key={gorev}
-                className="rounded-control bg-surface p-4 ring-1 ring-line"
+                ikon={gorev === "acilis" ? "🌅" : "🌙"}
+                renk={gorev === "acilis" ? "amber" : "indigo"}
+                title={GOREV_BASLIKLARI[gorev] ?? gorev}
+                description={
+                  gorev === "acilis"
+                    ? "Gün başlarken yapılacaklar."
+                    : "Kapanışta kontrol edilecekler."
+                }
               >
-                <h2 className="text-caption font-medium tracking-wide text-ink-muted uppercase">
-                  {GOREV_BASLIKLARI[gorev] ?? gorev}
-                </h2>
-                <ul className="mt-3 flex flex-col gap-1.5">
+                <ul className="flex flex-col gap-1.5">
                   {liste.map((item) => (
                     <GorevKutusu
                       key={item.id}
@@ -111,20 +115,18 @@ export default async function GorevlerimPage({
                     />
                   ))}
                 </ul>
-              </section>
+              </SectionCard>
             ),
           )}
         </div>
       )}
 
-      <section className="rounded-control bg-surface p-4 ring-1 ring-line">
-        <h2 className="text-caption font-medium tracking-wide text-ink-muted uppercase">
-          Vardiya devir notu
-        </h2>
-        <p className="mt-1 text-small text-ink-muted">
-          Bir sonraki vardiyaya bırakılacak kısa not — &quot;masa 5&apos;te sorun
-          oldu&quot; gibi.
-        </p>
+      <SectionCard
+        ikon="📝"
+        renk="teal"
+        title="Vardiya devir notu"
+        description={'Bir sonraki vardiyaya bırakılacak kısa not — "masa 5\'te sorun oldu" gibi.'}
+      >
 
         <ShiftNotuFormu
           businessId={secili.id}
@@ -155,7 +157,7 @@ export default async function GorevlerimPage({
             ))}
           </ul>
         ) : null}
-      </section>
+      </SectionCard>
     </div>
   );
 }
