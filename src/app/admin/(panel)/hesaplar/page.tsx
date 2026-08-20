@@ -54,7 +54,15 @@ export default async function AccountsPage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="text-title font-semibold">Hesaplar</h1>
+        <h1 className="flex items-center gap-2.5 text-title font-semibold">
+          <span
+            aria-hidden="true"
+            className="flex h-9 w-9 items-center justify-center rounded-chip bg-indigo-100 text-base text-indigo-700 ring-1 ring-indigo-200"
+          >
+            🗂️
+          </span>
+          Hesaplar
+        </h1>
         <p className="mt-1 text-small text-ink-muted">
           Sistemi kullanan müşteriler ve altlarındaki işletme/kullanıcı yapısı.
           Bir hesaba geçtiğinizde panel tam olarak o müşterinin gördüğü hale

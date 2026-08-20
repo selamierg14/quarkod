@@ -47,7 +47,15 @@ export default async function UrunlerPage({
       <RaporSekmeleri aktif="urunler" />
 
       <div>
-        <h1 className="text-title font-semibold">Ürün puanları</h1>
+        <h1 className="flex items-center gap-2.5 text-title font-semibold">
+          <span
+            aria-hidden="true"
+            className="flex h-9 w-9 items-center justify-center rounded-chip bg-amber-100 text-base text-amber-700 ring-1 ring-amber-200"
+          >
+            ⭐
+          </span>
+          Ürün puanları
+        </h1>
         <p className="mt-1 text-small text-ink-muted">
           Müşterilerin tek tek puanladığı ürünler. Genel memnuniyet düşükken
           sorunun hangi üründe olduğunu buradan görürsünüz.

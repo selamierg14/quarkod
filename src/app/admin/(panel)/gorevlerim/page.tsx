@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUser, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { EmptyState } from "@/components/ui";
+import { EmptyState, PageHeader } from "@/components/ui";
 import { SHIFTS } from "@/lib/constants";
 import { gunBaslangici, gunEkle } from "@/lib/gun";
 import { etkinVardiyalar, vardiyaHesapla } from "@/lib/vardiya";
@@ -56,12 +56,12 @@ export default async function GorevlerimPage({
 
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <h1 className="text-title font-semibold">Görevlerim</h1>
-        <p className="mt-1 text-small text-ink-muted">
-          Bugünün açılış/kapanış görevleri ve vardiya devir notları.
-        </p>
-      </div>
+      <PageHeader
+        ikon="✅"
+        renk="emerald"
+        title="Görevlerim"
+        description="Bugünün açılış/kapanış görevleri ve vardiya devir notları."
+      />
 
       <IsletmeSecici businesses={businesses} seciliId={secili.id} taban="/admin/gorevlerim" />
 

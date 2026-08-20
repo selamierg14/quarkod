@@ -2,6 +2,7 @@ import Link from "next/link";
 import { actingAccountId, requireUser, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { BUSINESS_TYPES, type BusinessType } from "@/lib/constants";
+import { PageHeader } from "@/components/ui";
 import { NewBusinessForm } from "./NewBusinessForm";
 
 export const dynamic = "force-dynamic";
@@ -51,7 +52,12 @@ export default async function BusinessListPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-title font-semibold">İşletmeler</h1>
+      <PageHeader
+        ikon="🏪"
+        renk="rose"
+        title="İşletmeler"
+        description="Hesabınıza bağlı şubeler; QR kodları, kategoriler ve marka ayarları her birinin kendi sayfasında."
+      />
 
       {businesses.length === 0 ? (
         <p className="rounded-control border border-dashed border-line-strong bg-surface p-8 text-center text-small text-ink-muted">

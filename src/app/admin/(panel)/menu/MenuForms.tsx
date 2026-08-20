@@ -14,6 +14,7 @@ import {
   toggleMenuCategory,
   toggleMenuItem,
   toggleSoldOut,
+  tumMenuyuSil,
   updateMenuItem,
   type MenuFormState,
 } from "./actions";
@@ -422,5 +423,97 @@ export function ItemRow({
         </form>
       </div>
     </li>
+  );
+}
+
+/* ------------------------------------------------------------ tüm menü */
+
+/**
+ * Menünün tamamını silme — iki adımlı onay.
+ *
+ * Tek tıkla silinen bir menü, bir gecede girilmiş yüzlerce ürünü götürür.
+ * Bu yüzden düğme önce yalnızca uyarıyı açıyor; asıl silme ikinci
+ * tıklamada, ne kaybedileceği rakamla yazıldıktan sonra oluyor.
+ */
+export function TumMenuyuSil({
+  businessId,
+  bolumSayisi,
+  urunSayisi,
+}: {
+  businessId: string;
+  bolumSayisi: number;
+  urunSayisi: number;
+}) {
+  const [acik, setAcik] = useState(false);
+  const [state, formAction, pending] = useActionState<MenuFormState, FormData>(
+    tumMenuyuSil,
+    {},
+  );
+
+  if (!acik) {
+    return (
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-control border border-danger-line bg-danger-soft/50 px-4 py-3">
+        <p className="text-small text-ink-muted">
+          <span className="font-medium text-danger-ink">Tehlikeli bölge.</span>{" "}
+          Menüyü sıfırdan kurmak ya da başka bir şablon uygulamak için önce
+          tümünü silin.
+        </p>
+        <button
+          type="button"
+          onClick={() => setAcik(true)}
+          className="shrink-0 rounded-control border border-danger/40 bg-surface px-3 py-1.5 text-small font-medium text-danger-ink transition hover:bg-danger-soft"
+        >
+          Tüm menüyü sil
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      action={formAction}
+      className="flex flex-col gap-3 rounded-control border border-danger/40 bg-danger-soft px-4 py-4"
+    >
+      <input type="hidden" name="businessId" value={businessId} />
+      <input type="hidden" name="onay" value="evet" />
+
+      <div className="flex items-start gap-3">
+        <span
+          aria-hidden="true"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-danger text-white"
+        >
+          !
+        </span>
+        <div>
+          <p className="font-semibold text-danger-ink">Emin misiniz?</p>
+          <p className="mt-0.5 text-small text-danger-ink/80">
+            <strong>{bolumSayisi} bölüm</strong> ve içindeki{" "}
+            <strong>{urunSayisi} ürün</strong> kalıcı olarak silinecek. Bu işlem
+            geri alınamaz. Geçmiş ürün puanları kayıtlarda kalır.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded-control bg-danger px-4 py-2 text-small font-medium text-white transition hover:brightness-95 disabled:opacity-60"
+        >
+          {pending ? "Siliniyor…" : "Evet, tüm menüyü sil"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setAcik(false)}
+          className="rounded-control border border-line bg-surface px-4 py-2 text-small text-ink-soft transition hover:bg-canvas"
+        >
+          Vazgeç
+        </button>
+      </div>
+
+      {state.error ? (
+        <p className="text-small font-medium text-danger-ink">{state.error}</p>
+      ) : null}
+    </form>
   );
 }

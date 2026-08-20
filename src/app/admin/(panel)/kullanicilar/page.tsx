@@ -4,6 +4,7 @@ import { requireOwner, userScope } from "@/lib/auth";
 import { ResetPasswordForm, ToggleUserButton } from "./UserForms";
 import { usesSeedPassword } from "./actions";
 import { ROL_ADLARI } from "@/lib/constants";
+import { PageHeader } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -26,15 +27,20 @@ export default async function UsersPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-title font-semibold">Kullanıcılar</h1>
-        <Link
-          href="/admin/kullanicilar/ekle"
-          className="rounded-control bg-ink px-4 py-2 text-small font-medium text-white hover:bg-ink-button-hover"
-        >
-          + Yeni kullanıcı
-        </Link>
-      </div>
+      <PageHeader
+        ikon="👥"
+        renk="indigo"
+        title="Kullanıcılar"
+        description="Panele giren ekip üyeleri, rolleri ve modül izinleri."
+        action={
+          <Link
+            href="/admin/kullanicilar/ekle"
+            className="rounded-control bg-gradient-to-r from-accent-600 to-accent-700 px-4 py-2 text-small font-medium text-white shadow-card transition hover:brightness-110"
+          >
+            + Yeni kullanıcı
+          </Link>
+        }
+      />
 
       {seedCount > 0 ? (
         <p className="rounded-control bg-warning-soft px-4 py-3 text-small text-warning-ink">

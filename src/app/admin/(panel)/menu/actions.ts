@@ -366,6 +366,33 @@ export async function moveMenuItem(formData: FormData) {
  * ekran göstermek yerine saniyeler içinde dolu, gerçekçi fiyatlı bir menü
  * gösterilebilsin diye.
  */
+/**
+ * Menünün tamamını siler — tüm bölümler ve içlerindeki ürünler.
+ *
+ * Yanlışlıkla basılmasın diye arayüzde iki adımlı onay var; sunucu tarafında
+ * da ayrıca `onay` alanı bekleniyor ki tek bir POST'la kazara tetiklenmesin.
+ * Ürün puanları (ItemRating) silinmez: menuItemId null'a düşer, ürün adı
+ * kayıtta kaldığı için geçmiş raporlar anlamını korur.
+ */
+export async function tumMenuyuSil(
+  _prev: MenuFormState,
+  formData: FormData,
+): Promise<MenuFormState> {
+  const businessId = String(formData.get("businessId") ?? "");
+  const hata = await menuIzni(businessId);
+  if (hata) return { error: hata };
+
+  if (String(formData.get("onay") ?? "") !== "evet") {
+    return { error: "Silme onaylanmadı." };
+  }
+
+  const { count } = await prisma.menuCategory.deleteMany({ where: { businessId } });
+  await menuDenetim("menu.category", `Tüm menü silindi (${count} bölüm)`);
+  yenile(businessId);
+
+  return { saved: `Menü tamamen silindi (${count} bölüm).` };
+}
+
 export async function sablonuUygula(
   _prev: MenuFormState,
   formData: FormData,

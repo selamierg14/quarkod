@@ -1,6 +1,6 @@
 import { allowedBusinessIds, requireTenantOwner } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { EmptyState, formatDateTime } from "@/components/ui";
+import { EmptyState, PageHeader, formatDateTime } from "@/components/ui";
 import { IYS_CHANNELS, type IysChannel } from "@/lib/iys";
 import { MarkReportedForm } from "./MarkReportedForm";
 
@@ -26,14 +26,18 @@ export default async function ConsentsPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <h1 className="text-title font-semibold">Pazarlama izinleri</h1>
-        <p className="mt-1 text-small text-ink-muted">
-          Ankette ticari elektronik ileti kutusunu işaretleyen müşteriler. Bu
-          liste, geri bildirim için alınan KVKK rızasından ayrıdır — buradaki
-          kayıtlar İYS&apos;ye bildirilmek üzere tutulur.
-        </p>
-      </div>
+      <PageHeader
+        ikon="✉️"
+        renk="emerald"
+        title="Pazarlama izinleri"
+        description={
+          <>
+            Ankette ticari elektronik ileti kutusunu işaretleyen müşteriler. Bu
+            liste, geri bildirim için alınan KVKK rızasından ayrıdır — buradaki
+            kayıtlar İYS&apos;ye bildirilmek üzere tutulur.
+          </>
+        }
+      />
 
       {bekleyen > 0 ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-control bg-warning-soft px-4 py-3">

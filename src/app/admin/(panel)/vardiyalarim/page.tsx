@@ -2,7 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { SHIFTS } from "@/lib/constants";
 import { gunAdi, gunBaslangici, gunEkle } from "@/lib/gun";
-import { EmptyState } from "@/components/ui";
+import { EmptyState, PageHeader } from "@/components/ui";
 import { DegisimTalebi } from "./DegisimTalebi";
 
 export const dynamic = "force-dynamic";
@@ -46,12 +46,12 @@ export default async function VardiyalarimPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <h1 className="text-title font-semibold">Vardiyalarım</h1>
-        <p className="mt-1 text-small text-ink-muted">
-          Önümüzdeki iki hafta içinde size atanan vardiyalar.
-        </p>
-      </div>
+      <PageHeader
+        ikon="📅"
+        renk="teal"
+        title="Vardiyalarım"
+        description="Önümüzdeki iki hafta içinde size atanan vardiyalar."
+      />
 
       {atamalar.length === 0 ? (
         <EmptyState>

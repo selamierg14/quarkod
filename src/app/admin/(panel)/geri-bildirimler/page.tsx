@@ -54,7 +54,15 @@ export default async function FeedbackListPage({
       <RaporSekmeleri aktif="liste" />
 
       <div className="flex items-baseline justify-between">
-        <h1 className="text-title font-semibold">Geri bildirimler</h1>
+        <h1 className="flex items-center gap-2.5 text-title font-semibold">
+          <span
+            aria-hidden="true"
+            className="flex h-9 w-9 items-center justify-center rounded-chip bg-sky-100 text-base text-sky-700 ring-1 ring-sky-200"
+          >
+            💬
+          </span>
+          Geri bildirimler
+        </h1>
         <span className="flex items-center gap-3">
           <span className="text-small text-ink-muted">{total} kayıt</span>
           {total > 0 ? (

@@ -1,4 +1,5 @@
 import { requireTenantOwner } from "@/lib/auth";
+import { PageHeader } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -48,13 +49,12 @@ export default async function EntegrasyonlarPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <h1 className="text-title font-semibold">Entegrasyonlar</h1>
-        <p className="mt-1 text-small text-ink-muted">
-          Panelinize ek hizmet sağlayıcıları bağlayın. Aşağıdakiler yakında
-          açılacak — şimdilik yalnızca önizleme.
-        </p>
-      </div>
+      <PageHeader
+        ikon="🔌"
+        renk="teal"
+        title="Entegrasyonlar"
+        description="Panelinize ek hizmet sağlayıcıları bağlayın. Aşağıdakiler yakında açılacak — şimdilik yalnızca önizleme."
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {ENTEGRASYONLAR.map((e) => (

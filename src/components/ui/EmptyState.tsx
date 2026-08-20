@@ -22,13 +22,17 @@ export function EmptyState({
   return (
     <div
       className={`flex flex-col items-center rounded-card border border-dashed px-6 py-10 text-center ${
-        tone === "hata" ? "border-danger/30 bg-danger-soft/40" : "border-line-strong bg-surface"
+        tone === "hata"
+          ? "border-danger/30 bg-danger-soft/40"
+          : "border-accent-200 bg-gradient-to-b from-accent-50/60 to-surface"
       }`}
     >
       <span
         aria-hidden="true"
-        className={`flex h-11 w-11 items-center justify-center rounded-full text-heading ${
-          tone === "hata" ? "bg-danger-soft text-danger-ink" : "bg-sunken text-ink-faint"
+        className={`flex h-12 w-12 items-center justify-center rounded-full text-heading ring-1 ${
+          tone === "hata"
+            ? "bg-danger-soft text-danger-ink ring-danger/20"
+            : "bg-accent-100 text-accent-700 ring-accent-200"
         }`}
       >
         {ikon}

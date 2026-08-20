@@ -72,7 +72,15 @@ export default async function BreakdownPage({
       <RaporSekmeleri aktif="vardiya" />
 
       <div>
-        <h1 className="text-title font-semibold">Vardiya &amp; masa</h1>
+        <h1 className="flex items-center gap-2.5 text-title font-semibold">
+          <span
+            aria-hidden="true"
+            className="flex h-9 w-9 items-center justify-center rounded-chip bg-sky-100 text-base text-sky-700 ring-1 ring-sky-200"
+          >
+            🕐
+          </span>
+          Vardiya &amp; masa
+        </h1>
         <p className="mt-1 text-small text-ink-muted">
           Aynı ortalama, farklı yerlerde farklı sebeplerden düşer. Vardiya
           personel sorununu, masa ise mekânla ilgili sorunu (gürültü, ısı,

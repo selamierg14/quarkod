@@ -1,6 +1,7 @@
 export { Button, ButtonLink, ButtonRow, Spinner, buttonClass } from "./Button";
 export type { ButtonSize, ButtonVariant } from "./Button";
 export { Card, CardHeader, Overline, PageHeader } from "./Card";
+export type { SayfaRengi } from "./Card";
 export { Checkbox, Field, FormFeedback, Input, Select, Textarea } from "./Field";
 export { TarihGirdisi } from "./TarihGirdisi";
 export { Badge, ScoreBar, Stars, StatusBadge, puanRengi } from "./Badge";

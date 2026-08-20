@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requirePersonelYonetimi, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { EmptyState, TabLink } from "@/components/ui";
+import { EmptyState, PageHeader, TabLink } from "@/components/ui";
 import { SHIFTS } from "@/lib/constants";
 import { gunAdi, gunEkle, gunGirdisi, haftaBaslangici } from "@/lib/gun";
 import { etkinVardiyalar } from "@/lib/vardiya";
@@ -71,12 +71,12 @@ export default async function VardiyaPlanlamaPage({
       </div>
 
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <div>
-          <h1 className="text-title font-semibold">Vardiya çizelgesi</h1>
-          <p className="mt-1 text-small text-ink-muted">
-            {haftaBasi.toLocaleDateString("tr-TR")} – {haftaSonu.toLocaleDateString("tr-TR")}
-          </p>
-        </div>
+        <PageHeader
+          ikon="📅"
+          renk="teal"
+          title="Vardiya çizelgesi"
+          description={`${haftaBasi.toLocaleDateString("tr-TR")} – ${haftaSonu.toLocaleDateString("tr-TR")}`}
+        />
         <div className="flex gap-1">
           <Link
             href={haftaHref(gunEkle(haftaBasi, -7))}

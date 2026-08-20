@@ -1,6 +1,6 @@
 import { requireMenuErisim, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { EmptyState } from "@/components/ui";
+import { EmptyState, PageHeader } from "@/components/ui";
 import { IsletmeSecici } from "../menu/MenuUst";
 import { DuyuruSatiri, NewDuyuruForm } from "./DuyuruForms";
 
@@ -35,15 +35,12 @@ export default async function DuyurularPage({
 
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <h1 className="text-title font-semibold">Duyurular</h1>
-        <p className="mt-1 text-small text-ink-muted">
-          QR karşılama ekranında ayrı, tıklanan bir kart olarak çıkar —
-          menünün tepesindeki tek satırlık duyuru şeridinden farklı olarak
-          görsel taşıyabilir, birden fazla olabilir ve tarih aralığına
-          bağlanabilir (ör. sadece hafta sonu göster).
-        </p>
-      </div>
+      <PageHeader
+        ikon="📣"
+        renk="violet"
+        title="Duyurular"
+        description="QR karşılama ekranında ayrı, tıklanan bir kart olarak çıkar — görsel taşıyabilir, birden fazla olabilir ve tarih aralığına bağlanabilir (ör. sadece hafta sonu göster)."
+      />
 
       <IsletmeSecici businesses={businesses} seciliId={secili.id} taban="/admin/duyurular" />
 

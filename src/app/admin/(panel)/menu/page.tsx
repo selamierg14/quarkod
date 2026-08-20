@@ -1,8 +1,14 @@
 import Link from "next/link";
 import { requireMenuErisim } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { EmptyState } from "@/components/ui";
-import { CategoryHeader, ItemRow, NewCategoryForm, NewItemForm } from "./MenuForms";
+import { EmptyState, PageHeader } from "@/components/ui";
+import {
+  CategoryHeader,
+  ItemRow,
+  NewCategoryForm,
+  NewItemForm,
+  TumMenuyuSil,
+} from "./MenuForms";
 import { IsletmeSecici, MenuSekmeleri } from "./MenuUst";
 import { SablonSecici } from "./SablonSecici";
 import { menuSecimi } from "./_secim";
@@ -58,20 +64,24 @@ export default async function MenuPage({
     <div className="flex flex-col gap-5">
       <MenuSekmeleri aktif="duzenle" />
 
-      <div>
-        <h1 className="text-title font-semibold">QR Menü</h1>
-        <p className="mt-1 text-small text-ink-muted">
-          Müşteri masadaki kodu okuttuğunda bu menüyü görür ve yediklerini
-          puanlayabilir.{" "}
-          <Link
-            href={`/f/${secili.slug}/1/menu`}
-            target="_blank"
-            className="underline underline-offset-2"
-          >
-            Yeni sekmede aç
-          </Link>
-        </p>
-      </div>
+      <PageHeader
+        ikon="🍽️"
+        renk="amber"
+        title="QR Menü"
+        description={
+          <>
+            Müşteri masadaki kodu okuttuğunda bu menüyü görür ve yediklerini
+            puanlayabilir.{" "}
+            <Link
+              href={`/f/${secili.slug}/1/menu`}
+              target="_blank"
+              className="font-medium text-accent-700 underline underline-offset-2"
+            >
+              Yeni sekmede aç
+            </Link>
+          </>
+        }
+      />
 
       <IsletmeSecici businesses={businesses} seciliId={secili.id} taban="/admin/menu" />
 
@@ -122,6 +132,16 @@ export default async function MenuPage({
       <div className="rounded-control bg-surface p-5 ring-1 ring-line">
         <NewCategoryForm businessId={secili.id} />
       </div>
+
+      {/* Menü doluyken şablon seçilemiyor; sıfırdan kurmak isteyen önce
+          buradan boşaltır. Boş menüde göstermenin anlamı yok. */}
+      {kategoriler.length > 0 ? (
+        <TumMenuyuSil
+          businessId={secili.id}
+          bolumSayisi={kategoriler.length}
+          urunSayisi={toplamUrun}
+        />
+      ) : null}
     </div>
   );
 }
