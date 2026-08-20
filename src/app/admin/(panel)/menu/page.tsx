@@ -4,7 +4,9 @@ import { prisma } from "@/lib/db";
 import { EmptyState } from "@/components/ui";
 import { CategoryHeader, ItemRow, NewCategoryForm, NewItemForm } from "./MenuForms";
 import { IsletmeSecici, MenuSekmeleri } from "./MenuUst";
+import { SablonSecici } from "./SablonSecici";
 import { menuSecimi } from "./_secim";
+import type { BusinessType } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -81,10 +83,13 @@ export default async function MenuPage({
       </p>
 
       {kategoriler.length === 0 ? (
-        <EmptyState>
-          Menü boş. Önce bir bölüm ekleyin (Kahveler, Tatlılar…), sonra içine
-          ürünleri girin.
-        </EmptyState>
+        <div className="flex flex-col gap-4">
+          <EmptyState>
+            Menü boş. Aşağıdan hazır bir şablon seçin ya da elle bir bölüm
+            ekleyin (Kahveler, Tatlılar…), sonra içine ürünleri girin.
+          </EmptyState>
+          <SablonSecici businessId={secili.id} businessType={secili.type as BusinessType} />
+        </div>
       ) : (
         <ul className="flex flex-col gap-4">
           {kategoriler.map((kategori) => (

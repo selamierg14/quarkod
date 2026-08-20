@@ -322,3 +322,61 @@ export async function moveMenuItem(formData: FormData) {
   ]);
   yenile(urun.businessId);
 }
+
+/* ---------------------------------------------------------------- şablon */
+
+/**
+ * Hazır bir menü şablonunu tek seferde işletmeye kurar.
+ *
+ * Yalnızca menü tamamen boşken çalışır: dolu bir menünün üstüne şablon
+ * eklemek kategorileri karıştırır, "Kahveler" iki kez oluşabilir. Boş
+ * menüde ilk kurulumu hızlandırmak için var — satış ziyaretinde boş bir
+ * ekran göstermek yerine saniyeler içinde dolu, gerçekçi fiyatlı bir menü
+ * gösterilebilsin diye.
+ */
+export async function sablonuUygula(
+  _prev: MenuFormState,
+  formData: FormData,
+): Promise<MenuFormState> {
+  const businessId = String(formData.get("businessId") ?? "");
+  const sablonId = String(formData.get("sablonId") ?? "");
+
+  const hata = await menuIzni(businessId);
+  if (hata) return { error: hata };
+
+  const { MENU_SABLONLARI } = await import("@/lib/menu-sablonlari");
+  const sablon = MENU_SABLONLARI.find((s) => s.id === sablonId);
+  if (!sablon) return { error: "Şablon bulunamadı." };
+
+  const mevcutSayi = await prisma.menuCategory.count({ where: { businessId } });
+  if (mevcutSayi > 0) {
+    return { error: "Menüde zaten bölüm var; şablon yalnızca boş menüye uygulanabilir." };
+  }
+
+  await prisma.$transaction(
+    sablon.kategoriler.map((kategori, kategoriIndex) =>
+      prisma.menuCategory.create({
+        data: {
+          businessId,
+          name: kategori.ad,
+          sortOrder: (kategoriIndex + 1) * 10,
+          items: {
+            create: kategori.urunler.map((urun, urunIndex) => ({
+              businessId,
+              name: urun.ad,
+              description: urun.aciklama ?? null,
+              priceKurus: urun.fiyatKurus ?? null,
+              sortOrder: (urunIndex + 1) * 10,
+            })),
+          },
+        },
+      }),
+    ),
+  );
+
+  await fiyatTarihiniDamgala(businessId);
+  await menuDenetim("menu.category", `Şablon uygulandı: ${sablon.ad}`);
+  yenile(businessId);
+
+  return { saved: `"${sablon.ad}" şablonu uygulandı. Fiyatları düzenlemeyi unutmayın.` };
+}
