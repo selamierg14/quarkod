@@ -63,7 +63,7 @@ export function PersonelKabuk({
                 href={link.href}
                 aria-current={aktif ? "page" : undefined}
                 className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-caption font-medium transition ${
-                  aktif ? "text-ink" : "text-ink-faint hover:text-ink-soft"
+                  aktif ? "text-accent-700" : "text-ink-faint hover:text-ink-soft"
                 }`}
               >
                 <SekmeIkonu ad={link.ikon} aktif={aktif} />

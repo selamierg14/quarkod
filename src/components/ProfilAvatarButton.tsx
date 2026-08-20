@@ -13,7 +13,7 @@ export function ProfilAvatarButton({ ad }: { ad: string }) {
       href="/admin/profil"
       title={`${ad} — Profil`}
       aria-label="Profilim"
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sunken text-small font-semibold text-ink-soft ring-1 ring-line transition hover:bg-canvas hover:ring-line-strong"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent-500 to-accent-700 text-small font-semibold text-white shadow-sm transition hover:from-accent-600 hover:to-accent-700"
     >
       {ad.trim().charAt(0).toLocaleUpperCase("tr")}
     </Link>

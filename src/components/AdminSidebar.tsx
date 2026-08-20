@@ -51,7 +51,7 @@ export function AdminSidebar({
   const govde = (
     <div className="flex h-full flex-col">
       <div
-        className={`flex items-center gap-2 bg-gradient-to-r from-ink via-ink-strong to-slate-700 px-3 py-3.5 ${
+        className={`flex items-center gap-2 bg-gradient-to-r from-ink via-accent-700 to-accent-600 px-3 py-3.5 ${
           genis ? "" : "lg:justify-center"
         }`}
       >
@@ -109,7 +109,7 @@ export function AdminSidebar({
                           genis ? "" : "lg:justify-center"
                         } ${
                           grupAktif
-                            ? "text-ink"
+                            ? "text-accent-700"
                             : "text-ink-soft hover:bg-sunken hover:text-ink"
                         }`}
                       >
@@ -143,7 +143,7 @@ export function AdminSidebar({
                                   onClick={() => setMobilAcik(false)}
                                   className={`flex items-center justify-between gap-2 rounded-chip px-2.5 py-1.5 text-small transition ${
                                     altAktif
-                                      ? "bg-ink text-white font-medium"
+                                      ? "bg-accent-600 text-white font-medium"
                                       : "text-ink-soft hover:bg-sunken hover:text-ink"
                                   }`}
                                 >
@@ -176,7 +176,7 @@ export function AdminSidebar({
                         genis ? "" : "lg:justify-center"
                       } ${
                         aktif
-                          ? "bg-ink text-white"
+                          ? "bg-accent-600 text-white"
                           : "text-ink-soft hover:bg-sunken hover:text-ink"
                       }`}
                     >

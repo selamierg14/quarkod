@@ -34,21 +34,24 @@
   --color-ink-muted: #475569;
   --color-ink-faint: #64748b;
 
-  /* Platform vurgusu, tasarımda ayrı bir renk değil: seçili sekme, seçili
-     hap ve odak halkası koyu mürekkeple işaretleniyor. Tek kromatik renk
-     işletmenin kendi markası — panel hiçbir kiracıda renk değiştirmesin. */
-  --color-accent-50: #f8fafc;
-  --color-accent-100: #f1f5f9;
-  --color-accent-200: #e2e8f0;
-  --color-accent-300: #cbd5e1;
-  --color-accent-400: #94a3b8;
-  --color-accent-500: #475569;
-  --color-accent-600: #0f172a;
-  --color-accent-700: #0b1220;
-  --color-accent-900: #020617;
+  /* Platformun kendi vurgu rengi: içli/koyu bir indigo. İşletmenin marka
+     rengiyle karışmaz (o yalnızca müşteri ekranlarında ve panelde o
+     işletmenin verisini çizen yerlerde kullanılır — trend çizgisi, kırılım
+     barı, QR kartı); bu ise panelin kendi kimliği — seçili sekme, birincil
+     düğme, odak halkası. Amaç: onlarca kiracıda aynı, ama "tasarlanmış"
+     hissettiren, salt gri-siyahtan çıkmış bir kabuk. */
+  --color-accent-50: #eef2ff;
+  --color-accent-100: #e0e7ff;
+  --color-accent-200: #c7d2fe;
+  --color-accent-300: #a5b4fc;
+  --color-accent-400: #818cf8;
+  --color-accent-500: #6366f1;
+  --color-accent-600: #4f46e5;
+  --color-accent-700: #4338ca;
+  --color-accent-900: #312e81;
 
-  --color-ink-button: #0f172a;
-  --color-ink-button-hover: #1e293b;
+  --color-ink-button: #4338ca;
+  --color-ink-button-hover: #362f9e;
 
   /* Durum renkleri. */
   --color-success: #059669;

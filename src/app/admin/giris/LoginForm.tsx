@@ -142,7 +142,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={pending}
-        className="mt-3 rounded-control bg-ink px-5 py-3.5 font-medium text-white disabled:bg-slate-400"
+        className="mt-3 rounded-control bg-gradient-to-r from-accent-600 to-accent-700 px-5 py-3.5 font-medium text-white shadow-card transition hover:from-accent-700 hover:to-accent-700 disabled:from-slate-400 disabled:to-slate-400"
       >
         {pending
           ? "Lütfen bekleyin…"
