@@ -1,6 +1,6 @@
 "use server";
 
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { hashPassword, setSessionCookie } from "@/lib/auth";
@@ -16,6 +16,7 @@ import { BUSINESS_TYPES, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/con
 import { KVKK_VERSION } from "@/lib/kvkk";
 import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
 import { uniqueConstraintMessage } from "@/lib/unique-error";
+import { slugIleOlustur } from "@/lib/slug";
 
 export type DenemeState = { error?: string };
 
@@ -88,12 +89,18 @@ export async function denemeBaslat(
   const tur: BusinessType =
     girdi.tur in BUSINESS_TYPES ? (girdi.tur as BusinessType) : "yeme_icme";
 
-  const slug = toUsername(girdi.firma) || `isletme-${Date.now()}`;
   const bitis = denemeBitisi();
+  // Şifre karması slug denemesinden önce hesaplanıyor: bcrypt pahalı bir
+  // iş, adres çakışıp yeniden denendiğinde ikinci kez ödemeye gerek yok.
+  const sifreKarmasi = await hashPassword(girdi.sifre);
 
   let kullanici;
   try {
-    const hesap = await prisma.account.create({
+    // Firma adı serbest metin; iki ayrı kafe aynı adı yazabilir. Adresi
+    // veritabanı kararlaştırsın, çakışırsa yeniden denesin — eskiden tek
+    // atışlık rastgele bir ek vardı ve tutmazsa kayıt tamamen düşüyordu.
+    const hesap = await slugIleOlustur(girdi.firma || girdi.adSoyad, (slug) =>
+      prisma.account.create({
       data: {
         name: girdi.firma,
         email: girdi.eposta,
@@ -109,7 +116,7 @@ export async function denemeBaslat(
         businesses: {
           create: {
             name: girdi.firma,
-            slug: `${slug}-${Math.random().toString(36).slice(2, 6)}`,
+            slug,
             type: tur,
             categories: {
               create: DEFAULT_CATEGORIES[tur].map((name, i) => ({
@@ -121,10 +128,7 @@ export async function denemeBaslat(
             tables: {
               create: {
                 tableNumber: "1",
-                qrToken: createHash("sha256")
-                  .update(`${slug}-${Date.now()}-${Math.random()}`)
-                  .digest("hex")
-                  .slice(0, 24),
+                qrToken: randomBytes(12).toString("hex"),
               },
             },
           },
@@ -136,12 +140,13 @@ export async function denemeBaslat(
             email: girdi.eposta,
             phone: telefon,
             role: "owner",
-            passwordHash: await hashPassword(girdi.sifre),
+            passwordHash: sifreKarmasi,
           },
         },
       },
       include: { users: true },
-    });
+      }),
+    );
     kullanici = hesap.users[0];
 
     await denetimYaz(

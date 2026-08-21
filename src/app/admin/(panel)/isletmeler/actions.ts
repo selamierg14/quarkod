@@ -17,23 +17,9 @@ import { prisma } from "@/lib/db";
 import { BUSINESS_TYPES, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/constants";
 import { validateImageDataUrl } from "@/lib/image";
 import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
+import { slugIleOlustur, slugify } from "@/lib/slug";
 
 export type FormState = { error?: string; saved?: boolean };
-
-function slugify(value: string): string {
-  const map: Record<string, string> = {
-    ç: "c", Ç: "c", ğ: "g", Ğ: "g", ı: "i", İ: "i",
-    ö: "o", Ö: "o", ş: "s", Ş: "s", ü: "u", Ü: "u",
-  };
-  return value
-    .split("")
-    .map((char) => map[char] ?? char)
-    .join("")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60);
-}
 
 function newQrToken(): string {
   return randomBytes(9).toString("base64url");
@@ -108,36 +94,38 @@ export async function createBusiness(
     }
   }
 
-  let slug = slugify(name);
-  if (!slug) return { error: "İşletme adından geçerli bir adres üretilemedi." };
-  if (await prisma.business.findUnique({ where: { slug } })) {
-    slug = `${slug}-${randomBytes(2).toString("hex")}`;
+  if (!slugify(name)) {
+    return { error: "İşletme adından geçerli bir adres üretilemedi." };
   }
 
-  const business = await prisma.business.create({
-    data: {
-      accountId,
-      slug,
-      name,
-      type,
-      address: String(formData.get("address") ?? "").trim() || null,
-      googleReviewUrl: String(formData.get("googleReviewUrl") ?? "").trim() || null,
-      brandColor: String(formData.get("brandColor") ?? "#111827"),
-      notifyThreshold: Number(formData.get("notifyThreshold") ?? 3),
-      categories: {
-        create: DEFAULT_CATEGORIES[type as BusinessType].map((categoryName, index) => ({
-          name: categoryName,
-          sortOrder: index,
-        })),
+  // Adres, karekodun içindeki yolun kendisi. Aynı adı iki kişi aynı anda
+  // yazsa bile ikisi ayrı adres almalı; kararı veritabanına bırakıp
+  // çakışınca yeniden deniyoruz (bkz. src/lib/slug.ts).
+  const business = await slugIleOlustur(name, (slug) =>
+    prisma.business.create({
+      data: {
+        accountId,
+        slug,
+        name,
+        type,
+        address: String(formData.get("address") ?? "").trim() || null,
+        googleReviewUrl: String(formData.get("googleReviewUrl") ?? "").trim() || null,
+        brandColor: String(formData.get("brandColor") ?? "#111827"),
+        notifyThreshold: Number(formData.get("notifyThreshold") ?? 3),
+        categories: {
+          create: DEFAULT_CATEGORIES[type as BusinessType].map(
+            (categoryName, index) => ({ name: categoryName, sortOrder: index }),
+          ),
+        },
+        tables: {
+          create: Array.from({ length: tableCount }, (_, index) => ({
+            tableNumber: String(index + 1),
+            qrToken: newQrToken(),
+          })),
+        },
       },
-      tables: {
-        create: Array.from({ length: tableCount }, (_, index) => ({
-          tableNumber: String(index + 1),
-          qrToken: newQrToken(),
-        })),
-      },
-    },
-  });
+    }),
+  );
 
   if (wantsManager) {
     await prisma.user.create({

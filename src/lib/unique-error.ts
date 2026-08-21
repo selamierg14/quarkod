@@ -18,20 +18,24 @@ const ALAN_ADI: Record<string, string> = {
 /**
  * Hangi alanın çakıştığını bulur.
  *
- * Prisma sürücüye göre farklı yerlere yazıyor: Postgres'te `meta.target`
- * doluyken SQLite adaptöründe alan adı yalnızca sürücü hatasının içinde
- * (`constraint.fields`) ya da mesaj metninde geçiyor. Üçünü de deniyoruz,
- * yoksa genel mesaja düşüyoruz.
+ * Prisma sürücüye ve sürüme göre farklı yerlere yazıyor. Prisma 7 +
+ * `@prisma/adapter-pg` ile alan adı `meta.target`ta DEĞİL, sürücü hatasının
+ * içinde geliyor — canlı Postgres'e karşı ölçüldü:
+ *
+ *     meta.driverAdapterError.cause.constraint.fields === ["slug"]
+ *
+ * Eski sürümlerin `meta.target` biçimi ve son çare olarak hata metni de
+ * deneniyor; üçü de tutmazsa genel mesaja düşüyoruz.
  */
-function cakisanAlanlar(error: object): string[] {
+export function cakisanAlanlar(error: object): string[] {
   const meta = (error as { meta?: Record<string, unknown> }).meta;
 
-  // 1) Postgres/MySQL: meta.target
+  // 1) Eski Prisma sürümleri / bazı sürücüler: meta.target
   const target = meta?.target;
   if (Array.isArray(target)) return target.map(String);
   if (typeof target === "string") return [target];
 
-  // 2) SQLite sürücü adaptörü: meta.driverAdapterError.cause.constraint.fields
+  // 2) Prisma 7 sürücü adaptörleri (pg ve sqlite): sürücü hatasının içinde
   const cause = (meta?.driverAdapterError as { cause?: unknown } | undefined)?.cause;
   const fields = (cause as { constraint?: { fields?: unknown } } | undefined)
     ?.constraint?.fields;
