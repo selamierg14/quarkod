@@ -84,18 +84,18 @@ function sorunlariBirlestir(stats: BusinessStats[]) {
 
 const HIZLI_ERISIM = [
   {
-    href: "/admin/isletmeler",
-    ikon: "▦",
-    baslik: "QR kodları",
-    alt: "Masalar için üret, yazdır",
-    tema: "bg-indigo-100 text-indigo-700 ring-indigo-200",
-  },
-  {
     href: "/admin/menu",
     ikon: "☰",
-    baslik: "Menüyü düzenle",
+    baslik: "QR Menü",
     alt: "Ürün, fiyat, tükendi",
     tema: "bg-amber-100 text-amber-700 ring-amber-200",
+  },
+  {
+    href: "/admin/isletmeler",
+    ikon: "🏪",
+    baslik: "İşletme ayarları",
+    alt: "Masalar, QR noktaları, marka",
+    tema: "bg-indigo-100 text-indigo-700 ring-indigo-200",
   },
   {
     href: "/admin/geri-bildirimler",

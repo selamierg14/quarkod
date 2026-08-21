@@ -21,17 +21,17 @@ export function IletisimBar({
 }) {
   const { t } = useDil();
   const [acik, setAcik] = useState(false);
-  const [kopyalanan, setKopyalanan] = useState<"ssid" | "sifre" | null>(null);
+  const [kopyalandi, setKopyalandi] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
 
   const wifiVar = Boolean(wifiSsid && wifiPassword);
   if (!instagramUrl && !wifiVar) return null;
 
-  async function kopyala(deger: string, hangi: "ssid" | "sifre") {
+  async function kopyala(deger: string) {
     try {
       await navigator.clipboard.writeText(deger);
-      setKopyalanan(hangi);
-      setTimeout(() => setKopyalanan((cur) => (cur === hangi ? null : cur)), 1500);
+      setKopyalandi(true);
+      setTimeout(() => setKopyalandi(false), 1500);
     } catch {
       // Panoya erişim engellenmiş olabilir (izin yok, http vb.); sessizce geç.
     }
@@ -77,27 +77,23 @@ export function IletisimBar({
               ref={dialogRef}
               className="absolute left-1/2 top-full z-30 mt-2 w-56 -translate-x-1/2 rounded-card bg-surface p-3 text-start text-ink shadow-pop ring-1 ring-line"
             >
+              {/* Ağ adı kopyalanabilir değil: telefonun Wi-Fi listesinden
+                  seçiliyor, panoya almanın bir karşılığı yok. Kopyalanması
+                  gereken tek şey şifre. */}
               <p className="text-caption font-medium text-ink-muted">{t("iletisim.wifiAgi")}</p>
-              <button
-                type="button"
-                onClick={() => kopyala(wifiSsid as string, "ssid")}
-                className="mt-1 flex w-full items-center justify-between rounded-chip bg-canvas px-2.5 py-2 text-start text-small"
-              >
-                <span className="truncate font-medium">{wifiSsid}</span>
-                <span className="shrink-0 text-caption text-ink-faint">
-                  {t(kopyalanan === "ssid" ? "iletisim.kopyalandi" : "iletisim.kopyala")}
-                </span>
-              </button>
+              <p className="mt-1 truncate rounded-chip bg-canvas px-2.5 py-2 text-small font-medium">
+                {wifiSsid}
+              </p>
 
               <p className="mt-2 text-caption font-medium text-ink-muted">{t("iletisim.wifiSifre")}</p>
               <button
                 type="button"
-                onClick={() => kopyala(wifiPassword as string, "sifre")}
-                className="mt-1 flex w-full items-center justify-between rounded-chip bg-canvas px-2.5 py-2 text-start text-small"
+                onClick={() => kopyala(wifiPassword as string)}
+                className="mt-1 flex w-full items-center justify-between rounded-chip bg-canvas px-2.5 py-2 text-start text-small transition active:scale-[0.98]"
               >
                 <span className="truncate font-medium">{wifiPassword}</span>
                 <span className="shrink-0 text-caption text-ink-faint">
-                  {t(kopyalanan === "sifre" ? "iletisim.kopyalandi" : "iletisim.kopyala")}
+                  {t(kopyalandi ? "iletisim.kopyalandi" : "iletisim.kopyala")}
                 </span>
               </button>
             </div>

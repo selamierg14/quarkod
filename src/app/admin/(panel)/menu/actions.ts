@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath, updateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { canAccessBusiness, requireYazma } from "@/lib/auth";
 import { denetimYaz } from "@/lib/denetim";
 import { prisma } from "@/lib/db";
@@ -8,7 +8,6 @@ import { validateImageDataUrl } from "@/lib/image";
 import { parsePrice, serializeTags } from "@/lib/menu";
 import { uniqueConstraintMessage } from "@/lib/unique-error";
 import { menuAcikMi } from "@/lib/menu-erisim";
-import { menuEtiketi } from "@/lib/menu-onbellek";
 
 export type MenuFormState = { error?: string; saved?: string };
 
@@ -42,16 +41,19 @@ async function menuDenetim(
 }
 
 /**
- * Panel ekranını ve müşteri menüsünün önbelleğini tazeler.
+ * Panel ekranlarını tazeler.
  *
- * `updateTag` anlık geçersizleştirir: mutfaktan "tükendi" haberi gelip
- * düğmeye basıldığında bir sonraki müşteri o ürünü hâlâ satılıyor
- * görmemeli. `revalidateTag`'in stale-while-revalidate davranışı burada
- * yanlış olurdu — bayat menü, sipariş edilemeyen bir ürün demek.
+ * Müşteri menüsü için ayrıca bir şey yapmaya gerek yok: içerik artık
+ * önbelleğe alınmadan okunuyor (bkz. src/lib/menu-onbellek.ts). Burada
+ * bir zamanlar `updateTag` çağrılıyordu ama o, `unstable_cache`
+ * etiketlerini zaten düşürmüyordu — yani menü değişikliği müşteriye hiç
+ * yansımıyordu.
  */
 function yenile(businessId: string) {
+  void businessId;
   revalidatePath("/admin/menu");
-  updateTag(menuEtiketi(businessId));
+  revalidatePath("/admin/menu/onizle");
+  revalidatePath("/admin/menu/sablonlar");
 }
 
 /** Menünün "fiyatlar en son ne zaman güncellendi" damgasını bugüne çeker. */

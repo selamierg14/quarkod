@@ -166,6 +166,16 @@ export function panelMenusu(
           { href: "/admin/menu", label: "Menümü düzenle", exact: true },
           { href: "/admin/menu/sablonlar", label: "Hazır şablonlar" },
           { href: "/admin/menu/onizle", label: "Menü görünümüm" },
+          // Kodları üretip bastırmak QR menünün doğal devamı; işletme
+          // ayarlarının altında aranıyordu.
+          ...(tekIsletmeId
+            ? [
+                {
+                  href: `/admin/isletmeler/${tekIsletmeId}/qr`,
+                  label: "QR kodlarını yazdır",
+                },
+              ]
+            : []),
         ],
       },
       { href: "/admin/duyurular", label: "Duyurular", ikon: "duyuru" },
@@ -190,10 +200,6 @@ export function panelMenusu(
                 {
                   href: `/admin/isletmeler/${tekIsletmeId}/masalar`,
                   label: "Masalar & QR",
-                },
-                {
-                  href: `/admin/isletmeler/${tekIsletmeId}/qr`,
-                  label: "QR kodlarını yazdır",
                 },
               ],
             }

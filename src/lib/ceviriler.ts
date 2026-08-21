@@ -102,6 +102,9 @@ const tr = {
   "anket.iletisimBaslik": "Size dönmemizi ister misiniz?",
   "anket.iletisimDusuk": "Bırakırsanız işletme sorumlusu sizinle bizzat ilgilenir.",
   "anket.iletisimYuksek": "Sadece bu geri bildiriminiz için ararız.",
+  "anket.iletisimKampanyaBaslik": "Kampanyalardan haberdar olmak ister misiniz?",
+  "anket.iletisimKampanyaMetin":
+    "Bilgilerinizi bırakırsanız yeni ürün ve kampanyalarımızı ilk siz duyarsınız.",
   "anket.iletisimKanali": "İletişim kanalı",
   "anket.telefon": "Telefon",
   "anket.eposta": "E-posta",
@@ -112,7 +115,7 @@ const tr = {
   "anket.puanGerekli": "Lütfen önce genel memnuniyet puanınızı verin.",
   "anket.besYildizBaslik": "Bizi 5 yıldızla değerlendirdiniz, teşekkürler! 🎉",
   "anket.besYildizMetin":
-    "Google'da da birkaç saniyenizi ayırıp yorum bırakır mısınız? Öncesinde, size ulaşabilmemiz için isterseniz bilgilerinizi bırakabilirsiniz.",
+    "Google'da da birkaç saniyenizi ayırıp yorum bırakır mısınız? Aşağıdaki adım tamamen isteğe bağlı.",
   "anket.rizaGerekli": "İletişim bilgisi bırakmak için aydınlatma metnini onaylayın.",
 
   // --- ürün puanlama adımı
@@ -299,6 +302,9 @@ const en: Sozluk = {
   "anket.iletisimBaslik": "Would you like us to get back to you?",
   "anket.iletisimDusuk": "Leave a contact and the manager will follow up personally.",
   "anket.iletisimYuksek": "We’ll only contact you about this feedback.",
+  "anket.iletisimKampanyaBaslik": "Want to hear about our campaigns?",
+  "anket.iletisimKampanyaMetin":
+    "Leave your details and you’ll be the first to know about new items and offers.",
   "anket.iletisimKanali": "Contact method",
   "anket.telefon": "Phone",
   "anket.eposta": "Email",
@@ -309,7 +315,7 @@ const en: Sozluk = {
   "anket.puanGerekli": "Please give an overall rating first.",
   "anket.besYildizBaslik": "You rated us 5 stars, thank you! 🎉",
   "anket.besYildizMetin":
-    "Would you take a few seconds to leave a review on Google too? Before that, you can optionally leave your contact info so we can reach you.",
+    "Would you take a few seconds to leave a review on Google too? The step below is entirely optional.",
   "anket.rizaGerekli": "To leave contact details, please accept the privacy notice.",
 
   "urun.baslik": "What did you have?",
@@ -484,6 +490,9 @@ const ar: Sozluk = {
   "anket.iletisimBaslik": "هل تود أن نتواصل معك؟",
   "anket.iletisimDusuk": "اترك وسيلة تواصل وسيتابع المسؤول الأمر بنفسه.",
   "anket.iletisimYuksek": "سنتواصل معك بخصوص هذه الملاحظة فقط.",
+  "anket.iletisimKampanyaBaslik": "هل تود معرفة عروضنا؟",
+  "anket.iletisimKampanyaMetin":
+    "اترك بياناتك لتكون أول من يعرف بالمنتجات والعروض الجديدة.",
   "anket.iletisimKanali": "وسيلة التواصل",
   "anket.telefon": "الهاتف",
   "anket.eposta": "البريد الإلكتروني",
@@ -668,6 +677,9 @@ const ru: Sozluk = {
   "anket.iletisimBaslik": "Хотите, чтобы мы с вами связались?",
   "anket.iletisimDusuk": "Оставьте контакт — управляющий свяжется с вами лично.",
   "anket.iletisimYuksek": "Свяжемся только по поводу этого отзыва.",
+  "anket.iletisimKampanyaBaslik": "Хотите узнавать об акциях?",
+  "anket.iletisimKampanyaMetin":
+    "Оставьте контакты — вы первыми узнаете о новинках и акциях.",
   "anket.iletisimKanali": "Способ связи",
   "anket.telefon": "Телефон",
   "anket.eposta": "Эл. почта",

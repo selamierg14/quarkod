@@ -1,20 +1,28 @@
 import "server-only";
-import { unstable_cache } from "next/cache";
 import { prisma } from "./db";
 
 /**
- * QR menü içeriğinin önbelleği.
+ * QR menü içeriğinin okunması.
  *
- * Menü sorgusu bu projedeki en ağır okuma: ürün görselleri veritabanında
- * data URI olarak duruyor ve ürün başına 250 KB'a çıkabiliyor. 60 ürünlük
- * bir menüde her QR okutması megabaytlarca base64'ü SQLite'tan çekip
- * serileştirmek demek. Cuma akşamı aynı anda okutan 50 kişi aynı veriyi
- * 50 kez okuyordu.
+ * Burada bir zamanlar `unstable_cache` vardı ve iki ayrı sebeple bozuktu:
  *
- * Sayfanın kendisi dinamik kalmaya devam ediyor: abonelik süresi ve masa
- * geçerliliği her istekte taze kontrol edilmek zorunda, yoksa askıya alınan
- * bir hesabın menüsü önbellekte yayında kalırdı. Önbelleğe alınan yalnızca
- * bu ağır sorgu.
+ * 1. Sonuç boş dönüyordu. Next 16 + Turbopack altında bu kullanım (her
+ *    çağrıda yeniden kurulan, Prisma nesnesi döndüren bir sarmalayıcı)
+ *    sessizce boş dizi veriyordu. Menü sayfası da boş listede notFound()
+ *    attığı için müşteri, menüsü dolu bir işletmede bile "Bu karekod artık
+ *    geçerli değil" ekranını görüyordu — yani QR menü modülü fiilen hiç
+ *    çalışmıyordu.
+ * 2. Geçersiz kılma hiç işlemiyordu. Panel tarafı `updateTag` çağırıyor ama
+ *    `updateTag` yalnızca `fetch` etiketlerini ve `'use cache'` +
+ *    `cacheTag` ile işaretlenmiş girdileri düşürüyor; `unstable_cache`
+ *    etiketleri `revalidateTag` ister. Yani cache dolsaydı bile menü
+ *    değişiklikleri müşteriye hiç yansımayacaktı.
+ *
+ * Şimdilik doğrudan okuyoruz: yanlış menü göstermektense fazladan sorgu
+ * yapmak yeğdir. Sorgu ağır (ürün görselleri data URI olarak saklanıyor,
+ * ürün başına ~250 KB'a çıkabiliyor), bu yüzden önbellek ileride geri
+ * gelmeli — ama `'use cache'` + `cacheTag` ile, `updateTag`'in gerçekten
+ * düşürebileceği biçimde.
  */
 
 /** İşletme bazlı etiket: bir kafenin menüsü değişince yalnızca o düşer. */
@@ -22,30 +30,15 @@ export function menuEtiketi(businessId: string): string {
   return `menu:${businessId}`;
 }
 
-/**
- * Menüde gösterilecek bölümler ve ürünler (tükenenler dahil, pasifler hariç).
- *
- * Önbellek işlevi her çağrıda yeniden kuruluyor: `unstable_cache` etiketi
- * tanım anında sabitliyor, oysa bize işletme bazlı etiket lazım. Kurulum
- * maliyeti yok sayılır, kazanç ise sorgunun tamamı.
- *
- * `revalidate` verilmiyor: içerik yalnızca panelden değiştiğinde bayatlar ve
- * o an zaten etiketi düşürüyoruz. Süreye bağlamak, hiç değişmeyen bir menüyü
- * boş yere yeniden okumak olurdu.
- */
+/** Menüde gösterilecek bölümler ve ürünler (tükenenler dahil, pasifler hariç). */
 export function menuIcerigi(businessId: string) {
-  return unstable_cache(
-    async () =>
-      prisma.menuCategory.findMany({
-        where: { businessId, active: true },
-        orderBy: { sortOrder: "asc" },
-        include: {
-          // Tükenen ürün menüde kalır ama işaretli görünür: "vardı ama bugün
-          // yok" bilgisi, ürünün hiç olmaması kadar değerli.
-          items: { where: { active: true }, orderBy: { sortOrder: "asc" } },
-        },
-      }),
-    ["menu-icerigi", businessId],
-    { tags: [menuEtiketi(businessId)] },
-  )();
+  return prisma.menuCategory.findMany({
+    where: { businessId, active: true },
+    orderBy: { sortOrder: "asc" },
+    include: {
+      // Tükenen ürün menüde kalır ama işaretli görünür: "vardı ama bugün
+      // yok" bilgisi, ürünün hiç olmaması kadar değerli.
+      items: { where: { active: true }, orderBy: { sortOrder: "asc" } },
+    },
+  });
 }

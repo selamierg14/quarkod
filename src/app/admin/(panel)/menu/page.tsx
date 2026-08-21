@@ -23,7 +23,10 @@ export default async function MenuPage({
 }) {
   const user = await requireMenuErisim();
   const query = await searchParams;
-  const { businesses, secili, menuAcik } = await menuSecimi(user, query.isletme);
+  const { businesses, secili, menuAcik, onizlemeMasa } = await menuSecimi(
+    user,
+    query.isletme,
+  );
 
   if (!secili) {
     return <EmptyState>Önce bir işletme ekleyin.</EmptyState>;
@@ -68,13 +71,15 @@ export default async function MenuPage({
         title="Menümü düzenle"
         description="Bölümler ve içindeki ürünler. Müşteri masadaki kodu okutunca burada gördüklerinizi görür ve yediklerini puanlayabilir."
         action={
-          <Link
-            href={`/f/${secili.slug}/1/menu`}
-            target="_blank"
-            className="rounded-control border border-line bg-surface px-3.5 py-2 text-small font-medium text-ink-soft transition hover:bg-canvas"
-          >
-            Müşteri gözüyle aç ↗
-          </Link>
+          onizlemeMasa ? (
+            <Link
+              href={`/f/${secili.slug}/${encodeURIComponent(onizlemeMasa)}/menu`}
+              target="_blank"
+              className="rounded-control border border-line bg-surface px-3.5 py-2 text-small font-medium text-ink-soft transition hover:bg-canvas"
+            >
+              Müşteri gözüyle aç ↗
+            </Link>
+          ) : null
         }
       />
 

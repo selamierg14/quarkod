@@ -354,12 +354,22 @@ export function SurveyForm({
               </div>
             ) : null}
 
-            <p className="text-body text-ink-soft">
-              {t("anket.iletisimBaslik")}{" "}
-              <span className="text-ink-faint">{t("ortak.istegeBagli")}</span>
+            {/* 5 yıldız verene "sorununuz için sizi ararız" demek anlamsız:
+                onda çözülecek bir sorun yok. Oradaki tek anlamlı teklif
+                kampanya/duyuru — ticari ileti izni ise aşağıda ayrı kutuda
+                zaten sorulmaya devam ediyor. */}
+            <p className="text-body font-medium text-ink-soft">
+              {t(besYildiz ? "anket.iletisimKampanyaBaslik" : "anket.iletisimBaslik")}{" "}
+              <span className="font-normal text-ink-faint">{t("ortak.istegeBagli")}</span>
             </p>
             <p className="mt-0.5 text-small text-ink-muted">
-              {t(overall <= 3 ? "anket.iletisimDusuk" : "anket.iletisimYuksek")}
+              {t(
+                besYildiz
+                  ? "anket.iletisimKampanyaMetin"
+                  : overall <= 3
+                    ? "anket.iletisimDusuk"
+                    : "anket.iletisimYuksek",
+              )}
             </p>
 
             <div
