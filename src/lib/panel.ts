@@ -218,6 +218,28 @@ export function panelMenusu(
       { href: "/admin/entegrasyonlar", label: "Entegrasyonlar", ikon: "entegrasyon" },
       { href: "/admin/denetim", label: "İşlem geçmişi", ikon: "denetim" },
     );
+  } else if (role === "manager" && tekIsletmeId) {
+    // İşletme sorumlusunun tek işletmesi var; "İşletmeler" (çoğul, liste)
+    // ona hiç görünmüyordu ve ayarlarına ulaşmanın tek yolu Profil sayfasına
+    // gömülü, kopya bir formdu. O kopya kaldırıldı — gerçek modül burada:
+    // owner'ın kullandığı dört sekmeli ekranın (Ayarlar / Anket kategorileri
+    // / Masalar & QR / QR yazdır) aynısı, sadece "Listele" adımı atlanıyor.
+    yonetim.push({
+      href: `/admin/isletmeler/${tekIsletmeId}`,
+      label: "İşletme ayarları",
+      ikon: "bina",
+      altLinkler: [
+        { href: `/admin/isletmeler/${tekIsletmeId}`, label: "Ayarlar", exact: true },
+        {
+          href: `/admin/isletmeler/${tekIsletmeId}/kategoriler`,
+          label: "Anket kategorileri",
+        },
+        {
+          href: `/admin/isletmeler/${tekIsletmeId}/masalar`,
+          label: "Masalar & QR noktaları",
+        },
+      ],
+    });
   }
 
   // Vardiya çizelgesi ve görev şablonu yalnızca planlayan tarafta (yazma

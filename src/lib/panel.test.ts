@@ -82,6 +82,28 @@ describe("kiracı menüsü", () => {
     expect(viewer).not.toContain("/admin/kullanicilar");
   });
 
+  it("tek işletmeli sorumlu kendi işletme ayarlarına sidebar'dan ulaşır", () => {
+    // Önceden bu ekranlara ulaşmanın tek yolu Profil sayfasına gömülü,
+    // kopya bir formdu — sidebar'da hiç bağlantı yoktu. Profil sadeleşince
+    // gerçek modüle (owner'ın kullandığı aynı dört sekme) bir yol kalmalı.
+    const manager = panelMenusu(
+      "kiraci",
+      "manager",
+      { menuIzni: true, anketIzni: true },
+      "isletme-1",
+    ).flatMap((g) =>
+      g.linkler.flatMap((l) => [l.href, ...(l.altLinkler?.map((alt) => alt.href) ?? [])]),
+    );
+    expect(manager).toContain("/admin/isletmeler/isletme-1");
+    expect(manager).toContain("/admin/isletmeler/isletme-1/kategoriler");
+    expect(manager).toContain("/admin/isletmeler/isletme-1/masalar");
+    // Sahibe özel ekranlar hâlâ görünmüyor; yalnızca kendi işletmesine
+    // erişim eklendi, hesap yönetimine değil.
+    expect(manager).not.toContain("/admin/kullanicilar");
+    expect(manager).not.toContain("/admin/izinler");
+    expect(manager).not.toContain("/admin/isletmeler");
+  });
+
   it("platform yöneticisi hesaba girince kiracı ekranlarını görür", () => {
     const iceriden = adresler("kiraci", "superadmin");
     expect(iceriden).toContain("/admin");

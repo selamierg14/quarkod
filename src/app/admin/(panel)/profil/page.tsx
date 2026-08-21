@@ -1,12 +1,8 @@
-import Link from "next/link";
-import { requireUser, visibleBusinesses } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { BUSINESS_TYPES, type BusinessType, ROL_ADLARI } from "@/lib/constants";
+import { ROL_ADLARI } from "@/lib/constants";
 import { PasswordForm } from "../sifre/PasswordForm";
-import { SettingsForm } from "../isletmeler/[id]/SettingsForm";
-import { CategoryManager } from "../isletmeler/[id]/CategoryManager";
-import { TableManager } from "../isletmeler/[id]/TableManager";
-import { masaSirala } from "@/lib/masa";
+import Link from "next/link";
 import { PageHeader, SectionCard } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -14,11 +10,14 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Profil" };
 
 /**
- * Profil: kullanıcının kendi bilgileri ve şifresi.
+ * Profil: yalnızca kullanıcının kendi bilgileri ve şifresi.
  *
- * İşletme sorumlusu hiyerarşinin ucudur — altına başka kullanıcı ya da
- * işletme almaz ve tek bir işletmeye bakar. Bu yüzden ayrı bir "İşletmeler"
- * listesinde dolaşması anlamsız; işletmesinin ayarları doğrudan burada.
+ * İşletme ayarları, anket kategorileri ve masa/QR yönetimi burada değil —
+ * her biri kendi modülünde (İşletme ayarları / Anket kategorileri /
+ * Masalar & QR sekmeleri). Önceden işletme sorumlusu için bu üçü burada
+ * kopyalanmıştı çünkü sidebar'da ona giden bir bağlantı yoktu; o bağlantı
+ * artık panelMenusu()'nda var (bkz. src/lib/panel.ts, "manager" dalı), bu
+ * yüzden kopya kaldırıldı — profil yalnızca profil olarak kaldı.
  */
 export default async function ProfilePage() {
   const user = await requireUser();
@@ -32,22 +31,9 @@ export default async function ProfilePage() {
       phone: true,
       role: true,
       account: { select: { name: true } },
-      business: { select: { name: true } },
+      business: { select: { id: true, name: true } },
     },
   });
-
-  // Sorumlunun tek işletmesi: ayarları burada göster.
-  const businesses = await visibleBusinesses(user);
-  const kendiIsletmesi =
-    user.role === "manager" && businesses.length === 1
-      ? await prisma.business.findUnique({
-          where: { id: businesses[0].id },
-          include: {
-            categories: { orderBy: { sortOrder: "asc" } },
-            tables: { orderBy: [{ isEntrance: "desc" }, { tableNumber: "asc" }] },
-          },
-        })
-      : null;
 
   return (
     <div className="flex flex-col gap-5">
@@ -98,7 +84,18 @@ export default async function ProfilePage() {
             {kayit?.business ? (
               <div className="flex justify-between gap-4">
                 <dt className="text-ink-muted">İşletme</dt>
-                <dd>{kayit.business.name}</dd>
+                <dd>
+                  {user.role === "manager" ? (
+                    <Link
+                      href={`/admin/isletmeler/${kayit.business.id}`}
+                      className="text-accent-700 underline underline-offset-2 hover:text-accent-600"
+                    >
+                      {kayit.business.name} — ayarları aç
+                    </Link>
+                  ) : (
+                    kayit.business.name
+                  )}
+                </dd>
               </div>
             ) : null}
           </dl>
@@ -117,105 +114,6 @@ export default async function ProfilePage() {
           <PasswordForm />
         </SectionCard>
       </div>
-
-      {/* İşletme sorumlusu için işletme ayarları burada; ayrı bir liste
-          ekranında dolaşmasının anlamı yok, tek işletmesi var. */}
-      {kendiIsletmesi ? (
-        <>
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5">
-            <div>
-              <h2 className="flex items-center gap-2 font-semibold tracking-tight">
-                <span
-                  className="h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: kendiIsletmesi.brandColor }}
-                />
-                {kendiIsletmesi.name}
-              </h2>
-              <p className="text-small text-ink-muted">
-                {BUSINESS_TYPES[kendiIsletmesi.type as BusinessType] ??
-                  kendiIsletmesi.type}{" "}
-                · <code className="text-caption">/f/{kendiIsletmesi.slug}/…</code>
-              </p>
-            </div>
-            <Link
-              href={`/admin/isletmeler/${kendiIsletmesi.id}/qr`}
-              className="rounded-control bg-accent-600 px-4 py-2.5 text-small font-medium text-white transition hover:bg-accent-700"
-            >
-              QR kodlarını üret / yazdır
-            </Link>
-          </div>
-
-          <SectionCard
-            ikon="⚙️"
-            renk="indigo"
-            title="İşletme ayarları"
-            description="Görseller, marka rengi, Wi-Fi ve QR kartı metni."
-          >
-            <SettingsForm
-              business={{
-                id: kendiIsletmesi.id,
-                name: kendiIsletmesi.name,
-                type: kendiIsletmesi.type,
-                address: kendiIsletmesi.address,
-                googleReviewUrl: kendiIsletmesi.googleReviewUrl,
-                brandColor: kendiIsletmesi.brandColor,
-                notifyThreshold: kendiIsletmesi.notifyThreshold,
-                googleRedirect: kendiIsletmesi.googleRedirect,
-                qrCardText: kendiIsletmesi.qrCardText,
-                iysBrandCode: kendiIsletmesi.iysBrandCode,
-                logoUrl: kendiIsletmesi.logoUrl,
-                coverUrl: kendiIsletmesi.coverUrl,
-                instagramUrl: kendiIsletmesi.instagramUrl,
-                wifiSsid: kendiIsletmesi.wifiSsid,
-                wifiPassword: kendiIsletmesi.wifiPassword,
-                announcement: kendiIsletmesi.announcement,
-                announcementActive: kendiIsletmesi.announcementActive,
-            yemeksepetiUrl: kendiIsletmesi.yemeksepetiUrl,
-            getirUrl: kendiIsletmesi.getirUrl,
-            trendyolUrl: kendiIsletmesi.trendyolUrl,
-            migrosUrl: kendiIsletmesi.migrosUrl,
-              }}
-              isOwner={false}
-            />
-          </SectionCard>
-
-          <div className="grid gap-5 lg:grid-cols-2">
-            <SectionCard
-              ikon="🗂️"
-              renk="sky"
-              title="Anket kategorileri"
-              description="Müşterinin tek tek puanladığı başlıklar."
-            >
-              <CategoryManager
-                businessId={kendiIsletmesi.id}
-                categories={kendiIsletmesi.categories.map((c) => ({
-                  id: c.id,
-                  name: c.name,
-                  active: c.active,
-                  problemOptions: c.problemOptions,
-                }))}
-              />
-            </SectionCard>
-
-            <SectionCard
-              ikon="🪑"
-              renk="amber"
-              title="Masalar / QR noktaları"
-              description="Her masanın kendi karekodu olur; giriş noktası en üstte durur."
-            >
-              <TableManager
-                businessId={kendiIsletmesi.id}
-                tables={masaSirala(kendiIsletmesi.tables).map((t) => ({
-                  id: t.id,
-                  tableNumber: t.tableNumber,
-                  isEntrance: t.isEntrance,
-                  active: t.active,
-                }))}
-              />
-            </SectionCard>
-          </div>
-        </>
-      ) : null}
     </div>
   );
 }
