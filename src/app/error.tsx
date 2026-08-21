@@ -40,7 +40,7 @@ export default function GlobalError({
         <button
           type="button"
           onClick={reset}
-          className="mt-6 rounded-control bg-ink px-5 py-3 text-small font-medium text-white"
+          className="mt-6 rounded-control bg-accent-600 px-5 py-3 text-small font-medium text-white transition hover:bg-accent-700"
         >
           Tekrar dene
         </button>

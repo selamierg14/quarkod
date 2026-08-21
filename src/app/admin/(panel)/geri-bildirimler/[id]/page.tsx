@@ -7,7 +7,7 @@ import { SHIFTS, type Shift } from "@/lib/constants";
 import { CONTACT_RETENTION_DAYS } from "@/lib/kvkk";
 import { detaylariCoz } from "@/lib/anket-detay";
 import { yanitlanabilir } from "@/lib/yanit";
-import { StatusBadge, Stars, formatDateTime } from "@/components/ui";
+import { SectionCard, StatusBadge, Stars, formatDateTime } from "@/components/ui";
 import { StatusForm } from "./StatusForm";
 import { RespondForm } from "./RespondForm";
 
@@ -50,7 +50,16 @@ export default async function FeedbackDetailPage({
 
       <div className="grid gap-5 lg:grid-cols-[2fr_1fr]">
         <div className="flex flex-col gap-5">
-          <section className="rounded-control bg-surface p-5 ring-1 ring-line">
+          <section className="overflow-hidden rounded-card bg-surface shadow-card ring-1 ring-line">
+            {/* İşletmenin marka rengi kartın tepesinde: zincirde çalışan
+                sorumlu, hangi şubenin kaydına baktığını yazıyı okumadan
+                anlıyor. */}
+            <span
+              aria-hidden="true"
+              className="block h-1.5 w-full"
+              style={{ backgroundColor: feedback.business.brandColor }}
+            />
+            <div className="p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="flex items-center gap-2 font-medium">
                 <span
@@ -93,14 +102,17 @@ export default async function FeedbackDetailPage({
                 <dd>{feedback.redirectedToGoogle ? "Yönlendirildi" : "—"}</dd>
               </div>
             </dl>
+            </div>
           </section>
 
           {Object.keys(ratings).length > 0 ? (
-            <section className="rounded-control bg-surface p-5 ring-1 ring-line">
-              <h2 className="text-caption font-medium tracking-wide text-ink-muted uppercase">
-                Kategori puanları
-              </h2>
-              <ul className="mt-3 divide-y divide-line">
+            <SectionCard
+              ikon="⭐"
+              renk="amber"
+              title="Kategori puanları"
+              description="Kırmızı etiketler müşterinin işaretlediği somut sorun."
+            >
+              <ul className="-my-2 divide-y divide-line">
                 {Object.entries(ratings).map(([name, value]) => (
                   <li key={name} className="py-2">
                     <div className="flex items-center justify-between">
@@ -130,14 +142,11 @@ export default async function FeedbackDetailPage({
                   </li>
                 ))}
               </ul>
-            </section>
+            </SectionCard>
           ) : null}
 
-          <section className="rounded-control bg-surface p-5 ring-1 ring-line">
-            <h2 className="text-caption font-medium tracking-wide text-ink-muted uppercase">
-              Müşteri yorumu
-            </h2>
-            <p className="mt-2 text-body whitespace-pre-wrap text-ink-strong">
+          <SectionCard ikon="💬" renk="sky" title="Müşteri yorumu">
+            <p className="text-body whitespace-pre-wrap text-ink-strong">
               {feedback.comment ?? (
                 <span className="text-ink-faint">Yorum bırakılmamış.</span>
               )}
@@ -226,11 +235,11 @@ export default async function FeedbackDetailPage({
                 </p>
               )}
             </div>
-          </section>
+          </SectionCard>
         </div>
 
         <aside className="flex flex-col gap-5">
-          <section className="rounded-control bg-surface p-5 ring-1 ring-line">
+          <SectionCard ikon="🏷️" renk="indigo" title="Durum ve iç not">
             {/* Salt okunur kullanıcıya düzenleme formu gösterilmez: sunucu
                 zaten reddediyor ama kapalı bir kapıya yönlendirmek kafa
                 karıştırır. Durumu ve notu okunur halde gösteriyoruz. */}
@@ -265,18 +274,20 @@ export default async function FeedbackDetailPage({
                 </p>
               </div>
             )}
-          </section>
+          </SectionCard>
 
-          <section className="rounded-control bg-surface p-5 ring-1 ring-line">
-            <h2 className="text-caption font-medium tracking-wide text-ink-muted uppercase">
-              Bildirimler
-            </h2>
+          <SectionCard
+            ikon="🔔"
+            renk="slate"
+            title="Bildirimler"
+            description="Bu kayıt için gönderilen uyarı e-postaları."
+          >
             {feedback.notifications.length === 0 ? (
-              <p className="mt-2 text-small text-ink-faint">
+              <p className="text-small text-ink-faint">
                 Bu kayıt için bildirim gönderilmedi (puan eşiğin üstünde).
               </p>
             ) : (
-              <ul className="mt-2 space-y-2 text-small">
+              <ul className="space-y-2 text-small">
                 {feedback.notifications.map((notification) => (
                   <li key={notification.id}>
                     <span className="text-ink-soft">{notification.recipient}</span>
@@ -296,7 +307,7 @@ export default async function FeedbackDetailPage({
                 ))}
               </ul>
             )}
-          </section>
+          </SectionCard>
         </aside>
       </div>
     </div>
