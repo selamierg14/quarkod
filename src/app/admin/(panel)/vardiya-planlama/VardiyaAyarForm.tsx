@@ -24,14 +24,26 @@ export function VardiyaAyarForm({
   );
 
   return (
-    <div className="rounded-control bg-surface ring-1 ring-line">
+    <div className="overflow-hidden rounded-card bg-surface shadow-card ring-1 ring-line">
       <button
         type="button"
         onClick={() => setAcik((v) => !v)}
-        className="flex w-full items-center justify-between px-4 py-3 text-small font-medium text-ink-soft"
+        aria-expanded={acik}
+        className="flex w-full items-center gap-2.5 bg-teal-50/60 px-4 py-3 text-small font-medium text-teal-900 transition hover:bg-teal-50"
       >
-        Hangi vardiyalar kullanılıyor, saat kaçta başlıyor?
-        <span aria-hidden="true" className={`transition-transform ${acik ? "rotate-180" : ""}`}>
+        <span
+          aria-hidden="true"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip bg-teal-100 text-teal-700 ring-1 ring-teal-200"
+        >
+          ⚙️
+        </span>
+        <span className="flex-1 text-start">
+          Hangi vardiyalar kullanılıyor, saat kaçta başlıyor?
+        </span>
+        <span
+          aria-hidden="true"
+          className={`text-teal-600 transition-transform ${acik ? "rotate-180" : ""}`}
+        >
           ▾
         </span>
       </button>

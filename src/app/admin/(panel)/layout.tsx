@@ -7,9 +7,7 @@ import { PersonelKabuk } from "@/components/PersonelKabuk";
 import { ProfilAvatarButton } from "@/components/ProfilAvatarButton";
 import { prisma } from "@/lib/db";
 import { ROL_ADLARI } from "@/lib/constants";
-import { Suspense } from "react";
 import { abonelikUyarisi } from "@/lib/abonelik";
-import { BildirimUyarisi } from "./BildirimUyarisi";
 import { ToastProvider } from "@/components/ui";
 import { panelMenusu, panelModu } from "@/lib/panel";
 
@@ -68,16 +66,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
         gruplar={gruplar}
         kullaniciAdi={user.name}
         rolAdi={ROL_ADLARI[user.role] ?? user.role}
-        cikis={
-          <form action={logout}>
-            <button
-              type="submit"
-              className="w-full rounded-chip border border-line bg-surface px-3 py-1.5 text-small text-ink-soft transition hover:bg-canvas hover:text-ink"
-            >
-              Çıkış
-            </button>
-          </form>
-        }
+        cikisAction={logout}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -122,14 +111,6 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
             <span className="font-semibold">Abonelik:</span> {uyari.mesaj} Yenilemek
             için bizimle iletişime geçin.
           </div>
-        ) : null}
-
-        {/* Uyarı sayfanın kendisi değil, kenar bilgisi: Suspense içinde
-            akıtılıyor ki sorgusu panelin açılmasını bekletmesin. */}
-        {modu === "kiraci" ? (
-          <Suspense fallback={null}>
-            <BildirimUyarisi isletmeIdleri={isletmeler.map((i) => i.id)} />
-          </Suspense>
         ) : null}
 
         {/* Salt okunur kullanıcı düğmelere basıp hata almasın: kısıt baştan

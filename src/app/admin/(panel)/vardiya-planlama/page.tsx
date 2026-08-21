@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requirePersonelYonetimi, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { EmptyState, PageHeader, TabLink } from "@/components/ui";
-import { SHIFTS } from "@/lib/constants";
+import { SHIFTS, type Shift } from "@/lib/constants";
 import { gunAdi, gunEkle, gunGirdisi, haftaBaslangici } from "@/lib/gun";
 import { etkinVardiyalar } from "@/lib/vardiya";
 import { IsletmeSecici } from "../menu/MenuUst";
@@ -58,6 +58,15 @@ export default async function VardiyaPlanlamaPage({
       isletme: secili.id,
       baslangic: gunGirdisi(baslangic),
     }).toString()}`;
+
+  /** Her vardiyanın kendi rengi: dört satırlık bir tabloda "hangi satırdayım"
+   * hep göze bakarak, satır başlığını okumadan anlaşılsın. */
+  const VARDIYA_RENGI: Record<Shift, { serit: string; rozet: string; ikon: string }> = {
+    sabah: { serit: "border-l-amber-400", rozet: "bg-amber-50 text-amber-700", ikon: "🌅" },
+    ogle: { serit: "border-l-sky-400", rozet: "bg-sky-50 text-sky-700", ikon: "🌤️" },
+    aksam: { serit: "border-l-orange-400", rozet: "bg-orange-50 text-orange-700", ikon: "🌇" },
+    gece: { serit: "border-l-indigo-400", rozet: "bg-indigo-50 text-indigo-700", ikon: "🌙" },
+  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -182,19 +191,36 @@ export default async function VardiyaPlanlamaPage({
               haftaya tek bakışta bakılabilsin diye. Mobilde aynı veri gün
               kartları olarak (aşağıda) tekrar ediyor; geniş tablo telefonda
               yatay kaydırma zorunlu kılardı. */}
-          <div className="hidden overflow-x-auto rounded-control bg-surface ring-1 ring-line lg:block">
-            <table className="w-full min-w-[900px] table-fixed text-small">
+          <div className="hidden overflow-x-auto rounded-card bg-surface shadow-card ring-1 ring-line lg:block">
+            <table className="w-full min-w-[1440px] text-small">
+              {/* Sabit sütun genişlikleri: personel adı select'i daralınca
+                  isim görünmeden kesiliyordu (native select'te "..." de
+                  çıkmaz). Her gün sütunu artık en az 180px, isimlerin
+                  kesilmeden sığması için. */}
+              <colgroup>
+                <col className="w-36" />
+                {gunler.map((gun) => (
+                  <col key={gunGirdisi(gun)} className="w-[180px]" />
+                ))}
+              </colgroup>
               <thead className="border-b border-line text-left text-caption text-ink-muted uppercase">
                 <tr>
-                  <th className="w-28 px-3 py-2 font-medium">Vardiya</th>
+                  <th className="px-4 py-3 font-medium">Vardiya</th>
                   {gunler.map((gun) => {
                     const bugunMu = gunGirdisi(new Date()) === gunGirdisi(gun);
                     return (
                       <th
                         key={gunGirdisi(gun)}
-                        className={`px-3 py-2 font-medium ${bugunMu ? "text-ink" : ""}`}
+                        className={`px-4 py-3 font-medium ${bugunMu ? "text-accent-700" : ""}`}
                       >
-                        {gunAdi(gun)}
+                        <span className="flex items-center gap-1.5">
+                          {gunAdi(gun)}
+                          {bugunMu ? (
+                            <span className="rounded-full bg-accent-600 px-1.5 py-0.5 text-[10px] font-semibold normal-case text-white">
+                              bugün
+                            </span>
+                          ) : null}
+                        </span>
                         <span className="block text-[11px] font-normal normal-case text-ink-faint">
                           {gun.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" })}
                         </span>
@@ -205,10 +231,17 @@ export default async function VardiyaPlanlamaPage({
               </thead>
               <tbody className="divide-y divide-line">
                 {vardiyalar.map(([deger, etiket]) => (
-                  <tr key={deger}>
-                    <td className="px-3 py-3 align-top font-medium text-ink-soft">{etiket}</td>
+                  <tr key={deger} className={`border-l-4 ${VARDIYA_RENGI[deger].serit}`}>
+                    <td className="px-4 py-4 align-top">
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-chip px-2.5 py-1 text-small font-medium ${VARDIYA_RENGI[deger].rozet}`}
+                      >
+                        <span aria-hidden="true">{VARDIYA_RENGI[deger].ikon}</span>
+                        {etiket}
+                      </span>
+                    </td>
                     {gunler.map((gun) => (
-                      <td key={gunGirdisi(gun)} className="px-3 py-3 align-top">
+                      <td key={gunGirdisi(gun)} className="px-4 py-4 align-top">
                         <VardiyaHucresi
                           businessId={secili.id}
                           gunAnahtari={gunGirdisi(gun)}
@@ -231,20 +264,32 @@ export default async function VardiyaPlanlamaPage({
               return (
                 <div
                   key={gunAnahtari}
-                  className={`rounded-control bg-surface p-4 ring-1 ${
-                    bugunMu ? "ring-2 ring-ink" : "ring-line"
+                  className={`overflow-hidden rounded-card bg-surface shadow-card ring-1 ${
+                    bugunMu ? "ring-2 ring-accent-600" : "ring-line"
                   }`}
                 >
-                  <p className="font-medium">
+                  <p className="flex items-center gap-2 border-b border-line bg-sunken px-4 py-2.5 font-medium">
                     {gunAdi(gun)}{" "}
-                    <span className="text-ink-faint">· {gun.toLocaleDateString("tr-TR")}</span>
+                    <span className="text-caption font-normal text-ink-faint">
+                      {gun.toLocaleDateString("tr-TR")}
+                    </span>
+                    {bugunMu ? (
+                      <span className="ml-auto rounded-full bg-accent-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+                        bugün
+                      </span>
+                    ) : null}
                   </p>
 
-                  <div className="mt-3 flex flex-col gap-3">
+                  <div className="flex flex-col divide-y divide-line">
                     {vardiyalar.map(([deger, etiket]) => (
-                      <div key={deger}>
-                        <p className="text-caption font-medium text-ink-muted">{etiket}</p>
-                        <div className="mt-1">
+                      <div key={deger} className={`border-l-4 p-4 ${VARDIYA_RENGI[deger].serit}`}>
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-chip px-2 py-0.5 text-caption font-medium ${VARDIYA_RENGI[deger].rozet}`}
+                        >
+                          <span aria-hidden="true">{VARDIYA_RENGI[deger].ikon}</span>
+                          {etiket}
+                        </span>
+                        <div className="mt-2">
                           <VardiyaHucresi
                             businessId={secili.id}
                             gunAnahtari={gunAnahtari}
@@ -318,12 +363,21 @@ function VardiyaHucresi({
           <input type="hidden" name="businessId" value={businessId} />
           <input type="hidden" name="date" value={gunAnahtari} />
           <input type="hidden" name="shift" value={shift} />
+          {/* Boş bir ilk seçenek olmadan tarayıcı listedeki ilk kişiyi
+           * varsayılan gösteriyordu — kimse atanmamışken sanki biri
+           * seçilmiş gibi duruyordu. required + boş value, hem görünüşte
+           * hem "+" ile boş gönderilmeye karşı çift kilit. */}
           <select
             name="userId"
-            className="min-w-0 flex-1 rounded-chip border border-line bg-canvas px-2 py-1 text-caption outline-none focus:border-line-strong"
+            required
+            defaultValue=""
+            className="min-w-0 flex-1 rounded-chip border border-line bg-canvas px-2 py-1 text-caption text-ink-muted outline-none focus:border-line-strong focus:text-ink"
           >
+            <option value="" disabled>
+              + Personel seç
+            </option>
             {atanmamisPersonel.map((p) => (
-              <option key={p.id} value={p.id}>
+              <option key={p.id} value={p.id} className="text-ink">
                 {p.name}
               </option>
             ))}

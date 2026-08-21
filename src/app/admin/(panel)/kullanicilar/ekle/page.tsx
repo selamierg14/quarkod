@@ -27,9 +27,10 @@ export default async function NewUserPage() {
     <div className="flex flex-col gap-5">
       <Link
         href="/admin/kullanicilar"
-        className="self-start text-small text-ink-muted underline underline-offset-2 hover:text-ink"
+        className="inline-flex w-fit items-center gap-1.5 self-start rounded-control border border-line bg-surface px-3 py-1.5 text-small font-medium text-ink-soft shadow-card transition hover:-translate-y-0.5 hover:border-line-strong hover:text-ink"
       >
-        ← Kullanıcı listesine dön
+        <span aria-hidden="true">←</span>
+        Kullanıcı listesine dön
       </Link>
 
       <PageHeader

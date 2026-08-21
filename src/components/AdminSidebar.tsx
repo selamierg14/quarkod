@@ -22,13 +22,14 @@ export function AdminSidebar({
   gruplar,
   kullaniciAdi,
   rolAdi,
-  cikis,
+  cikisAction,
 }: {
   gruplar: NavGrup[];
   kullaniciAdi: string;
   rolAdi: string;
-  /** Sunucu eylemi olan çıkış formu; layout'tan geçiyor. */
-  cikis: React.ReactNode;
+  /** Sunucu eylemi; burada mı ikon mu metinli buton mu göstereceğimize
+   * karar veriyoruz, bu yüzden hazır JSX değil aksiyonun kendisi geçiyor. */
+  cikisAction: () => Promise<void>;
 }) {
   const pathname = usePathname();
   const [genis, setGenis] = useState(true);
@@ -216,7 +217,29 @@ export function AdminSidebar({
             </span>
           ) : null}
         </Link>
-        {cikis}
+        <form action={cikisAction}>
+          <button
+            type="submit"
+            title={genis ? undefined : "Çıkış"}
+            className={`flex w-full items-center justify-center gap-2 rounded-chip border border-line bg-surface text-small text-ink-soft transition hover:bg-canvas hover:text-ink ${
+              genis ? "px-3 py-1.5" : "px-0 py-2"
+            }`}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4 w-4 shrink-0"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.8}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
+            </svg>
+            {genis ? "Çıkış" : null}
+          </button>
+        </form>
         {genis ? (
           <p className="mt-2.5 text-center font-mono text-[11px] text-ink-faint">
             Quarkod v{APP_VERSION}

@@ -7,6 +7,20 @@ import nodemailer, { type Transporter } from "nodemailer";
 
 let cached: Transporter | null | undefined;
 
+/**
+ * Posta hizmeti şu an devrede mi?
+ *
+ * SMTP_* değişkenleri boşken her eşik altı puanda bir Notification kaydı
+ * açılıp "SMTP yapılandırılmamış" hatasıyla kapanıyordu — hizmet fiilen
+ * yokken her seferinde başarısız bir deneme kaydı biriktiriyordu. Bu
+ * bayrak, o denemeyi hiç başlatmamak için: hizmet SMTP_* dolana kadar
+ * pasif sayılır. Ortam değişkenleri girildiği an hiçbir kod değişikliği
+ * gerekmeden yeniden aktif olur.
+ */
+export function postaAktifMi(): boolean {
+  return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+}
+
 /** SMTP ayarlanmamışsa null döner; çağıran taraf konsola düşer. */
 export function getTransport(): Transporter | null {
   if (cached !== undefined) return cached;

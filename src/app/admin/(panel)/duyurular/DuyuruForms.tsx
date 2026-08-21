@@ -1,8 +1,14 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { ImageUpload } from "@/components/ImageUpload";
-import { duyuruAktifDegistir, duyuruEkle, duyuruSil, type DuyuruFormState } from "./actions";
+import {
+  duyuruAktifDegistir,
+  duyuruDuzenle,
+  duyuruEkle,
+  duyuruSil,
+  type DuyuruFormState,
+} from "./actions";
 
 const INPUT =
   "w-full rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
@@ -80,10 +86,19 @@ export function NewDuyuruForm({ businessId }: { businessId: string }) {
   );
 }
 
+/** yyyy-aa-gg → <input type="date"> için; tr-TR görüntü biçiminden geri çevrim. */
+function girdiTarihi(gorunen: string | null): string {
+  if (!gorunen) return "";
+  const [gun, ay, yil] = gorunen.split(".");
+  if (!gun || !ay || !yil) return "";
+  return `${yil}-${ay}-${gun}`;
+}
+
 export function DuyuruSatiri({
   id,
   baslik,
   aciklama,
+  imageUrl,
   aktif,
   baslangic,
   bitis,
@@ -91,10 +106,98 @@ export function DuyuruSatiri({
   id: string;
   baslik: string;
   aciklama: string | null;
+  imageUrl: string | null;
   aktif: boolean;
   baslangic: string | null;
   bitis: string | null;
 }) {
+  const [duzenleAcik, setDuzenleAcik] = useState(false);
+  const [state, formAction, pending] = useActionState<DuyuruFormState, FormData>(
+    duyuruDuzenle,
+    {},
+  );
+
+  if (duzenleAcik) {
+    return (
+      <li className="rounded-control bg-surface p-4 ring-1 ring-accent-300">
+        <form action={formAction} className="flex flex-col gap-3">
+          <input type="hidden" name="id" value={id} />
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1">
+              <span className="text-caption text-ink-muted">Başlık</span>
+              <input
+                name="baslik"
+                required
+                defaultValue={baslik}
+                className={INPUT}
+              />
+            </label>
+
+            <label className="flex flex-col gap-1 sm:col-span-2">
+              <span className="text-caption text-ink-muted">Açıklama (isteğe bağlı)</span>
+              <textarea
+                name="aciklama"
+                rows={2}
+                defaultValue={aciklama ?? ""}
+                className={INPUT}
+              />
+            </label>
+
+            <label className="flex flex-col gap-1">
+              <span className="text-caption text-ink-muted">Başlangıç (isteğe bağlı)</span>
+              <input
+                name="baslangic"
+                type="date"
+                defaultValue={girdiTarihi(baslangic)}
+                className={INPUT}
+              />
+            </label>
+
+            <label className="flex flex-col gap-1">
+              <span className="text-caption text-ink-muted">Bitiş (isteğe bağlı)</span>
+              <input
+                name="bitis"
+                type="date"
+                defaultValue={girdiTarihi(bitis)}
+                className={INPUT}
+              />
+            </label>
+          </div>
+
+          <ImageUpload
+            name="imageUrl"
+            kind="duyuru"
+            label="Afiş görseli (isteğe bağlı)"
+            hint="Duyurular listesinde geniş kart olarak görünür."
+            initial={imageUrl}
+            brandColor="#111827"
+          />
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="submit"
+              disabled={pending}
+              className="rounded-control bg-accent-600 px-4 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+            >
+              {pending ? "Kaydediliyor..." : "Kaydet"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setDuzenleAcik(false)}
+              className="rounded-control border border-line px-4 py-2 text-small text-ink-soft hover:bg-canvas"
+            >
+              Vazgeç
+            </button>
+            {state.error ? (
+              <p className="text-caption text-danger">{state.error}</p>
+            ) : null}
+          </div>
+        </form>
+      </li>
+    );
+  }
+
   return (
     <li className="flex flex-wrap items-start justify-between gap-3 rounded-control bg-surface p-4 ring-1 ring-line">
       <div className="min-w-0">
@@ -105,8 +208,18 @@ export function DuyuruSatiri({
             {baslangic ?? "şimdi"} – {bitis ?? "süresiz"}
           </p>
         ) : null}
+        {state.saved ? (
+          <p className="mt-1.5 text-caption font-medium text-success-ink">✓ {state.saved}</p>
+        ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setDuzenleAcik(true)}
+          className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas"
+        >
+          Düzenle
+        </button>
         <form action={duyuruAktifDegistir}>
           <input type="hidden" name="id" value={id} />
           <button

@@ -1,9 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import Link from "next/link";
 import { sablonuUygula, type MenuFormState } from "./actions";
 import { MENU_SABLONLARI, type SablonRenk } from "@/lib/menu-sablonlari";
 import type { BusinessType } from "@/lib/constants";
+import { useToast } from "@/components/ui";
 
 /**
  * Kart temaları. Tailwind sınıfları derleme anında taranıyor; şablonun
@@ -97,6 +99,18 @@ export function SablonSecici({
   const [acikId, setAcikId] = useState<string | null>(null);
   const doluMu = mevcutBolumSayisi > 0;
 
+  /**
+   * Şablon uygulanınca hiçbir geri bildirim yoktu: kart ızgarasının altında,
+   * kaydırmadan görünmeyen küçük bir yazı vardı. Kullanıcı tıkladı, sayfa
+   * aynı kaldı, "oldu mu olmadı mı" bilmeden çıkıp gidiyordu. Şimdi hem
+   * ekranın tepesine sabit bir başarı kartı hem menüyü düzenlemeye giden
+   * bir düğme var; ayrıca kısa bir bildirim (toast) de çıkıyor.
+   */
+  const { bildir } = useToast();
+  useEffect(() => {
+    if (state.saved) bildir(state.saved);
+  }, [state.saved, bildir]);
+
   const siralanmis = [...MENU_SABLONLARI].sort((a, b) => {
     const aUygun = a.onerilenTurler.includes(businessType) ? 0 : 1;
     const bUygun = b.onerilenTurler.includes(businessType) ? 0 : 1;
@@ -105,6 +119,21 @@ export function SablonSecici({
 
   return (
     <div className="flex flex-col gap-4">
+      {state.saved ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-control bg-success-soft p-4 ring-1 ring-success/25">
+          <p className="flex items-center gap-2 text-small font-medium text-success-ink">
+            <span aria-hidden="true">✓</span>
+            {state.saved}
+          </p>
+          <Link
+            href="/admin/menu"
+            className="shrink-0 rounded-control bg-success px-4 py-2 text-small font-semibold text-white transition hover:opacity-90"
+          >
+            Menümü düzenle →
+          </Link>
+        </div>
+      ) : null}
+
       {doluMu ? (
         <div className="flex items-start gap-3 rounded-control bg-warning-soft p-4 ring-1 ring-warning/25">
           <span
@@ -226,11 +255,6 @@ export function SablonSecici({
       {state.error ? (
         <p className="rounded-control bg-danger-soft px-4 py-3 text-small font-medium text-danger-ink ring-1 ring-danger/20">
           {state.error}
-        </p>
-      ) : null}
-      {state.saved ? (
-        <p className="rounded-control bg-success-soft px-4 py-3 text-small font-medium text-success-ink ring-1 ring-success/20">
-          {state.saved}
         </p>
       ) : null}
     </div>

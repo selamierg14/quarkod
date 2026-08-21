@@ -43,9 +43,10 @@ export default async function FeedbackDetailPage({
     <div className="flex flex-col gap-5">
       <Link
         href="/admin/geri-bildirimler"
-        className="text-small text-ink-muted hover:text-ink"
+        className="inline-flex w-fit items-center gap-1.5 self-start rounded-control border border-line bg-surface px-3 py-1.5 text-small font-medium text-ink-soft shadow-card transition hover:-translate-y-0.5 hover:border-line-strong hover:text-ink"
       >
-        ← Geri bildirimler
+        <span aria-hidden="true">←</span>
+        Geri bildirimler
       </Link>
 
       <div className="grid gap-5 lg:grid-cols-[2fr_1fr]">

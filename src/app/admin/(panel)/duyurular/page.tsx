@@ -63,6 +63,7 @@ export default async function DuyurularPage({
               id={d.id}
               baslik={d.baslik}
               aciklama={d.aciklama}
+              imageUrl={d.imageUrl}
               aktif={d.aktif}
               baslangic={tarihGirdisi(d.baslangic)}
               bitis={tarihGirdisi(d.bitis)}

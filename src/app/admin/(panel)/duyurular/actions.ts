@@ -66,6 +66,58 @@ export async function duyuruEkle(
   return { saved: "Duyuru eklendi." };
 }
 
+export async function duyuruDuzenle(
+  _prev: DuyuruFormState,
+  formData: FormData,
+): Promise<DuyuruFormState> {
+  const actor = await requireMenuErisim();
+  await requireYazma();
+
+  const id = String(formData.get("id") ?? "");
+  const duyuru = await prisma.duyuru.findUnique({ where: { id } });
+  if (!duyuru) return { error: "Duyuru bulunamadı." };
+  if (!(await canAccessBusiness(actor, duyuru.businessId))) {
+    return { error: "Bu işletmeye yetkiniz yok." };
+  }
+
+  const baslik = String(formData.get("baslik") ?? "").trim();
+  const aciklama = String(formData.get("aciklama") ?? "").trim();
+  const imageUrl = String(formData.get("imageUrl") ?? "");
+  const baslangic = tarihParse(String(formData.get("baslangic") ?? ""));
+  const bitis = tarihParse(String(formData.get("bitis") ?? ""));
+
+  if (!baslik) return { error: "Başlık gerekli." };
+  if (baslangic && bitis && baslangic > bitis) {
+    return { error: "Başlangıç, bitişten sonra olamaz." };
+  }
+  if (imageUrl && imageUrl !== duyuru.imageUrl) {
+    const problem = validateImageDataUrl(imageUrl, "duyuru");
+    if (problem) return { error: problem };
+  }
+
+  await prisma.duyuru.update({
+    where: { id },
+    data: {
+      baslik,
+      aciklama: aciklama || null,
+      imageUrl: imageUrl || null,
+      baslangic,
+      bitis,
+    },
+  });
+
+  await denetimYaz(actor, "business.duyuru", {
+    entity: "duyuru",
+    entityId: id,
+    detail: `"${baslik}" düzenlendi`,
+  });
+
+  // QR karşılama ve duyurular sayfaları force-dynamic; her istekte
+  // veritabanından okuyor, ayrıca yenilemeye gerek yok.
+  revalidatePath("/admin/duyurular");
+  return { saved: "Duyuru güncellendi." };
+}
+
 export async function duyuruAktifDegistir(formData: FormData): Promise<void> {
   const actor = await requireMenuErisim();
   await requireYazma();

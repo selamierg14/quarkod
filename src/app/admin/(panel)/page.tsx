@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireTenant, visibleBusinesses } from "@/lib/auth";
-import { getBusinessStats, type BusinessStats, type TrendPoint } from "@/lib/stats";
+import { getBusinessStats, type BusinessStats } from "@/lib/stats";
 import { prisma } from "@/lib/db";
 import {
   Card,
@@ -10,44 +10,14 @@ import {
   SegmentLink,
   StatCard,
   StatusBadge,
-  Stars,
   TabLink,
   formatDateTime,
 } from "@/components/ui";
-import { TrendChart } from "@/components/TrendChart";
 import { OnboardingKarti } from "./OnboardingKarti";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Özet" };
-
-/**
- * Birden çok işletme seçiliyken haftalık trendi tek çizgiye indiriyoruz:
- * haftalar aynı kovalarda olduğu için kayıt sayısıyla ağırlıklı ortalama
- * doğru olan; işletmelerin ortalamasının ortalaması küçük şubeyi büyük
- * şubeyle eşitler.
- */
-function trendleriBirlestir(stats: BusinessStats[]): TrendPoint[] {
-  if (stats.length === 1) return stats[0].trend;
-  const ilk = stats[0]?.trend ?? [];
-  return ilk.map((nokta, i) => {
-    let toplam = 0;
-    let adet = 0;
-    for (const s of stats) {
-      const p = s.trend[i];
-      if (p?.average != null) {
-        toplam += p.average * p.count;
-        adet += p.count;
-      }
-    }
-    return {
-      start: nokta.start,
-      label: nokta.label,
-      count: adet,
-      average: adet > 0 ? Number((toplam / adet).toFixed(2)) : null,
-    };
-  });
-}
 
 /** Kategori ortalamalarını işletmeler arasında kayıt sayısıyla birleştirir. */
 function kategorileriBirlestir(stats: BusinessStats[]) {
@@ -139,7 +109,6 @@ export default async function AdminHomePage({
       deltali.reduce((a, s) => a + s.total, 0)
     : null;
 
-  const trend = trendleriBirlestir(stats);
   // Yalnızca en zayıf altı başlık: liste uzadıkça "önce şuna bak" mesajı
   // kayboluyor, kırılım ekranı zaten tamamını gösteriyor.
   const kategoriler = kategorileriBirlestir(stats).slice(0, 6);
@@ -158,15 +127,6 @@ export default async function AdminHomePage({
         },
         orderBy: { createdAt: "desc" },
         take: 5,
-        include: { business: true, table: true },
-      })
-    : [];
-
-  const sonKayitlar = stats.length
-    ? await prisma.feedback.findMany({
-        where: { businessId: { in: stats.map((s) => s.id) } },
-        orderBy: { createdAt: "desc" },
-        take: 6,
         include: { business: true, table: true },
       })
     : [];
@@ -200,37 +160,6 @@ export default async function AdminHomePage({
           </TabLink>
         </div>
       ) : null}
-
-      {/* "Hızlı erişim" adı sayfanın dibinde anlamsızdı: oraya inen kişi
-          zaten aradığını bulmuş oluyordu. Artık üstte, tek satır. */}
-      <div className="print-hidden grid gap-2.5 sm:grid-cols-3">
-        {HIZLI_ERISIM.map((h) => (
-          <Link
-            key={h.href}
-            href={h.href}
-            className="group flex items-center gap-3 rounded-card bg-surface p-3.5 shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-raised"
-          >
-            <span
-              aria-hidden="true"
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-chip text-heading ring-1 ${h.tema}`}
-            >
-              {h.ikon}
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-small font-semibold text-ink">{h.baslik}</span>
-              <span className="block text-caption text-ink-muted">{h.alt}</span>
-            </span>
-            <span
-              aria-hidden="true"
-              className="shrink-0 text-ink-faint transition group-hover:translate-x-0.5 group-hover:text-accent-700"
-            >
-              →
-            </span>
-          </Link>
-        ))}
-      </div>
-
-      <OnboardingKarti user={user} businesses={businesses} />
 
       <section>
         <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -296,14 +225,38 @@ export default async function AdminHomePage({
         </div>
       </section>
 
-      <section className="grid items-start gap-4 lg:grid-cols-[1.6fr_1fr]">
-        <Card>
-          <CardHeader title="Puan trendi" action={<span className="text-caption text-ink-faint">Son 12 hafta</span>} />
-          <div className="mt-3">
-            <TrendChart points={trend} color={grafikRengi} height={170} />
-          </div>
-        </Card>
+      {/* "Hızlı erişim" adı sayfanın dibinde anlamsızdı: oraya inen kişi
+          zaten aradığını bulmuş oluyordu. Artık üstte, tek satır. */}
+      <div className="print-hidden grid gap-2.5 sm:grid-cols-3">
+        {HIZLI_ERISIM.map((h) => (
+          <Link
+            key={h.href}
+            href={h.href}
+            className="group flex items-center gap-3 rounded-card bg-surface p-3.5 shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-raised"
+          >
+            <span
+              aria-hidden="true"
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-chip text-heading ring-1 ${h.tema}`}
+            >
+              {h.ikon}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-small font-semibold text-ink">{h.baslik}</span>
+              <span className="block text-caption text-ink-muted">{h.alt}</span>
+            </span>
+            <span
+              aria-hidden="true"
+              className="shrink-0 text-ink-faint transition group-hover:translate-x-0.5 group-hover:text-accent-700"
+            >
+              →
+            </span>
+          </Link>
+        ))}
+      </div>
 
+      <OnboardingKarti user={user} businesses={businesses} />
+
+      <section className="grid items-start gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader title="Kategori kırılımı" description="Son 90 gün, düşükten yükseğe" />
           {kategoriler.length === 0 ? (
@@ -420,63 +373,6 @@ export default async function AdminHomePage({
           </ul>
         )}
       </Card>
-
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-heading font-semibold text-ink">Son geri bildirimler</h2>
-          <Link
-            href="/admin/geri-bildirimler"
-            className="text-caption text-ink-muted hover:text-ink"
-          >
-            Tümü →
-          </Link>
-        </div>
-
-        {sonKayitlar.length === 0 ? (
-          <EmptyState baslik="Henüz geri bildirim yok" ikon="☆">
-            QR kodlarını masalara yerleştirdikten sonra puanlar buraya düşmeye
-            başlayacak.
-          </EmptyState>
-        ) : (
-          <Card padded={false}>
-            <ul className="divide-y divide-line">
-              {sonKayitlar.map((f) => (
-                <li key={f.id}>
-                  <Link
-                    href={`/admin/geri-bildirimler/${f.id}`}
-                    className="flex items-start gap-3 px-5 py-3 transition hover:bg-canvas"
-                  >
-                    <Stars value={f.overallRating} />
-                    <span className="min-w-0 flex-1">
-                      <span className="flex flex-wrap items-center gap-2 text-caption">
-                        {stats.length > 1 ? (
-                          <span className="font-medium text-ink">{f.business.name}</span>
-                        ) : null}
-                        <span className="text-ink-muted">
-                          {f.table
-                            ? f.table.isEntrance
-                              ? "Giriş"
-                              : `Masa ${f.table.tableNumber}`
-                            : "—"}
-                        </span>
-                        <StatusBadge status={f.status} />
-                      </span>
-                      {f.comment ? (
-                        <span className="mt-0.5 line-clamp-1 block text-small text-ink-soft">
-                          {f.comment}
-                        </span>
-                      ) : null}
-                    </span>
-                    <span className="shrink-0 text-caption text-ink-faint">
-                      {formatDateTime(f.createdAt)}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        )}
-      </section>
 
     </div>
   );

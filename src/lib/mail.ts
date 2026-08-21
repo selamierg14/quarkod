@@ -1,13 +1,19 @@
 import "server-only";
 import { prisma } from "./db";
-import { sendMail, starLine } from "./mailer";
+import { postaAktifMi, sendMail, starLine } from "./mailer";
 
 /**
  * Eşik altı puan geldiğinde ilgili işletme sorumlusuna ve patrona haber verir.
  * Gönderim başarısız olsa bile geri bildirim kaydı korunur; her deneme
  * Notification tablosuna işlenir.
+ *
+ * Şu an posta hizmeti pasif (SMTP_* boş). Pasifken bu fonksiyon sessizce
+ * çıkar — deneyip başarısız bir kayıt biriktirmez. SMTP_* girilince tek
+ * satır değişmeden yeniden çalışır.
  */
 export async function notifyLowRating(feedbackId: string): Promise<void> {
+  if (!postaAktifMi()) return;
+
   const feedback = await prisma.feedback.findUnique({
     where: { id: feedbackId },
     include: { business: true, table: true },
