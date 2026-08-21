@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Bell, QrCode, Star } from "lucide-react";
 import { Eyebrow } from "./Eyebrow";
 import { PhoneFrame } from "./PhoneFrame";
@@ -28,10 +29,12 @@ export function QrAnketShowcase() {
               alt="Müşterinin telefonunda açılan anket ekranı: beş yıldızla genel puan"
             />
             <div className="absolute -right-8 -bottom-8 hidden w-[172px] overflow-hidden rounded-card bg-surface p-3 shadow-pop ring-1 ring-line sm:block">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src="/marketing/musteri-urun-puan.png"
-                alt="Ürün bazlı puanlama: Kayseri Mantısı için ayrı yıldız verme"
+                alt="Müşterinin telefonunda ürün bazlı puanlama ekranı: Kayseri Mantısı için ayrı yıldız verme"
+                width={172}
+                height={300}
+                sizes="172px"
                 className="h-auto w-full rounded-control"
               />
               <p className="mt-2 text-caption font-medium text-ink-soft">Ürün bazlı puanlama</p>

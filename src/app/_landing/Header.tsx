@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { Menu, QrCode } from "lucide-react";
 import { ButtonLink } from "@/components/ui";
+import { SITE_ADI } from "@/lib/site";
 
 const NAV_LINKS = [
-  { href: "#ozellikler", label: "Özellikler" },
-  { href: "#nasil-calisir", label: "Nasıl Çalışır" },
-  { href: "#paketler", label: "Paketler" },
-  { href: "#sss", label: "SSS" },
+  { href: "/#ozellikler", label: "Özellikler" },
+  { href: "/#nasil-calisir", label: "Nasıl Çalışır" },
+  // Vaka çalışmaları ayrı bir sayfa: çapa değil, gerçek bir adres.
+  { href: "/vaka-calismalari", label: "Vaka Çalışmaları" },
+  { href: "/#paketler", label: "Paketler" },
+  { href: "/#sss", label: "SSS" },
 ];
 
 export function Header() {
@@ -17,14 +20,14 @@ export function Header() {
           <span className="flex h-8 w-8 items-center justify-center rounded-control bg-brand text-brand-ink shadow-card">
             <QrCode className="h-4 w-4" aria-hidden="true" />
           </span>
-          Memnuniyet Paneli
+          {SITE_ADI}
         </Link>
 
         <nav className="hidden items-center gap-6 text-small font-medium text-ink-soft md:flex">
           {NAV_LINKS.map((l) => (
-            <a key={l.href} href={l.href} className="transition-colors hover:text-ink">
+            <Link key={l.href} href={l.href} className="transition-colors hover:text-ink">
               {l.label}
-            </a>
+            </Link>
           ))}
         </nav>
 
@@ -44,9 +47,9 @@ export function Header() {
           <div className="absolute inset-x-0 top-16 border-b border-line bg-surface px-5 py-5 shadow-raised">
             <nav className="flex flex-col gap-4 text-body font-medium text-ink-soft">
               {NAV_LINKS.map((l) => (
-                <a key={l.href} href={l.href} className="hover:text-ink">
+                <Link key={l.href} href={l.href} className="hover:text-ink">
                   {l.label}
-                </a>
+                </Link>
               ))}
               <Link href="/admin/giris" className="hover:text-ink">
                 Giriş Yap

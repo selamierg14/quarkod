@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Building2, LayoutDashboard, Megaphone, ShieldCheck, Star, Users } from "lucide-react";
 import { Eyebrow } from "./Eyebrow";
 import { BrowserFrame } from "./BrowserFrame";
@@ -45,10 +46,12 @@ export function PanelPreview() {
           />
           <div className="absolute -bottom-8 -left-6 hidden w-[220px] overflow-hidden rounded-card bg-surface shadow-pop ring-1 ring-line md:block">
             <div className="aspect-[1440/900] w-full overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src="/marketing/admin-urunler.png"
-                alt="Ürün puanları raporu: en beğenilen ve en düşük puanlı ürünler"
+                alt="Quarkod ürün puanları raporu: en beğenilen ve en düşük puanlı menü ürünleri"
+                width={1440}
+                height={900}
+                sizes="220px"
                 className="h-full w-full object-cover object-left-top"
               />
             </div>

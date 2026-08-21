@@ -1,3 +1,4 @@
+import Image from "next/image";
 import {
   Camera,
   Languages,
@@ -70,10 +71,12 @@ export function QrMenuShowcase() {
             />
             <div className="relative w-[220px] -rotate-2 overflow-hidden rounded-card bg-surface p-2 shadow-pop ring-1 ring-line transition-transform duration-300 hover:rotate-0">
               <div className="aspect-[173/262] w-full overflow-hidden rounded-control">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                   src="/marketing/musteri-menu.png"
-                  alt="Müşterinin gördüğü fotoğraflı menü kartı: ürün adı ve fiyatı"
+                  alt="QR menüde müşterinin gördüğü fotoğraflı ürün kartı: ürün adı, açıklaması ve fiyatı"
+                  width={173}
+                  height={262}
+                  sizes="220px"
                   className="h-full w-full object-cover"
                 />
               </div>

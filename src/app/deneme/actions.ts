@@ -174,5 +174,5 @@ export async function denemeBaslat(
     businessId: null,
   });
 
-  redirect("/admin");
+  redirect("/tesekkurler");
 }

@@ -1,13 +1,23 @@
-/** Gerçek panel görüntülerini tarayıcı penceresi çerçevesi içinde gösterir. */
+import Image from "next/image";
+
+/**
+ * Gerçek panel görüntülerini tarayıcı penceresi çerçevesi içinde gösterir.
+ *
+ * `next/image` ile: kaynak PNG'ler 1440px genişliğinde ve 100-135 KB;
+ * ziyaretçinin ekranına göre küçültülüp modern biçime çevriliyor.
+ */
 export function BrowserFrame({
   src,
   alt,
   label,
+  oncelikli = false,
   className = "",
 }: {
   src: string;
   alt: string;
   label?: string;
+  /** İlk ekranda görünüyorsa true. */
+  oncelikli?: boolean;
   className?: string;
 }) {
   return (
@@ -25,8 +35,15 @@ export function BrowserFrame({
         ) : null}
       </div>
       <div className="aspect-[1440/900] w-full overflow-hidden bg-surface">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt={alt} className="h-full w-full object-cover object-top" />
+        <Image
+          src={src}
+          alt={alt}
+          width={1440}
+          height={900}
+          sizes="(min-width: 1024px) 900px, 100vw"
+          priority={oncelikli}
+          className="h-full w-full object-cover object-top"
+        />
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { ChevronDown, HelpCircle } from "lucide-react";
 import { Eyebrow } from "./Eyebrow";
 
-const SORULAR = [
+export const SORULAR = [
   {
     s: "Kredi kartı bilgisi vermem gerekiyor mu?",
     c: "Hayır. Deneme başlarken kart bilgisi istemiyoruz; 7 gün sonunda dilediğiniz paketi seçerek kesintisiz devam edebilirsiniz.",
