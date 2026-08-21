@@ -2,6 +2,7 @@ import "server-only";
 import { notFound } from "next/navigation";
 import { prisma } from "./db";
 import { hesapAktifMi } from "./abonelik";
+import { gorselAdresi } from "./gorsel-adres";
 
 /**
  * QR'la açılan üç sayfanın (karşılama, anket, menü) ortak girişi.
@@ -32,7 +33,15 @@ export async function qrSayfaVerisi(slug: string, tableParam: string) {
   if (!table || !table.active) notFound();
 
   return {
-    business,
+    // Logo ve kapak, veritabanında data URI olarak duruyor ama müşteriye
+    // adresle veriliyor. Üç QR sayfası da buradan geçtiği için değişiklik
+    // tek noktada: aksi halde her sayfa 110 KB'lık base64'ü HTML'e ve RSC
+    // yüküne ayrı ayrı gömüyordu (bkz. src/lib/gorsel-adres.ts).
+    business: {
+      ...business,
+      logoUrl: gorselAdresi(business.id, "logo", business.logoUrl),
+      coverUrl: gorselAdresi(business.id, "kapak", business.coverUrl),
+    },
     table,
     tableLabel: table.isEntrance ? "Giriş" : `Masa ${table.tableNumber}`,
     menuAcik: business.account.menuEnabled,
