@@ -167,7 +167,7 @@ export default async function VardiyaPlanlamaPage({
           aksiyon={
             <Link
               href="/admin/kullanicilar/ekle"
-              className="rounded-control bg-ink px-4 py-2 text-small font-medium text-white hover:bg-ink-button-hover"
+              className="rounded-control bg-accent-600 px-4 py-2 text-small font-medium text-white hover:bg-accent-700"
             >
               + Personel ekle
             </Link>

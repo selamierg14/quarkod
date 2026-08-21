@@ -76,7 +76,7 @@ export default async function GorevlerimPage({
             user.role === "superadmin" ? (
               <Link
                 href="/admin/vardiya-planlama/sablon"
-                className="rounded-control bg-ink px-4 py-2 text-small font-medium text-white hover:bg-ink-button-hover"
+                className="rounded-control bg-accent-600 px-4 py-2 text-small font-medium text-white hover:bg-accent-700"
               >
                 + İlk görevi ekle
               </Link>

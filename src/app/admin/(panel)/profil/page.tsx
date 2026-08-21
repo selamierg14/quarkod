@@ -7,6 +7,7 @@ import { SettingsForm } from "../isletmeler/[id]/SettingsForm";
 import { CategoryManager } from "../isletmeler/[id]/CategoryManager";
 import { TableManager } from "../isletmeler/[id]/TableManager";
 import { masaSirala } from "@/lib/masa";
+import { PageHeader, SectionCard } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -50,14 +51,16 @@ export default async function ProfilePage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="text-title font-semibold">Profil</h1>
+      <PageHeader
+        ikon="👤"
+        renk="indigo"
+        title="Profil"
+        description="Hesap bilgileriniz ve şifreniz. Ad, telefon ve e-posta değişikliği hesap sahibinden geçer."
+      />
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <section className="rounded-control bg-surface p-5 ring-1 ring-line">
-          <h2 className="text-caption font-medium tracking-wide text-ink-muted uppercase">
-            Hesap bilgileri
-          </h2>
-          <dl className="mt-4 space-y-3 text-small">
+        <SectionCard ikon="🪪" renk="slate" title="Hesap bilgileri">
+          <dl className="space-y-3 text-small">
             <div className="flex justify-between gap-4">
               <dt className="text-ink-muted">Ad soyad</dt>
               <dd className="font-medium">{kayit?.name}</dd>
@@ -103,16 +106,16 @@ export default async function ProfilePage() {
           <p className="mt-4 border-t border-line pt-3 text-caption text-ink-faint">
             Ad, telefon ve e-posta değişikliği için hesap sahibinize başvurun.
           </p>
-        </section>
+        </SectionCard>
 
-        <section className="rounded-control bg-surface p-5 ring-1 ring-line">
-          <h2 className="text-caption font-medium tracking-wide text-ink-muted uppercase">
-            Şifre değiştir
-          </h2>
-          <div className="mt-4">
-            <PasswordForm />
-          </div>
-        </section>
+        <SectionCard
+          ikon="🔒"
+          renk="rose"
+          title="Şifre değiştir"
+          description="En az 8 karakter. Değişiklik hemen geçerli olur."
+        >
+          <PasswordForm />
+        </SectionCard>
       </div>
 
       {/* İşletme sorumlusu için işletme ayarları burada; ayrı bir liste
@@ -136,16 +139,18 @@ export default async function ProfilePage() {
             </div>
             <Link
               href={`/admin/isletmeler/${kendiIsletmesi.id}/qr`}
-              className="rounded-control bg-ink px-4 py-2.5 text-small font-medium text-white"
+              className="rounded-control bg-accent-600 px-4 py-2.5 text-small font-medium text-white transition hover:bg-accent-700"
             >
               QR kodlarını üret / yazdır
             </Link>
           </div>
 
-          <section className="rounded-control bg-surface p-5 ring-1 ring-line">
-            <h3 className="mb-4 text-caption font-medium tracking-wide text-ink-muted uppercase">
-              İşletme ayarları
-            </h3>
+          <SectionCard
+            ikon="⚙️"
+            renk="indigo"
+            title="İşletme ayarları"
+            description="Görseller, marka rengi, Wi-Fi ve QR kartı metni."
+          >
             <SettingsForm
               business={{
                 id: kendiIsletmesi.id,
@@ -172,13 +177,15 @@ export default async function ProfilePage() {
               }}
               isOwner={false}
             />
-          </section>
+          </SectionCard>
 
           <div className="grid gap-5 lg:grid-cols-2">
-            <section className="rounded-control bg-surface p-5 ring-1 ring-line">
-              <h3 className="mb-4 text-caption font-medium tracking-wide text-ink-muted uppercase">
-                Anket kategorileri
-              </h3>
+            <SectionCard
+              ikon="🗂️"
+              renk="sky"
+              title="Anket kategorileri"
+              description="Müşterinin tek tek puanladığı başlıklar."
+            >
               <CategoryManager
                 businessId={kendiIsletmesi.id}
                 categories={kendiIsletmesi.categories.map((c) => ({
@@ -188,12 +195,14 @@ export default async function ProfilePage() {
                   problemOptions: c.problemOptions,
                 }))}
               />
-            </section>
+            </SectionCard>
 
-            <section className="rounded-control bg-surface p-5 ring-1 ring-line">
-              <h3 className="mb-4 text-caption font-medium tracking-wide text-ink-muted uppercase">
-                Masalar / QR noktaları
-              </h3>
+            <SectionCard
+              ikon="🪑"
+              renk="amber"
+              title="Masalar / QR noktaları"
+              description="Her masanın kendi karekodu olur; giriş noktası en üstte durur."
+            >
               <TableManager
                 businessId={kendiIsletmesi.id}
                 tables={masaSirala(kendiIsletmesi.tables).map((t) => ({
@@ -203,7 +212,7 @@ export default async function ProfilePage() {
                   active: t.active,
                 }))}
               />
-            </section>
+            </SectionCard>
           </div>
         </>
       ) : null}

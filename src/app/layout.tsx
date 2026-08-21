@@ -71,7 +71,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="tr"
       className={`${geistSans.variable} ${geistMono.variable} h-full scroll-smooth antialiased`}
     >
-      <body className="min-h-full bg-canvas text-ink">{children}</body>
+      <body className="min-h-full bg-canvas text-ink">
+        {/* Klavyeyle gezen kullanıcı her sayfada önce menüyü sekmelemek
+            zorunda kalmasın: ilk Tab bu bağlantıyı görünür yapıyor. */}
+        <a
+          href="#icerik"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:rounded-control focus:bg-accent-600 focus:px-4 focus:py-2 focus:text-small focus:font-medium focus:text-white"
+        >
+          İçeriğe geç
+        </a>
+        {children}
+      </body>
     </html>
   );
 }

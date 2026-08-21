@@ -1,6 +1,6 @@
 import { allowedBusinessIds, requireTenantOwner } from "@/lib/auth";
 import { getBusinessStats } from "@/lib/stats";
-import { EmptyState, TabLink } from "@/components/ui";
+import { EmptyState, PageHeader, SectionCard, TabLink } from "@/components/ui";
 import { DeltaBadge, TrendChart } from "@/components/TrendChart";
 
 export const dynamic = "force-dynamic";
@@ -25,23 +25,31 @@ export default async function ComparisonPage() {
       </div>
 
       <div>
-        <h1 className="text-title font-semibold">Şube karşılaştırma</h1>
-        <p className="mt-1 text-small text-ink-muted">
-          Kategori setleri işletmeye göre değiştiği için karşılaştırma genel
-          yıldız ortalaması üzerinden yapılır. Kategori kırılımı her işletmenin
-          kendi içinde anlamlıdır.
-        </p>
+        <PageHeader
+          ikon="📊"
+          renk="violet"
+          title="Şube karşılaştırma"
+          description={
+            <>
+              Kategori setleri işletmeye göre değiştiği için karşılaştırma
+              genel yıldız ortalaması üzerinden yapılır. Kategori kırılımı her
+              işletmenin kendi içinde anlamlıdır.
+            </>
+          }
+        />
       </div>
 
       {withData.length === 0 ? (
         <EmptyState>Kıyaslama için henüz yeterli geri bildirim yok.</EmptyState>
       ) : (
         <>
-          <section className="rounded-control bg-surface p-5 ring-1 ring-line">
-            <h2 className="text-caption font-medium tracking-wide text-ink-muted uppercase">
-              Genel ortalama
-            </h2>
-            <ul className="mt-4 space-y-3">
+          <SectionCard
+            ikon="🏁"
+            renk="violet"
+            title="Genel ortalama"
+            description="Yüksekten düşüğe sıralı; çubuğun rengi işletmenin marka rengidir."
+          >
+            <ul className="space-y-3">
               {[...withData]
                 .sort((a, b) => (b.average ?? 0) - (a.average ?? 0))
                 .map((stat) => (
@@ -64,19 +72,20 @@ export default async function ComparisonPage() {
                   </li>
                 ))}
             </ul>
-          </section>
+          </SectionCard>
 
-          <section className="rounded-control bg-surface p-5 ring-1 ring-line">
-            <h2 className="text-caption font-medium tracking-wide text-ink-muted uppercase">
-              Haftalık ortalama puan seyri
-            </h2>
-            <p className="mt-1 text-small text-ink-muted">
+          <SectionCard
+            ikon="📈"
+            renk="sky"
+            title="Haftalık ortalama puan seyri"
+            description="Son 12 hafta; dikey eksen 1–5 yıldız."
+          >
+            <p className="-mt-1 mb-4 text-small text-ink-muted">
               Her nokta bir haftanın <strong>ortalama yıldız puanını</strong>{" "}
-              gösterir (dikey eksen 1–5). Yatay eksen hafta başlangıç tarihidir.
-              Veri gelmeyen haftalarda çizgi kesilir — sıfır puan almış gibi
-              görünmesin diye.
+              gösterir. Yatay eksen hafta başlangıç tarihidir. Veri gelmeyen
+              haftalarda çizgi kesilir — sıfır puan almış gibi görünmesin diye.
             </p>
-            <div className="mt-4 space-y-5">
+            <div className="space-y-5">
               {withData.map((stat) => (
                 <div key={stat.id}>
                   <div className="flex items-baseline justify-between text-small">
@@ -98,14 +107,23 @@ export default async function ComparisonPage() {
                 </div>
               ))}
             </div>
-          </section>
+          </SectionCard>
 
           <section className="grid gap-4 lg:grid-cols-3">
             {withData.map((stat) => (
               <div
                 key={stat.id}
-                className="rounded-control bg-surface p-5 ring-1 ring-line"
+                className="overflow-hidden rounded-card bg-surface shadow-card ring-1 ring-line"
               >
+                {/* Şubenin kendi marka rengi kartın tepesinde ince bir şerit:
+                    üç kartı yan yana görürken hangisinin hangisi olduğu
+                    yazıyı okumadan anlaşılıyor. */}
+                <span
+                  aria-hidden="true"
+                  className="block h-1.5 w-full"
+                  style={{ backgroundColor: stat.brandColor }}
+                />
+                <div className="p-5">
                 <h3 className="flex items-center gap-2 font-medium">
                   <span
                     className="h-2.5 w-2.5 rounded-full"
@@ -150,6 +168,7 @@ export default async function ComparisonPage() {
                     ))}
                   </ul>
                 )}
+                </div>
               </div>
             ))}
           </section>

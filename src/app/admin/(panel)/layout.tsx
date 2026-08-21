@@ -8,6 +8,7 @@ import { ProfilAvatarButton } from "@/components/ProfilAvatarButton";
 import { prisma } from "@/lib/db";
 import { ROL_ADLARI } from "@/lib/constants";
 import { abonelikUyarisi } from "@/lib/abonelik";
+import { ToastProvider } from "@/components/ui";
 import { panelMenusu, panelModu } from "@/lib/panel";
 
 export const dynamic = "force-dynamic";
@@ -43,13 +44,18 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   // Saha personeli (garson) tamamen ayrı, sade bir kabuk görüyor — yönetici
   // sidebar'ının onda karşılığı yok, iki ekranı var.
   if (modu === "personel") {
-    return <PersonelKabuk ad={user.name}>{children}</PersonelKabuk>;
+    return (
+      <ToastProvider>
+        <PersonelKabuk ad={user.name}>{children}</PersonelKabuk>
+      </ToastProvider>
+    );
   }
 
   return (
     // Mobilde dikey: AdminSidebar'ın mobil başlık çubuğu da bu kabın bir
     // flex öğesi. Yatay dizilimde başlık, içerikle yan yana düşüp paneli
     // telefonda ikiye bölüyordu. lg'den itibaren yan çubuk + içerik yan yana.
+    <ToastProvider>
     <div className="flex min-h-dvh flex-col bg-canvas lg:flex-row">
       <AdminSidebar
         gruplar={gruplar}
@@ -124,10 +130,11 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
             Vardiya çizelgesi) kalan tüm genişliği kullansın diye kaldırıldı
             — kutuya sıkışmış görünüyordu. Mobilde zaten viewport dar olduğu
             için etkisi yok. */}
-        <main className="w-full flex-1 px-4 py-6 lg:px-8 lg:py-8">
+        <main id="icerik" className="w-full flex-1 px-4 py-6 lg:px-8 lg:py-8">
           {children}
         </main>
       </div>
     </div>
+    </ToastProvider>
   );
 }

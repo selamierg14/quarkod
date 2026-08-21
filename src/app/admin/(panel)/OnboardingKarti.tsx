@@ -109,7 +109,7 @@ function OnboardingGovde({ adimlar }: { adimlar: Adim[] }) {
             {!adim.tamam ? (
               <Link
                 href={adim.href}
-                className="rounded-chip bg-ink px-3 py-1 text-caption font-medium text-white hover:bg-ink-button-hover"
+                className="rounded-chip bg-accent-600 px-3 py-1 text-caption font-medium text-white hover:bg-accent-700"
               >
                 {adim.aksiyon}
               </Link>

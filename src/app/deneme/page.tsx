@@ -4,13 +4,21 @@ import { getSession } from "@/lib/auth";
 import { DENEME_GUN } from "@/lib/deneme";
 import { Card, Overline } from "@/components/ui";
 import { DenemeForm } from "./DenemeForm";
+import { markaStili } from "@/lib/marka";
+import { SITE_ADI } from "@/lib/site";
+import { Breadcrumb } from "../_landing/Breadcrumb";
+import { Footer } from "../_landing/Footer";
+import { Header } from "../_landing/Header";
+
+const MARKA_RENGI = "#4f46e5";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: `${DENEME_GUN} gün ücretsiz deneyin`,
   description:
-    "Masadaki QR ile müşteri memnuniyetini ölçün, şikayeti müşteri gitmeden duyun.",
+    "Kredi kartı istemeden hesap açın. Masadaki QR ile müşteri memnuniyetini ölçün, şikayeti müşteri gitmeden duyun.",
+  alternates: { canonical: "/deneme" },
 };
 
 const MADDELER = [
@@ -25,10 +33,13 @@ export default async function DenemePage() {
   if (await getSession()) redirect("/admin");
 
   return (
-    <main className="min-h-dvh bg-canvas">
-      <div className="mx-auto grid max-w-4xl gap-8 px-5 py-12 lg:grid-cols-[1fr_1.1fr] lg:items-start lg:py-20">
+    <main data-marka style={markaStili(MARKA_RENGI)} className="min-h-dvh bg-canvas">
+      <Header />
+      <Breadcrumb adimlar={[{ ad: "Ana sayfa", href: "/" }, { ad: "Ücretsiz deneme" }]} />
+
+      <div className="mx-auto grid max-w-4xl gap-8 px-5 py-10 lg:grid-cols-[1fr_1.1fr] lg:items-start lg:py-14">
         <div>
-          <Overline>Memnuniyet Paneli</Overline>
+          <Overline>{SITE_ADI}</Overline>
           <h1 className="mt-2 text-display font-semibold text-ink">
             {DENEME_GUN} gün ücretsiz deneyin
           </h1>
@@ -64,6 +75,8 @@ export default async function DenemePage() {
           <DenemeForm />
         </Card>
       </div>
+
+      <Footer />
     </main>
   );
 }

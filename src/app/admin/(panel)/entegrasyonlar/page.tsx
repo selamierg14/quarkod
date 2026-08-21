@@ -60,7 +60,7 @@ export default async function EntegrasyonlarPage() {
         {ENTEGRASYONLAR.map((e) => (
           <div
             key={e.isim}
-            className="flex flex-col gap-3 rounded-control bg-surface p-5 ring-1 ring-line"
+            className="flex flex-col gap-3 rounded-card bg-surface p-5 shadow-card ring-1 ring-line"
           >
             <div className="flex items-start justify-between gap-2">
               <span

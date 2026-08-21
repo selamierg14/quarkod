@@ -1,6 +1,6 @@
 import { requireMenuErisim, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { EmptyState, PageHeader } from "@/components/ui";
+import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
 import { IsletmeSecici } from "../menu/MenuUst";
 import { DuyuruSatiri, NewDuyuruForm } from "./DuyuruForms";
 
@@ -44,9 +44,14 @@ export default async function DuyurularPage({
 
       <IsletmeSecici businesses={businesses} seciliId={secili.id} taban="/admin/duyurular" />
 
-      <div className="rounded-control bg-surface p-4 ring-1 ring-line">
+      <SectionCard
+        ikon="📣"
+        renk="amber"
+        title="Yeni duyuru"
+        description="QR karşılama ekranında müşterinin göreceği kısa haber."
+      >
         <NewDuyuruForm businessId={secili.id} />
-      </div>
+      </SectionCard>
 
       {duyurular.length === 0 ? (
         <EmptyState>Henüz duyuru eklenmedi.</EmptyState>

@@ -116,7 +116,7 @@ export function NewAccountForm() {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-control bg-ink px-4 py-2.5 text-small font-medium text-white disabled:bg-slate-400"
+          className="rounded-control bg-accent-600 px-4 py-2.5 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
         >
           {pending ? "Açılıyor..." : "Hesabı aç"}
         </button>
@@ -147,7 +147,7 @@ export function EnterAccountButton({
         type="submit"
         disabled={!active}
         title={active ? undefined : "Askıdaki hesabın paneline girilemez"}
-        className="rounded-chip bg-ink px-3 py-1.5 text-caption font-medium text-white disabled:bg-slate-300"
+        className="rounded-chip bg-accent-600 px-3 py-1.5 text-caption font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-300"
       >
         Bu hesabı görüntüle
       </button>

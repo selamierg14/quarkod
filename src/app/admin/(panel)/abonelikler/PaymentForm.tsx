@@ -58,7 +58,7 @@ export function PaymentForm({ accountId }: { accountId: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-chip bg-ink px-3 py-1.5 text-small font-medium text-white disabled:bg-slate-400"
+        className="rounded-chip bg-accent-600 px-3 py-1.5 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
       >
         {pending ? "…" : "Ödeme kaydet"}
       </button>

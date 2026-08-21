@@ -1,5 +1,5 @@
 import { requireAnketErisim, visibleBusinesses } from "@/lib/auth";
-import { EmptyState } from "@/components/ui";
+import { EmptyState, SectionCard } from "@/components/ui";
 import { RaporSekmeleri } from "@/components/RaporSekmeleri";
 import { PeriyotFiltre } from "@/components/PeriyotFiltre";
 import { GUVENILIR_OY_SINIRI, enIyiEnKotu, urunPuanlari } from "@/lib/menu";
@@ -84,9 +84,8 @@ export default async function UrunlerPage({
               yanlış yere baktırırdı. */}
           {enIyi.length > 0 || enKotu.length > 0 ? (
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-control bg-surface p-4 ring-1 ring-line">
-                <h2 className="text-small font-semibold text-success-ink">En beğenilenler</h2>
-                <ul className="mt-2 flex flex-col gap-1.5">
+              <SectionCard ikon="👍" renk="emerald" title="En beğenilenler">
+                <ul className="flex flex-col gap-1.5">
                   {enIyi.map((u) => (
                     <li key={u.itemName} className="flex justify-between gap-3 text-small">
                       <span className="truncate">{u.itemName}</span>
@@ -96,11 +95,10 @@ export default async function UrunlerPage({
                     </li>
                   ))}
                 </ul>
-              </div>
+              </SectionCard>
 
-              <div className="rounded-control bg-surface p-4 ring-1 ring-line">
-                <h2 className="text-small font-semibold text-danger-ink">En düşük puanlılar</h2>
-                <ul className="mt-2 flex flex-col gap-1.5">
+              <SectionCard ikon="👎" renk="rose" title="En düşük puanlılar">
+                <ul className="flex flex-col gap-1.5">
                   {enKotu.map((u) => (
                     <li key={u.itemName} className="flex justify-between gap-3 text-small">
                       <span className="truncate">{u.itemName}</span>
@@ -110,7 +108,7 @@ export default async function UrunlerPage({
                     </li>
                   ))}
                 </ul>
-              </div>
+              </SectionCard>
             </div>
           ) : (
             <p className="rounded-control bg-warning-soft px-4 py-3 text-small text-warning-ink">

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { requireOwner, userScope, visibleBusinesses } from "@/lib/auth";
 import { EditUserForm } from "../../UserForms";
 import { acilabilirRoller } from "@/lib/panel";
+import { PageHeader, SectionCard } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -29,17 +30,27 @@ export default async function EditUserPage({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center gap-3">
-        <Link
-          href="/admin/kullanicilar"
-          className="rounded-chip border border-line px-2.5 py-1.5 text-small text-ink-soft hover:bg-canvas"
-        >
-          ← Listeye dön
-        </Link>
-        <h1 className="text-title font-semibold">{target.name} — düzenle</h1>
-      </div>
+      <Link
+        href="/admin/kullanicilar"
+        className="self-start text-small text-ink-muted underline underline-offset-2 hover:text-ink"
+      >
+        ← Kullanıcı listesine dön
+      </Link>
 
-      <div className="max-w-2xl rounded-control bg-surface p-5 ring-1 ring-line">
+      <PageHeader
+        ikon="✏️"
+        renk="indigo"
+        title={`${target.name} — düzenle`}
+        description="Rolü, bağlı işletmesi ve modül izinleri. Değişiklik bir sonraki girişinde geçerli olur."
+      />
+
+      <SectionCard
+        className="max-w-2xl"
+        ikon="🧑"
+        renk="indigo"
+        title="Kullanıcı bilgileri"
+        description="Şifre buradan değişmez; kullanıcı kendi profilinden değiştirir."
+      >
         {target.id === owner.id ? (
           <p className="rounded-chip bg-warning-soft px-3 py-2 text-small text-warning-ink">
             Kendi kaydınızı buradan düzenleyemezsiniz. Bilgilerinizi Profil
@@ -63,7 +74,7 @@ export default async function EditUserPage({
             roller={acilabilirRoller(owner.role)}
           />
         )}
-      </div>
+      </SectionCard>
     </div>
   );
 }

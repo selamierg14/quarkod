@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { actingAccountId, requireOwner, visibleBusinesses } from "@/lib/auth";
 import { NewUserForm } from "../UserForms";
 import { acilabilirRoller } from "@/lib/panel";
+import { PageHeader, SectionCard } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -24,17 +25,27 @@ export default async function NewUserPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center gap-3">
-        <Link
-          href="/admin/kullanicilar"
-          className="rounded-chip border border-line px-2.5 py-1.5 text-small text-ink-soft hover:bg-canvas"
-        >
-          ← Listeye dön
-        </Link>
-        <h1 className="text-title font-semibold">Yeni kullanıcı</h1>
-      </div>
+      <Link
+        href="/admin/kullanicilar"
+        className="self-start text-small text-ink-muted underline underline-offset-2 hover:text-ink"
+      >
+        ← Kullanıcı listesine dön
+      </Link>
 
-      <div className="max-w-2xl rounded-control bg-surface p-5 ring-1 ring-line">
+      <PageHeader
+        ikon="➕"
+        renk="emerald"
+        title="Yeni kullanıcı"
+        description="Rol, hangi ekranları göreceğini belirler. QR menü ve QR değerlendirme izinleri ayrı ayrı verilir."
+      />
+
+      <SectionCard
+        className="max-w-2xl"
+        ikon="🧑"
+        renk="emerald"
+        title="Kullanıcı bilgileri"
+        description="Rol seçimine göre alttaki alanlar değişir."
+      >
         <NewUserForm
           businesses={businesses.map((b) => ({ id: b.id, name: b.name }))}
           roller={acilabilirRoller(owner.role)}
@@ -61,7 +72,7 @@ export default async function NewUserPage() {
             )
           }
         />
-      </div>
+      </SectionCard>
     </div>
   );
 }

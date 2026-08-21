@@ -104,7 +104,7 @@ export function CategoryManager({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-chip bg-ink px-4 py-2 text-small font-medium text-white disabled:bg-slate-400"
+          className="rounded-chip bg-accent-600 px-4 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
         >
           Ekle
         </button>
@@ -160,7 +160,7 @@ function SorunSecenekleri({ kategori }: { kategori: Category }) {
           />
           <button
             type="submit"
-            className="rounded-chip bg-ink px-3 py-1.5 text-caption font-medium text-white"
+            className="rounded-chip bg-accent-600 px-3 py-1.5 text-caption font-medium text-white transition hover:bg-accent-700"
           >
             Kaydet
           </button>

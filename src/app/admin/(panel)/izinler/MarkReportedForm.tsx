@@ -29,7 +29,7 @@ export function MarkReportedForm({ bekleyen }: { bekleyen: number }) {
       />
       <button
         type="submit"
-        className="rounded-chip bg-ink px-3 py-1.5 text-small font-medium text-white"
+        className="rounded-chip bg-accent-600 px-3 py-1.5 text-small font-medium text-white transition hover:bg-accent-700"
       >
         {bekleyen} kaydı işaretle
       </button>

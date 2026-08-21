@@ -36,6 +36,7 @@ export default function HomePage() {
       data-marka
       style={markaStili(MARKA_RENGI)}
       className="min-h-dvh bg-canvas pb-24 lg:pb-0"
+      id="icerik"
     >
       <YapisalVeri sorular={SORULAR} />
       <AnnouncementBar />

@@ -1,6 +1,6 @@
 import { requirePersonelYonetimi, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { EmptyState, TabLink } from "@/components/ui";
+import { EmptyState, PageHeader, SectionCard, TabLink } from "@/components/ui";
 import { IsletmeSecici } from "../../menu/MenuUst";
 import { SablonForm } from "./SablonForm";
 import { gorevSil } from "./actions";
@@ -42,19 +42,23 @@ export default async function GorevSablonuPage({
         </TabLink>
       </div>
 
-      <div>
-        <h1 className="text-title font-semibold">Görev şablonu</h1>
-        <p className="mt-1 text-small text-ink-muted">
-          Her gün &quot;Görevlerim&quot; ekranında tekrar sorulan açılış/kapanış
-          listesi.
-        </p>
-      </div>
+      <PageHeader
+        ikon="📋"
+        renk="teal"
+        title="Görev şablonu"
+        description={
+          <>
+            Her gün &quot;Görevlerim&quot; ekranında tekrar sorulan
+            açılış/kapanış listesi.
+          </>
+        }
+      />
 
       <IsletmeSecici businesses={businesses} seciliId={secili.id} taban="/admin/vardiya-planlama/sablon" />
 
-      <div className="rounded-control bg-surface p-4 ring-1 ring-line">
+      <SectionCard ikon="➕" renk="teal" title="Görev ekle">
         <SablonForm businessId={secili.id} />
-      </div>
+      </SectionCard>
 
       {gorevler.length === 0 ? (
         <EmptyState>Henüz görev eklenmedi.</EmptyState>
@@ -64,14 +68,13 @@ export default async function GorevSablonuPage({
             const liste = gorevler.filter((g) => g.gorev === gorevTuru);
             if (liste.length === 0) return null;
             return (
-              <section
+              <SectionCard
                 key={gorevTuru}
-                className="rounded-control bg-surface p-4 ring-1 ring-line"
+                ikon={gorevTuru === "acilis" ? "🌅" : "🌙"}
+                renk={gorevTuru === "acilis" ? "amber" : "indigo"}
+                title={BASLIKLAR[gorevTuru]}
               >
-                <h2 className="text-caption font-medium tracking-wide text-ink-muted uppercase">
-                  {BASLIKLAR[gorevTuru]}
-                </h2>
-                <ul className="mt-3 flex flex-col divide-y divide-line">
+                <ul className="flex flex-col divide-y divide-line">
                   {liste.map((item) => (
                     <li
                       key={item.id}
@@ -90,7 +93,7 @@ export default async function GorevSablonuPage({
                     </li>
                   ))}
                 </ul>
-              </section>
+              </SectionCard>
             );
           })}
         </div>

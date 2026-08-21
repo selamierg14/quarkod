@@ -69,7 +69,7 @@ export function DegisimTalebi({
             <button
               type="submit"
               disabled={pending}
-              className="rounded-chip bg-ink px-2.5 py-1 text-caption font-medium text-white disabled:bg-slate-400"
+              className="rounded-chip bg-accent-600 px-2.5 py-1 text-caption font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
             >
               {pending ? "Gönderiliyor..." : "Talebi gönder"}
             </button>

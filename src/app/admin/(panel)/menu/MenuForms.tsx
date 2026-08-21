@@ -58,7 +58,7 @@ export function NewCategoryForm({ businessId }: { businessId: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-chip bg-ink px-3 py-2 text-small font-medium text-white disabled:bg-slate-400"
+        className="rounded-chip bg-accent-600 px-3 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
       >
         {pending ? "Ekleniyor…" : "Bölüm ekle"}
       </button>
@@ -265,7 +265,7 @@ export function NewItemForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-chip bg-ink px-4 py-2 text-small font-medium text-white disabled:bg-slate-400"
+          className="rounded-chip bg-accent-600 px-4 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
         >
           {pending ? "Ekleniyor…" : "Ürünü ekle"}
         </button>
@@ -308,7 +308,7 @@ export function ItemRow({
             <button
               type="submit"
               disabled={pending}
-              className="rounded-chip bg-ink px-4 py-2 text-small font-medium text-white disabled:bg-slate-400"
+              className="rounded-chip bg-accent-600 px-4 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
             >
               {pending ? "Kaydediliyor…" : "Kaydet"}
             </button>

@@ -37,7 +37,7 @@ export function SablonForm({ businessId }: { businessId: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-control bg-ink px-4 py-2 text-small font-medium text-white disabled:bg-slate-400"
+        className="rounded-control bg-accent-600 px-4 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
       >
         {pending ? "Ekleniyor..." : "Ekle"}
       </button>

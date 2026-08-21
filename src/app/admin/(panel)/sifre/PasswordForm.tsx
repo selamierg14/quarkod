@@ -107,7 +107,7 @@ export function PasswordForm() {
       <button
         type="submit"
         disabled={pending}
-        className="mt-1 rounded-control bg-ink px-4 py-2.5 text-small font-medium text-white disabled:bg-slate-400"
+        className="mt-1 rounded-control bg-accent-600 px-4 py-2.5 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
       >
         {pending
           ? "Lütfen bekleyin…"

@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { BUSINESS_TYPE_LIST, qrCardText } from "@/lib/constants";
 import { ImageUpload } from "@/components/ImageUpload";
+import { useToast } from "@/components/ui";
 import { updateBusiness, type FormState } from "../actions";
 
 const INPUT =
@@ -45,6 +46,21 @@ export function SettingsForm({
   );
   const defaultCardText = qrCardText(business.type);
 
+  /**
+   * Bu form ekrana sığmayacak kadar uzun ve iki ayrı yerden gönderiliyor:
+   * tepedeki "Görselleri kaydet" ve en alttaki "Kaydet". Sonucu yalnızca
+   * düğmenin yanında göstermek, diğer uçtan gönderen kişiyi sonucu
+   * göremeden bırakıyordu. Kısa bildirim her iki durumda da görünür.
+   */
+  const { bildir } = useToast();
+  const sonDurum = useRef(state);
+  useEffect(() => {
+    if (sonDurum.current === state) return;
+    sonDurum.current = state;
+    if (state.error) bildir(state.error, "hata");
+    else if (state.saved) bildir("İşletme ayarları kaydedildi.");
+  }, [state, bildir]);
+
   return (
     <form action={formAction} className="flex flex-col gap-3">
       <input type="hidden" name="id" value={business.id} />
@@ -75,7 +91,7 @@ export function SettingsForm({
           <button
             type="submit"
             disabled={pending}
-            className="rounded-control bg-ink px-4 py-2.5 text-small font-medium text-white disabled:bg-slate-400"
+            className="rounded-control bg-accent-600 px-4 py-2.5 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
           >
             {pending ? "Kaydediliyor..." : "Görselleri kaydet"}
           </button>
@@ -327,7 +343,7 @@ export function SettingsForm({
       <button
         type="submit"
         disabled={pending}
-        className="self-start rounded-control bg-ink px-4 py-2.5 text-small font-medium text-white disabled:bg-slate-400"
+        className="self-start rounded-control bg-accent-600 px-4 py-2.5 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
       >
         {pending ? "Kaydediliyor..." : "Kaydet"}
       </button>
