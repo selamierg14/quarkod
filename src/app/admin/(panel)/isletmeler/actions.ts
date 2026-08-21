@@ -18,6 +18,7 @@ import { BUSINESS_TYPES, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/con
 import { validateImageDataUrl } from "@/lib/image";
 import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
 import { slugIleOlustur, slugify } from "@/lib/slug";
+import { googleYorumLinkiGecerliMi } from "@/lib/google-yorum";
 
 export type FormState = { error?: string; saved?: boolean };
 
@@ -172,6 +173,14 @@ export async function updateBusiness(
   }
 
   const googleReviewUrl = String(formData.get("googleReviewUrl") ?? "").trim();
+  if (googleReviewUrl && !googleYorumLinkiGecerliMi(googleReviewUrl)) {
+    return {
+      error:
+        "Google yorum linki çalışmıyor gibi görünüyor. Google Haritalar'da " +
+        "işletmenizi açıp 'Paylaş' ile aldığınız adresi yapıştırın — " +
+        "içinde DEGISTIRIN gibi bir yer tutucu kalmamalı.",
+    };
+  }
   if (googleReviewUrl && !/^https?:\/\//i.test(googleReviewUrl)) {
     return { error: "Google linki http:// veya https:// ile başlamalı." };
   }

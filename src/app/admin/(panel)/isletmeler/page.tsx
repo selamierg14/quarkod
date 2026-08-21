@@ -3,6 +3,7 @@ import { actingAccountId, requireUser, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { BUSINESS_TYPES, type BusinessType } from "@/lib/constants";
 import { EmptyState, PageHeader } from "@/components/ui";
+import { googleYorumLinkiSorunu } from "@/lib/google-yorum";
 import { NewBusinessForm } from "./NewBusinessForm";
 
 export const dynamic = "force-dynamic";
@@ -113,10 +114,10 @@ export default async function BusinessListPage() {
                     </span>
                   </span>
 
-                  {!business.googleReviewUrl ? (
+                  {googleYorumLinkiSorunu(business.googleReviewUrl) ? (
                     <span className="mt-3 flex items-start gap-1.5 rounded-chip bg-warning-soft px-2.5 py-1.5 text-caption text-warning-ink">
                       <span aria-hidden="true">⚠</span>
-                      Google yorum linki yok — 5 yıldız yönlendirmesi çalışmaz.
+                      {googleYorumLinkiSorunu(business.googleReviewUrl)}
                     </span>
                   ) : null}
 

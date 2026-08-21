@@ -7,7 +7,9 @@ import { PersonelKabuk } from "@/components/PersonelKabuk";
 import { ProfilAvatarButton } from "@/components/ProfilAvatarButton";
 import { prisma } from "@/lib/db";
 import { ROL_ADLARI } from "@/lib/constants";
+import { Suspense } from "react";
 import { abonelikUyarisi } from "@/lib/abonelik";
+import { BildirimUyarisi } from "./BildirimUyarisi";
 import { ToastProvider } from "@/components/ui";
 import { panelMenusu, panelModu } from "@/lib/panel";
 
@@ -15,7 +17,18 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const user = await requireUser();
-  const aktifHesap = await getActiveAccount(user);
+
+  // Bu iki sorgu yalnızca `user`a bağlı, birbirine değil. Sırayla beklemek
+  // her panel sayfasına bir tur veritabanı gecikmesi ekliyordu.
+  const [aktifHesap, hesap] = await Promise.all([
+    getActiveAccount(user),
+    user.accountId
+      ? prisma.account.findUnique({
+          where: { id: user.accountId },
+          select: { active: true, expiresAt: true },
+        })
+      : Promise.resolve(null),
+  ]);
 
   // Menü, kullanıcının gerçekten girebildiği sayfaları göstermeli: platform
   // yöneticisi bir hesaba girmediği sürece kiracı ekranlarını hiç görmüyor.
@@ -33,12 +46,6 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   // Abonelik uyarısı: hem süre dolmadan "yenileyin" hatırlatması, hem de
   // dolduktan sonra "panel salt okunur" bilgisi. Süresi dolan sahip artık
   // girebildiği için bu bant onun tek yönlendirmesi.
-  const hesap = user.accountId
-    ? await prisma.account.findUnique({
-        where: { id: user.accountId },
-        select: { active: true, expiresAt: true },
-      })
-    : null;
   const uyari = hesap ? abonelikUyarisi(hesap) : null;
 
   // Saha personeli (garson) tamamen ayrı, sade bir kabuk görüyor — yönetici
@@ -115,6 +122,14 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
             <span className="font-semibold">Abonelik:</span> {uyari.mesaj} Yenilemek
             için bizimle iletişime geçin.
           </div>
+        ) : null}
+
+        {/* Uyarı sayfanın kendisi değil, kenar bilgisi: Suspense içinde
+            akıtılıyor ki sorgusu panelin açılmasını bekletmesin. */}
+        {modu === "kiraci" ? (
+          <Suspense fallback={null}>
+            <BildirimUyarisi isletmeIdleri={isletmeler.map((i) => i.id)} />
+          </Suspense>
         ) : null}
 
         {/* Salt okunur kullanıcı düğmelere basıp hata almasın: kısıt baştan

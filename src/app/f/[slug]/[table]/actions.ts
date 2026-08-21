@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
 import { notifyLowRating } from "@/lib/mail";
 import { validateImageDataUrl } from "@/lib/image";
+import { googleYorumLinkiGecerliMi } from "@/lib/google-yorum";
 import { vardiyaHesapla } from "@/lib/vardiya";
 import { foldTr } from "@/lib/text";
 import { detaylariDerle, sorunSecenekleri } from "@/lib/anket-detay";
@@ -245,8 +246,14 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
   const photoUrl = rawPhoto && !validateImageDataUrl(rawPhoto, "anket") ? rawPhoto : null;
 
   const now = new Date();
+  // Linkin dolu olması yetmez, çalışması gerekir: kurulumdan kalan yer
+  // tutucu ("?placeid=DEGISTIRIN") de dolu görünüyordu ve 5 yıldız veren
+  // müşteri boş bir Google sayfasına gidiyordu. Bozuksa yönlendirmiyoruz;
+  // müşteri nötr teşekkür ekranını görüyor.
   const redirectToGoogle =
-    rating === 5 && business.googleRedirect && Boolean(business.googleReviewUrl);
+    rating === 5 &&
+    business.googleRedirect &&
+    googleYorumLinkiGecerliMi(business.googleReviewUrl);
 
   const feedback = await prisma.feedback.create({
     data: {

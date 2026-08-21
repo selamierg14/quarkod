@@ -246,6 +246,8 @@ model ShiftSwapRequest {
   decidedBy   User?           @relation("ShiftSwapDecider", fields: [decidedById], references: [id], onDelete: SetNull)
 
   @@index([assignmentId])
+  @@index([requestedById])
+  @@index([decidedById])
   @@map("shift_swap_requests")
 }
 
@@ -264,6 +266,7 @@ model ShiftNote {
   author   User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([businessId, date])
+  @@index([authorId])
   @@map("shift_notes")
 }
 
@@ -301,6 +304,7 @@ model ChecklistCompletion {
 
   @@unique([itemId, date])
   @@index([businessId, date])
+  @@index([completedById])
   @@map("checklist_completions")
 }
 
@@ -456,6 +460,9 @@ model Feedback {
   @@index([businessId, status])
   @@index([visitorId, tableId, createdAt])
   @@index([ipHash, businessId, createdAt])
+  /// Masa kırılımı ve masa silme bu sütundan geçiyor; en hızlı büyüyen
+  /// tablo burası olduğu için indeks bugünden duruyor.
+  @@index([tableId])
   @@map("feedbacks")
 }
 
@@ -597,6 +604,9 @@ model User {
   shiftSwapDecisions   ShiftSwapRequest[]    @relation("ShiftSwapDecider")
 
   @@index([accountId])
+  /// notifyLowRating her eşik altı puanda "bu işletmenin sorumlusu kim"
+  /// diye buraya soruyor.
+  @@index([businessId])
   @@map("users")
 }
 
@@ -654,6 +664,8 @@ model Coupon {
   business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   feedback Feedback? @relation(fields: [feedbackId], references: [id], onDelete: SetNull)
 
+  @@index([businessId])
+  @@index([feedbackId])
   @@map("coupons")
 }
 
@@ -671,6 +683,7 @@ model SurveyView {
 
   @@index([businessId, createdAt])
   @@index([visitorId, tableId, createdAt])
+  @@index([tableId])
   @@map("survey_views")
 }
 
@@ -742,6 +755,7 @@ model MarketingConsent {
   /// satır tutup durumu güncelliyoruz.
   @@unique([businessId, channel, recipient])
   @@index([businessId, reportedAt])
+  @@index([feedbackId])
   @@map("marketing_consents")
 }
 
@@ -757,5 +771,11 @@ model Notification {
 
   feedback Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
 
+  /// Bu tablonun hiç indeksi yoktu. İki sorgu buradan geçiyor: geri bildirim
+  /// detayında o kaydın bildirimleri, ve "gönderilemeyen var mı" sağlık
+  /// sorgusu. İkincisi sentAt'i boş olanları tarıyor; kısmi indeks yalnızca
+  /// sorunlu satırları tuttuğu için başarılı gönderimler onu şişirmiyor.
+  @@index([feedbackId])
+  @@index([createdAt])
   @@map("notifications")
 }
