@@ -1,5 +1,6 @@
 import { requireAnketErisim, visibleBusinesses } from "@/lib/auth";
-import { getDoldurmaSuresi, getShiftBreakdown, getTableBreakdown } from "@/lib/stats";
+import { getAnketHunisi, getDoldurmaSuresi, getShiftBreakdown, getTableBreakdown } from "@/lib/stats";
+import { huniYuzdeleriHesapla } from "@/lib/huni";
 import { prisma } from "@/lib/db";
 import { EmptyState, SectionCard } from "@/components/ui";
 import { RaporSekmeleri } from "@/components/RaporSekmeleri";
@@ -42,10 +43,11 @@ export default async function BreakdownPage({
     ? Number(query.gun)
     : 30;
 
-  const [shifts, tables, doldurmaSuresi, atamalar] = await Promise.all([
+  const [shifts, tables, doldurmaSuresi, huni, atamalar] = await Promise.all([
     getShiftBreakdown(selected, days),
     getTableBreakdown(selected, days),
     getDoldurmaSuresi(selected, days),
+    getAnketHunisi(selected, days),
     // "Akşam vardiyasında puan neden düşük" sorusuna cevap vermek için:
     // o dönemde vardiyaya kimin atandığını da yanına yazıyoruz. Bu bir
     // istatistik değil, yöneticinin gözle karşılaştırması için ipucu.
@@ -65,6 +67,8 @@ export default async function BreakdownPage({
     where: { businessId: { in: selected }, active: true, isEntrance: false },
   });
   const masaVarMi = masaliNoktaSayisi > 0;
+
+  const huniYuzde = huniYuzdeleriHesapla(huni);
 
   const shiftTotal = shifts.reduce((acc, row) => acc + row.count, 0);
   const personelByShift = new Map<string, string[]>();
@@ -112,6 +116,81 @@ export default async function BreakdownPage({
         businesses={businesses}
         donemler={PERIODS.map((p) => ({ gun: p.days, label: p.label }))}
       />
+
+      <SectionCard
+        ikon="🚪"
+        renk="violet"
+        title="Anket hunisi"
+        description="Müşteri nerede bırakıyor: kod hiç okutulmuyor mu, ilk ekran ilgi çekmiyor mu, yoksa anket mi uzun geliyor?"
+      >
+        {huni.goruntuleme === 0 ? (
+          <p className="text-small text-ink-muted">
+            Bu dönemde hiç QR görüntülemesi yok. Masalara QR yerleştirildikten
+            sonra buradaki huni dolmaya başlar.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-chip bg-sunken p-3">
+                <p className="text-caption text-ink-muted">QR görüntülendi</p>
+                <p className="mt-1 text-title font-semibold tabular text-ink">
+                  {huni.goruntuleme}
+                </p>
+              </div>
+              <div className="rounded-chip bg-sunken p-3">
+                <p className="text-caption text-ink-muted">
+                  Yıldız verdi
+                  {huniYuzde.yildizOrani !== null ? (
+                    <span className="ml-1 text-ink-faint">
+                      (%{huniYuzde.yildizOrani.toFixed(0)})
+                    </span>
+                  ) : null}
+                </p>
+                <p className="mt-1 text-title font-semibold tabular text-ink">
+                  {huni.yildizVerdi}
+                </p>
+              </div>
+              <div className="rounded-chip bg-sunken p-3">
+                <p className="text-caption text-ink-muted">
+                  Gönderdi
+                  {huniYuzde.gonderimOrani !== null ? (
+                    <span className="ml-1 text-ink-faint">
+                      (%{huniYuzde.gonderimOrani.toFixed(0)})
+                    </span>
+                  ) : null}
+                </p>
+                <p className="mt-1 text-title font-semibold tabular text-ink">
+                  {huni.gonderildi}
+                </p>
+              </div>
+            </div>
+
+            {/* Açık mor: yıldız verenler. Koyu mor onun İÇİNDE, göndereni
+                gösteriyor — ikisi ayrı çubuk olsaydı "gönderim oranı"
+                görüntülemeye mi yoksa yıldız verene mi göre okunacak belli
+                olmazdı. */}
+            <div className="relative h-2.5 overflow-hidden rounded-full bg-sunken">
+              <div
+                className="absolute inset-y-0 left-0 rounded-full bg-violet-200"
+                style={{ width: `${huniYuzde.yildizOrani ?? 0}%` }}
+              />
+              <div
+                className="absolute inset-y-0 left-0 rounded-full bg-violet-600"
+                style={{ width: `${huniYuzde.gonderimOrani ?? 0}%` }}
+              />
+            </div>
+
+            {huniYuzde.terkOrani !== null && huniYuzde.terkOrani > 0 ? (
+              <p className="text-small text-ink-soft">
+                Yıldız veren <strong>{huni.yildizVerdi - huni.gonderildi}</strong> kişi
+                (%{huniYuzde.terkOrani.toFixed(0)}) anketi tamamlamadan bıraktı —
+                kategori puanları, ürün seçimi ya da yorum adımı çok uzun
+                geliyor olabilir.
+              </p>
+            ) : null}
+          </div>
+        )}
+      </SectionCard>
 
       <SectionCard
         ikon="🕐"

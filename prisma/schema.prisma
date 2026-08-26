@@ -676,6 +676,12 @@ model SurveyView {
   businessId String
   tableId    String?
   visitorId  String?
+  /// Müşteri en az bir yıldıza dokundu mu — anketin geri kalanı (kategori,
+  /// ürün, yorum) bu andan sonra açılıyor. Sayfayı görüp hiç dokunmadan
+  /// çıkanla, yıldız verip formu terk edeni ayırt etmek için: ilki "ilgi
+  /// çekmedi", ikincisi "anket çok uzun/rahatsız edici" demek — ikisinin
+  /// çözümü farklı.
+  yildizVerildi Boolean @default(false)
   createdAt  DateTime @default(now())
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)

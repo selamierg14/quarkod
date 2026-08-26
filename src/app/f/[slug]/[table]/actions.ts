@@ -114,6 +114,56 @@ export async function recordSurveyView(
 }
 
 /**
+ * Müşteri ilk yıldıza dokunduğunda çağrılır (anket hunisinin ikinci basamağı).
+ *
+ * Anketin geri kalanı (kategori, ürün, yorum) tam olarak bu andan sonra
+ * açılıyor — bu yüzden "yıldız verdi ama göndermedi" ile "sayfayı hiç
+ * açmadı" ayrımı burada başlıyor. Kişisel bir alan taşımıyor: sadece bir
+ * bayrak. Yorum/telefon gibi alanlar hâlâ yalnızca gönderimde, rızayla
+ * kaydediliyor (bkz. src/lib/anket-taslak.ts).
+ */
+export async function recordSurveyStart(
+  slug: string,
+  tableNumber: string,
+): Promise<void> {
+  try {
+    const business = await prisma.business.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+    if (!business) return;
+
+    const table = await prisma.table.findUnique({
+      where: {
+        businessId_tableNumber: { businessId: business.id, tableNumber },
+      },
+      select: { id: true },
+    });
+
+    const visitorId = await getOrCreateVisitorId();
+    const since = new Date(Date.now() - VIEW_DEDUPE_MINUTES * 60 * 1000);
+
+    // recordSurveyView'ın az önce oluşturduğu görüntüleme satırını
+    // güncelliyoruz — yeni satır açmıyoruz, aksi halde huni sayıları
+    // (görüntüleme vs. yıldız verdi) farklı satırlarda birikip birbirini
+    // hiç kesişmeyebilirdi.
+    const goruntuleme = await prisma.surveyView.findFirst({
+      where: { visitorId, tableId: table?.id ?? null, createdAt: { gte: since } },
+      orderBy: { createdAt: "desc" },
+      select: { id: true },
+    });
+    if (!goruntuleme) return;
+
+    await prisma.surveyView.update({
+      where: { id: goruntuleme.id },
+      data: { yildizVerildi: true },
+    });
+  } catch (error) {
+    console.error("[ölçüm] yıldız kaydedilemedi:", error);
+  }
+}
+
+/**
  * Server action'lar dışarıdan doğrudan çağrılabilen HTTP uçlarıdır; gövde
  * bizim formumuzdan gelmek zorunda değil. Metin alanlarını okumadan önce
  * biçimlerini garanti altına alıyoruz, yoksa eksik bir alan `.trim()`

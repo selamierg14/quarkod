@@ -180,6 +180,41 @@ export async function getDoldurmaSuresi(
   return { ortalamaSaniye: toplamSaniye / adet, adet };
 }
 
+export type AnketHunisi = {
+  goruntuleme: number;
+  yildizVerdi: number;
+  gonderildi: number;
+};
+
+/**
+ * "Nerede bırakıyorlar" hunisi.
+ *
+ * Üç basamak, üç farklı sorunu ayırt eder: QR okutulmuyorsa (görüntüleme
+ * düşük) kart/masa yerleşimi sorunu; yıldız verilmiyorsa (görüntüleme var,
+ * yıldız yok) ilk ekran ilgi çekmiyor; yıldız verilip gönderilmiyorsa
+ * (yıldız var, gönderim yok) anketin geri kalanı çok uzun ya da rahatsız
+ * edici. Üçü de aynı sayıyla karışsaydı hangisini düzelteceğimizi
+ * bilemezdik.
+ *
+ * Görüntüleme ve yıldız aynı SurveyView satırından geliyor (bkz.
+ * recordSurveyStart) — iki ayrı sayaç değil, tek satırın iki durumu.
+ */
+export async function getAnketHunisi(
+  businessIds: string[],
+  days = 30,
+): Promise<AnketHunisi> {
+  const since = daysAgo(days);
+  const where = { businessId: { in: businessIds }, createdAt: { gte: since } };
+
+  const [goruntuleme, yildizVerdi, gonderildi] = await Promise.all([
+    prisma.surveyView.count({ where }),
+    prisma.surveyView.count({ where: { ...where, yildizVerildi: true } }),
+    prisma.feedback.count({ where }),
+  ]);
+
+  return { goruntuleme, yildizVerdi, gonderildi };
+}
+
 /**
  * Vardiyaya göre kırılım. Vardiya etiketi her kayda otomatik yazılıyor;
  * "gece vardiyasında puan düşüyor" gibi bir bulgu doğrudan personel kararına

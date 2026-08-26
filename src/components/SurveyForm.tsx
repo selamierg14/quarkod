@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import Link from "next/link";
 import { StarRating } from "./StarRating";
 import { ImageUpload } from "./ImageUpload";
@@ -9,7 +9,7 @@ import { DUSUK_PUAN, secenekAnahtari } from "@/lib/anket-detay";
 import { useDil } from "./DilSaglayici";
 import { KvkkNotice } from "./KvkkNotice";
 import { CONTACT_RETENTION_DAYS, CONTACT_TYPES, type ContactType } from "@/lib/kvkk";
-import { markGoogleClick, submitFeedback } from "@/app/f/[slug]/[table]/actions";
+import { markGoogleClick, recordSurveyStart, submitFeedback } from "@/app/f/[slug]/[table]/actions";
 
 type Props = {
   slug: string;
@@ -47,6 +47,17 @@ export function SurveyForm({
   const [taslak] = useState(() => taslakOku(taslakKaydi));
 
   const [overall, setOverall] = useState(taslak.overall);
+  // Anket hunisinin ikinci basamağı: ilk yıldıza dokunuşu bir kez bildirir.
+  // Taslaktan gelen bir puanla (menüye gidip geri dönmüş müşteri) tekrar
+  // bildirmiyoruz — o görüntüleme zaten daha önce işaretlenmişti.
+  const yildizBildirildi = useRef(taslak.overall > 0);
+  function yildizVer(deger: number) {
+    setOverall(deger);
+    if (!yildizBildirildi.current) {
+      yildizBildirildi.current = true;
+      void recordSurveyStart(slug, tableNumber);
+    }
+  }
   const [categoryRatings, setCategoryRatings] = useState<Record<string, number>>(
     taslak.kategoriler,
   );
@@ -225,7 +236,7 @@ export function SurveyForm({
           {t("anket.baslik")}
         </p>
         <div className="mt-5">
-          <StarRating name="overall" value={gorunenOverall} onChange={setOverall} size="lg" />
+          <StarRating name="overall" value={gorunenOverall} onChange={yildizVer} size="lg" />
         </div>
         {!basladi ? (
           <p className="mt-4 text-center text-caption text-ink-faint">
