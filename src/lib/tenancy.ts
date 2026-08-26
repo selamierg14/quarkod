@@ -103,8 +103,21 @@ export async function canAccessBusinessFor(
   return business.accountId === scope.accountId;
 }
 
-/** Kullanıcı sorguları için hesap filtresi. */
+/**
+ * Kullanıcı sorguları için hesap/işletme filtresi.
+ *
+ * İşletme sorumlusu (manager) tek bir işletmeye bağlı ama hesap sahibinin
+ * hesabı aynı çatı altında başka işletmeler de barındırabilir (bkz.
+ * "Varsayılan Hesap" gibi birden fazla test işletmesinin tek hesapta
+ * toplandığı durumlar). Genel `accountId` filtresi verilseydi, sorumlu
+ * kendi işletmesi için garson açarken hesaptaki DİĞER işletmelerin
+ * kullanıcılarını da görür/düzenleyebilirdi — kendi mağazasına bakan biri
+ * zincirin başka şubesinin ekibine karışmamalı.
+ */
 export function userScopeFor(scope: TenantScope) {
   if (scope.role === "superadmin") return {};
+  if (scope.role === "manager") {
+    return { businessId: scope.businessId ?? IMPOSSIBLE_ID };
+  }
   return { accountId: scope.accountId ?? IMPOSSIBLE_ID };
 }

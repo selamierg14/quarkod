@@ -79,6 +79,12 @@ function yonetici(role: Role): boolean {
 export function acilabilirRoller(actorRole: Role): Role[] {
   if (actorRole === "superadmin") return ["owner", "bolge", "manager", "viewer", "garson"];
   if (actorRole === "owner") return ["bolge", "manager", "viewer", "garson"];
+  // İşletme sorumlusu (tek işletmeye bağlı) ve bölge müdürü (birden fazla
+  // işletmeye bağlı) günlük personel devrini kendileri çeviriyor — her yeni
+  // garson için hesap sahibine gitmek zorunda kalmasınlar diye yalnızca
+  // "garson" açabiliyorlar. Kendilerine eş ya da üst bir rol (manager,
+  // bolge, owner, viewer) açamazlar.
+  if (actorRole === "manager" || actorRole === "bolge") return ["garson"];
   return [];
 }
 
@@ -238,6 +244,21 @@ export function panelMenusu(
           href: `/admin/isletmeler/${tekIsletmeId}/masalar`,
           label: "Masalar & QR noktaları",
         },
+      ],
+    });
+    // Günlük personel devrini (yeni garson, şifre sıfırlama) sorumlunun
+    // kendisi çevirebilsin diye — önceden bu ekrana hiç bağlantı yoktu,
+    // yalnızca sahibin açabildiği bir kapıydı (requireOwner). Kapı artık
+    // requirePersonelYonetimi; acilabilirRoller de sorumluya yalnızca
+    // "garson" açtırıyor, userScope ise onu kendi işletmesiyle sınırlıyor
+    // — hesaptaki başka bir işletmenin ekibini göremez/düzenleyemez.
+    yonetim.push({
+      href: "/admin/kullanicilar",
+      label: "Kullanıcılar",
+      ikon: "kisi",
+      altLinkler: [
+        { href: "/admin/kullanicilar", label: "Listele", exact: true },
+        { href: "/admin/kullanicilar/ekle", label: "Ekle" },
       ],
     });
   }

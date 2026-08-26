@@ -201,6 +201,14 @@ describe("kullanıcı kapsamı", () => {
     expect(userScopeFor(sahipA)).toEqual({ accountId: ids.hesapA });
     expect(userScopeFor(platform)).toEqual({});
   });
+
+  it("işletme sorumlusu yalnızca kendi işletmesiyle sınırlı — hesap değil", () => {
+    // Aynı hesapta A Merkez + A Şube var; A Merkez'in sorumlusu A Şube'nin
+    // ekibini görmemeli/düzenlememeli. Genel accountId filtresi bu ikisini
+    // ayırt edemezdi.
+    expect(userScopeFor(sorumluA1)).toEqual({ businessId: ids.aKafe1 });
+    expect(userScopeFor(sorumluA1)).not.toEqual({ accountId: ids.hesapA });
+  });
 });
 
 describe("geri bildirim filtresi kapsamı aşamaz", () => {

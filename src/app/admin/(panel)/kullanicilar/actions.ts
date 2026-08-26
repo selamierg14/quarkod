@@ -7,7 +7,7 @@ import {
   canAccessBusiness,
   getSession,
   hashPassword,
-  requireOwner,
+  requirePersonelYonetimi,
   requireUser,
   setSessionCookie,
   userScope,
@@ -33,7 +33,12 @@ export async function createUser(
   _prev: UserFormState,
   formData: FormData,
 ): Promise<UserFormState> {
-  const actor = await requireOwner();
+  // Hem hesap sahibi hem işletme sorumlusu hem bölge müdürü buradan
+  // kullanıcı açabilir; kimin hangi rolü açabileceği ve hangi işletmeye
+  // atayabileceği aşağıda acilabilirRoller() ve canAccessBusiness() ile
+  // ayrıca doğrulanıyor — bu kapı yalnızca "panele giren biri mi" sorusuna
+  // bakar.
+  const actor = await requirePersonelYonetimi();
   await requireYazma();
 
   const name = String(formData.get("name") ?? "").trim();
@@ -151,7 +156,7 @@ export async function updateUser(
   _prev: UserFormState,
   formData: FormData,
 ): Promise<UserFormState> {
-  const actor = await requireOwner();
+  const actor = await requirePersonelYonetimi();
   await requireYazma();
 
   const id = String(formData.get("id") ?? "");
@@ -256,7 +261,7 @@ export async function resetPassword(
   _prev: UserFormState,
   formData: FormData,
 ): Promise<UserFormState> {
-  const actor = await requireOwner();
+  const actor = await requirePersonelYonetimi();
   await requireYazma();
 
   const id = String(formData.get("userId") ?? "");
@@ -302,7 +307,7 @@ export async function resetPassword(
 }
 
 export async function toggleUser(formData: FormData) {
-  const owner = await requireOwner();
+  const owner = await requirePersonelYonetimi();
   await requireYazma();
   const id = String(formData.get("userId") ?? "");
 

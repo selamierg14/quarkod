@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { requireOwner, userScope } from "@/lib/auth";
+import { requirePersonelYonetimi, userScope } from "@/lib/auth";
 import { ResetPasswordForm, ToggleUserButton } from "./UserForms";
 import { usesSeedPassword } from "./actions";
 import { ROL_ADLARI } from "@/lib/constants";
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Kullanıcılar" };
 
 export default async function UsersPage() {
-  const owner = await requireOwner();
+  const owner = await requirePersonelYonetimi();
 
   const users = await prisma.user.findMany({
     where: await userScope(owner),

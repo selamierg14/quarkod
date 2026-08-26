@@ -97,11 +97,15 @@ describe("kiracı menüsü", () => {
     expect(manager).toContain("/admin/isletmeler/isletme-1");
     expect(manager).toContain("/admin/isletmeler/isletme-1/kategoriler");
     expect(manager).toContain("/admin/isletmeler/isletme-1/masalar");
-    // Sahibe özel ekranlar hâlâ görünmüyor; yalnızca kendi işletmesine
-    // erişim eklendi, hesap yönetimine değil.
-    expect(manager).not.toContain("/admin/kullanicilar");
+    // Kendi ekibini kurabilsin diye Kullanıcılar da eklendi (yalnızca
+    // "garson" açabiliyor, bkz. acilabilirRoller ve userScopeFor testleri).
+    expect(manager).toContain("/admin/kullanicilar");
+    expect(manager).toContain("/admin/kullanicilar/ekle");
+    // Sahibe özel ekranlar hâlâ görünmüyor.
     expect(manager).not.toContain("/admin/izinler");
     expect(manager).not.toContain("/admin/isletmeler");
+    expect(manager).not.toContain("/admin/entegrasyonlar");
+    expect(manager).not.toContain("/admin/denetim");
   });
 
   it("platform yöneticisi hesaba girince kiracı ekranlarını görür", () => {
@@ -184,9 +188,16 @@ describe("açılabilir roller", () => {
     expect(acilabilirRoller("superadmin")).toContain("owner");
   });
 
-  it("sorumlu ve salt okunur hiç kullanıcı açamaz", () => {
-    expect(acilabilirRoller("manager")).toEqual([]);
+  it("salt okunur hiç kullanıcı açamaz", () => {
     expect(acilabilirRoller("viewer")).toEqual([]);
-    expect(acilabilirRoller("bolge")).toEqual([]);
+  });
+
+  it("sorumlu ve bölge müdürü yalnızca garson açabilir", () => {
+    // Günlük personel devrini kendileri çevirsinler diye — ama kendilerine
+    // eş ya da üst bir rol açamazlar (bkz. userScopeFor: sorumlu ayrıca
+    // kendi işletmesiyle sınırlı, hesaptaki başka işletmenin ekibine
+    // karışamaz).
+    expect(acilabilirRoller("manager")).toEqual(["garson"]);
+    expect(acilabilirRoller("bolge")).toEqual(["garson"]);
   });
 });

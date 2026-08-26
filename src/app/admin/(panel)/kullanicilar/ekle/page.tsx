@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { actingAccountId, requireOwner, visibleBusinesses } from "@/lib/auth";
+import { actingAccountId, requirePersonelYonetimi, visibleBusinesses } from "@/lib/auth";
 import { NewUserForm } from "../UserForms";
 import { acilabilirRoller } from "@/lib/panel";
 import { PageHeader, SectionCard } from "@/components/ui";
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Yeni kullanıcı" };
 
 export default async function NewUserPage() {
-  const owner = await requireOwner();
+  const owner = await requirePersonelYonetimi();
   const businesses = await visibleBusinesses(owner);
 
   // Yeni kullanıcının açılacağı hesap: platform yöneticisi için "girilen"

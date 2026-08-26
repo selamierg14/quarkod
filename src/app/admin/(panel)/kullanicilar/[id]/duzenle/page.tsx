@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { requireOwner, userScope, visibleBusinesses } from "@/lib/auth";
+import { requirePersonelYonetimi, userScope, visibleBusinesses } from "@/lib/auth";
 import { EditUserForm } from "../../UserForms";
 import { acilabilirRoller } from "@/lib/panel";
 import { PageHeader, SectionCard } from "@/components/ui";
@@ -15,7 +15,7 @@ export default async function EditUserPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const owner = await requireOwner();
+  const owner = await requirePersonelYonetimi();
   const { id } = await params;
 
   const [target, businesses] = await Promise.all([

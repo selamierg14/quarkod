@@ -198,18 +198,21 @@ export default async function VardiyaPlanlamaPage({
               kartları olarak (aşağıda) tekrar ediyor; geniş tablo telefonda
               yatay kaydırma zorunlu kılardı. */}
           <div className="hidden overflow-x-auto rounded-card bg-surface shadow-card ring-1 ring-line lg:block">
-            <table className="w-full min-w-[1050px] table-fixed text-small">
-              {/* table-fixed + yalnızca ilk sütuna genişlik verilmesi: gün
-                  sütunları kalan alanı otomatik eşit paylaşıyor. Önceden
-                  her gün sabit 180px'ti — geniş bir monitörde tablo 4 gün
+            <table className="w-full min-w-[1050px] text-small">
+              {/* table-auto: sütunlar içeriğe göre genişliyor. Önceden her
+                  gün sabit 180px'ti — geniş bir monitörde tablo 4 gün
                   gösterip sayfanın kalanını boş bırakıyor, kalan 3 gün
-                  kaydırmaya kalıyordu. min-w-[1050px] hâlâ bir taban
-                  koyuyor ki dar ekranda personel adı select'i kesilmesin;
-                  o eşiğin altında yatay kaydırma devreye giriyor. */}
+                  kaydırmaya kalıyordu; table-fixed + eşit paylaşım bunu
+                  çözdü ama bu sefer uzun personel isimleri hücre içinde
+                  alt alta bölünmeye başladı. table-auto + isim rozetlerinde
+                  whitespace-nowrap ikisini birden çözüyor: gün sütunları
+                  hâlâ eşit ağırlıkla (w-full ile) genişliyor, isimler tek
+                  satırda kalıyor, sığmazsa min-w-[1050px] tabanı yatay
+                  kaydırmayı devreye sokuyor. */}
               <colgroup>
                 <col className="w-36" />
                 {gunler.map((gun) => (
-                  <col key={gunGirdisi(gun)} />
+                  <col key={gunGirdisi(gun)} className="w-[13%]" />
                 ))}
               </colgroup>
               <thead className="border-b border-line text-left text-caption text-ink-muted uppercase">
@@ -388,7 +391,7 @@ function VardiyaHucresi({
             <button
               type="submit"
               title="Kaldır"
-              className="flex items-center gap-1 rounded-chip bg-sunken px-2 py-1 text-caption text-ink-soft hover:bg-danger-soft hover:text-danger-ink"
+              className="flex items-center gap-1 whitespace-nowrap rounded-chip bg-sunken px-2 py-1 text-caption text-ink-soft hover:bg-danger-soft hover:text-danger-ink"
             >
               {a.user.name}
               <span aria-hidden="true">✕</span>
