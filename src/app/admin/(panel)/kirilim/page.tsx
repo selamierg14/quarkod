@@ -1,6 +1,7 @@
 import { requireAnketErisim, visibleBusinesses } from "@/lib/auth";
 import { getAnketHunisi, getDoldurmaSuresi, getShiftBreakdown, getTableBreakdown } from "@/lib/stats";
 import { huniYuzdeleriHesapla } from "@/lib/huni";
+import { masaBaskinliginiTespitEt } from "@/lib/masa-baskinlik";
 import { prisma } from "@/lib/db";
 import { EmptyState, SectionCard } from "@/components/ui";
 import { RaporSekmeleri } from "@/components/RaporSekmeleri";
@@ -63,12 +64,24 @@ export default async function BreakdownPage({
 
   // Masa kavramı olmayan işletmeler (tek giriş QR'ı kullananlar) için
   // "Masaya göre" başlığı yanıltıcı olurdu — orada tek bir nokta var.
-  const masaliNoktaSayisi = await prisma.table.count({
-    where: { businessId: { in: selected }, active: true, isEntrance: false },
-  });
+  const [masaliNoktaSayisi, aktifNoktaSayisi] = await Promise.all([
+    prisma.table.count({
+      where: { businessId: { in: selected }, active: true, isEntrance: false },
+    }),
+    // Giriş noktası dahil toplam aktif nokta — "tek QR kopyalanmış mı"
+    // tespitinde eşik bu sayıya bakıyor (bkz. aşağıdaki masaBaskinligi).
+    prisma.table.count({ where: { businessId: { in: selected }, active: true } }),
+  ]);
   const masaVarMi = masaliNoktaSayisi > 0;
 
   const huniYuzde = huniYuzdeleriHesapla(huni);
+
+  // "Tek ortak QR" özelliği masa kavramı olmayan yerler için var, ama biri
+  // numaralı masalar hâlâ açıkken bu tek kodu basıp her masaya yapıştırabilir.
+  // O andan sonra "Masaya göre" kırılımı tek bir satırda toplanan gürültüden
+  // ibaret kalır — bunu ayarlardan değil DAVRANIŞTAN (nerede aşırı yoğunlaşma
+  // var) anlıyoruz.
+  const masaBaskinligi = masaBaskinliginiTespitEt(tables, aktifNoktaSayisi);
 
   const shiftTotal = shifts.reduce((acc, row) => acc + row.count, 0);
   const personelByShift = new Map<string, string[]>();
@@ -253,6 +266,22 @@ export default async function BreakdownPage({
         description="En düşükten başlayarak — üstteki satır ilk bakılacak yer."
         padded={false}
       >
+        {masaBaskinligi ? (
+          <div className="m-5 flex items-start gap-3 rounded-control bg-warning-soft p-4 ring-1 ring-warning/25">
+            <span aria-hidden="true" className="mt-0.5 text-lg">
+              ⚠️
+            </span>
+            <p className="text-small text-warning-ink">
+              Geri bildirimlerin <strong>%{Math.round(masaBaskinligi.oran * 100)}&apos;i</strong>{" "}
+              tek bir noktadan (<strong>{masaBaskinligi.etiket}</strong>) geliyor.
+              Aşağıdaki kırılım muhtemelen güvenilir değil — bunun en olası
+              sebebi tek bir QR kodunun fotokopiyle çoğaltılıp birden fazla
+              masaya dağıtılmış olması. Her masaya kendi QR kodu verilirse bu
+              rapor bir sonraki dönemde gerçek dağılımı gösterir.
+            </p>
+          </div>
+        ) : null}
+
         {tables.length === 0 ? (
           <div className="p-5">
             <EmptyState>
