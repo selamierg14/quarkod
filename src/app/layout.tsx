@@ -32,6 +32,13 @@ export const metadata: Metadata = {
   description: SITE_ACIKLAMA,
   applicationName: SITE_ADI,
   alternates: { canonical: "/" },
+  // Paylaşım görseli belirtilmiyor: kök dizindeki opengraph-image.tsx
+  // (marka renkleriyle üretilen 1200x630 kart) dosya kuralı gereği hem
+  // OG hem Twitter kartı için otomatik kullanılıyor. Önceden burada
+  // gerçek bir müşterinin adının ve şikayet metninin göründüğü, üstelik
+  // artık kullanılmayan eski panel tasarımını gösteren statik bir ekran
+  // görüntüsü sabitti — biri bu linki Twitter'da paylaşsaydı canlı bir
+  // müşterinin verisini kartta görürdü.
   openGraph: {
     type: "website",
     locale: "tr_TR",
@@ -39,20 +46,11 @@ export const metadata: Metadata = {
     siteName: SITE_ADI,
     title: `${SITE_ADI} — QR ile Müşteri Memnuniyet Sistemi`,
     description: SITE_ACIKLAMA,
-    images: [
-      {
-        url: "/marketing/admin-dashboard.png",
-        width: 1200,
-        height: 630,
-        alt: `${SITE_ADI} yönetim panelinin özet ekranı`,
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: `${SITE_ADI} — QR ile Müşteri Memnuniyet Sistemi`,
     description: SITE_ACIKLAMA,
-    images: ["/marketing/admin-dashboard.png"],
   },
   robots: {
     index: true,

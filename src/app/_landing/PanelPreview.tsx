@@ -41,7 +41,7 @@ export function PanelPreview() {
         <div className="relative">
           <BrowserFrame
             src="/marketing/admin-dashboard.png"
-            alt="Yönetim panelinin özet ekranı: puan trendi, kategori kırılımı ve son geri bildirimler"
+            alt="Yönetim panelinin özet ekranı: haftalık ortalama, Google dönüşümü ve kategori kırılımı"
             label="Özet"
           />
           <div className="absolute -bottom-8 -left-6 hidden w-[220px] overflow-hidden rounded-card bg-surface shadow-pop ring-1 ring-line md:block">
