@@ -198,15 +198,18 @@ export default async function VardiyaPlanlamaPage({
               kartları olarak (aşağıda) tekrar ediyor; geniş tablo telefonda
               yatay kaydırma zorunlu kılardı. */}
           <div className="hidden overflow-x-auto rounded-card bg-surface shadow-card ring-1 ring-line lg:block">
-            <table className="w-full min-w-[1440px] text-small">
-              {/* Sabit sütun genişlikleri: personel adı select'i daralınca
-                  isim görünmeden kesiliyordu (native select'te "..." de
-                  çıkmaz). Her gün sütunu artık en az 180px, isimlerin
-                  kesilmeden sığması için. */}
+            <table className="w-full min-w-[1050px] table-fixed text-small">
+              {/* table-fixed + yalnızca ilk sütuna genişlik verilmesi: gün
+                  sütunları kalan alanı otomatik eşit paylaşıyor. Önceden
+                  her gün sabit 180px'ti — geniş bir monitörde tablo 4 gün
+                  gösterip sayfanın kalanını boş bırakıyor, kalan 3 gün
+                  kaydırmaya kalıyordu. min-w-[1050px] hâlâ bir taban
+                  koyuyor ki dar ekranda personel adı select'i kesilmesin;
+                  o eşiğin altında yatay kaydırma devreye giriyor. */}
               <colgroup>
                 <col className="w-36" />
                 {gunler.map((gun) => (
-                  <col key={gunGirdisi(gun)} className="w-[180px]" />
+                  <col key={gunGirdisi(gun)} />
                 ))}
               </colgroup>
               <thead className="border-b border-line text-left text-caption text-ink-muted uppercase">
