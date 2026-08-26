@@ -3,6 +3,7 @@ import { prisma } from "./db";
 import { SHIFTS, type Shift } from "./constants";
 import { detaylariCoz } from "./anket-detay";
 import { etkinVardiyalar } from "./vardiya";
+import { gunGirdisi } from "./gun";
 
 export type TrendPoint = {
   /** Hafta başlangıcı (pazartesi). */
@@ -213,6 +214,110 @@ export async function getAnketHunisi(
   ]);
 
   return { goruntuleme, yildizVerdi, gonderildi };
+}
+
+export type PersonelPerformans = {
+  userId: string;
+  name: string;
+  role: string;
+  /** Bu dönemde atandığı vardiya sayısı — hiç atanmadıysa ortalama zaten null. */
+  vardiyaSayisi: number;
+  /** Ortalamaya giren geri bildirim sayısı; az veriyle yanıltıcı ortalama gösterilmesin diye. */
+  kayitSayisi: number;
+  ortalama: number | null;
+  /** Önceki eşit uzunluktaki döneme göre değişim; ikisi de veri içermiyorsa null. */
+  delta: number | null;
+};
+
+/**
+ * Personel performans kartı — yalnızca sahip/yönetici görür, personelin
+ * kendisi görmez (bkz. vardiya-planlama/performans sayfası, requirePersonelYonetimi
+ * + garson zaten requireTenant'ta ayrı bir moda düşüyor).
+ *
+ * ÖNEMLİ SINIR: bu, "müşteri Ahmet'i puanladı" demek DEĞİL. Sistemde geri
+ * bildirim kime değil hangi vardiyaya bağlı; aynı vardiyada iki kişi
+ * çalışıyorsa o vardiyanın puanı ikisine de aynen yazılır. Sayı "Ahmet'in
+ * çalıştığı vardiyalar genel olarak nasıl geçmiş" sorusuna cevap verir,
+ * "Ahmet'in servisi nasılmış" sorusuna değil — panelde bu ayrım metinle
+ * de belirtiliyor, aksi halde tek kişilik bir vardiyada kötü geçen bir gün
+ * yanında biriyle çalışan birine haksız yere yazılabilir.
+ */
+export async function getPersonelPerformansi(
+  businessId: string,
+  days = 30,
+): Promise<PersonelPerformans[]> {
+  const simdi = new Date();
+  const buDonemBasi = daysAgo(days);
+  const oncekiDonemBasi = daysAgo(days * 2);
+
+  const [atamalar, geriBildirimler, personel] = await Promise.all([
+    prisma.shiftAssignment.findMany({
+      where: { businessId, date: { gte: oncekiDonemBasi } },
+      select: { userId: true, date: true, shift: true },
+    }),
+    prisma.feedback.findMany({
+      where: { businessId, createdAt: { gte: oncekiDonemBasi }, shift: { not: null } },
+      select: { createdAt: true, shift: true, overallRating: true },
+    }),
+    prisma.user.findMany({
+      where: { businessId, active: true, role: { in: ["manager", "garson"] } },
+      select: { id: true, name: true, role: true },
+    }),
+  ]);
+
+  // "gün:vardiya" -> o dilimde bırakılan puanlar. Kim çalışırsa çalışsın
+  // aynı havuzdan besleniyor; ayrım yalnızca kimin o gün+vardiyada
+  // atanmış olduğuna bakılarak yapılıyor.
+  const puanlarByGunVardiya = new Map<string, number[]>();
+  for (const f of geriBildirimler) {
+    if (!f.shift) continue;
+    const anahtar = `${gunGirdisi(f.createdAt)}:${f.shift}`;
+    const liste = puanlarByGunVardiya.get(anahtar) ?? [];
+    liste.push(f.overallRating);
+    puanlarByGunVardiya.set(anahtar, liste);
+  }
+
+  function donemOrtalamasi(userId: string, baslangic: Date, bitis: Date) {
+    let toplam = 0;
+    let kayit = 0;
+    let vardiya = 0;
+    for (const a of atamalar) {
+      if (a.userId !== userId) continue;
+      if (a.date < baslangic || a.date >= bitis) continue;
+      vardiya++;
+      const liste = puanlarByGunVardiya.get(`${gunGirdisi(a.date)}:${a.shift}`);
+      if (!liste) continue;
+      for (const puan of liste) {
+        toplam += puan;
+        kayit++;
+      }
+    }
+    return {
+      ortalama: kayit > 0 ? round(toplam / kayit, 2) : null,
+      kayit,
+      vardiya,
+    };
+  }
+
+  return personel
+    .map((p) => {
+      const guncel = donemOrtalamasi(p.id, buDonemBasi, simdi);
+      const onceki = donemOrtalamasi(p.id, oncekiDonemBasi, buDonemBasi);
+      const delta =
+        guncel.ortalama !== null && onceki.ortalama !== null
+          ? round(guncel.ortalama - onceki.ortalama, 1)
+          : null;
+      return {
+        userId: p.id,
+        name: p.name,
+        role: p.role,
+        vardiyaSayisi: guncel.vardiya,
+        kayitSayisi: guncel.kayit,
+        ortalama: guncel.ortalama,
+        delta,
+      };
+    })
+    .sort((a, b) => (b.ortalama ?? -1) - (a.ortalama ?? -1));
 }
 
 /**

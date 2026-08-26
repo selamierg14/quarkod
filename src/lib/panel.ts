@@ -254,6 +254,10 @@ export function panelMenusu(
       altLinkler: [
         { href: "/admin/vardiya-planlama", label: "Çizelge", exact: true },
         { href: "/admin/vardiya-planlama/sablon", label: "Görev şablonu" },
+        // Personelin kendisi bu gruba hiç girmiyor (garson "personel"
+        // moduna düşüyor, viewer salt okunur olduğu için buraya hiç
+        // girmiyor) — performans kartı yalnızca planlayan tarafa görünür.
+        { href: "/admin/vardiya-planlama/performans", label: "Performans" },
       ],
     });
   }

@@ -111,6 +111,25 @@ describe("kiracı menüsü", () => {
   });
 });
 
+describe("personel performansı", () => {
+  it("sahip ve yönetici görür, personelin kendi menüsünde hiç yok", () => {
+    for (const role of ["owner", "bolge", "manager"] as const) {
+      const adresler = panelMenusu("kiraci", role).flatMap((g) =>
+        g.linkler.flatMap((l) => [l.href, ...(l.altLinkler?.map((alt) => alt.href) ?? [])]),
+      );
+      expect(adresler).toContain("/admin/vardiya-planlama/performans");
+    }
+
+    // Garson zaten "kiraci" moduna hiç girmiyor — kendi menüsü tamamen ayrı
+    // (Vardiyalarım/Görevlerim) ve performans linkini içermiyor.
+    const personelMenusu = panelMenusu("personel", "garson").flatMap((g) =>
+      g.linkler.flatMap((l) => [l.href, ...(l.altLinkler?.map((alt) => alt.href) ?? [])]),
+    );
+    expect(personelMenusu).not.toContain("/admin/vardiya-planlama/performans");
+    expect(personelMenusu).not.toContain("/admin/vardiya-planlama");
+  });
+});
+
 describe("menü sadeliği", () => {
   it("kiracı menüsü üç grubu geçmez", () => {
     // Kafe sahibi günde bir bakıyor; uzun menü onu ilgilendiren iki ekranı

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requirePersonelYonetimi, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { EmptyState, PageHeader, TabLink } from "@/components/ui";
+import { getShiftBreakdown } from "@/lib/stats";
 import { SHIFTS, type Shift } from "@/lib/constants";
 import { gunAdi, gunEkle, gunGirdisi, haftaBaslangici } from "@/lib/gun";
 import { etkinVardiyalar } from "@/lib/vardiya";
@@ -36,7 +37,7 @@ export default async function VardiyaPlanlamaPage({
   const gunler = Array.from({ length: 7 }, (_, i) => gunEkle(haftaBasi, i));
   const haftaSonu = gunler[6];
 
-  const [personel, atamalar, bekleyenTalepler] = await Promise.all([
+  const [personel, atamalar, bekleyenTalepler, vardiyaKirilimi] = await Promise.all([
     prisma.user.findMany({
       where: { businessId: secili.id, active: true, role: { in: ["manager", "garson"] } },
       orderBy: { name: "asc" },
@@ -51,7 +52,12 @@ export default async function VardiyaPlanlamaPage({
       include: { requestedBy: { select: { name: true } }, assignment: true },
       orderBy: { createdAt: "asc" },
     }),
+    // Satır başlıklarındaki puan rozeti için: hangi vardiya son 30 günde
+    // gerçekten iyi/kötü geçmiş. Bu haftanın çizelgesinden bağımsız, genel
+    // bir eğilim — o yüzden haftaBasi/haftaSonu değil sabit bir pencere.
+    getShiftBreakdown([secili.id], 30),
   ]);
+  const kirilimByShift = new Map(vardiyaKirilimi.map((k) => [k.shift, k]));
 
   const haftaHref = (baslangic: Date) =>
     `/admin/vardiya-planlama?${new URLSearchParams({
@@ -239,6 +245,7 @@ export default async function VardiyaPlanlamaPage({
                         <span aria-hidden="true">{VARDIYA_RENGI[deger].ikon}</span>
                         {etiket}
                       </span>
+                      <VardiyaPuanRozeti kirilim={kirilimByShift.get(deger)} />
                     </td>
                     {gunler.map((gun) => (
                       <td key={gunGirdisi(gun)} className="px-4 py-4 align-top">
@@ -283,11 +290,14 @@ export default async function VardiyaPlanlamaPage({
                   <div className="flex flex-col divide-y divide-line">
                     {vardiyalar.map(([deger, etiket]) => (
                       <div key={deger} className={`border-l-4 p-4 ${VARDIYA_RENGI[deger].serit}`}>
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-chip px-2 py-0.5 text-caption font-medium ${VARDIYA_RENGI[deger].rozet}`}
-                        >
-                          <span aria-hidden="true">{VARDIYA_RENGI[deger].ikon}</span>
-                          {etiket}
+                        <span className="flex items-center gap-1.5">
+                          <span
+                            className={`inline-flex items-center gap-1.5 rounded-chip px-2 py-0.5 text-caption font-medium ${VARDIYA_RENGI[deger].rozet}`}
+                          >
+                            <span aria-hidden="true">{VARDIYA_RENGI[deger].ikon}</span>
+                            {etiket}
+                          </span>
+                          <VardiyaPuanRozeti kirilim={kirilimByShift.get(deger)} />
                         </span>
                         <div className="mt-2">
                           <VardiyaHucresi
@@ -308,6 +318,35 @@ export default async function VardiyaPlanlamaPage({
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * Vardiya satırındaki küçük puan rozeti — sahibi/yöneticiye "hangi vardiya
+ * gerçekten iyi/kötü geçiyor" bilgisini isim bazlı değil vardiya bazlı
+ * verir. Personel bu sayfaya hiç girmiyor (bkz. requirePersonelYonetimi +
+ * requireTenant'ın garson'u ayrı moda düşürmesi), o yüzden burada başka
+ * bir gizleme mantığına gerek yok.
+ */
+function VardiyaPuanRozeti({
+  kirilim,
+}: {
+  kirilim: { average: number | null; count: number } | undefined;
+}) {
+  if (!kirilim || kirilim.average === null) return null;
+  const renk =
+    kirilim.average >= 4
+      ? "bg-success-soft text-success-ink"
+      : kirilim.average >= 3
+        ? "bg-warning-soft text-warning-ink"
+        : "bg-danger-soft text-danger-ink";
+  return (
+    <span
+      title={`Son 30 gün, ${kirilim.count} geri bildirim`}
+      className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${renk}`}
+    >
+      ★ {kirilim.average.toFixed(1)}
+    </span>
   );
 }
 
