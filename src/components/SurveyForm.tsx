@@ -22,6 +22,11 @@ type Props = {
   categories: { id: string; name: string; sorunAlanlari: string[] }[];
   /** QR menüdeki ürünler. Menü modülü kapalıysa boş gelir ve adım hiç çıkmaz. */
   menuItems?: { id: string; name: string; kategori: string }[];
+  /** 5 yıldızda "Google'da Değerlendir" metnini göstermek için — kapalıysa
+   * gerçekte Google'a gitmeyecek bir butona bu vaadi yazmamak gerekiyor. */
+  googleRedirect: boolean;
+  /** Menü modülü açıksa üstte "Menüye dön" bağlantısı çıkar. */
+  menuAcik?: boolean;
 };
 
 type Screen =
@@ -38,6 +43,8 @@ export function SurveyForm({
   girisMi,
   categories,
   menuItems = [],
+  googleRedirect,
+  menuAcik = false,
 }: Props) {
   // Müşteri fotoğraflı menüye gidip geri dönebiliyor; o gidiş gelişte
   // verdiği yıldızlar, yorumu ve iletişim bilgisi kaybolmasın diye anketin
@@ -228,9 +235,24 @@ export function SurveyForm({
   // sorularıyla oyalamak dönüşümü düşürür. Onun için form kısalır: doğrudan
   // (isteğe bağlı) iletişim/KVKK adımına, oradan da Google'a gider.
   const besYildiz = gorunenOverall === 5;
+  const menuAdresi = `/f/${slug}/${encodeURIComponent(tableNumber)}/menu`;
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5 pb-32">
+    <>
+      {/* Müşteri karşılama ekranından değil, doğrudan menüden buraya
+          gelmiş olabilir; geri dönecek bir yol yoktu, tarayıcının geri
+          tuşuna güvenmek zorunda kalıyordu. */}
+      {menuAcik ? (
+        <Link
+          href={menuAdresi}
+          className="mb-4 inline-flex items-center gap-1.5 text-small font-medium text-ink-soft"
+        >
+          <span aria-hidden="true" className="rtl:rotate-180">←</span>
+          {t("anket.menuyeDon")}
+        </Link>
+      ) : null}
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5 pb-32">
       <section className="rounded-card bg-surface p-6 shadow-card ring-1 ring-line">
         <p className="text-center text-base font-medium text-ink-strong">
           {t("anket.baslik")}
@@ -348,39 +370,33 @@ export function SurveyForm({
         </section>
       ) : null}
 
-      {basladi ? (
+      {/* 5 yıldızda kategori/yorum/foto/iletişim adımlarının hiçbiri
+          görünmüyor: memnun müşteriyi numara/e-posta sorarak oyalamak
+          dönüşümü düşürür. Tek adım kalıyor — alttaki düğmeye basıp
+          gönderince doğrudan Google'a (ya da işletme kapalıysa iç teşekkür
+          ekranına) geçiyor. */}
+      {basladi && besYildiz ? (
+        <section className="mm-rise rounded-card bg-success-soft p-5 text-center ring-1 ring-success/20">
+          <p className="font-semibold text-success-ink">{t("anket.besYildizBaslik")}</p>
+          <p className="mt-1 text-small text-success-ink/80">
+            {t("anket.besYildizMetin")}
+          </p>
+        </section>
+      ) : null}
+
+      {basladi && !besYildiz ? (
         <section className="mm-rise rounded-card bg-surface p-5 shadow-card ring-1 ring-line">
           <div>
-            {/* 5 yıldızda kategori/yorum/foto adımları hiç görünmüyor —
-                doğrudan buraya (isteğe bağlı iletişim) ve ardından Google'a
-                gidiyor. Neden kısa kaldığını burada açıklıyoruz. */}
-            {besYildiz ? (
-              <div className="mb-4 rounded-control bg-success-soft p-4 text-center">
-                <p className="font-semibold text-success-ink">
-                  {t("anket.besYildizBaslik")}
-                </p>
-                <p className="mt-1 text-small text-success-ink/80">
-                  {t("anket.besYildizMetin")}
-                </p>
-              </div>
-            ) : null}
-
-            {/* 5 yıldız verene "sorununuz için sizi ararız" demek anlamsız:
-                onda çözülecek bir sorun yok. Oradaki tek anlamlı teklif
-                kampanya/duyuru — ticari ileti izni ise aşağıda ayrı kutuda
-                zaten sorulmaya devam ediyor. */}
+            {/* Bu bölüm artık yalnızca 5 yıldızdan düşük puanlarda görünüyor
+                (5 yıldız hiç ara adım göstermeden doğrudan gönderiyor); bu
+                yüzden "kampanya" varyantı metinleri (anket.iletisimKampanya*)
+                kullanılmıyor. */}
             <p className="text-body font-medium text-ink-soft">
-              {t(besYildiz ? "anket.iletisimKampanyaBaslik" : "anket.iletisimBaslik")}{" "}
+              {t("anket.iletisimBaslik")}{" "}
               <span className="font-normal text-ink-faint">{t("ortak.istegeBagli")}</span>
             </p>
             <p className="mt-0.5 text-small text-ink-muted">
-              {t(
-                besYildiz
-                  ? "anket.iletisimKampanyaMetin"
-                  : overall <= 3
-                    ? "anket.iletisimDusuk"
-                    : "anket.iletisimYuksek",
-              )}
+              {t(overall <= 3 ? "anket.iletisimDusuk" : "anket.iletisimYuksek")}
             </p>
 
             <div
@@ -501,7 +517,13 @@ export function SurveyForm({
               className="w-full rounded-control px-5 py-4 text-base font-semibold text-white shadow-card transition disabled:opacity-60 active:scale-[0.99]"
               style={{ backgroundColor: brandColor }}
             >
-{t(pending ? "anket.gonderiliyor" : "anket.gonder")}
+{t(
+                pending
+                  ? "anket.gonderiliyor"
+                  : besYildiz && googleRedirect
+                    ? "anket.googleButon"
+                    : "anket.gonder",
+              )}
             </button>
             <p className="mt-2 text-center text-caption text-ink-faint">
               {girisMi ? t("ortak.giris") : t("ortak.masa", { no: tableNumber })} ·{" "}
@@ -510,7 +532,8 @@ export function SurveyForm({
           </div>
         </div>
       ) : null}
-    </form>
+      </form>
+    </>
   );
 }
 

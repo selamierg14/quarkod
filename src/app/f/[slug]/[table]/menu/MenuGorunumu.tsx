@@ -2,7 +2,6 @@
 
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Dialog } from "@/components/ui";
 import { MENU_TAGS, formatPrice, parseTags, type MenuTag } from "@/lib/menu";
 import { taslakAnahtari, taslakGuncelle, taslakOku } from "@/lib/anket-taslak";
@@ -67,9 +66,12 @@ export function MenuGorunumu({
     () => false,
   );
   const isaretli = bagli ? secilen : [];
-  // Kategori hapları tasarımda pasif bağlantı değil, seçili durumu olan
-  // düğmeler: müşteri hangi bölümde olduğunu haptan görüyor.
-  const [aktifBolum, setAktifBolum] = useState<string>(bolumler[0]?.id ?? "");
+  // Menü iki adımlı: önce büyük kapak görselli kategori kartları (İçecekler,
+  // Sıcak Yemekler…), birine dokununca yalnızca o kategorinin ürünleri
+  // açılıyor. null = kategori ızgarası; dolu değerde o kategorinin
+  // içindeyiz. Arama/filtre açıldığında bu adım tamamen atlanıyor —
+  // aranan şey hangi kategoride olduğu belli olmayan bir ürün olabilir.
+  const [acikBolumId, setAcikBolumId] = useState<string | null>(null);
   const [arama, setArama] = useState("");
   const [etiketFiltresi, setEtiketFiltresi] = useState<MenuTag[]>([]);
   const [detay, setDetay] = useState<DetayUrun | null>(null);
@@ -111,6 +113,10 @@ export function MenuGorunumu({
 
   const aramaSonucu = filtreliBolumler;
   const gosterilecek = filtreliBolumler ?? bolumler;
+  const acikBolum = useMemo(
+    () => bolumler.find((b) => b.id === acikBolumId) ?? null,
+    [bolumler, acikBolumId],
+  );
 
   function etiketDegistir(t: MenuTag) {
     setEtiketFiltresi((prev) =>
@@ -156,6 +162,10 @@ export function MenuGorunumu({
         </div>
       ) : null}
 
+      {/* "Deneyiminizi değerlendirin" daveti bilerek burada yok: QR
+          okutulunca zaten karşılama ekranında aynı davet çıkıyor (bkz.
+          KarsilamaSecenekleri). Menüde tekrarlamak hem yer kaplıyordu hem
+          de müşterinin asıl işi olan ürün gezinmesini geciktiriyordu. */}
       {secimModu ? (
         <div className="mb-5 rounded-control bg-ink px-4 py-3 text-small text-white">
           <p className="font-medium">{t("menu.secimBaslik")}</p>
@@ -163,22 +173,7 @@ export function MenuGorunumu({
 {t("menu.secimAciklama")}
           </p>
         </div>
-      ) : (
-        <Link
-          href={anketAdresi}
-          className="mb-5 flex items-center justify-between gap-3 rounded-control border border-line bg-surface px-4 py-3 text-small shadow-card transition hover:border-line-strong"
-        >
-          <span>
-            <span className="font-medium text-ink">{t("menu.anketKisayolBaslik")}</span>
-            <span className="block text-caption text-ink-muted">
-{t("menu.anketKisayolAciklama")}
-            </span>
-          </span>
-          <span aria-hidden="true" className="text-ink-faint">
-            →
-          </span>
-        </Link>
-      )}
+      ) : null}
 
       {/* Arama ve filtreler kaydırırken tepede asılı kalır: 60 ürünlük bir
           menüde müşteri aramak için başa dönmek zorunda kalmasın. Panelin
@@ -259,90 +254,125 @@ export function MenuGorunumu({
         </div>
       ) : null}
 
-      {/* Bölümler arası hızlı geçiş: küçük fotoğraflı hap, uzun menüde
-          kaydırmayı kısaltıyor ve nerede olduğumuzu görsel olarak gösteriyor. */}
-      {!aramaSonucu && bolumler.length > 1 ? (
-        <nav
-          aria-label={t("menu.bolumler")}
-          className="-mx-1 mb-5 flex gap-3 overflow-x-auto px-1 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-          {bolumler.map((k) => {
-            const aktif = bagli && k.id === aktifBolum;
-            const kapak = k.items.find((u) => u.imageUrl)?.imageUrl ?? null;
+      {aramaSonucu ? (
+        // Arama/filtre aktifken kategori adımı tamamen atlanıyor: aranan
+        // ürünün hangi kategoride olduğu müşteri için belirsiz, sonuçlar
+        // hangi bölümden geldiği etiketiyle karışık gösteriliyor.
+        gosterilecek.length === 0 ? (
+          <p className="rounded-control border border-dashed border-line-strong bg-surface/60 px-4 py-8 text-center text-small text-ink-muted">
+{arama ? t("menu.aramaBos", { terim: arama }) : t("menu.filtreBos")}
+          </p>
+        ) : (
+          <div className={`flex flex-col gap-7 ${secimModu ? "pb-28" : ""}`}>
+            {gosterilecek.map((bolum) => (
+              <section key={bolum.id}>
+                <h2 className="mb-2.5 flex items-center gap-2 px-0.5 text-overline font-semibold text-ink-muted uppercase">
+                  <span aria-hidden="true" className="h-3 w-0.5 rounded-full bg-brand" />
+                  {bolum.name}
+                </h2>
+                <ul className="grid grid-cols-2 gap-3">
+                  {bolum.items.map((urun) => (
+                    <UrunKarti
+                      key={urun.id}
+                      urun={urun}
+                      brandColor={brandColor}
+                      secimModu={secimModu}
+                      secili={isaretli.includes(urun.id)}
+                      onToggle={() => toggle(urun.id)}
+                      onDetay={() => setDetay({ ...urun, kategoriAdi: bolum.name })}
+                    />
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        )
+      ) : acikBolum === null ? (
+        // Adım 1: yalnızca kategori kartları — büyük kapak görseli + başlık.
+        // Ürünler bu ekranda yok, biri seçilene kadar müşteri "İçecekler mi,
+        // Ana Yemekler mi" diye tarayıp karar veriyor.
+        <ul className="grid grid-cols-2 gap-3.5">
+          {bolumler.map((bolum) => {
+            const kapak = bolum.items.find((u) => u.imageUrl)?.imageUrl ?? null;
             return (
-              <button
-                key={k.id}
-                type="button"
-                aria-current={aktif ? "true" : undefined}
-                onClick={() => {
-                  setAktifBolum(k.id);
-                  document
-                    .getElementById(`bolum-${k.id}`)
-                    ?.scrollIntoView({ block: "start", behavior: "smooth" });
-                }}
-                className="flex w-16 shrink-0 flex-col items-center gap-1.5"
-              >
-                <span
-                  className={`flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl shadow-card ring-2 transition ${
-                    aktif ? "ring-brand" : "ring-transparent"
-                  }`}
+              <li key={bolum.id}>
+                <button
+                  type="button"
+                  onClick={() => setAcikBolumId(bolum.id)}
+                  className="group relative flex aspect-square w-full flex-col justify-end overflow-hidden rounded-card text-start shadow-card ring-1 ring-line transition active:scale-[0.98]"
                 >
                   {kapak ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={kapak} alt="" className="h-full w-full object-cover" />
+                    <img
+                      src={kapak}
+                      alt=""
+                      loading="lazy"
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-active:scale-105"
+                    />
                   ) : (
-                    <span
-                      className="flex h-full w-full items-center justify-center bg-brand text-heading font-semibold text-brand-ink"
+                    <div
                       aria-hidden="true"
-                    >
-                      {k.name.trim().charAt(0).toLocaleUpperCase("tr-TR")}
-                    </span>
+                      className="absolute inset-0"
+                      style={{ backgroundColor: brandColor }}
+                    />
                   )}
-                </span>
-                <span
-                  className={`line-clamp-1 text-center text-[11px] leading-tight font-medium ${
-                    aktif ? "text-ink" : "text-ink-muted"
-                  }`}
-                >
-                  {k.name}
-                </span>
-              </button>
+                  {/* Alttan koyulaşan perde: kapak fotoğrafı ne olursa olsun
+                      beyaz başlık yazısı okunur kalsın. */}
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/10 to-transparent"
+                  />
+                  <div className="relative p-3.5">
+                    <span className="block text-body leading-tight font-semibold text-white drop-shadow-sm">
+                      {bolum.name}
+                    </span>
+                    <span className="mt-0.5 block text-caption text-white/80">
+{t("menu.urunAdedi", { adet: bolum.items.length })}
+                    </span>
+                  </div>
+                </button>
+              </li>
             );
           })}
-        </nav>
-      ) : null}
-
-      {gosterilecek.length === 0 ? (
-        <p className="rounded-control border border-dashed border-line-strong bg-surface/60 px-4 py-8 text-center text-small text-ink-muted">
-{arama ? t("menu.aramaBos", { terim: arama }) : t("menu.filtreBos")}
-        </p>
+        </ul>
       ) : (
-        <div className={`flex flex-col gap-7 ${secimModu ? "pb-28" : ""}`}>
-          {gosterilecek.map((bolum) => (
-            <section key={bolum.id} id={`bolum-${bolum.id}`} className="scroll-mt-4">
-              <h2 className="mb-2.5 flex items-center gap-2 px-0.5 text-overline font-semibold text-ink-muted uppercase">
-                <span aria-hidden="true" className="h-3 w-0.5 rounded-full bg-brand" />
-                {bolum.name}
-              </h2>
+        // Adım 2: seçilen kategorinin ürünleri. Geri butonu bilinçli
+        // yukarıda ve büyük — bir kategoriye bakıp diğerine geçmek en sık
+        // yapılacak hareket.
+        <div className={secimModu ? "pb-28" : ""}>
+          <button
+            type="button"
+            onClick={() => setAcikBolumId(null)}
+            className="mb-4 flex items-center gap-1.5 text-small font-medium text-ink-soft"
+          >
+            <span aria-hidden="true" className="rtl:rotate-180">←</span>
+            {t("menu.tumBolumler")}
+          </button>
 
-              {/* Fotoğraf üstte, iki sütun: menüde önce yemeğin kendisi görünsün,
-                  yazı sonra gelsin. Tek sütunlu liste fotoğrafı küçük bir
-                  küçük resme indiriyordu. */}
-              <ul className="grid grid-cols-2 gap-3">
-                {bolum.items.map((urun) => (
-                  <UrunKarti
-                    key={urun.id}
-                    urun={urun}
-                    brandColor={brandColor}
-                    secimModu={secimModu}
-                    secili={isaretli.includes(urun.id)}
-                    onToggle={() => toggle(urun.id)}
-                    onDetay={() => setDetay({ ...urun, kategoriAdi: bolum.name })}
-                  />
-                ))}
-              </ul>
-            </section>
-          ))}
+          <h2 className="mb-2.5 flex items-center gap-2 px-0.5 text-overline font-semibold text-ink-muted uppercase">
+            <span aria-hidden="true" className="h-3 w-0.5 rounded-full bg-brand" />
+            {acikBolum.name}
+          </h2>
+
+          {acikBolum.items.length === 0 ? (
+            <p className="rounded-control border border-dashed border-line-strong bg-surface/60 px-4 py-8 text-center text-small text-ink-muted">
+              {t("menu.filtreBos")}
+            </p>
+          ) : (
+            <ul className="grid grid-cols-2 gap-3">
+              {acikBolum.items.map((urun) => (
+                <UrunKarti
+                  key={urun.id}
+                  urun={urun}
+                  brandColor={brandColor}
+                  secimModu={secimModu}
+                  secili={isaretli.includes(urun.id)}
+                  onToggle={() => toggle(urun.id)}
+                  onDetay={() => setDetay({ ...urun, kategoriAdi: acikBolum.name })}
+                />
+              ))}
+            </ul>
+          )}
         </div>
       )}
 
@@ -364,23 +394,17 @@ export function MenuGorunumu({
           </div>
         </div>
       ) : (
-        <>
-          <Link
-            href={anketAdresi}
-            className="mt-7 flex w-full items-center justify-center rounded-control bg-brand px-4 py-3.5 font-semibold text-brand-ink shadow-card active:scale-[0.99]"
-          >
-            {t("menu.anketKisayolBaslik")}
-          </Link>
-          <p className="mt-3 text-center text-caption text-ink-faint">
-            {t("menu.kdv")}
-            {fiyatTarihi ? (
-              <>
-                <br />
-                {t("menu.fiyatGuncelleme", { tarih: fiyatTarihi })}
-              </>
-            ) : null}
-          </p>
-        </>
+        // "Deneyiminizi değerlendirin" CTA'sı burada bilerek yok — karşılama
+        // ekranında zaten var, menüde tekrarı gereksizdi.
+        <p className="mt-7 text-center text-caption text-ink-faint">
+          {t("menu.kdv")}
+          {fiyatTarihi ? (
+            <>
+              <br />
+              {t("menu.fiyatGuncelleme", { tarih: fiyatTarihi })}
+            </>
+          ) : null}
+        </p>
       )}
 
       <UrunDetayi

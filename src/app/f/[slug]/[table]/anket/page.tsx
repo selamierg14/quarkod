@@ -4,6 +4,7 @@ import { ViewTracker } from "@/components/ViewTracker";
 import { MusteriKabuk } from "@/components/MusteriKabuk";
 import { isletmeSlugla, menuIcerigi, qrSayfaVerisi } from "@/lib/qr-sayfa";
 import { sorunSecenekleri } from "@/lib/anket-detay";
+import { googleYorumLinkiGecerliMi } from "@/lib/google-yorum";
 
 type Params = { slug: string; table: string };
 
@@ -65,6 +66,10 @@ export default async function AnketPage({ params }: { params: Promise<Params> })
           sorunAlanlari: sorunSecenekleri(c.name, c.problemOptions),
         }))}
         menuItems={urunler}
+        menuAcik={menuAcik}
+        googleRedirect={
+          business.googleRedirect && googleYorumLinkiGecerliMi(business.googleReviewUrl)
+        }
       />
     </MusteriKabuk>
   );

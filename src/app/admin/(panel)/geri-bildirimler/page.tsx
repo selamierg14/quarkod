@@ -83,7 +83,7 @@ export default async function FeedbackListPage({
 
       <FilterBar
         businesses={businesses.map((b) => ({ id: b.id, name: b.name }))}
-        showBusinessFilter={user.role === "owner"}
+        showBusinessFilter={businesses.length > 1}
       />
 
       {feedbacks.length === 0 ? (
@@ -94,7 +94,9 @@ export default async function FeedbackListPage({
             <thead className="border-b border-line text-left text-caption tracking-wide text-ink-muted uppercase">
               <tr>
                 <th className="px-4 py-3 font-medium">Tarih</th>
-                <th className="px-4 py-3 font-medium">İşletme</th>
+                {businesses.length > 1 ? (
+                  <th className="px-4 py-3 font-medium">İşletme</th>
+                ) : null}
                 <th className="px-4 py-3 font-medium">Masa</th>
                 <th className="px-4 py-3 font-medium">Puan</th>
                 <th className="px-4 py-3 font-medium">Zayıf kategoriler</th>
@@ -122,15 +124,17 @@ export default async function FeedbackListPage({
                         {formatDateTime(feedback.createdAt)}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className="flex items-center gap-2">
-                        <span
-                          className="h-2 w-2 rounded-full"
-                          style={{ backgroundColor: feedback.business.brandColor }}
-                        />
-                        {feedback.business.name}
-                      </span>
-                    </td>
+                    {businesses.length > 1 ? (
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="flex items-center gap-2">
+                          <span
+                            className="h-2 w-2 rounded-full"
+                            style={{ backgroundColor: feedback.business.brandColor }}
+                          />
+                          {feedback.business.name}
+                        </span>
+                      </td>
+                    ) : null}
                     <td className="px-4 py-3 whitespace-nowrap text-ink-muted">
                       {feedback.table
                         ? feedback.table.isEntrance

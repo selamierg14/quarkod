@@ -329,19 +329,25 @@ export function ItemRow({
   }
 
   return (
-    <li className="flex items-start gap-3 px-4 py-2.5">
-      {urun.imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={urun.imageUrl}
-          alt=""
-          className="h-12 w-12 shrink-0 rounded-chip object-cover ring-1 ring-line"
-        />
-      ) : (
-        <div className="h-12 w-12 shrink-0 rounded-chip bg-sunken" aria-hidden="true" />
-      )}
+    // Mobilde dikey: görsel+isim üstte, buton grubu (Tükendi/Düzenle/↑/↓/
+    // Gizle/Sil — altı düğme) altında kendi satırında. Tek satırlık yatay
+    // dizilimde dar bir telefonda buton grubu shrink-0 olduğu için asla
+    // küçülmüyordu ve ürün adının üstüne biniyordu. sm'den itibaren eski
+    // yatay düzen (görsel + isim + butonlar tek satırda) geri geliyor.
+    <li className="flex flex-col gap-2 px-4 py-2.5 sm:flex-row sm:items-start sm:gap-3">
+      <div className="flex items-start gap-3">
+        {urun.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={urun.imageUrl}
+            alt=""
+            className="h-12 w-12 shrink-0 rounded-chip object-cover ring-1 ring-line"
+          />
+        ) : (
+          <div className="h-12 w-12 shrink-0 rounded-chip bg-sunken" aria-hidden="true" />
+        )}
 
-      <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className={`font-medium ${urun.active ? "" : "text-ink-faint line-through"}`}>
             {urun.name}
@@ -374,9 +380,10 @@ export function ItemRow({
             ))}
           </p>
         ) : null}
+        </div>
       </div>
 
-      <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+      <div className="flex flex-wrap items-center gap-1 sm:shrink-0 sm:justify-end">
         {/* Tükendi, mutfaktan gelen bilgiyle anında işaretlenmeli: tek tık. */}
         <form action={toggleSoldOut}>
           <input type="hidden" name="itemId" value={urun.id} />

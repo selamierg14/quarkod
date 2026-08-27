@@ -46,6 +46,8 @@ const tr = {
   "menu.aramaEtiket": "Menüde ara",
   "menu.filtreler": "Diyet ve alerjen filtreleri",
   "menu.bolumler": "Menü bölümleri",
+  "menu.tumBolumler": "Menü",
+  "menu.urunAdedi": "{adet} ürün",
   "menu.sonucSayisi": "{adet} ürün bulundu",
   "menu.temizle": "Temizle",
   "menu.aramaBos": "“{terim}” için bir sonuç bulunamadı.",
@@ -88,6 +90,7 @@ const tr = {
 
   // --- anket
   "anket.baslik": "Deneyiminizi nasıl buldunuz?",
+  "anket.menuyeDon": "Menüye dön",
   "anket.ipucu": "Puan vermek için bir yıldıza dokunun",
   "anket.altBilgi1": "Görüşünüz doğrudan {ad} sorumlusuna iletilir.",
   "anket.altBilgi2": "Ad soyad sorulmaz, isim vermek zorunda değilsiniz.",
@@ -112,6 +115,7 @@ const tr = {
   "anket.epostaOrnek": "ornek@eposta.com",
   "anket.gonder": "Gönder",
   "anket.gonderiliyor": "Gönderiliyor…",
+  "anket.googleButon": "Google'da Değerlendir",
   "anket.puanGerekli": "Lütfen önce genel memnuniyet puanınızı verin.",
   "anket.besYildizBaslik": "Bizi 5 yıldızla değerlendirdiniz, teşekkürler! 🎉",
   "anket.besYildizMetin":
@@ -250,6 +254,8 @@ const en: Sozluk = {
   "menu.aramaEtiket": "Search the menu",
   "menu.filtreler": "Dietary and allergen filters",
   "menu.bolumler": "Menu sections",
+  "menu.tumBolumler": "Menu",
+  "menu.urunAdedi": "{adet} items",
   "menu.sonucSayisi": "{adet} items found",
   "menu.temizle": "Clear",
   "menu.aramaBos": "No results for “{terim}”.",
@@ -288,6 +294,7 @@ const en: Sozluk = {
   "yildiz.kategori": "{ad} rating",
 
   "anket.baslik": "How was your experience?",
+  "anket.menuyeDon": "Back to menu",
   "anket.ipucu": "Tap a star to rate",
   "anket.altBilgi1": "Your feedback goes straight to the {ad} manager.",
   "anket.altBilgi2": "We don’t ask for your name — staying anonymous is fine.",
@@ -312,6 +319,7 @@ const en: Sozluk = {
   "anket.epostaOrnek": "name@example.com",
   "anket.gonder": "Send",
   "anket.gonderiliyor": "Sending…",
+  "anket.googleButon": "Review on Google",
   "anket.puanGerekli": "Please give an overall rating first.",
   "anket.besYildizBaslik": "You rated us 5 stars, thank you! 🎉",
   "anket.besYildizMetin":
@@ -438,6 +446,8 @@ const ar: Sozluk = {
   "menu.aramaEtiket": "ابحث في القائمة",
   "menu.filtreler": "عوامل تصفية الحمية والحساسية",
   "menu.bolumler": "أقسام القائمة",
+  "menu.tumBolumler": "القائمة",
+  "menu.urunAdedi": "{adet} عنصر",
   "menu.sonucSayisi": "تم العثور على {adet} صنف",
   "menu.temizle": "مسح",
   "menu.aramaBos": "لا نتائج لـ «{terim}».",
@@ -476,6 +486,7 @@ const ar: Sozluk = {
   "yildiz.kategori": "تقييم {ad}",
 
   "anket.baslik": "كيف كانت تجربتك؟",
+  "anket.menuyeDon": "العودة إلى القائمة",
   "anket.ipucu": "اضغط على نجمة للتقييم",
   "anket.altBilgi1": "ملاحظاتك تصل مباشرة إلى مسؤول {ad}.",
   "anket.altBilgi2": "لا نطلب اسمك، ويمكنك البقاء مجهولاً.",
@@ -500,6 +511,7 @@ const ar: Sozluk = {
   "anket.epostaOrnek": "name@example.com",
   "anket.gonder": "إرسال",
   "anket.gonderiliyor": "جارٍ الإرسال…",
+  "anket.googleButon": "قيّمنا على Google",
   "anket.puanGerekli": "يرجى إعطاء التقييم العام أولاً.",
   "anket.besYildizBaslik": "قيّمتنا بـ 5 نجوم، شكرًا لك! 🎉",
   "anket.besYildizMetin":
@@ -625,6 +637,8 @@ const ru: Sozluk = {
   "menu.aramaEtiket": "Поиск по меню",
   "menu.filtreler": "Фильтры по диете и аллергенам",
   "menu.bolumler": "Разделы меню",
+  "menu.tumBolumler": "Меню",
+  "menu.urunAdedi": "{adet} позиций",
   "menu.sonucSayisi": "Найдено блюд: {adet}",
   "menu.temizle": "Сбросить",
   "menu.aramaBos": "По запросу «{terim}» ничего не найдено.",
@@ -663,6 +677,7 @@ const ru: Sozluk = {
   "yildiz.kategori": "Оценка: {ad}",
 
   "anket.baslik": "Как вам у нас?",
+  "anket.menuyeDon": "Назад к меню",
   "anket.ipucu": "Нажмите на звезду, чтобы оценить",
   "anket.altBilgi1": "Ваш отзыв попадёт напрямую к управляющему {ad}.",
   "anket.altBilgi2": "Имя мы не спрашиваем — можно остаться анонимным.",
@@ -687,6 +702,7 @@ const ru: Sozluk = {
   "anket.epostaOrnek": "name@example.com",
   "anket.gonder": "Отправить",
   "anket.gonderiliyor": "Отправляем…",
+  "anket.googleButon": "Оценить на Google",
   "anket.puanGerekli": "Сначала поставьте общую оценку.",
   "anket.besYildizBaslik": "Вы поставили нам 5 звёзд, спасибо! 🎉",
   "anket.besYildizMetin":
