@@ -5,6 +5,8 @@ import { SHIFTS } from "@/lib/constants";
 import { gunAdi, gunBaslangici, gunEkle } from "@/lib/gun";
 import { EmptyState, PageHeader } from "@/components/ui";
 import { DegisimTalebi } from "./DegisimTalebi";
+import { IzinTalebi } from "./IzinTalebi";
+import { IZIN_TURLERI, gecerliIzinTuru } from "@/lib/izin";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +39,15 @@ export default async function VardiyalarimPage() {
     : [];
   const bekleyenSet = new Set(bekleyenTalepler.map((t) => t.assignmentId));
 
+  // Kendi izin talepleri — en yeniler üstte, geçmiş kayıtlar da görünsün ki
+  // "talebim ne oldu" sorusu ekranı terk etmeden cevaplansın.
+  const izinTalepleri = await prisma.leaveRequest.findMany({
+    where: { userId: user.id },
+    orderBy: { baslangic: "desc" },
+    take: 10,
+    select: { id: true, baslangic: true, bitis: true, tur: true, status: true },
+  });
+
   const gunler = new Map<string, typeof atamalar>();
   for (const atama of atamalar) {
     const anahtar = atama.date.toISOString().slice(0, 10);
@@ -52,6 +63,16 @@ export default async function VardiyalarimPage() {
         renk="teal"
         title="Vardiyalarım"
         description="Önümüzdeki iki hafta içinde size atanan vardiyalar."
+      />
+
+      <IzinTalebi
+        gecmisTalepler={izinTalepleri.map((t) => ({
+          id: t.id,
+          baslangic: t.baslangic.toLocaleDateString("tr-TR"),
+          bitis: t.bitis.toLocaleDateString("tr-TR"),
+          tur: gecerliIzinTuru(t.tur) ? IZIN_TURLERI[t.tur] : t.tur,
+          status: t.status,
+        }))}
       />
 
       {atamalar.length === 0 ? (

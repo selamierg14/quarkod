@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { toCsv } from "@/lib/feedback-filters";
 import { gunEkle, gunGirdisi, haftaBaslangici } from "@/lib/gun";
 import { cizelgeyiTabloyaDok } from "@/lib/vardiya-tablo";
+import { izinKumesiKur } from "@/lib/izin";
 
 /**
  * Haftalık vardiya çizelgesini Excel'de açılabilir bir tablo olarak indirir.
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
   );
   const gunler = Array.from({ length: 7 }, (_, i) => gunEkle(haftaBasi, i));
 
-  const [personel, atamalar] = await Promise.all([
+  const [personel, atamalar, izinler] = await Promise.all([
     prisma.user.findMany({
       where: {
         businessId: secili.id,
@@ -54,9 +55,20 @@ export async function GET(request: NextRequest) {
       where: { businessId: secili.id, date: { gte: haftaBasi, lte: gunler[6] } },
       select: { userId: true, date: true, shift: true },
     }),
+    // Onaylı izinler dosyada "İzinli" olarak görünsün: çizelgeyi Excel'de
+    // dolduran kişi boş hücreyi "unutulmuş" sanmasın.
+    prisma.leaveRequest.findMany({
+      where: {
+        businessId: secili.id,
+        status: "onaylandi",
+        baslangic: { lte: gunler[6] },
+        bitis: { gte: haftaBasi },
+      },
+      select: { userId: true, baslangic: true, bitis: true, tur: true, status: true },
+    }),
   ]);
 
-  const tablo = cizelgeyiTabloyaDok(personel, gunler, atamalar);
+  const tablo = cizelgeyiTabloyaDok(personel, gunler, atamalar, izinKumesiKur(izinler));
   const dosyaAdi = `vardiya-${slugla(secili.name)}-${gunGirdisi(haftaBasi)}.csv`;
 
   return new NextResponse(toCsv(tablo), {

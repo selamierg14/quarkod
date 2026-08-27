@@ -171,6 +171,7 @@ model Business {
   bolgeMudurleri       UserBusiness[]
   shiftAssignments     ShiftAssignment[]
   shiftNotes           ShiftNote[]
+  leaveRequests        LeaveRequest[]
   checklistItems       ChecklistItem[]
   checklistCompletions ChecklistCompletion[]
   duyurular            Duyuru[]
@@ -249,6 +250,52 @@ model ShiftSwapRequest {
   @@index([requestedById])
   @@index([decidedById])
   @@map("shift_swap_requests")
+}
+
+/// Personel izni ve müsaitliği.
+///
+/// Çizelgeyi kuran kişi kimin ne zaman yok olduğunu bilmeden plan yapıyordu;
+/// bilgi WhatsApp'ta ya da sözlü kalıyor, izinli birine vardiya yazıldığında
+/// hiçbir şey uyarmıyordu. Kaydın kaynağı iki yerden gelir ve ikisi de aynı
+/// tabloda birikir: personel kendi ekranından talep açar (status "bekliyor",
+/// yönetici onaylar — ShiftSwapRequest ile birebir aynı akış), ya da yönetici
+/// doğrudan girer (o zaman kayıt zaten onaylı doğar). Böylece "izinli olduğu
+/// ne belli" sorusunun cevabı hep bir kayıt: kim istedi, kim onayladı, ne zaman.
+///
+/// Not: paneldeki "İzinler" ekranı ticari ileti onaylarını (MarketingConsent)
+/// gösteriyor; bu tamamen ayrı bir kavram, o yüzden bu modül vardiya
+/// planlamasının altında "İzin & müsaitlik" adıyla duruyor.
+model LeaveRequest {
+  id         String @id @default(cuid())
+  businessId String
+  userId     String
+
+  /// Gün bazlı ve kapsayıcı aralık: tek günlük izinde baslangic = bitis.
+  /// Saat tutulmaz — çizelge zaten gün+vardiya çözünürlüğünde.
+  baslangic DateTime
+  bitis     DateTime
+
+  /// "yillik" | "rapor" | "ucretsiz" | "musait_degil"
+  /// Ayrım rapor için önemli: yıllık izin planlanır, rapor sonradan girilir,
+  /// "müsait değil" ise resmi bir izin değil (ör. okul günü).
+  tur       String  @default("yillik")
+  aciklama  String?
+
+  /// "bekliyor" | "onaylandi" | "reddedildi"
+  status      String    @default("bekliyor")
+  decidedById String?
+  decidedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  business  Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user      User     @relation("LeaveRequester", fields: [userId], references: [id], onDelete: Cascade)
+  decidedBy User?    @relation("LeaveDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  /// Çizelge her açılışta "bu hafta kim izinli" diye aralık sorgusu atıyor.
+  @@index([businessId, baslangic, bitis])
+  @@index([userId])
+  @@index([decidedById])
+  @@map("leave_requests")
 }
 
 /// Vardiya devir notu: "masa 5'te sorun oldu, dikkat" gibi bir sonraki
@@ -602,6 +649,8 @@ model User {
   checklistCompletions ChecklistCompletion[]
   shiftSwapRequests    ShiftSwapRequest[]    @relation("ShiftSwapRequester")
   shiftSwapDecisions   ShiftSwapRequest[]    @relation("ShiftSwapDecider")
+  leaveRequests        LeaveRequest[]        @relation("LeaveRequester")
+  leaveDecisions       LeaveRequest[]        @relation("LeaveDecider")
 
   @@index([accountId])
   /// notifyLowRating her eşik altı puanda "bu işletmenin sorumlusu kim"

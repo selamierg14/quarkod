@@ -1,10 +1,11 @@
 import { ClipboardList, Moon, Plus, Sunrise } from "lucide-react";
 import { requirePersonelYonetimi, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { EmptyState, PageHeader, SectionCard, TabLink } from "@/components/ui";
+import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
 import { IsletmeSecici } from "../../menu/MenuUst";
 import { SablonForm } from "./SablonForm";
 import { gorevSil } from "./actions";
+import { VardiyaSekmeleri } from "../VardiyaSekmeleri";
 
 export const dynamic = "force-dynamic";
 
@@ -34,14 +35,7 @@ export default async function GorevSablonuPage({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="print-hidden -mb-2 flex gap-1 border-b border-line">
-        <TabLink href="/admin/vardiya-planlama" active={false}>
-          Çizelge
-        </TabLink>
-        <TabLink href="/admin/vardiya-planlama/sablon" active>
-          Görev şablonu
-        </TabLink>
-      </div>
+      <VardiyaSekmeleri aktif="sablon" />
 
       <PageHeader
         ikon={<ClipboardList className="h-4 w-4" aria-hidden="true" />}

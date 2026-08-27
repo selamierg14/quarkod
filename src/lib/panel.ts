@@ -274,6 +274,10 @@ export function panelMenusu(
       ikon: "takvim",
       altLinkler: [
         { href: "/admin/vardiya-planlama", label: "Çizelge", exact: true },
+        // "İzinler" adı panelde ticari ileti onaylarına ait (MarketingConsent);
+        // personel izni tamamen ayrı bir kavram olduğu için burada vardiya
+        // modülünün altında ve farklı bir adla duruyor.
+        { href: "/admin/vardiya-planlama/izinler", label: "İzin & müsaitlik" },
         { href: "/admin/vardiya-planlama/sablon", label: "Görev şablonu" },
         // Personelin kendisi bu gruba hiç girmiyor (garson "personel"
         // moduna düşüyor, viewer salt okunur olduğu için buraya hiç

@@ -2,15 +2,17 @@ import { CalendarDays, Moon, Sun, Sunrise, Sunset, Users2 } from "lucide-react";
 import Link from "next/link";
 import { requirePersonelYonetimi, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { EmptyState, PageHeader, TabLink } from "@/components/ui";
+import { EmptyState, PageHeader } from "@/components/ui";
 import { getShiftBreakdown } from "@/lib/stats";
 import { SHIFTS, type Shift } from "@/lib/constants";
 import { gunAdi, gunEkle, gunGirdisi, haftaBaslangici } from "@/lib/gun";
 import { etkinVardiyalar } from "@/lib/vardiya";
+import { IZIN_TURLERI, izinKumesiKur, izinliMi, type IzinTuru } from "@/lib/izin";
 import { IsletmeSecici } from "../menu/MenuUst";
 import { degisimKararVer, vardiyaAta, vardiyaKaldir } from "./actions";
 import { CizelgeAktarim } from "./CizelgeAktarim";
 import { VardiyaAyarForm } from "./VardiyaAyarForm";
+import { VardiyaSekmeleri } from "./VardiyaSekmeleri";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +41,7 @@ export default async function VardiyaPlanlamaPage({
   const gunler = Array.from({ length: 7 }, (_, i) => gunEkle(haftaBasi, i));
   const haftaSonu = gunler[6];
 
-  const [personel, atamalar, bekleyenTalepler, vardiyaKirilimi] = await Promise.all([
+  const [personel, atamalar, bekleyenTalepler, vardiyaKirilimi, izinler] = await Promise.all([
     prisma.user.findMany({
       where: { businessId: secili.id, active: true, role: { in: ["manager", "garson"] } },
       orderBy: { name: "asc" },
@@ -58,8 +60,19 @@ export default async function VardiyaPlanlamaPage({
     // gerçekten iyi/kötü geçmiş. Bu haftanın çizelgesinden bağımsız, genel
     // bir eğilim — o yüzden haftaBasi/haftaSonu değil sabit bir pencere.
     getShiftBreakdown([secili.id], 30),
+    // Bu haftaya değen onaylı izinler: aralık haftayla kesişiyorsa yeter.
+    prisma.leaveRequest.findMany({
+      where: {
+        businessId: secili.id,
+        status: "onaylandi",
+        baslangic: { lte: haftaSonu },
+        bitis: { gte: haftaBasi },
+      },
+      select: { userId: true, baslangic: true, bitis: true, tur: true, status: true },
+    }),
   ]);
   const kirilimByShift = new Map(vardiyaKirilimi.map((k) => [k.shift, k]));
+  const izinKumesi = izinKumesiKur(izinler);
 
   const haftaHref = (baslangic: Date) =>
     `/admin/vardiya-planlama?${new URLSearchParams({
@@ -98,14 +111,7 @@ export default async function VardiyaPlanlamaPage({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="print-hidden -mb-2 flex gap-1 border-b border-line">
-        <TabLink href="/admin/vardiya-planlama" active>
-          Çizelge
-        </TabLink>
-        <TabLink href="/admin/vardiya-planlama/sablon" active={false}>
-          Görev şablonu
-        </TabLink>
-      </div>
+      <VardiyaSekmeleri aktif="cizelge" />
 
       {/* Hafta gezinmesi başlığın kendi aksiyon alanında: PageHeader artık
           kendi yüzeyi olan bir kart, yanına ayrı bir öbek koymak onu
@@ -286,6 +292,7 @@ export default async function VardiyaPlanlamaPage({
                           shift={deger}
                           atamalar={atamalar}
                           personel={personel}
+                          izinKumesi={izinKumesi}
                         />
                       </td>
                     ))}
@@ -337,6 +344,7 @@ export default async function VardiyaPlanlamaPage({
                             shift={deger}
                             atamalar={atamalar}
                             personel={personel}
+                            izinKumesi={izinKumesi}
                           />
                         </div>
                       </div>
@@ -395,42 +403,60 @@ function VardiyaHucresi({
   shift,
   atamalar,
   personel,
+  izinKumesi,
 }: {
   businessId: string;
   gunAnahtari: string;
   shift: string;
   atamalar: Atama[];
   personel: Personel[];
+  izinKumesi: Map<string, IzinTuru>;
 }) {
   const buVardiya = atamalar.filter(
     (a) => gunGirdisi(a.date) === gunAnahtari && a.shift === shift,
   );
-  const atanmamisPersonel = personel.filter(
-    (p) => !buVardiya.some((a) => a.userId === p.id),
-  );
+  const atanmamis = personel.filter((p) => !buVardiya.some((a) => a.userId === p.id));
+
+  // İzinli olanlar seçim listesinden çıkarılmıyor, sonuna ayrı ve işaretli
+  // olarak konuyor: yönetici gerekirse yine de atayabilmeli (kişi gelmeyi
+  // kabul etmiş olabilir), ama ne yaptığını bilerek yapsın.
+  const musaitler = atanmamis.filter((p) => !izinliMi(izinKumesi, p.id, gunAnahtari));
+  const izinliler = atanmamis.filter((p) => izinliMi(izinKumesi, p.id, gunAnahtari));
 
   return (
     <div>
       <div className="flex flex-wrap gap-1.5">
-        {buVardiya.map((a) => (
-          <form key={a.id} action={vardiyaKaldir}>
-            <input type="hidden" name="id" value={a.id} />
-            <button
-              type="submit"
-              title="Kaldır"
-              className="flex items-center gap-1 whitespace-nowrap rounded-chip bg-sunken px-2 py-1 text-caption text-ink-soft hover:bg-danger-soft hover:text-danger-ink"
-            >
-              {a.user.name}
-              <span aria-hidden="true">✕</span>
-            </button>
-          </form>
-        ))}
+        {buVardiya.map((a) => {
+          const izinTuru = izinliMi(izinKumesi, a.userId, gunAnahtari);
+          return (
+            <form key={a.id} action={vardiyaKaldir}>
+              <input type="hidden" name="id" value={a.id} />
+              <button
+                type="submit"
+                title={
+                  izinTuru
+                    ? `Kaldır — DİKKAT: bu kişi ${IZIN_TURLERI[izinTuru].toLocaleLowerCase("tr")} kaydına rağmen atanmış`
+                    : "Kaldır"
+                }
+                className={`flex items-center gap-1 whitespace-nowrap rounded-chip px-2 py-1 text-caption hover:bg-danger-soft hover:text-danger-ink ${
+                  izinTuru
+                    ? "bg-warning-soft text-warning-ink ring-1 ring-warning/30"
+                    : "bg-sunken text-ink-soft"
+                }`}
+              >
+                {izinTuru ? <span aria-hidden="true">⚠</span> : null}
+                {a.user.name}
+                <span aria-hidden="true">✕</span>
+              </button>
+            </form>
+          );
+        })}
         {buVardiya.length === 0 ? (
           <span className="text-caption text-ink-faint">—</span>
         ) : null}
       </div>
 
-      {atanmamisPersonel.length > 0 ? (
+      {atanmamis.length > 0 ? (
         <form action={vardiyaAta} className="mt-1.5 flex gap-1">
           <input type="hidden" name="businessId" value={businessId} />
           <input type="hidden" name="date" value={gunAnahtari} />
@@ -448,11 +474,23 @@ function VardiyaHucresi({
             <option value="" disabled>
               + Personel seç
             </option>
-            {atanmamisPersonel.map((p) => (
+            {musaitler.map((p) => (
               <option key={p.id} value={p.id} className="text-ink">
                 {p.name}
               </option>
             ))}
+            {izinliler.length > 0 ? (
+              <optgroup label="İzinli — yine de atanabilir">
+                {izinliler.map((p) => {
+                  const tur = izinliMi(izinKumesi, p.id, gunAnahtari)!;
+                  return (
+                    <option key={p.id} value={p.id} className="text-ink">
+                      {p.name} ({IZIN_TURLERI[tur].toLocaleLowerCase("tr")})
+                    </option>
+                  );
+                })}
+              </optgroup>
+            ) : null}
           </select>
           <button
             type="submit"

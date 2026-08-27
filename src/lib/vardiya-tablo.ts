@@ -35,6 +35,12 @@ export function cizelgeyiTabloyaDok(
   personel: { id: string; name: string }[],
   gunler: Date[],
   atamalar: { userId: string; date: Date; shift: string }[],
+  /**
+   * Onaylı izinler (`userId|yyyy-aa-gg` → tür). Verilirse boş hücreler
+   * "İzinli" yazar: çizelgeyi Excel'de dolduran kişi kimin o gün
+   * olmadığını dosyada da görsün, boş hücreyi "unutulmuş" sanmasın.
+   */
+  izinKumesi?: Map<string, string>,
 ): string[][] {
   const anahtar = (userId: string, gun: string) => `${userId}|${gun}`;
   const hucreler = new Map<string, Shift[]>();
@@ -55,17 +61,32 @@ export function cizelgeyiTabloyaDok(
   const satirlar = personel.map((kisi) => [
     kisi.name,
     ...gunler.map((gun) => {
-      const vardiyalar = hucreler.get(anahtar(kisi.id, gunGirdisi(gun))) ?? [];
+      const k = anahtar(kisi.id, gunGirdisi(gun));
+      const vardiyalar = hucreler.get(k) ?? [];
       // SHIFTS sırasına göre yaz: aynı çizelge her dışa aktarımda aynı
       // görünsün (Set/Map sırası atama sırasına bağlı kalmasın).
-      return SIRALI_VARDIYALAR.filter((s) => vardiyalar.includes(s))
+      const metin = SIRALI_VARDIYALAR.filter((s) => vardiyalar.includes(s))
         .map((s) => SHIFTS[s])
         .join(", ");
+      if (metin) return metin;
+      // İzin yalnızca gerçekten boş hücreye yazılır: istisnaen izinliyken
+      // atanmış birinin vardiyası dosyada kaybolmasın.
+      return izinKumesi?.has(k) ? IZINLI_ETIKETI : "";
     }),
   ]);
 
   return [baslik, ...satirlar];
 }
+
+/**
+ * Dışa aktarımda izinli günün hücre metni.
+ *
+ * İçe aktarmada bilerek bir vardiya adına karşılık gelmiyor: dosya geri
+ * yüklendiğinde bu hücre "tanınmayan vardiya" uyarısı bile üretmeden
+ * atlanır (bkz. tabloyuCizelgeyeCevir), yani izinli gün yanlışlıkla
+ * vardiyaya dönüşmez.
+ */
+export const IZINLI_ETIKETI = "İzinli";
 
 /** "24.08" — başlıkta yıl yok, sütun dar kalsın; yıl zaten dosya adında. */
 function gunBasligiTarihi(gun: Date): string {
@@ -191,6 +212,12 @@ export function tabloyuCizelgeyeCevir(
 
       for (const parca of hucre.split(/[,;/]/)) {
         if (!parca.trim()) continue;
+        // Dışa aktarımın kendi yazdığı "İzinli" etiketi bir vardiya değil;
+        // round-trip'te her izinli gün için uyarı üretmesin diye sessizce
+        // atlanıyor (bkz. IZINLI_ETIKETI).
+        if (parca.trim().toLocaleLowerCase("tr") === IZINLI_ETIKETI.toLocaleLowerCase("tr")) {
+          continue;
+        }
         const shift = vardiyaCoz(parca);
         if (!shift) {
           uyarilar.push(`"${ham}" satırında tanınmayan vardiya: "${parca.trim()}".`);

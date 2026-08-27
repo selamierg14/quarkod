@@ -1,10 +1,11 @@
 import { BarChart3, Users2 } from "lucide-react";
 import { requirePersonelYonetimi, visibleBusinesses } from "@/lib/auth";
 import { getPersonelPerformansi } from "@/lib/stats";
-import { EmptyState, PageHeader, SectionCard, TabLink } from "@/components/ui";
+import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
 import { IsletmeSecici } from "../../menu/MenuUst";
 import { PeriyotFiltre } from "@/components/PeriyotFiltre";
 import { ROL_ADLARI } from "@/lib/constants";
+import { VardiyaSekmeleri } from "../VardiyaSekmeleri";
 
 export const dynamic = "force-dynamic";
 
@@ -35,17 +36,7 @@ export default async function PersonelPerformansPage({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="print-hidden -mb-2 flex gap-1 border-b border-line">
-        <TabLink href="/admin/vardiya-planlama" active={false}>
-          Çizelge
-        </TabLink>
-        <TabLink href="/admin/vardiya-planlama/sablon" active={false}>
-          Görev şablonu
-        </TabLink>
-        <TabLink href="/admin/vardiya-planlama/performans" active>
-          Performans
-        </TabLink>
-      </div>
+      <VardiyaSekmeleri aktif="performans" />
 
       <PageHeader
         ikon={<BarChart3 className="h-4 w-4" aria-hidden="true" />}

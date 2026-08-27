@@ -307,3 +307,49 @@ describe("csv ayrıştırma", () => {
     ]);
   });
 });
+
+describe("izinlerin tabloya yansıması", () => {
+  it("boş hücreye İzinli yazar", () => {
+    const kume = new Map([["u1|2026-08-25", "yillik"]]);
+    const tablo = cizelgeyiTabloyaDok(
+      PERSONEL,
+      GUNLER,
+      [{ userId: "u1", date: GUNLER[0], shift: "sabah" }],
+      kume,
+    );
+    expect(tablo[1][1]).toBe("Sabah"); // atanmış gün
+    expect(tablo[1][2]).toBe("İzinli"); // izinli gün
+    expect(tablo[1][3]).toBe(""); // ne atama ne izin
+  });
+
+  it("izinliyken atanmışsa vardiyayı gizlemez", () => {
+    // Yönetici izinli birini bilerek atamış olabilir; dosyada o vardiya
+    // kaybolursa geri yüklemede sessizce silinirdi.
+    const kume = new Map([["u1|2026-08-24", "yillik"]]);
+    const tablo = cizelgeyiTabloyaDok(
+      PERSONEL,
+      GUNLER,
+      [{ userId: "u1", date: GUNLER[0], shift: "sabah" }],
+      kume,
+    );
+    expect(tablo[1][1]).toBe("Sabah");
+  });
+
+  it("İzinli hücresi geri okunurken uyarı üretmez ve vardiyaya dönüşmez", () => {
+    const kume = new Map([["u1|2026-08-25", "yillik"]]);
+    const tablo = cizelgeyiTabloyaDok(PERSONEL, GUNLER, [], kume);
+    const { atamalar, uyarilar } = tabloyuCizelgeyeCevir(
+      tablo,
+      PERSONEL,
+      GUNLER,
+      TUM_VARDIYALAR,
+    );
+    expect(atamalar).toEqual([]);
+    expect(uyarilar).toEqual([]);
+  });
+
+  it("izin kümesi verilmezse davranış değişmez", () => {
+    const tablo = cizelgeyiTabloyaDok(PERSONEL, GUNLER, []);
+    expect(tablo[1][1]).toBe("");
+  });
+});

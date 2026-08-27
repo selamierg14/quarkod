@@ -24,6 +24,7 @@ export type DenetimEylemi =
   | "business.table"
   | "business.duyuru"
   | "business.vardiya"
+  | "business.izin"
   | "user.create"
   | "user.update"
   | "user.toggle"
@@ -48,6 +49,7 @@ export const EYLEM_METNI: Record<DenetimEylemi, string> = {
   "business.table": "Masa",
   "business.duyuru": "Duyuru",
   "business.vardiya": "Vardiya çizelgesi",
+  "business.izin": "Personel izni",
   "user.create": "Kullanıcı açıldı",
   "user.update": "Kullanıcı güncellendi",
   "user.toggle": "Kullanıcı aktifliği",
