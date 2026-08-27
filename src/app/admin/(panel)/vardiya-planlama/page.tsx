@@ -1,3 +1,4 @@
+import { CalendarDays, Moon, Sun, Sunrise, Sunset, Users2 } from "lucide-react";
 import Link from "next/link";
 import { requirePersonelYonetimi, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -8,6 +9,7 @@ import { gunAdi, gunEkle, gunGirdisi, haftaBaslangici } from "@/lib/gun";
 import { etkinVardiyalar } from "@/lib/vardiya";
 import { IsletmeSecici } from "../menu/MenuUst";
 import { degisimKararVer, vardiyaAta, vardiyaKaldir } from "./actions";
+import { CizelgeAktarim } from "./CizelgeAktarim";
 import { VardiyaAyarForm } from "./VardiyaAyarForm";
 
 export const dynamic = "force-dynamic";
@@ -66,12 +68,32 @@ export default async function VardiyaPlanlamaPage({
     }).toString()}`;
 
   /** Her vardiyanın kendi rengi: dört satırlık bir tabloda "hangi satırdayım"
-   * hep göze bakarak, satır başlığını okumadan anlaşılsın. */
-  const VARDIYA_RENGI: Record<Shift, { serit: string; rozet: string; ikon: string }> = {
-    sabah: { serit: "border-l-amber-400", rozet: "bg-amber-50 text-amber-700", ikon: "🌅" },
-    ogle: { serit: "border-l-sky-400", rozet: "bg-sky-50 text-sky-700", ikon: "🌤️" },
-    aksam: { serit: "border-l-orange-400", rozet: "bg-orange-50 text-orange-700", ikon: "🌇" },
-    gece: { serit: "border-l-indigo-400", rozet: "bg-indigo-50 text-indigo-700", ikon: "🌙" },
+   * hep göze bakarak, satır başlığını okumadan anlaşılsın. Rozet zemini
+   * geçişli — panelin geri kalanıyla aynı dil (bkz. lib/modul-rengi.ts). */
+  const VARDIYA_RENGI: Record<
+    Shift,
+    { serit: string; rozet: string; Ikon: typeof Sunrise }
+  > = {
+    sabah: {
+      serit: "border-l-amber-400",
+      rozet: "bg-gradient-to-r from-amber-100 to-amber-50 text-amber-800",
+      Ikon: Sunrise,
+    },
+    ogle: {
+      serit: "border-l-sky-400",
+      rozet: "bg-gradient-to-r from-sky-100 to-sky-50 text-sky-800",
+      Ikon: Sun,
+    },
+    aksam: {
+      serit: "border-l-orange-400",
+      rozet: "bg-gradient-to-r from-orange-100 to-orange-50 text-orange-800",
+      Ikon: Sunset,
+    },
+    gece: {
+      serit: "border-l-indigo-400",
+      rozet: "bg-gradient-to-r from-indigo-100 to-indigo-50 text-indigo-800",
+      Ikon: Moon,
+    },
   };
 
   return (
@@ -85,28 +107,31 @@ export default async function VardiyaPlanlamaPage({
         </TabLink>
       </div>
 
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <PageHeader
-          ikon="📅"
-          renk="teal"
-          title="Vardiya çizelgesi"
-          description={`${haftaBasi.toLocaleDateString("tr-TR")} – ${haftaSonu.toLocaleDateString("tr-TR")}`}
-        />
-        <div className="flex gap-1">
-          <Link
-            href={haftaHref(gunEkle(haftaBasi, -7))}
-            className="rounded-chip border border-line bg-surface px-3 py-1.5 text-small text-ink-soft hover:bg-canvas"
-          >
-            ← Önceki hafta
-          </Link>
-          <Link
-            href={haftaHref(gunEkle(haftaBasi, 7))}
-            className="rounded-chip border border-line bg-surface px-3 py-1.5 text-small text-ink-soft hover:bg-canvas"
-          >
-            Sonraki hafta →
-          </Link>
-        </div>
-      </div>
+      {/* Hafta gezinmesi başlığın kendi aksiyon alanında: PageHeader artık
+          kendi yüzeyi olan bir kart, yanına ayrı bir öbek koymak onu
+          sayfanın yarısında bırakıyordu. */}
+      <PageHeader
+        ikon={<CalendarDays className="h-4 w-4" aria-hidden="true" />}
+        renk="teal"
+        title="Vardiya çizelgesi"
+        description={`${haftaBasi.toLocaleDateString("tr-TR")} – ${haftaSonu.toLocaleDateString("tr-TR")}`}
+        action={
+          <div className="flex gap-1">
+            <Link
+              href={haftaHref(gunEkle(haftaBasi, -7))}
+              className="rounded-control border border-line bg-surface px-3 py-1.5 text-small text-ink-soft transition hover:border-line-strong hover:bg-canvas"
+            >
+              ← Önceki hafta
+            </Link>
+            <Link
+              href={haftaHref(gunEkle(haftaBasi, 7))}
+              className="rounded-control border border-line bg-surface px-3 py-1.5 text-small text-ink-soft transition hover:border-line-strong hover:bg-canvas"
+            >
+              Sonraki hafta →
+            </Link>
+          </div>
+        }
+      />
 
       <IsletmeSecici businesses={businesses} seciliId={secili.id} taban="/admin/vardiya-planlama" />
 
@@ -178,7 +203,7 @@ export default async function VardiyaPlanlamaPage({
       {personel.length === 0 ? (
         <EmptyState
           baslik="Henüz personel yok"
-          ikon="◐"
+          ikon={<Users2 className="h-4 w-4" aria-hidden="true" />}
           aksiyon={
             <Link
               href="/admin/kullanicilar/ekle"
@@ -248,7 +273,7 @@ export default async function VardiyaPlanlamaPage({
                       <span
                         className={`inline-flex items-center gap-1.5 rounded-chip px-2.5 py-1 text-small font-medium ${VARDIYA_RENGI[deger].rozet}`}
                       >
-                        <span aria-hidden="true">{VARDIYA_RENGI[deger].ikon}</span>
+                        {(() => { const I = VARDIYA_RENGI[deger].Ikon; return <I className="h-3.5 w-3.5" aria-hidden="true" />; })()}
                         {etiket}
                       </span>
                       <VardiyaPuanRozeti kirilim={kirilimByShift.get(deger)} />
@@ -300,7 +325,7 @@ export default async function VardiyaPlanlamaPage({
                           <span
                             className={`inline-flex items-center gap-1.5 rounded-chip px-2 py-0.5 text-caption font-medium ${VARDIYA_RENGI[deger].rozet}`}
                           >
-                            <span aria-hidden="true">{VARDIYA_RENGI[deger].ikon}</span>
+                            {(() => { const I = VARDIYA_RENGI[deger].Ikon; return <I className="h-3.5 w-3.5" aria-hidden="true" />; })()}
                             {etiket}
                           </span>
                           <VardiyaPuanRozeti kirilim={kirilimByShift.get(deger)} />
@@ -321,6 +346,8 @@ export default async function VardiyaPlanlamaPage({
               );
             })}
           </div>
+
+          <CizelgeAktarim businessId={secili.id} baslangic={gunGirdisi(haftaBasi)} />
         </>
       )}
     </div>

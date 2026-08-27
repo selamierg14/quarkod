@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { modulTonu, type ModulRengi } from "@/lib/modul-rengi";
 
 /**
  * Panelin taşıyıcı yüzeyi. Gölge yerine ince bir çizgi + çok yumuşak gölge:
@@ -84,18 +85,22 @@ export function SectionCard({
   className?: string;
   padded?: boolean;
 }) {
+  const ton = modulTonu(renk);
   return (
     <section
       className={`overflow-hidden rounded-card bg-surface shadow-card ring-1 ring-line ${className}`}
     >
+      {/* Kartın tepesindeki ince renk geçişi: on kart alt alta dizildiğinde
+          hangisinin nerede başladığı çizgiyle değil renkle okunuyor. */}
+      <div className={`h-0.5 w-full ${ton.cizgi}`} aria-hidden="true" />
       <div
-        className={`flex flex-wrap items-center justify-between gap-3 border-b px-5 py-3.5 ${SERIT[renk]}`}
+        className={`flex flex-wrap items-center justify-between gap-3 border-b px-5 py-3.5 ${ton.serit}`}
       >
         <div className="flex min-w-0 items-center gap-2.5">
           {ikon ? (
             <span
               aria-hidden="true"
-              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-chip text-small ring-1 ${ROZET[renk]}`}
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-chip text-small shadow-sm ${ton.rozet}`}
             >
               {ikon}
             </span>
@@ -115,48 +120,19 @@ export function SectionCard({
 }
 
 /**
- * Sayfa başlığı rozetinin renk temaları.
- *
- * Her ekranın kendi rengi var: yönetici gün içinde on farklı sayfa
- * arasında geziniyor ve hepsi aynı beyaz-gri başlıkla açılınca "neredeyim"
- * duygusu kayboluyordu. Renk burada dekorasyon değil, konum işareti.
- * Tailwind sınıfları derleme anında tarandığı için tam sınıf adlarıyla
- * sabit bir eşleme tutuluyor.
+ * Sayfa/bölüm renk teması. Tanımların kendisi `@/lib/modul-rengi` içinde
+ * tek bir yerde duruyor; burası yalnızca panelin alışılmış adını koruyor.
  */
-export type SayfaRengi =
-  | "indigo"
-  | "sky"
-  | "emerald"
-  | "amber"
-  | "rose"
-  | "violet"
-  | "teal"
-  | "slate";
+export type SayfaRengi = ModulRengi;
 
-const ROZET: Record<SayfaRengi, string> = {
-  indigo: "bg-indigo-100 text-indigo-700 ring-indigo-200",
-  sky: "bg-sky-100 text-sky-700 ring-sky-200",
-  emerald: "bg-emerald-100 text-emerald-700 ring-emerald-200",
-  amber: "bg-amber-100 text-amber-700 ring-amber-200",
-  rose: "bg-rose-100 text-rose-700 ring-rose-200",
-  violet: "bg-violet-100 text-violet-700 ring-violet-200",
-  teal: "bg-teal-100 text-teal-700 ring-teal-200",
-  slate: "bg-slate-100 text-slate-700 ring-slate-200",
-};
-
-/** Bölüm başlığı şeridi — rozetle aynı aileden, çok daha soluk bir zemin. */
-const SERIT: Record<SayfaRengi, string> = {
-  indigo: "border-indigo-100 bg-indigo-50/60",
-  sky: "border-sky-100 bg-sky-50/60",
-  emerald: "border-emerald-100 bg-emerald-50/60",
-  amber: "border-amber-100 bg-amber-50/60",
-  rose: "border-rose-100 bg-rose-50/60",
-  violet: "border-violet-100 bg-violet-50/60",
-  teal: "border-teal-100 bg-teal-50/60",
-  slate: "border-line bg-sunken",
-};
-
-/** Sayfa başlığı: her ekranın tepesinde aynı ritim, kendi rengi. */
+/**
+ * Sayfa başlığı: her ekranın tepesinde aynı ritim, kendi rengi.
+ *
+ * Başlık düz bir satır değil, kendi yüzeyi olan bir bant: arkasında
+ * modülün renginden çok soluk bir parıltı, solunda dolu renkli bir ikon
+ * rozeti. Amaç, pazarlama sitesindeki kart diliyle aynı aileye girmek —
+ * panel "tablolar listesi" değil, uygulama gibi dursun.
+ */
 export function PageHeader({
   title,
   description,
@@ -167,17 +143,22 @@ export function PageHeader({
   title: ReactNode;
   description?: ReactNode;
   action?: ReactNode;
-  /** Emoji ya da kısa sembol; verilmezse rozet hiç çizilmez. */
+  /** Genelde bir lucide ikonu; verilmezse rozet hiç çizilmez. */
   ikon?: ReactNode;
   renk?: SayfaRengi;
 }) {
+  const ton = modulTonu(renk);
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <div className="flex min-w-0 items-start gap-3">
+    <div className="relative flex flex-wrap items-start justify-between gap-3 overflow-hidden rounded-card bg-surface px-5 py-4 shadow-card ring-1 ring-line">
+      <div
+        aria-hidden="true"
+        className={`pointer-events-none absolute inset-y-0 left-0 w-2/3 bg-gradient-to-r to-transparent ${ton.parilti}`}
+      />
+      <div className="relative flex min-w-0 items-start gap-3">
         {ikon ? (
           <span
             aria-hidden="true"
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-chip text-lg ring-1 ${ROZET[renk]}`}
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-control text-lg shadow-md ${ton.rozet}`}
           >
             {ikon}
           </span>
@@ -189,7 +170,7 @@ export function PageHeader({
           ) : null}
         </div>
       </div>
-      {action ? <div className="shrink-0">{action}</div> : null}
+      {action ? <div className="relative shrink-0">{action}</div> : null}
     </div>
   );
 }

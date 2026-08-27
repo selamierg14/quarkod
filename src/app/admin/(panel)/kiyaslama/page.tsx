@@ -1,3 +1,4 @@
+import { BarChart3, TrendingUp, Trophy } from "lucide-react";
 import { allowedBusinessIds, requireTenantOwner } from "@/lib/auth";
 import { getBusinessStats } from "@/lib/stats";
 import { EmptyState, PageHeader, SectionCard, TabLink } from "@/components/ui";
@@ -26,7 +27,7 @@ export default async function ComparisonPage() {
 
       <div>
         <PageHeader
-          ikon="📊"
+          ikon={<BarChart3 className="h-4 w-4" aria-hidden="true" />}
           renk="violet"
           title="Şube karşılaştırma"
           description={
@@ -44,7 +45,7 @@ export default async function ComparisonPage() {
       ) : (
         <>
           <SectionCard
-            ikon="🏁"
+            ikon={<Trophy className="h-4 w-4" aria-hidden="true" />}
             renk="violet"
             title="Genel ortalama"
             description="Yüksekten düşüğe sıralı; çubuğun rengi işletmenin marka rengidir."
@@ -75,7 +76,7 @@ export default async function ComparisonPage() {
           </SectionCard>
 
           <SectionCard
-            ikon="📈"
+            ikon={<TrendingUp className="h-4 w-4" aria-hidden="true" />}
             renk="sky"
             title="Haftalık ortalama puan seyri"
             description="Son 12 hafta; dikey eksen 1–5 yıldız."

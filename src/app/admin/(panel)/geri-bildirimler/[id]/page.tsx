@@ -1,3 +1,4 @@
+import { Bell, MessageSquare, Star, Tag } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { canAccessBusiness, requireAnketErisim } from "@/lib/auth";
@@ -108,7 +109,7 @@ export default async function FeedbackDetailPage({
 
           {Object.keys(ratings).length > 0 ? (
             <SectionCard
-              ikon="⭐"
+              ikon={<Star className="h-4 w-4" aria-hidden="true" />}
               renk="amber"
               title="Kategori puanları"
               description="Kırmızı etiketler müşterinin işaretlediği somut sorun."
@@ -146,7 +147,7 @@ export default async function FeedbackDetailPage({
             </SectionCard>
           ) : null}
 
-          <SectionCard ikon="💬" renk="sky" title="Müşteri yorumu">
+          <SectionCard ikon={<MessageSquare className="h-4 w-4" aria-hidden="true" />} renk="sky" title="Müşteri yorumu">
             <p className="text-body whitespace-pre-wrap text-ink-strong">
               {feedback.comment ?? (
                 <span className="text-ink-faint">Yorum bırakılmamış.</span>
@@ -240,7 +241,7 @@ export default async function FeedbackDetailPage({
         </div>
 
         <aside className="flex flex-col gap-5">
-          <SectionCard ikon="🏷️" renk="indigo" title="Durum ve iç not">
+          <SectionCard ikon={<Tag className="h-4 w-4" aria-hidden="true" />} renk="indigo" title="Durum ve iç not">
             {/* Salt okunur kullanıcıya düzenleme formu gösterilmez: sunucu
                 zaten reddediyor ama kapalı bir kapıya yönlendirmek kafa
                 karıştırır. Durumu ve notu okunur halde gösteriyoruz. */}
@@ -278,7 +279,7 @@ export default async function FeedbackDetailPage({
           </SectionCard>
 
           <SectionCard
-            ikon="🔔"
+            ikon={<Bell className="h-4 w-4" aria-hidden="true" />}
             renk="slate"
             title="Bildirimler"
             description="Bu kayıt için gönderilen uyarı e-postaları."

@@ -47,7 +47,16 @@ export function SegmentLink({
   );
 }
 
-/** Sekme çubuğu (panel gezinmesi). Aktif sekme altında ince çizgi. */
+/**
+ * Sekme çubuğu — panelin alt modül gezinmesi (Çizelge / Görev şablonu /
+ * Performans gibi).
+ *
+ * Aktif sekme yalnızca altındaki çizgiyle değil, üstüne oturan soluk bir
+ * renk geçişiyle de belli oluyor: tek başına 2px'lik bir çizgi, ekranın
+ * üstünde tabloya bakan birinin gözünden kaçıyordu. Çizgi de düz değil
+ * geçişli — panelin geri kalanıyla (modül rozetleri, kart şeritleri) aynı
+ * dili konuşsun.
+ */
 export function TabLink({
   href,
   active,
@@ -61,15 +70,17 @@ export function TabLink({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`relative rounded-chip px-3 py-2.5 text-small font-medium whitespace-nowrap transition-colors ${
-        active ? "text-ink" : "text-ink-muted hover:bg-sunken hover:text-ink-soft"
+      className={`relative rounded-t-chip px-3.5 py-2.5 text-small font-medium whitespace-nowrap transition ${
+        active
+          ? "bg-gradient-to-b from-accent-50 to-transparent text-accent-700"
+          : "text-ink-muted hover:bg-sunken hover:text-ink-soft"
       }`}
     >
       {children}
       {active ? (
         <span
           aria-hidden="true"
-          className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-ink-button"
+          className="absolute inset-x-1.5 -bottom-px h-0.5 rounded-full bg-gradient-to-r from-accent-600 to-accent-400"
         />
       ) : null}
     </Link>

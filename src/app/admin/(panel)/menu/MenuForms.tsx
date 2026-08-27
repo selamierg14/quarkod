@@ -1,5 +1,6 @@
 "use client";
 
+import { Send } from "lucide-react";
 import { useActionState, useState } from "react";
 import { ImageUpload } from "@/components/ImageUpload";
 import { SectionCard } from "@/components/ui";
@@ -549,7 +550,7 @@ export function MenuyuKopyala({
 
   return (
     <SectionCard
-      ikon="📤"
+      ikon={<Send className="h-4 w-4" aria-hidden="true" />}
       renk="sky"
       title="Menüyü başka şubeye kopyala"
       description="Aynı hesaptaki, menüsü henüz boş olan şubelere bu menünün tamamını tek seferde kurar."

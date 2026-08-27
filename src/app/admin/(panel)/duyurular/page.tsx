@@ -1,3 +1,4 @@
+import { Megaphone } from "lucide-react";
 import { requireMenuErisim, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
@@ -36,7 +37,7 @@ export default async function DuyurularPage({
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        ikon="📣"
+        ikon={<Megaphone className="h-4 w-4" aria-hidden="true" />}
         renk="violet"
         title="Duyurular"
         description="QR karşılama ekranında ayrı, tıklanan bir kart olarak çıkar — görsel taşıyabilir, birden fazla olabilir ve tarih aralığına bağlanabilir (ör. sadece hafta sonu göster)."
@@ -45,7 +46,7 @@ export default async function DuyurularPage({
       <IsletmeSecici businesses={businesses} seciliId={secili.id} taban="/admin/duyurular" />
 
       <SectionCard
-        ikon="📣"
+        ikon={<Megaphone className="h-4 w-4" aria-hidden="true" />}
         renk="amber"
         title="Yeni duyuru"
         description="QR karşılama ekranında müşterinin göreceği kısa haber."

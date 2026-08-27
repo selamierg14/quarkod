@@ -1,3 +1,4 @@
+import { ClipboardCheck, Moon, ScrollText, Square, Sunrise } from "lucide-react";
 import Link from "next/link";
 import { requireUser, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -57,7 +58,7 @@ export default async function GorevlerimPage({
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        ikon="✅"
+        ikon={<ClipboardCheck className="h-4 w-4" aria-hidden="true" />}
         renk="emerald"
         title="Görevlerim"
         description="Bugünün açılış/kapanış görevleri ve vardiya devir notları."
@@ -68,7 +69,7 @@ export default async function GorevlerimPage({
       {gorevler.length === 0 ? (
         <EmptyState
           baslik="Henüz görev tanımlı değil"
-          ikon="☐"
+          ikon={<Square className="h-4 w-4" aria-hidden="true" />}
           aksiyon={
             user.role === "owner" ||
             user.role === "manager" ||
@@ -94,7 +95,7 @@ export default async function GorevlerimPage({
             liste.length === 0 ? null : (
               <SectionCard
                 key={gorev}
-                ikon={gorev === "acilis" ? "🌅" : "🌙"}
+                ikon={gorev === "acilis" ? <Sunrise className="h-4 w-4" aria-hidden="true" /> : <Moon className="h-4 w-4" aria-hidden="true" />}
                 renk={gorev === "acilis" ? "amber" : "indigo"}
                 title={GOREV_BASLIKLARI[gorev] ?? gorev}
                 description={
@@ -122,7 +123,7 @@ export default async function GorevlerimPage({
       )}
 
       <SectionCard
-        ikon="📝"
+        ikon={<ScrollText className="h-4 w-4" aria-hidden="true" />}
         renk="teal"
         title="Vardiya devir notu"
         description={'Bir sonraki vardiyaya bırakılacak kısa not — "masa 5\'te sorun oldu" gibi.'}

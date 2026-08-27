@@ -1,3 +1,4 @@
+import { ClipboardList, Moon, Plus, Sunrise } from "lucide-react";
 import { requirePersonelYonetimi, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { EmptyState, PageHeader, SectionCard, TabLink } from "@/components/ui";
@@ -43,7 +44,7 @@ export default async function GorevSablonuPage({
       </div>
 
       <PageHeader
-        ikon="📋"
+        ikon={<ClipboardList className="h-4 w-4" aria-hidden="true" />}
         renk="teal"
         title="Görev şablonu"
         description={
@@ -56,7 +57,7 @@ export default async function GorevSablonuPage({
 
       <IsletmeSecici businesses={businesses} seciliId={secili.id} taban="/admin/vardiya-planlama/sablon" />
 
-      <SectionCard ikon="➕" renk="teal" title="Görev ekle">
+      <SectionCard ikon={<Plus className="h-4 w-4" aria-hidden="true" />} renk="teal" title="Görev ekle">
         <SablonForm businessId={secili.id} />
       </SectionCard>
 
@@ -70,7 +71,7 @@ export default async function GorevSablonuPage({
             return (
               <SectionCard
                 key={gorevTuru}
-                ikon={gorevTuru === "acilis" ? "🌅" : "🌙"}
+                ikon={gorevTuru === "acilis" ? <Sunrise className="h-4 w-4" aria-hidden="true" /> : <Moon className="h-4 w-4" aria-hidden="true" />}
                 renk={gorevTuru === "acilis" ? "amber" : "indigo"}
                 title={BASLIKLAR[gorevTuru]}
               >

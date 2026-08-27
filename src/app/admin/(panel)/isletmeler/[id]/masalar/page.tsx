@@ -1,3 +1,4 @@
+import { Armchair, DoorOpen } from "lucide-react";
 import Link from "next/link";
 import { SectionCard } from "@/components/ui";
 import { masaSirala } from "@/lib/masa";
@@ -31,7 +32,7 @@ export default async function MasalarPage({
           fark etmiyordu. */}
       <div className="grid gap-4 lg:grid-cols-2">
         <SectionCard
-          ikon="🪑"
+          ikon={<Armchair className="h-4 w-4" aria-hidden="true" />}
           renk="indigo"
           title="Masaya özel QR"
           description="Her masanın kendi kodu olur."
@@ -56,7 +57,7 @@ export default async function MasalarPage({
         </SectionCard>
 
         <SectionCard
-          ikon="🚪"
+          ikon={<DoorOpen className="h-4 w-4" aria-hidden="true" />}
           renk="teal"
           title="Tek ortak QR"
           description="Tüm mekân için tek kod."

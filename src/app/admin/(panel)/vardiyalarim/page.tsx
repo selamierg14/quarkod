@@ -1,3 +1,4 @@
+import { CalendarDays } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { SHIFTS } from "@/lib/constants";
@@ -47,7 +48,7 @@ export default async function VardiyalarimPage() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        ikon="📅"
+        ikon={<CalendarDays className="h-4 w-4" aria-hidden="true" />}
         renk="teal"
         title="Vardiyalarım"
         description="Önümüzdeki iki hafta içinde size atanan vardiyalar."

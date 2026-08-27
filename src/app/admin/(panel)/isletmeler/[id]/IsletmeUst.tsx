@@ -1,3 +1,4 @@
+import { Store } from "lucide-react";
 import Link from "next/link";
 import { TabLink } from "@/components/ui";
 import { BUSINESS_TYPES, type BusinessType } from "@/lib/constants";
@@ -30,7 +31,7 @@ export function IsletmeUst({
             className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-chip text-lg text-white shadow-sm"
             style={{ backgroundColor: business.brandColor }}
           >
-            🏪
+            <Store className="h-5 w-5" />
           </span>
           <div>
             <Link

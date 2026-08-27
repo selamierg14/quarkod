@@ -1,3 +1,4 @@
+import { Clock, DoorOpen, MapPin } from "lucide-react";
 import { requireAnketErisim, visibleBusinesses } from "@/lib/auth";
 import { getAnketHunisi, getDoldurmaSuresi, getShiftBreakdown, getTableBreakdown } from "@/lib/stats";
 import { huniYuzdeleriHesapla } from "@/lib/huni";
@@ -99,9 +100,9 @@ export default async function BreakdownPage({
         <h1 className="flex items-center gap-2.5 text-title font-semibold">
           <span
             aria-hidden="true"
-            className="flex h-9 w-9 items-center justify-center rounded-chip bg-sky-100 text-base text-sky-700 ring-1 ring-sky-200"
+            className="flex h-9 w-9 items-center justify-center rounded-control bg-gradient-to-br from-sky-500 to-sky-700 text-white shadow-md shadow-sky-500/25"
           >
-            🕐
+            <Clock className="h-4 w-4" />
           </span>
           Vardiya &amp; masa
         </h1>
@@ -131,7 +132,7 @@ export default async function BreakdownPage({
       />
 
       <SectionCard
-        ikon="🚪"
+        ikon={<DoorOpen className="h-4 w-4" aria-hidden="true" />}
         renk="violet"
         title="Anket hunisi"
         description="Müşteri nerede bırakıyor: kod hiç okutulmuyor mu, ilk ekran ilgi çekmiyor mu, yoksa anket mi uzun geliyor?"
@@ -206,7 +207,7 @@ export default async function BreakdownPage({
       </SectionCard>
 
       <SectionCard
-        ikon="🕐"
+        ikon={<Clock className="h-4 w-4" aria-hidden="true" />}
         renk="sky"
         title="Vardiyaya göre"
         description="Hangi vardiyada puan düşüyor — personel planlamasının girdisi."
@@ -260,7 +261,7 @@ export default async function BreakdownPage({
       </SectionCard>
 
       <SectionCard
-        ikon="📍"
+        ikon={<MapPin className="h-4 w-4" aria-hidden="true" />}
         renk="rose"
         title={masaVarMi ? "Masaya göre" : "QR noktasına göre"}
         description="En düşükten başlayarak — üstteki satır ilk bakılacak yer."

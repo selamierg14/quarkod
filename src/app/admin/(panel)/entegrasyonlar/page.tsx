@@ -1,3 +1,4 @@
+import { Plug } from "lucide-react";
 import { requireTenantOwner } from "@/lib/auth";
 import { PageHeader } from "@/components/ui";
 
@@ -50,7 +51,7 @@ export default async function EntegrasyonlarPage() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        ikon="🔌"
+        ikon={<Plug className="h-4 w-4" aria-hidden="true" />}
         renk="teal"
         title="Entegrasyonlar"
         description="Panelinize ek hizmet sağlayıcıları bağlayın. Aşağıdakiler yakında açılacak — şimdilik yalnızca önizleme."

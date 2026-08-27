@@ -1,3 +1,4 @@
+import { Lock, Sparkles } from "lucide-react";
 import { requireMenuErisim } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { EmptyState, PageHeader } from "@/components/ui";
@@ -30,7 +31,7 @@ export default async function SablonlarPage({
       <MenuSekmeleri aktif="sablonlar" />
 
       <PageHeader
-        ikon="✨"
+        ikon={<Sparkles className="h-4 w-4" aria-hidden="true" />}
         renk="amber"
         title="Hazır menü şablonları"
         description="Sıfırdan ürün girmek yerine sektörünüze uygun bir şablonla başlayın; bölümler ve örnek fiyatlar hazır gelir, sonra kendi fiyatlarınıza göre düzenlersiniz."
@@ -43,7 +44,7 @@ export default async function SablonlarPage({
       />
 
       {!menuAcik ? (
-        <EmptyState baslik="QR menü modülü kapalı" ikon="🔒">
+        <EmptyState baslik="QR menü modülü kapalı" ikon={<Lock className="h-4 w-4" aria-hidden="true" />}>
           Bu hesapta QR menü modülü açık değil. Açtırmak için bizimle iletişime
           geçin.
         </EmptyState>

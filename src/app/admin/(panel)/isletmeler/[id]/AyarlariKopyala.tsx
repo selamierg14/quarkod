@@ -1,5 +1,6 @@
 "use client";
 
+import { ClipboardList } from "lucide-react";
 import { useActionState, useState } from "react";
 import { SectionCard } from "@/components/ui";
 import { ayarlariKopyala, type FormState } from "../actions";
@@ -30,7 +31,7 @@ export function AyarlariKopyala({
 
   return (
     <SectionCard
-      ikon="📋"
+      ikon={<ClipboardList className="h-4 w-4" aria-hidden="true" />}
       renk="sky"
       title="Ayarları başka şubeye kopyala"
       description="Marka rengi, QR kart metni, Wi-Fi, paket sipariş linkleri, logo/kapak, İYS kodu, sosyal medya ve karşılama duyurusu — seçilen şubelerdeki mevcut değerlerin üstüne yazılır. İşletme adı, adresi ve Google yorum linki asla kopyalanmaz, her şubede kendi kalır."

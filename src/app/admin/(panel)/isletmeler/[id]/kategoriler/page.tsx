@@ -1,3 +1,4 @@
+import { Star } from "lucide-react";
 import { SectionCard } from "@/components/ui";
 import { CategoryManager } from "../CategoryManager";
 import { IsletmeUst } from "../IsletmeUst";
@@ -20,7 +21,7 @@ export default async function KategorilerPage({
       <IsletmeUst business={business} aktif="kategoriler" />
 
       <SectionCard
-        ikon="⭐"
+        ikon={<Star className="h-4 w-4" aria-hidden="true" />}
         renk="amber"
         title="Anket kategorileri"
         description="Müşteri yıldız verdikten sonra bu başlıkları tek tek puanlar."

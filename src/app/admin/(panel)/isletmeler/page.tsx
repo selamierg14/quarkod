@@ -1,3 +1,4 @@
+import { Store } from "lucide-react";
 import Link from "next/link";
 import { actingAccountId, requireUser, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -54,14 +55,14 @@ export default async function BusinessListPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        ikon="🏪"
+        ikon={<Store className="h-4 w-4" aria-hidden="true" />}
         renk="rose"
         title="İşletmeler"
         description="Hesabınıza bağlı şubeler; QR kodları, kategoriler ve marka ayarları her birinin kendi sayfasında."
       />
 
       {businesses.length === 0 ? (
-        <EmptyState baslik="Henüz işletme yok" ikon="🏪">
+        <EmptyState baslik="Henüz işletme yok" ikon={<Store className="h-4 w-4" aria-hidden="true" />}>
           Aşağıdan ilk işletmenizi açın; anket kategorileri ve QR kodları
           otomatik hazırlanır.
         </EmptyState>
@@ -89,7 +90,7 @@ export default async function BusinessListPage() {
                       className="flex h-10 w-10 shrink-0 items-center justify-center rounded-chip text-base text-white shadow-sm"
                       style={{ backgroundColor: business.brandColor }}
                     >
-                      🏪
+                      <Store className="h-[18px] w-[18px]" />
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-semibold text-ink">

@@ -1,3 +1,4 @@
+import { Lock, Smartphone, Utensils } from "lucide-react";
 import Link from "next/link";
 import { requireMenuErisim } from "@/lib/auth";
 import { EmptyState, PageHeader } from "@/components/ui";
@@ -29,7 +30,7 @@ export default async function MenuOnizlePage({
   const eksik = !menuAcik
     ? ({
         baslik: "QR menü modülü kapalı",
-        ikon: "🔒",
+        ikon: <Lock className="h-4 w-4" aria-hidden="true" />,
         metin:
           "Bu hesapta QR menü modülü açık değil; müşteri kodu okuttuğunda doğrudan değerlendirme ekranına gider. Açtırmak için bizimle iletişime geçin.",
         aksiyon: null,
@@ -37,7 +38,7 @@ export default async function MenuOnizlePage({
     : urunSayisi === 0
       ? ({
           baslik: "Henüz aktif bir menü yok",
-          ikon: "🍽️",
+          ikon: <Utensils className="h-4 w-4" aria-hidden="true" />,
           metin:
             "Menünüzde yayında ürün olmadığı için müşteriye gösterilecek bir şey yok. Bir şablon seçtiğinizde ya da kendi ürünlerinizi eklediğinizde bu ekranda görünür olacak.",
           aksiyon: (
@@ -79,7 +80,7 @@ export default async function MenuOnizlePage({
       <MenuSekmeleri aktif="gorunum" />
 
       <PageHeader
-        ikon="📱"
+        ikon={<Smartphone className="h-4 w-4" aria-hidden="true" />}
         renk="sky"
         title="Menü görünümüm"
         description="Müşteri masadaki kodu okuttuğunda tam olarak bunu görüyor. Aşağıdaki ekran canlı — dokunup gezinebilirsiniz."

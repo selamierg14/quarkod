@@ -1,5 +1,6 @@
 "use client";
 
+import { Settings } from "lucide-react";
 import { useActionState, useState } from "react";
 import { vardiyaAyarlariniGuncelle, type VardiyaAyarFormState } from "./actions";
 
@@ -33,9 +34,9 @@ export function VardiyaAyarForm({
       >
         <span
           aria-hidden="true"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip bg-teal-100 text-teal-700 ring-1 ring-teal-200"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip bg-gradient-to-br from-teal-500 to-teal-700 text-white shadow-sm"
         >
-          ⚙️
+          <Settings className="h-3.5 w-3.5" />
         </span>
         <span className="flex-1 text-start">
           Hangi vardiyalar kullanılıyor, saat kaçta başlıyor?

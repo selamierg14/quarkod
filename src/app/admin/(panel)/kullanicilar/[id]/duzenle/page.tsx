@@ -1,3 +1,4 @@
+import { Pencil, User } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -39,7 +40,7 @@ export default async function EditUserPage({
       </Link>
 
       <PageHeader
-        ikon="✏️"
+        ikon={<Pencil className="h-4 w-4" aria-hidden="true" />}
         renk="indigo"
         title={`${target.name} — düzenle`}
         description="Rolü, bağlı işletmesi ve modül izinleri. Değişiklik bir sonraki girişinde geçerli olur."
@@ -47,7 +48,7 @@ export default async function EditUserPage({
 
       <SectionCard
         className="max-w-2xl"
-        ikon="🧑"
+        ikon={<User className="h-4 w-4" aria-hidden="true" />}
         renk="indigo"
         title="Kullanıcı bilgileri"
         description="Şifre buradan değişmez; kullanıcı kendi profilinden değiştirir."

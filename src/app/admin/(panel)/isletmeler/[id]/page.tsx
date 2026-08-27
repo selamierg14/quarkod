@@ -1,3 +1,4 @@
+import { Settings } from "lucide-react";
 import { visibleBusinesses } from "@/lib/auth";
 import { SectionCard } from "@/components/ui";
 import { AyarlariKopyala } from "./AyarlariKopyala";
@@ -25,7 +26,7 @@ export default async function BusinessSettingsPage({
       <IsletmeUst business={business} aktif="ayarlar" />
 
       <SectionCard
-        ikon="⚙️"
+        ikon={<Settings className="h-4 w-4" aria-hidden="true" />}
         renk="indigo"
         title="İşletme ayarları"
         description="Müşterinin QR'ı okuttuğunda gördüğü isim, görseller, marka rengi ve yönlendirmeler."

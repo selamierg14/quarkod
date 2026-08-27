@@ -1,3 +1,4 @@
+import { BarChart3, Users2 } from "lucide-react";
 import { requirePersonelYonetimi, visibleBusinesses } from "@/lib/auth";
 import { getPersonelPerformansi } from "@/lib/stats";
 import { EmptyState, PageHeader, SectionCard, TabLink } from "@/components/ui";
@@ -47,7 +48,7 @@ export default async function PersonelPerformansPage({
       </div>
 
       <PageHeader
-        ikon="📊"
+        ikon={<BarChart3 className="h-4 w-4" aria-hidden="true" />}
         renk="indigo"
         title="Personel performansı"
         description="Kişinin çalıştığı vardiyalarda müşterilerin bıraktığı ortalama puan. Yalnızca size görünür — personelin kendisi göremez."
@@ -73,14 +74,14 @@ export default async function PersonelPerformansPage({
       {performans.length === 0 ? (
         <EmptyState
           baslik="Henüz personel yok"
-          ikon="◐"
+          ikon={<Users2 className="h-4 w-4" aria-hidden="true" />}
         >
           Çizelge kurmak için önce &quot;işletme sorumlusu&quot; veya &quot;saha
           personeli&quot; rolünde bir kullanıcı ekleyin.
         </EmptyState>
       ) : (
         <SectionCard
-          ikon="📊"
+          ikon={<BarChart3 className="h-4 w-4" aria-hidden="true" />}
           renk="indigo"
           title="Kişi bazlı ortalama"
           description="Aynı vardiyada birden fazla kişi çalıştıysa puan ikisine de aynen yazılır — 'kimin servisi' değil 'hangi vardiya' ölçülüyor."

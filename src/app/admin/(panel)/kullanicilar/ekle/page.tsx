@@ -1,3 +1,4 @@
+import { Plus, User } from "lucide-react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { actingAccountId, requirePersonelYonetimi, visibleBusinesses } from "@/lib/auth";
@@ -34,7 +35,7 @@ export default async function NewUserPage() {
       </Link>
 
       <PageHeader
-        ikon="➕"
+        ikon={<Plus className="h-4 w-4" aria-hidden="true" />}
         renk="emerald"
         title="Yeni kullanıcı"
         description="Rol, hangi ekranları göreceğini belirler. QR menü ve QR değerlendirme izinleri ayrı ayrı verilir."
@@ -42,7 +43,7 @@ export default async function NewUserPage() {
 
       <SectionCard
         className="max-w-2xl"
-        ikon="🧑"
+        ikon={<User className="h-4 w-4" aria-hidden="true" />}
         renk="emerald"
         title="Kullanıcı bilgileri"
         description="Rol seçimine göre alttaki alanlar değişir."

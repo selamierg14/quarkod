@@ -59,7 +59,7 @@ export default async function AboneliklerPage() {
 
       {takipEdilen.length === 0 ? (
         <p className="rounded-control border border-dashed border-line-strong bg-surface p-8 text-center text-small text-ink-muted">
-          Yaklaşan ya da dolmuş abonelik yok. Hepsi güncel. 👌
+          Yaklaşan ya da dolmuş abonelik yok. Hepsi güncel.
         </p>
       ) : (
         GRUPLAR.map((grup) => {

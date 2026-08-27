@@ -1,3 +1,4 @@
+import { IdCard, Lock, User } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { ROL_ADLARI } from "@/lib/constants";
@@ -38,14 +39,14 @@ export default async function ProfilePage() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        ikon="👤"
+        ikon={<User className="h-4 w-4" aria-hidden="true" />}
         renk="indigo"
         title="Profil"
         description="Hesap bilgileriniz ve şifreniz. Ad, telefon ve e-posta değişikliği hesap sahibinden geçer."
       />
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <SectionCard ikon="🪪" renk="slate" title="Hesap bilgileri">
+        <SectionCard ikon={<IdCard className="h-4 w-4" aria-hidden="true" />} renk="slate" title="Hesap bilgileri">
           <dl className="space-y-3 text-small">
             <div className="flex justify-between gap-4">
               <dt className="text-ink-muted">Ad soyad</dt>
@@ -106,7 +107,7 @@ export default async function ProfilePage() {
         </SectionCard>
 
         <SectionCard
-          ikon="🔒"
+          ikon={<Lock className="h-4 w-4" aria-hidden="true" />}
           renk="rose"
           title="Şifre değiştir"
           description="En az 8 karakter. Değişiklik hemen geçerli olur."

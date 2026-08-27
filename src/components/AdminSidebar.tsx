@@ -110,7 +110,7 @@ export function AdminSidebar({
                           genis ? "" : "lg:justify-center"
                         } ${
                           grupAktif
-                            ? "text-accent-700"
+                            ? "bg-accent-50 text-accent-700"
                             : "text-ink-soft hover:bg-sunken hover:text-ink"
                         }`}
                       >
@@ -144,7 +144,7 @@ export function AdminSidebar({
                                   onClick={() => setMobilAcik(false)}
                                   className={`flex items-center justify-between gap-2 rounded-chip px-2.5 py-1.5 text-small transition ${
                                     altAktif
-                                      ? "bg-accent-600 text-white font-medium"
+                                      ? "bg-gradient-to-r from-accent-600 to-accent-500 font-medium text-white shadow-sm shadow-accent-600/25"
                                       : "text-ink-soft hover:bg-sunken hover:text-ink"
                                   }`}
                                 >
@@ -177,7 +177,7 @@ export function AdminSidebar({
                         genis ? "" : "lg:justify-center"
                       } ${
                         aktif
-                          ? "bg-accent-600 text-white"
+                          ? "bg-gradient-to-r from-accent-600 to-accent-500 text-white shadow-sm shadow-accent-600/25"
                           : "text-ink-soft hover:bg-sunken hover:text-ink"
                       }`}
                     >

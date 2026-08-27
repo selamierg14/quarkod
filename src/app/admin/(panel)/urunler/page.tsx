@@ -1,3 +1,4 @@
+import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { requireAnketErisim, visibleBusinesses } from "@/lib/auth";
 import { EmptyState, SectionCard } from "@/components/ui";
 import { RaporSekmeleri } from "@/components/RaporSekmeleri";
@@ -84,7 +85,7 @@ export default async function UrunlerPage({
               yanlış yere baktırırdı. */}
           {enIyi.length > 0 || enKotu.length > 0 ? (
             <div className="grid gap-4 sm:grid-cols-2">
-              <SectionCard ikon="👍" renk="emerald" title="En beğenilenler">
+              <SectionCard ikon={<ThumbsUp className="h-4 w-4" aria-hidden="true" />} renk="emerald" title="En beğenilenler">
                 <ul className="flex flex-col gap-1.5">
                   {enIyi.map((u) => (
                     <li key={u.itemName} className="flex justify-between gap-3 text-small">
@@ -97,7 +98,7 @@ export default async function UrunlerPage({
                 </ul>
               </SectionCard>
 
-              <SectionCard ikon="👎" renk="rose" title="En düşük puanlılar">
+              <SectionCard ikon={<ThumbsDown className="h-4 w-4" aria-hidden="true" />} renk="rose" title="En düşük puanlılar">
                 <ul className="flex flex-col gap-1.5">
                   {enKotu.map((u) => (
                     <li key={u.itemName} className="flex justify-between gap-3 text-small">

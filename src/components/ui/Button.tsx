@@ -11,13 +11,18 @@ export type ButtonVariant =
 
 export type ButtonSize = "sm" | "md" | "lg";
 
+/**
+ * Birincil ve yıkıcı düğmeler düz renk yerine renk geçişi taşıyor: panelin
+ * kart şeritleri, modül rozetleri ve sekmeleriyle aynı dil. Düz bir renk
+ * lekesi "form", geçişli bir yüzey "uygulama" hissi veriyor.
+ */
 const VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    "bg-ink-button text-white shadow-card hover:bg-ink-button-hover active:scale-[0.99]",
+    "bg-gradient-to-b from-accent-600 to-accent-700 text-white shadow-card shadow-accent-700/20 hover:brightness-110 active:scale-[0.99]",
   secondary:
     "bg-surface text-ink-soft ring-1 ring-line hover:bg-sunken hover:text-ink active:scale-[0.99]",
   destructive:
-    "bg-danger text-white shadow-card hover:brightness-95 active:scale-[0.99]",
+    "bg-gradient-to-b from-danger to-danger-ink text-white shadow-card shadow-danger/20 hover:brightness-110 active:scale-[0.99]",
   ghost: "text-ink-muted hover:bg-sunken hover:text-ink",
   brand: "bg-brand text-brand-ink shadow-card hover:brightness-[0.97] active:scale-[0.99]",
 };

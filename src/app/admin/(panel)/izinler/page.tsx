@@ -1,3 +1,4 @@
+import { Mail } from "lucide-react";
 import { allowedBusinessIds, requireTenantOwner } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { EmptyState, PageHeader, formatDateTime } from "@/components/ui";
@@ -27,7 +28,7 @@ export default async function ConsentsPage() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        ikon="✉️"
+        ikon={<Mail className="h-4 w-4" aria-hidden="true" />}
         renk="emerald"
         title="Pazarlama izinleri"
         description={

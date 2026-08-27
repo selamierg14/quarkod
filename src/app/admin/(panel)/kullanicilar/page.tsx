@@ -1,3 +1,4 @@
+import { Users } from "lucide-react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requirePersonelYonetimi, userScope } from "@/lib/auth";
@@ -28,7 +29,7 @@ export default async function UsersPage() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        ikon="👥"
+        ikon={<Users className="h-4 w-4" aria-hidden="true" />}
         renk="indigo"
         title="Kullanıcılar"
         description="Panele giren ekip üyeleri, rolleri ve modül izinleri."

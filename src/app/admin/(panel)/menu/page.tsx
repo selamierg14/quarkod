@@ -1,3 +1,4 @@
+import { Plus, Utensils } from "lucide-react";
 import Link from "next/link";
 import { requireMenuErisim } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -80,7 +81,7 @@ export default async function MenuPage({
       <MenuSekmeleri aktif="duzenle" />
 
       <PageHeader
-        ikon="🍽️"
+        ikon={<Utensils className="h-4 w-4" aria-hidden="true" />}
         renk="amber"
         title="Menümü düzenle"
         description="Bölümler ve içindeki ürünler. Müşteri masadaki kodu okutunca burada gördüklerinizi görür ve yediklerini puanlayabilir."
@@ -102,7 +103,7 @@ export default async function MenuPage({
       {kategoriler.length === 0 ? (
         <EmptyState
           baslik="Menünüz henüz boş"
-          ikon="🍽️"
+          ikon={<Utensils className="h-4 w-4" aria-hidden="true" />}
           aksiyon={
             <Link
               href="/admin/menu/sablonlar"
@@ -121,7 +122,7 @@ export default async function MenuPage({
       {/* Sık yapılan iş en üstte: yeni bölüm eklemek için sayfanın sonuna
           kadar inmek gerekiyordu. */}
       <SectionCard
-        ikon="➕"
+        ikon={<Plus className="h-4 w-4" aria-hidden="true" />}
         renk="emerald"
         title="Yeni bölüm ekle"
         description="Kahveler, Tatlılar, Ana Yemekler… Ürünler bu bölümlerin içine girer."

@@ -1,11 +1,15 @@
 import type { ReactNode } from "react";
 
-/** Kart üstündeki ince renk şeridi — panel tek düze durmasın diye. */
+/**
+ * Kart üstündeki ince renk şeridi — panel tek düze durmasın diye.
+ * Modül renkleriyle aynı geçiş dilini kullanır (bkz. lib/modul-rengi.ts):
+ * özet kartları da panelin geri kalanıyla aynı aileden görünsün.
+ */
 const SERIT: Record<string, string> = {
-  mavi: "bg-sky-500",
-  yesil: "bg-emerald-500",
-  mor: "bg-violet-500",
-  amber: "bg-amber-500",
+  mavi: "bg-gradient-to-r from-sky-500 to-sky-400",
+  yesil: "bg-gradient-to-r from-emerald-500 to-emerald-400",
+  mor: "bg-gradient-to-r from-violet-500 to-violet-400",
+  amber: "bg-gradient-to-r from-amber-500 to-amber-400",
 };
 
 /**

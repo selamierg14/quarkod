@@ -1,3 +1,4 @@
+import { FolderOpen } from "lucide-react";
 import { requireSuperadmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getActiveAccountId } from "@/lib/impersonation";
@@ -57,9 +58,9 @@ export default async function AccountsPage() {
         <h1 className="flex items-center gap-2.5 text-title font-semibold">
           <span
             aria-hidden="true"
-            className="flex h-9 w-9 items-center justify-center rounded-chip bg-indigo-100 text-base text-indigo-700 ring-1 ring-indigo-200"
+            className="flex h-9 w-9 items-center justify-center rounded-control bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-md shadow-indigo-500/25"
           >
-            🗂️
+            <FolderOpen className="h-4 w-4" />
           </span>
           Hesaplar
         </h1>

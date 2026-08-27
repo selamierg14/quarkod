@@ -1,5 +1,7 @@
+import { Mail, Store, Utensils } from "lucide-react";
 import Link from "next/link";
 import { requireTenant, visibleBusinesses } from "@/lib/auth";
+import { modulTonu } from "@/lib/modul-rengi";
 import { getBusinessStats, type BusinessStats } from "@/lib/stats";
 import { prisma } from "@/lib/db";
 import {
@@ -52,27 +54,28 @@ function sorunlariBirlestir(stats: BusinessStats[]) {
   );
 }
 
+/** Hızlı erişim kartları — rozet temaları modül renk sisteminden gelir. */
 const HIZLI_ERISIM = [
   {
     href: "/admin/menu",
-    ikon: "☰",
+    Ikon: Utensils,
     baslik: "QR Menü",
     alt: "Ürün, fiyat, tükendi",
-    tema: "bg-amber-100 text-amber-700 ring-amber-200",
+    renk: "amber" as const,
   },
   {
     href: "/admin/isletmeler",
-    ikon: "🏪",
+    Ikon: Store,
     baslik: "İşletme ayarları",
     alt: "Masalar, QR noktaları, marka",
-    tema: "bg-indigo-100 text-indigo-700 ring-indigo-200",
+    renk: "indigo" as const,
   },
   {
     href: "/admin/geri-bildirimler",
-    ikon: "✉",
+    Ikon: Mail,
     baslik: "Geri bildirimler",
     alt: "Tüm kayıtları gör",
-    tema: "bg-sky-100 text-sky-700 ring-sky-200",
+    renk: "sky" as const,
   },
 ];
 
@@ -137,7 +140,7 @@ export default async function AdminHomePage({
 
   if (businesses.length === 0) {
     return (
-      <EmptyState baslik="Henüz işletme yok" ikon="⌂">
+      <EmptyState baslik="Henüz işletme yok" ikon={<Store className="h-4 w-4" aria-hidden="true" />}>
         Bir işletme ekleyip masalarını tanımladıktan sonra özet burada oluşur.
       </EmptyState>
     );
@@ -236,9 +239,9 @@ export default async function AdminHomePage({
           >
             <span
               aria-hidden="true"
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-chip text-heading ring-1 ${h.tema}`}
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-control shadow-md ${modulTonu(h.renk).rozet}`}
             >
-              {h.ikon}
+              <h.Ikon className="h-[18px] w-[18px]" />
             </span>
             <span className="min-w-0 flex-1">
               <span className="block text-small font-semibold text-ink">{h.baslik}</span>

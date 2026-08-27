@@ -1,3 +1,4 @@
+import { MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { requireAnketErisim, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -57,9 +58,9 @@ export default async function FeedbackListPage({
         <h1 className="flex items-center gap-2.5 text-title font-semibold">
           <span
             aria-hidden="true"
-            className="flex h-9 w-9 items-center justify-center rounded-chip bg-sky-100 text-base text-sky-700 ring-1 ring-sky-200"
+            className="flex h-9 w-9 items-center justify-center rounded-control bg-gradient-to-br from-sky-500 to-sky-700 text-white shadow-md shadow-sky-500/25"
           >
-            💬
+            <MessageSquare className="h-4 w-4" />
           </span>
           Geri bildirimler
         </h1>

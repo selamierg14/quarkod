@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import { requireOwner } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { ROL_ADLARI } from "@/lib/constants";
@@ -108,7 +109,7 @@ export default async function DenetimPage({
       </SegmentGroup>
 
       {kayitlar.length === 0 ? (
-        <EmptyState baslik="Kayıt yok" ikon="✓">
+        <EmptyState baslik="Kayıt yok" ikon={<Check className="h-4 w-4" aria-hidden="true" />}>
           Bu süzgeçte hiçbir işlem yok. Panelde bir değişiklik yapıldığında
           burada satır olarak belirir.
         </EmptyState>
