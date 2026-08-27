@@ -30,6 +30,19 @@ const ORTAK_BASLIKLAR = [
 ];
 
 const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      // Vardiya çizelgesi Excel içe aktarımı 1 MB'a kadar dosya kabul
+      // ediyor (bkz. vardiya-planlama/actions.ts, EN_BUYUK_DOSYA); Next'in
+      // varsayılan sunucu eylemi gövde sınırı da 1 MB. Dosyanın kendisi
+      // sınıra tam yaklaştığında form alanlarıyla birlikte toplam boyut
+      // varsayılanı aşıp Next'in kendi genel hata sayfasını gösteriyordu —
+      // bizim "dosya çok büyük" mesajımız hiç çalışmadan. Biraz pay
+      // bırakarak asıl kontrolün (ve Türkçe hata mesajının) devreye
+      // girmesini sağlıyoruz.
+      bodySizeLimit: "2mb",
+    },
+  },
   async headers() {
     return [
       {

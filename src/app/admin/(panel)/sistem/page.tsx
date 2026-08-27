@@ -132,14 +132,37 @@ export default async function SistemPage() {
 
       <Card>
         <h2 className="text-heading font-semibold text-ink">Cron kurulumu</h2>
-        <p className="mt-1 text-small text-ink-muted">
-          Sunucuda <code className="font-mono">crontab -e</code> ile aşağıdaki
-          satırı ekleyin. Üç iş de bu tek satırla çalışır; haftalık rapor
-          yalnızca kendi gününde gönderilir.
-        </p>
-        <pre className="mt-3 overflow-x-auto rounded-chip bg-sunken p-3 font-mono text-caption text-ink-soft">
-          {CRON_SATIRI}
-        </pre>
+        {process.env.VERCEL ? (
+          <>
+            <p className="mt-1 text-small text-ink-muted">
+              Vercel&apos;de çalışıyor: KVKK temizliği ve haftalık rapor
+              zaten <code className="font-mono">vercel.json</code>&apos;daki{" "}
+              <code className="font-mono">crons</code> tanımıyla
+              zamanlanıyor (sırasıyla her gün 04:00 ve pazartesi 06:00
+              UTC). Yedekleme bu listede yok — Neon&apos;un kendi otomatik
+              yedeklemesi zaten var, ayrı bir cron gerekmiyor.
+            </p>
+            <p className="mt-2 text-small text-ink-muted">
+              Yukarıda &quot;Hiç çalışmadı&quot; görünüyorsa en olası sebep:
+              proje ayarlarında{" "}
+              <code className="font-mono">CRON_SECRET</code> tanımlı değil.
+              Vercel yalnızca bu değişken varsa cron isteklerine yetki
+              başlığı ekliyor; tanımlı değilse uç kimseye açık olmasın diye
+              tüm istekleri reddediyor.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="mt-1 text-small text-ink-muted">
+              Sunucuda <code className="font-mono">crontab -e</code> ile
+              aşağıdaki satırı ekleyin. Üç iş de bu tek satırla çalışır;
+              haftalık rapor yalnızca kendi gününde gönderilir.
+            </p>
+            <pre className="mt-3 overflow-x-auto rounded-chip bg-sunken p-3 font-mono text-caption text-ink-soft">
+              {CRON_SATIRI}
+            </pre>
+          </>
+        )}
       </Card>
     </div>
   );
