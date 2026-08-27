@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { MusteriKabuk } from "@/components/MusteriKabuk";
-import { qrSayfaVerisi } from "@/lib/qr-sayfa";
+import { isletmeSlugla, qrSayfaVerisi } from "@/lib/qr-sayfa";
 import { duyuruAktifMi } from "@/lib/duyuru";
 import { KarsilamaSecenekleri } from "./KarsilamaSecenekleri";
 
@@ -16,7 +16,10 @@ export async function generateMetadata({
   params: Promise<Params>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const business = await prisma.business.findUnique({ where: { slug } });
+  // isletmeSlugla `cache()` ile sarılı: sayfanın kendisi de aynı istek
+  // içinde aynı sorguyu (qrSayfaVerisi üzerinden) çağırıyor, burada ikinci
+  // bir sorgu atılmıyor.
+  const business = await isletmeSlugla(slug);
   return {
     title: business ? `${business.name}` : "Hoş geldiniz",
     robots: { index: false },
@@ -37,18 +40,22 @@ export default async function KarsilamaPage({ params }: { params: Promise<Params
 
   if (!menuAcik) redirect(`${taban}/anket`);
 
-  // Menü modülü açık ama menü hâlâ boşsa da anket tek seçenek.
-  const urunVar = await prisma.menuItem.count({
-    where: { businessId: business.id, active: true, category: { active: true } },
-  });
+  // Bu iki sorgu birbirinden bağımsız; sırayla beklemek her QR taramasına
+  // (sitenin en yüksek trafikli isteği) bir tur gecikme ekliyordu.
+  const [urunVar, tumDuyurular] = await Promise.all([
+    // Menü modülü açık ama menü hâlâ boşsa da anket tek seçenek.
+    prisma.menuItem.count({
+      where: { businessId: business.id, active: true, category: { active: true } },
+    }),
+    // Tıklanması gereken kart sadece gerçekten aktif bir duyuru varsa
+    // çıksın — boş bir "Duyurular" sayfasına yönlendirmenin anlamı yok.
+    prisma.duyuru.findMany({
+      where: { businessId: business.id, aktif: true },
+      orderBy: { sortOrder: "desc" },
+    }),
+  ]);
   if (urunVar === 0) redirect(`${taban}/anket`);
 
-  // Tıklanması gereken kart sadece gerçekten aktif bir duyuru varsa çıksın —
-  // boş bir "Duyurular" sayfasına yönlendirmenin anlamı yok.
-  const tumDuyurular = await prisma.duyuru.findMany({
-    where: { businessId: business.id, aktif: true },
-    orderBy: { sortOrder: "desc" },
-  });
   const aktifDuyurular = tumDuyurular.filter((d) => duyuruAktifMi(d));
 
   return (

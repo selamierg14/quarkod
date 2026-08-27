@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { MusteriKabuk } from "@/components/MusteriKabuk";
-import { qrSayfaVerisi } from "@/lib/qr-sayfa";
+import { isletmeSlugla, qrSayfaVerisi } from "@/lib/qr-sayfa";
 import { duyuruAktifMi } from "@/lib/duyuru";
 import { DuyurularListesi } from "./DuyurularListesi";
 
@@ -15,7 +15,9 @@ export async function generateMetadata({
   params: Promise<Params>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const business = await prisma.business.findUnique({ where: { slug } });
+  // isletmeSlugla cache() ile sarılı: sayfa gövdesi aynı isteğin
+  // içinde qrSayfaVerisi üzerinden aynı satırı tekrar sorgulamıyor.
+  const business = await isletmeSlugla(slug);
   return {
     title: business ? `${business.name} — Duyurular` : "Duyurular",
     robots: { index: false },

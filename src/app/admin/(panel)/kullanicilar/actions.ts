@@ -5,7 +5,6 @@ import bcrypt from "bcryptjs";
 import {
   actingAccountId,
   canAccessBusiness,
-  getSession,
   hashPassword,
   requirePersonelYonetimi,
   requireUser,
@@ -439,18 +438,4 @@ export async function changeOwnPassword(
   await setPendingPassword(user.id, await hashPassword(next));
 
   return { step: "kod", maskedPhone: kod.maskedPhone };
-}
-
-/** Seed şifresini hâlâ kullanan hesap var mı — panelde uyarı göstermek için. */
-export async function usesSeedPassword(userId: string): Promise<boolean> {
-  const session = await getSession();
-  if (!session) return false;
-
-  // Kapsam kontrolü burada da gerekli: aksi halde başka bir kiracının
-  // kullanıcı kimliği verilerek şifresi hakkında bilgi sızdırılabilir.
-  const user = await prisma.user.findFirst({
-    where: { id: userId, ...await userScope(session) },
-  });
-  if (!user) return false;
-  return bcrypt.compare("degistir123", user.passwordHash);
 }

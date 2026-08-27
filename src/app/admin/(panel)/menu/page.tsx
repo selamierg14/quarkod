@@ -51,7 +51,9 @@ export default async function MenuPage({
     );
   }
 
-  const [kategoriler, kardesler] = await Promise.all([
+  const kardesIdler = businesses.filter((b) => b.id !== secili.id).map((b) => b.id);
+
+  const [kategoriler, kardesSayilari] = await Promise.all([
     prisma.menuCategory.findMany({
       where: { businessId: secili.id },
       orderBy: { sortOrder: "asc" },
@@ -59,16 +61,21 @@ export default async function MenuPage({
     }),
     // Aynı hesaptaki diğer şubeler — "Menüyü kopyala" bölümünde hangisinin
     // menüsü zaten dolu olduğunu göstermek için bölüm sayısı da alınıyor.
-    Promise.all(
-      businesses
-        .filter((b) => b.id !== secili.id)
-        .map(async (b) => ({
-          id: b.id,
-          name: b.name,
-          bolumSayisi: await prisma.menuCategory.count({ where: { businessId: b.id } }),
-        })),
-    ),
+    // Şube başına ayrı bir count yerine tek groupBy: 20 şubeli bir zincirde
+    // önceden 20 paralel sorgu atılıyordu, artık tek sorgu.
+    kardesIdler.length > 0
+      ? prisma.menuCategory.groupBy({
+          by: ["businessId"],
+          where: { businessId: { in: kardesIdler } },
+          _count: { _all: true },
+        })
+      : Promise.resolve([]),
   ]);
+
+  const sayiByBusiness = new Map(kardesSayilari.map((s) => [s.businessId, s._count._all]));
+  const kardesler = businesses
+    .filter((b) => b.id !== secili.id)
+    .map((b) => ({ id: b.id, name: b.name, bolumSayisi: sayiByBusiness.get(b.id) ?? 0 }));
 
   const toplamUrun = kategoriler.reduce((t, k) => t + k.items.length, 0);
   const tukenen = kategoriler.reduce(

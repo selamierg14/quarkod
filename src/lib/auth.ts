@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
@@ -56,8 +57,17 @@ export async function clearSessionCookie() {
  * Bu yüzden her istekte kullanıcı tazeleniyor ve rol/kapsam jetondan değil
  * veritabanından okunuyor. Panel trafiği düşük; sayfa başına bir sorgunun
  * bedeli, yukarıdaki dördünün yanında önemsiz.
+ *
+ * `cache()` ile sarılı: tek bir istek içinde layout + sayfa + eylemler
+ * ayrı ayrı requireUser/requireTenant/requireOwner çağırıyor (ör. layout
+ * bir kez, her sayfa kendi require*'ı için bir kez daha) — sarmalama
+ * olmadan bu, TEK sayfa yüklemesinde aynı kullanıcı satırını iki kez
+ * sorgulamak demekti. React bu fonksiyonu istek başına bir kez çalıştırıp
+ * sonucu tüm çağıranlara aynı referansla döndürür; bir sonraki istekte
+ * (yeni render) önbellek sıfırlanır, yani "şifre değişti" gibi kontroller
+ * hâlâ her istekte tazeden çalışır.
  */
-export async function getSession(): Promise<SessionUser | null> {
+export const getSession = cache(async (): Promise<SessionUser | null> => {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -114,7 +124,7 @@ export async function getSession(): Promise<SessionUser | null> {
     menuIzni: sinirsiz || user.menuIzni,
     anketIzni: sinirsiz || user.anketIzni,
   };
-}
+});
 
 /** Admin sayfaları için: oturum yoksa giriş ekranına atar. */
 export async function requireUser(): Promise<SessionUser> {
@@ -304,7 +314,7 @@ export function hashPassword(password: string): Promise<string> {
  * Superadmin bir hesabı görüntülemeyi seçtiyse kapsam o hesaba daralır;
  * seçmediyse tüm hesapları kapsar.
  */
-export async function allowedBusinessIds(user: SessionUser): Promise<string[]> {
+export const allowedBusinessIds = cache(async (user: SessionUser): Promise<string[]> => {
   const aktif = await effectiveAccountId(user);
   if (user.role === "superadmin" && aktif) {
     return allowedBusinessIdsFor(prisma, {
@@ -314,16 +324,25 @@ export async function allowedBusinessIds(user: SessionUser): Promise<string[]> {
     });
   }
   return allowedBusinessIdsFor(prisma, { ...user, userId: user.id });
-}
+});
 
-/** Kullanıcının panelde seçebileceği işletmeler. */
-export async function visibleBusinesses(user: SessionUser) {
+/**
+ * Kullanıcının panelde seçebileceği işletmeler.
+ *
+ * `cache()` ile sarılı: layout kendi menüsü için bir kez, açılan sayfa
+ * (menü, duyurular, vardiya çizelgesi, işletme ayarları…) kendi
+ * `IsletmeSecici`'si için bir kez daha çağırıyordu — tek sayfa
+ * yüklemesinde aynı sorgu iki kez atılıyordu. `user` referansı
+ * `getSession()`'ın önbelleklediği aynı nesne olduğu için burası da aynı
+ * istek içinde tek sorguya iniyor.
+ */
+export const visibleBusinesses = cache(async (user: SessionUser) => {
   const ids = await allowedBusinessIds(user);
   return prisma.business.findMany({
     where: { id: { in: ids } },
     orderBy: { createdAt: "asc" },
   });
-}
+});
 
 /** Bir işletmeye erişim izni var mı — hesap sınırını da doğrular. */
 export async function canAccessBusiness(

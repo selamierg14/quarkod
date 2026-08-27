@@ -1,8 +1,27 @@
 import "server-only";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { prisma } from "./db";
 import { hesapAktifMi } from "./abonelik";
 import { gorselAdresi } from "./gorsel-adres";
+
+/**
+ * İşletmeyi slug'a göre bulur — dört QR sayfası da (karşılama, anket,
+ * menü, duyurular) buradan geçiyor, hem `generateMetadata`'da hem sayfanın
+ * kendisinde. `cache()` olmadan Next.js her ikisini de ayrı birer istek
+ * sanıp aynı satırı iki kez sorguluyordu; bu sayfalar sitenin en yüksek
+ * trafikli yüzeyi (her masa taraması), o yüzden burada kazanılan her
+ * sorgu önemli.
+ */
+export const isletmeSlugla = cache((slug: string) =>
+  prisma.business.findUnique({
+    where: { slug },
+    include: {
+      account: { select: { active: true, expiresAt: true, menuEnabled: true } },
+      categories: { where: { active: true }, orderBy: { sortOrder: "asc" } },
+    },
+  }),
+);
 
 /**
  * QR'la açılan üç sayfanın (karşılama, anket, menü) ortak girişi.
@@ -12,13 +31,7 @@ import { gorselAdresi } from "./gorsel-adres";
  * menüsü yayında kalırdı.
  */
 export async function qrSayfaVerisi(slug: string, tableParam: string) {
-  const business = await prisma.business.findUnique({
-    where: { slug },
-    include: {
-      account: { select: { active: true, expiresAt: true, menuEnabled: true } },
-      categories: { where: { active: true }, orderBy: { sortOrder: "asc" } },
-    },
-  });
+  const business = await isletmeSlugla(slug);
   // Askıya alınan ya da süresi dolan hesabın QR'ları çalışmaz.
   if (!business || !hesapAktifMi(business.account)) notFound();
 

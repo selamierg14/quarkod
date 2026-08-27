@@ -1,9 +1,10 @@
+import bcrypt from "bcryptjs";
 import { Users } from "lucide-react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requirePersonelYonetimi, userScope } from "@/lib/auth";
 import { ResetPasswordForm, ToggleUserButton } from "./UserForms";
-import { usesSeedPassword } from "./actions";
+import { SEED_SIFRESI } from "./sabitler";
 import { ROL_ADLARI } from "@/lib/constants";
 import { PageHeader } from "@/components/ui";
 
@@ -20,8 +21,15 @@ export default async function UsersPage() {
     include: { business: true, businesses: { include: { business: true } } },
   });
 
+  // Her satır için ayrı bir sorguyla (üstelik kendi getSession + userScope
+  // kontrolüyle) "varsayılan şifre mi" sorusunu sormak N+1'di: 40 kullanıcılı
+  // bir hesapta 40 fazladan DB gidiş-dönüşü ve 40 oturum kontrolü — hepsi
+  // zaten yukarıdaki sorgunun ürettiği, aynı şekilde yetkilendirilmiş
+  // `users` listesindeki bilgiyle (passwordHash) yanıtlanabiliyor.
   const seedFlags = await Promise.all(
-    users.map(async (user) => [user.id, await usesSeedPassword(user.id)] as const),
+    users.map(
+      async (user) => [user.id, await bcrypt.compare(SEED_SIFRESI, user.passwordHash)] as const,
+    ),
   );
   const usingSeed = new Map(seedFlags);
   const seedCount = seedFlags.filter(([, flag]) => flag).length;
