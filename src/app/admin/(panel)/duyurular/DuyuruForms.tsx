@@ -13,7 +13,14 @@ import {
 const INPUT =
   "w-full rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
 
-export function NewDuyuruForm({ businessId }: { businessId: string }) {
+export function NewDuyuruForm({
+  businessId,
+  isletmeSayisi,
+}: {
+  businessId: string;
+  /** Hesaptaki toplam görünür işletme sayısı — 1'den fazlaysa "tümünde göster" seçeneği çıkar. */
+  isletmeSayisi: number;
+}) {
   const [state, formAction, pending] = useActionState<DuyuruFormState, FormData>(
     duyuruEkle,
     {},
@@ -63,6 +70,13 @@ export function NewDuyuruForm({ businessId }: { businessId: string }) {
         initial={null}
         brandColor="#111827"
       />
+
+      {isletmeSayisi > 1 ? (
+        <label className="flex cursor-pointer items-center gap-2 rounded-chip border border-line bg-canvas px-3 py-2 text-small text-ink-soft has-checked:border-accent-500 has-checked:bg-accent-50 has-checked:text-ink">
+          <input type="checkbox" name="tumIsletmeler" className="shrink-0" />
+          Tüm işletmelerde göster ({isletmeSayisi} şube)
+        </label>
+      ) : null}
 
       <button
         type="submit"

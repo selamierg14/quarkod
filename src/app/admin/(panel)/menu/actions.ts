@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canAccessBusiness, requireYazma } from "@/lib/auth";
+import { allowedBusinessIds, canAccessBusiness, requireYazma } from "@/lib/auth";
 import { denetimYaz } from "@/lib/denetim";
 import { prisma } from "@/lib/db";
 import { validateImageDataUrl } from "@/lib/image";
@@ -440,4 +440,104 @@ export async function sablonuUygula(
   yenile(businessId);
 
   return { saved: `"${sablon.ad}" şablonu uygulandı. Fiyatları düzenlemeyi unutmayın.` };
+}
+
+/* ------------------------------------------------------------- çoklu şube */
+
+/**
+ * Bir işletmenin menüsünü, aynı hesaptaki başka işletmelere kopyalar.
+ *
+ * Zincir/çok şubeli hesaplarda menüyü şube şube tek tek kurmak yerine bir
+ * merkezden dağıtabilmek için var (bkz. sablonuUygula ile aynı gerekçe).
+ * Bilerek yalnızca menüsü tamamen BOŞ olan hedeflere kopyalıyor: dolu bir
+ * menünün üstüne kopyalamak "hiçbir veri silinmez" kuralıyla çelişir — o
+ * şubenin kendi ürünlerini sessizce ezmek ya da yanına karıştırmak yerine,
+ * önce oradan "Tüm menüyü sil" ile boşaltmasını istiyoruz.
+ */
+export async function menuyuKopyala(
+  _prev: MenuFormState,
+  formData: FormData,
+): Promise<MenuFormState> {
+  const kaynakId = String(formData.get("businessId") ?? "");
+  const hedefIdler = formData.getAll("hedefIds").map(String).filter(Boolean);
+
+  const hata = await menuIzni(kaynakId);
+  if (hata) return { error: hata };
+  if (hedefIdler.length === 0) return { error: "En az bir işletme seçin." };
+
+  const actor = await requireYazma();
+  const izinliIdler = new Set(await allowedBusinessIds(actor));
+
+  const kategoriler = await prisma.menuCategory.findMany({
+    where: { businessId: kaynakId },
+    orderBy: { sortOrder: "asc" },
+    include: { items: { orderBy: { sortOrder: "asc" } } },
+  });
+  if (kategoriler.length === 0) {
+    return { error: "Kopyalanacak menü boş." };
+  }
+
+  const kopyalanan: string[] = [];
+  const atlanan: string[] = [];
+
+  for (const hedefId of hedefIdler) {
+    if (hedefId === kaynakId || !izinliIdler.has(hedefId)) continue;
+
+    const [hedef, mevcutSayi] = await Promise.all([
+      prisma.business.findUnique({ where: { id: hedefId }, select: { name: true } }),
+      prisma.menuCategory.count({ where: { businessId: hedefId } }),
+    ]);
+    if (!hedef) continue;
+    if (mevcutSayi > 0) {
+      atlanan.push(hedef.name);
+      continue;
+    }
+
+    await prisma.$transaction(
+      kategoriler.map((kategori) =>
+        prisma.menuCategory.create({
+          data: {
+            businessId: hedefId,
+            name: kategori.name,
+            sortOrder: kategori.sortOrder,
+            active: kategori.active,
+            items: {
+              create: kategori.items.map((urun) => ({
+                businessId: hedefId,
+                name: urun.name,
+                description: urun.description,
+                priceKurus: urun.priceKurus,
+                imageUrl: urun.imageUrl,
+                tags: urun.tags,
+                sortOrder: urun.sortOrder,
+                active: urun.active,
+              })),
+            },
+          },
+        }),
+      ),
+    );
+    await fiyatTarihiniDamgala(hedefId);
+    kopyalanan.push(hedef.name);
+  }
+
+  if (kopyalanan.length > 0) {
+    await menuDenetim(
+      "menu.category",
+      `Menü kopyalandı → ${kopyalanan.join(", ")}`,
+    );
+  }
+  yenile(kaynakId);
+
+  if (kopyalanan.length === 0) {
+    return {
+      error:
+        atlanan.length > 0
+          ? `Seçilenlerin menüsü zaten dolu, kopyalanmadı: ${atlanan.join(", ")}.`
+          : "Hiçbir işletmeye kopyalanmadı.",
+    };
+  }
+
+  const uyari = atlanan.length > 0 ? ` (zaten dolu olduğu için atlandı: ${atlanan.join(", ")})` : "";
+  return { saved: `Menü şu işletmelere kopyalandı: ${kopyalanan.join(", ")}${uyari}` };
 }

@@ -2,12 +2,14 @@
 
 import { useActionState, useState } from "react";
 import { ImageUpload } from "@/components/ImageUpload";
+import { SectionCard } from "@/components/ui";
 import { MENU_TAGS, formatPrice, parseTags, priceInputValue } from "@/lib/menu";
 import {
   addMenuCategory,
   addMenuItem,
   deleteMenuCategory,
   deleteMenuItem,
+  menuyuKopyala,
   moveMenuCategory,
   moveMenuItem,
   renameMenuCategory,
@@ -515,5 +517,99 @@ export function TumMenuyuSil({
         <p className="text-small font-medium text-danger-ink">{state.error}</p>
       ) : null}
     </form>
+  );
+}
+
+/* --------------------------------------------------------- çoklu şube */
+
+export type KopyaHedefi = { id: string; name: string; bolumSayisi: number };
+
+/**
+ * Menüyü aynı hesaptaki başka işletmelere kopyalar.
+ *
+ * Yalnızca menüsü boş olan işletmeler seçilebilir — dolu bir menünün
+ * üstüne kopyalamak sunucu tarafında zaten reddediliyor (bkz.
+ * menuyuKopyala), burada da seçimi baştan engelleyip "neden olmadı"
+ * sorusunu önlüyoruz.
+ */
+export function MenuyuKopyala({
+  businessId,
+  hedefler,
+}: {
+  businessId: string;
+  hedefler: KopyaHedefi[];
+}) {
+  const [state, formAction, pending] = useActionState<MenuFormState, FormData>(
+    menuyuKopyala,
+    {},
+  );
+  const kopyalanabilir = hedefler.filter((h) => h.bolumSayisi === 0);
+
+  if (hedefler.length === 0) return null;
+
+  return (
+    <SectionCard
+      ikon="📤"
+      renk="sky"
+      title="Menüyü başka şubeye kopyala"
+      description="Aynı hesaptaki, menüsü henüz boş olan şubelere bu menünün tamamını tek seferde kurar."
+    >
+      {kopyalanabilir.length === 0 ? (
+        <p className="text-small text-ink-muted">
+          Hesaptaki diğer şubelerin hepsinde zaten bir menü var. Kopyalamak
+          için önce hedef şubede &quot;Tüm menüyü sil&quot; ile menüyü
+          boşaltmanız gerekir.
+        </p>
+      ) : (
+        <form action={formAction} className="flex flex-col gap-3">
+          <input type="hidden" name="businessId" value={businessId} />
+          <fieldset className="flex flex-col gap-2">
+            {hedefler.map((h) => (
+              <label
+                key={h.id}
+                className={`flex items-center gap-2 rounded-chip border px-3 py-2 text-small ${
+                  h.bolumSayisi > 0
+                    ? "cursor-not-allowed border-line bg-sunken text-ink-faint"
+                    : "cursor-pointer border-line bg-surface text-ink hover:bg-canvas has-checked:border-accent-500 has-checked:bg-accent-50"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  name="hedefIds"
+                  value={h.id}
+                  disabled={h.bolumSayisi > 0}
+                  className="shrink-0"
+                />
+                <span className="flex-1">{h.name}</span>
+                {h.bolumSayisi > 0 ? (
+                  <span className="text-caption text-ink-faint">zaten dolu</span>
+                ) : (
+                  <span className="text-caption text-ink-faint">menü boş</span>
+                )}
+              </label>
+            ))}
+          </fieldset>
+
+          <button
+            type="submit"
+            disabled={pending}
+            className="self-start rounded-control bg-accent-600 px-4 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+          >
+            {pending ? "Kopyalanıyor…" : "Seçilenlere kopyala"}
+          </button>
+        </form>
+      )}
+
+      {state.error ? (
+        <p className="mt-3 rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
+          {state.error}
+        </p>
+      ) : null}
+      {state.saved ? (
+        <p className="mt-3 rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink">
+          {state.saved}
+        </p>
+      ) : null}
+    </SectionCard>
   );
 }

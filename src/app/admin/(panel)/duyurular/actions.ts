@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canAccessBusiness, requireMenuErisim, requireYazma } from "@/lib/auth";
+import { canAccessBusiness, requireMenuErisim, requireYazma, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { validateImageDataUrl } from "@/lib/image";
 import { denetimYaz } from "@/lib/denetim";
@@ -27,6 +27,7 @@ export async function duyuruEkle(
   const imageUrl = String(formData.get("imageUrl") ?? "");
   const baslangic = tarihParse(String(formData.get("baslangic") ?? ""));
   const bitis = tarihParse(String(formData.get("bitis") ?? ""));
+  const tumIsletmeler = String(formData.get("tumIsletmeler") ?? "") === "on";
 
   if (!(await canAccessBusiness(actor, businessId))) {
     return { error: "Bu işletmeye yetkiniz yok." };
@@ -40,30 +41,55 @@ export async function duyuruEkle(
     if (problem) return { error: problem };
   }
 
-  const sonuncu = await prisma.duyuru.findFirst({
-    where: { businessId },
-    orderBy: { sortOrder: "desc" },
-  });
+  // "Tüm işletmelerde göster" işaretliyse aynı duyuru, kullanıcının
+  // erişebildiği her şubede ayrı bir kayıt olarak açılır — tek bir kayıt
+  // paylaşılmıyor ki bir şube ileride kendi duyurusunu bağımsız
+  // düzenleyip/silebilsin, diğerlerini etkilemesin.
+  const hedefIsletmeler = tumIsletmeler
+    ? await visibleBusinesses(actor)
+    : [{ id: businessId }];
 
-  await prisma.duyuru.create({
-    data: {
-      businessId,
-      baslik,
-      aciklama: aciklama || null,
-      imageUrl: imageUrl || null,
-      baslangic,
-      bitis,
-      sortOrder: (sonuncu?.sortOrder ?? -1) + 1,
-    },
-  });
+  const sonSiralar = await Promise.all(
+    hedefIsletmeler.map((isletme) =>
+      prisma.duyuru.findFirst({
+        where: { businessId: isletme.id },
+        orderBy: { sortOrder: "desc" },
+        select: { sortOrder: true },
+      }),
+    ),
+  );
+
+  await prisma.$transaction(
+    hedefIsletmeler.map((isletme, i) =>
+      prisma.duyuru.create({
+        data: {
+          businessId: isletme.id,
+          baslik,
+          aciklama: aciklama || null,
+          imageUrl: imageUrl || null,
+          baslangic,
+          bitis,
+          sortOrder: (sonSiralar[i]?.sortOrder ?? -1) + 1,
+        },
+      }),
+    ),
+  );
 
   await denetimYaz(actor, "business.duyuru", {
     entity: "duyuru",
-    detail: `"${baslik}" eklendi`,
+    detail:
+      hedefIsletmeler.length > 1
+        ? `"${baslik}" eklendi (${hedefIsletmeler.length} işletmede)`
+        : `"${baslik}" eklendi`,
   });
 
   revalidatePath("/admin/duyurular");
-  return { saved: "Duyuru eklendi." };
+  return {
+    saved:
+      hedefIsletmeler.length > 1
+        ? `Duyuru ${hedefIsletmeler.length} işletmede yayınlandı.`
+        : "Duyuru eklendi.",
+  };
 }
 
 export async function duyuruDuzenle(

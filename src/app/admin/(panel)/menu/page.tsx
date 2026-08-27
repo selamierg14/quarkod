@@ -5,6 +5,7 @@ import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
 import {
   CategoryHeader,
   ItemRow,
+  MenuyuKopyala,
   NewCategoryForm,
   NewItemForm,
   TumMenuyuSil,
@@ -49,11 +50,24 @@ export default async function MenuPage({
     );
   }
 
-  const kategoriler = await prisma.menuCategory.findMany({
-    where: { businessId: secili.id },
-    orderBy: { sortOrder: "asc" },
-    include: { items: { orderBy: { sortOrder: "asc" } } },
-  });
+  const [kategoriler, kardesler] = await Promise.all([
+    prisma.menuCategory.findMany({
+      where: { businessId: secili.id },
+      orderBy: { sortOrder: "asc" },
+      include: { items: { orderBy: { sortOrder: "asc" } } },
+    }),
+    // Aynı hesaptaki diğer şubeler — "Menüyü kopyala" bölümünde hangisinin
+    // menüsü zaten dolu olduğunu göstermek için bölüm sayısı da alınıyor.
+    Promise.all(
+      businesses
+        .filter((b) => b.id !== secili.id)
+        .map(async (b) => ({
+          id: b.id,
+          name: b.name,
+          bolumSayisi: await prisma.menuCategory.count({ where: { businessId: b.id } }),
+        })),
+    ),
+  ]);
 
   const toplamUrun = kategoriler.reduce((t, k) => t + k.items.length, 0);
   const tukenen = kategoriler.reduce(
@@ -172,6 +186,7 @@ export default async function MenuPage({
             ))}
           </ul>
 
+          <MenuyuKopyala businessId={secili.id} hedefler={kardesler} />
         </>
       ) : null}
     </div>

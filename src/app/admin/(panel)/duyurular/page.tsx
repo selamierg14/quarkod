@@ -50,7 +50,7 @@ export default async function DuyurularPage({
         title="Yeni duyuru"
         description="QR karşılama ekranında müşterinin göreceği kısa haber."
       >
-        <NewDuyuruForm businessId={secili.id} />
+        <NewDuyuruForm businessId={secili.id} isletmeSayisi={businesses.length} />
       </SectionCard>
 
       {duyurular.length === 0 ? (
