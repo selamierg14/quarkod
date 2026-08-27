@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   actingAccountId,
+  allowedBusinessIds,
   canAccessBusiness,
   hashPassword,
   requireOwner,
@@ -496,4 +497,82 @@ export async function toggleTable(formData: FormData) {
     detail: `Masa ${table.tableNumber} ${table.active ? "kapatıldı" : "açıldı"}`,
   });
   revalidatePath(`/admin/isletmeler/${table.businessId}`);
+}
+
+/* ------------------------------------------------------------- çoklu şube */
+
+/**
+ * Bir işletmenin ayarlarını, aynı hesaptaki başka şubelere kopyalar.
+ *
+ * Kasıtlı olarak KOPYALANMAYAN alanlar: ad, adres ve Google yorum linki —
+ * bunlar tanım gereği her şubeye özel (aynı isim/adres/link'i başka bir
+ * şubeye yazmak o şubeyi bozar). Geri kalan her şey (marka rengi, QR kart
+ * metni, Wi-Fi, paket sipariş linkleri, İYS marka kodu, logo/kapak, sosyal
+ * medya, karşılama duyurusu) bir zincirin şubeler arası ortak tutmak
+ * isteyebileceği "marka" ayarları — bu yüzden hepsi kopyalanıyor. Wi-Fi ve
+ * sipariş platformu linkleri gerçekte şubeye göre değişebilir; formda ayrı
+ * bir uyarı bunu belirtiyor ama işlemi engellemiyor, çünkü hangisinin
+ * geçerli olduğunu yalnızca işletme sahibi bilir.
+ */
+export async function ayarlariKopyala(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const user = await requireYazma();
+  const kaynakId = String(formData.get("businessId") ?? "");
+  const hedefIdler = formData.getAll("hedefIds").map(String).filter(Boolean);
+
+  if (!(await canAccessBusiness(user, kaynakId))) return { error: "Yetkiniz yok." };
+  if (hedefIdler.length === 0) return { error: "En az bir işletme seçin." };
+
+  const kaynak = await prisma.business.findUnique({
+    where: { id: kaynakId },
+    select: {
+      type: true,
+      brandColor: true,
+      notifyThreshold: true,
+      googleRedirect: true,
+      qrCardText: true,
+      iysBrandCode: true,
+      logoUrl: true,
+      coverUrl: true,
+      instagramUrl: true,
+      announcement: true,
+      announcementActive: true,
+      wifiSsid: true,
+      wifiPassword: true,
+      yemeksepetiUrl: true,
+      getirUrl: true,
+      trendyolUrl: true,
+      migrosUrl: true,
+    },
+  });
+  if (!kaynak) return { error: "Kaynak işletme bulunamadı." };
+
+  const izinliIdler = new Set(await allowedBusinessIds(user));
+  const hedefler = hedefIdler.filter((id) => id !== kaynakId && izinliIdler.has(id));
+  if (hedefler.length === 0) return { error: "Geçerli bir hedef işletme seçilmedi." };
+
+  await prisma.business.updateMany({
+    where: { id: { in: hedefler } },
+    data: kaynak,
+  });
+
+  const isimler = await prisma.business.findMany({
+    where: { id: { in: hedefler } },
+    select: { name: true },
+  });
+
+  await denetimYaz(user, "business.update", {
+    entity: "business",
+    entityId: kaynakId,
+    detail: `Ayarlar kopyalandı → ${isimler.map((b) => b.name).join(", ")}`,
+  });
+
+  for (const id of hedefler) {
+    revalidatePath(`/admin/isletmeler/${id}`);
+  }
+  revalidatePath("/admin/isletmeler");
+
+  return { saved: true };
 }

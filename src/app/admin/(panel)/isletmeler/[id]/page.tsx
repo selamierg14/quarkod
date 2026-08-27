@@ -1,4 +1,6 @@
+import { visibleBusinesses } from "@/lib/auth";
 import { SectionCard } from "@/components/ui";
+import { AyarlariKopyala } from "./AyarlariKopyala";
 import { SettingsForm } from "./SettingsForm";
 import { IsletmeUst } from "./IsletmeUst";
 import { isletmeyiYukle } from "./_veri";
@@ -14,6 +16,9 @@ export default async function BusinessSettingsPage({
 }) {
   const { id } = await params;
   const { user, business } = await isletmeyiYukle(id);
+  const kardesler = (await visibleBusinesses(user))
+    .filter((b) => b.id !== business.id)
+    .map((b) => ({ id: b.id, name: b.name }));
 
   return (
     <div className="flex flex-col gap-5">
@@ -52,6 +57,8 @@ export default async function BusinessSettingsPage({
           isOwner={user.role === "owner"}
         />
       </SectionCard>
+
+      <AyarlariKopyala businessId={business.id} hedefler={kardesler} />
     </div>
   );
 }
