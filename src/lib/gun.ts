@@ -33,3 +33,16 @@ export function haftaBaslangici(tarih: Date): Date {
   const fark = (gun.getDay() + 6) % 7; // Pazartesi = 0
   return gunEkle(gun, -fark);
 }
+
+/**
+ * `gunGirdisi`'nin tersi: "yyyy-aa-gg" metnini YEREL gün başlangıcına çevirir.
+ *
+ * `new Date("2026-08-28")` bu metni UTC gece yarısı sayıyor; UTC+3'te bu
+ * yerel saatle 03:00, UTC-5'te ise bir önceki günün 19:00'u oluyor. Yani
+ * gün adını doğrudan o Date'ten okumak, negatif ofsetli bir makinede
+ * çizelgeyi bir gün kaydırıyor. Ayrıştırma bu yüzden elle yapılıyor.
+ */
+export function gunGirdisindenTarih(anahtar: string): Date {
+  const [yil, ay, gun] = anahtar.split("-").map(Number);
+  return new Date(yil, (ay ?? 1) - 1, gun ?? 1);
+}

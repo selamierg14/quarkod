@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { CalendarOff } from "lucide-react";
 import { SectionCard } from "@/components/ui";
 import { IZIN_TURLERI } from "@/lib/izin";
+import { gunGirdisi } from "@/lib/gun";
 import {
   izinTalepEt,
   type IzinFormState,
@@ -36,7 +37,9 @@ export function IzinTalebi({
     {},
   );
 
-  const bugun = new Date().toISOString().slice(0, 10);
+  // Yerel gün: toISOString() UTC verdiği için akşam saatlerinde
+  // "bugün" seçilemez hale geliyordu.
+  const bugun = gunGirdisi(new Date());
 
   return (
     <SectionCard

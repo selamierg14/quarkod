@@ -2,7 +2,7 @@ import { CalendarDays } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { SHIFTS } from "@/lib/constants";
-import { gunAdi, gunBaslangici, gunEkle } from "@/lib/gun";
+import { gunAdi, gunBaslangici, gunEkle, gunGirdisi, gunGirdisindenTarih } from "@/lib/gun";
 import { EmptyState, PageHeader } from "@/components/ui";
 import { DegisimTalebi } from "./DegisimTalebi";
 import { IzinTalebi } from "./IzinTalebi";
@@ -50,7 +50,10 @@ export default async function VardiyalarimPage() {
 
   const gunler = new Map<string, typeof atamalar>();
   for (const atama of atamalar) {
-    const anahtar = atama.date.toISOString().slice(0, 10);
+    // Yerel gün: toISOString() UTC verdiği için UTC+3'te her vardiya bir
+    // gün erken gruplanıyordu — garson kendi çizelgesinde yanlış günü
+    // görüyordu. Panelin geri kalanı zaten gunGirdisi kullanıyor.
+    const anahtar = gunGirdisi(atama.date);
     const liste = gunler.get(anahtar) ?? [];
     liste.push(atama);
     gunler.set(anahtar, liste);
@@ -65,15 +68,21 @@ export default async function VardiyalarimPage() {
         description="Önümüzdeki iki hafta içinde size atanan vardiyalar."
       />
 
-      <IzinTalebi
-        gecmisTalepler={izinTalepleri.map((t) => ({
-          id: t.id,
-          baslangic: t.baslangic.toLocaleDateString("tr-TR"),
-          bitis: t.bitis.toLocaleDateString("tr-TR"),
-          tur: gecerliIzinTuru(t.tur) ? IZIN_TURLERI[t.tur] : t.tur,
-          status: t.status,
-        }))}
-      />
+      {/* İzin talebi bir işletmeye bağlı olmayı gerektiriyor (kayıt o
+          işletmeye açılıyor). Sahip/bölge müdürü tek bir işletmeye bağlı
+          değil — onlara hep hata verecek bir form göstermek yerine bölüm
+          hiç çizilmiyor; onlar izni "İzin & müsaitlik" ekranından girer. */}
+      {user.businessId ? (
+        <IzinTalebi
+          gecmisTalepler={izinTalepleri.map((t) => ({
+            id: t.id,
+            baslangic: t.baslangic.toLocaleDateString("tr-TR"),
+            bitis: t.bitis.toLocaleDateString("tr-TR"),
+            tur: gecerliIzinTuru(t.tur) ? IZIN_TURLERI[t.tur] : t.tur,
+            status: t.status,
+          }))}
+        />
+      ) : null}
 
       {atamalar.length === 0 ? (
         <EmptyState>
@@ -83,8 +92,8 @@ export default async function VardiyalarimPage() {
       ) : (
         <ul className="flex flex-col gap-2">
           {[...gunler.entries()].map(([anahtar, gunAtamalari]) => {
-            const tarih = new Date(anahtar);
-            const bugunMu = anahtar === bugun.toISOString().slice(0, 10);
+            const tarih = gunGirdisindenTarih(anahtar);
+            const bugunMu = anahtar === gunGirdisi(bugun);
             return (
               <li
                 key={anahtar}
