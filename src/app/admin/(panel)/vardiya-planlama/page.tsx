@@ -1,4 +1,4 @@
-import { CalendarDays, Moon, Sun, Sunrise, Sunset, Users2 } from "lucide-react";
+import { CalendarDays, Moon, StickyNote, Sun, Sunrise, Sunset, Users2 } from "lucide-react";
 import Link from "next/link";
 import { requirePersonelYonetimi, visibleBusinesses } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -8,9 +8,11 @@ import { SHIFTS, type Shift } from "@/lib/constants";
 import { gunAdi, gunEkle, gunGirdisi, haftaBaslangici } from "@/lib/gun";
 import { etkinVardiyalar } from "@/lib/vardiya";
 import { IZIN_TURLERI, izinKumesiKur, izinliMi, type IzinTuru } from "@/lib/izin";
+import { vardiyaUyarilariniHesapla } from "@/lib/vardiya-uyari";
 import { IsletmeSecici } from "../menu/MenuUst";
 import { degisimKararVer, vardiyaAta, vardiyaKaldir } from "./actions";
 import { CizelgeAktarim } from "./CizelgeAktarim";
+import { HaftaAraclari } from "./HaftaAraclari";
 import { VardiyaAyarForm } from "./VardiyaAyarForm";
 import { VardiyaSekmeleri } from "./VardiyaSekmeleri";
 
@@ -41,7 +43,8 @@ export default async function VardiyaPlanlamaPage({
   const gunler = Array.from({ length: 7 }, (_, i) => gunEkle(haftaBasi, i));
   const haftaSonu = gunler[6];
 
-  const [personel, atamalar, bekleyenTalepler, vardiyaKirilimi, izinler] = await Promise.all([
+  const [personel, atamalar, bekleyenTalepler, vardiyaKirilimi, izinler, devirNotlari] =
+    await Promise.all([
     prisma.user.findMany({
       where: { businessId: secili.id, active: true, role: { in: ["manager", "garson"] } },
       orderBy: { name: "asc" },
@@ -70,9 +73,37 @@ export default async function VardiyaPlanlamaPage({
       },
       select: { userId: true, baslangic: true, bitis: true, tur: true, status: true },
     }),
+    // Vardiya devir notları: personel bunları "Görevlerim" ekranından
+    // yazıyordu ama çizelgeyi kuran kişi hiçbir yerde göremiyordu — yani
+    // toplanan veri, ona göre davranacak kişiye hiç ulaşmıyordu.
+    prisma.shiftNote.findMany({
+      where: { businessId: secili.id, date: { gte: haftaBasi, lte: haftaSonu } },
+      orderBy: { createdAt: "asc" },
+      include: { author: { select: { name: true } } },
+    }),
   ]);
   const kirilimByShift = new Map(vardiyaKirilimi.map((k) => [k.shift, k]));
   const izinKumesi = izinKumesiKur(izinler);
+
+  // Notlar hücre bazında toplanıyor: "gün:vardiya" → o vardiyaya bırakılanlar.
+  const notlarByHucre = new Map<string, { yazar: string; metin: string }[]>();
+  for (const not of devirNotlari) {
+    const anahtar = `${gunGirdisi(not.date)}:${not.shift}`;
+    const liste = notlarByHucre.get(anahtar) ?? [];
+    liste.push({ yazar: not.author.name, metin: not.text });
+    notlarByHucre.set(anahtar, liste);
+  }
+
+  const uyarilar = vardiyaUyarilariniHesapla(
+    atamalar.map((a) => ({
+      userId: a.userId,
+      ad: a.user.name,
+      date: a.date,
+      shift: a.shift,
+    })),
+    gunler,
+    etkinVardiyalar(secili),
+  );
 
   const haftaHref = (baslangic: Date) =>
     `/admin/vardiya-planlama?${new URLSearchParams({
@@ -140,6 +171,12 @@ export default async function VardiyaPlanlamaPage({
       />
 
       <IsletmeSecici businesses={businesses} seciliId={secili.id} taban="/admin/vardiya-planlama" />
+
+      <HaftaAraclari
+        businessId={secili.id}
+        baslangic={gunGirdisi(haftaBasi)}
+        uyarilar={uyarilar}
+      />
 
       <VardiyaAyarForm
         businessId={secili.id}
@@ -293,6 +330,7 @@ export default async function VardiyaPlanlamaPage({
                           atamalar={atamalar}
                           personel={personel}
                           izinKumesi={izinKumesi}
+                          notlar={notlarByHucre.get(`${gunGirdisi(gun)}:${deger}`)}
                         />
                       </td>
                     ))}
@@ -345,6 +383,7 @@ export default async function VardiyaPlanlamaPage({
                             atamalar={atamalar}
                             personel={personel}
                             izinKumesi={izinKumesi}
+                            notlar={notlarByHucre.get(`${gunAnahtari}:${deger}`)}
                           />
                         </div>
                       </div>
@@ -404,6 +443,7 @@ function VardiyaHucresi({
   atamalar,
   personel,
   izinKumesi,
+  notlar,
 }: {
   businessId: string;
   gunAnahtari: string;
@@ -411,6 +451,8 @@ function VardiyaHucresi({
   atamalar: Atama[];
   personel: Personel[];
   izinKumesi: Map<string, IzinTuru>;
+  /** O vardiyaya bırakılan devir notları; yoksa hiç çizilmez. */
+  notlar?: { yazar: string; metin: string }[];
 }) {
   const buVardiya = atamalar.filter(
     (a) => gunGirdisi(a.date) === gunAnahtari && a.shift === shift,
@@ -455,6 +497,21 @@ function VardiyaHucresi({
           <span className="text-caption text-ink-faint">—</span>
         ) : null}
       </div>
+
+      {notlar && notlar.length > 0 ? (
+        <ul className="mt-1.5 flex flex-col gap-1">
+          {notlar.map((not, i) => (
+            <li
+              key={i}
+              title={`${not.yazar}: ${not.metin}`}
+              className="flex items-start gap-1 rounded-chip bg-info-soft px-1.5 py-1 text-[11px] leading-snug text-info-ink ring-1 ring-info/20"
+            >
+              <StickyNote className="mt-px h-3 w-3 shrink-0" aria-hidden="true" />
+              <span className="line-clamp-2">{not.metin}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       {atanmamis.length > 0 ? (
         <form action={vardiyaAta} className="mt-1.5 flex gap-1">

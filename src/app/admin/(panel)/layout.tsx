@@ -3,6 +3,7 @@ import { getActiveAccount } from "@/lib/impersonation";
 import { exitAccount } from "./hesaplar/actions";
 import { logout } from "../giris/actions";
 import { AdminSidebar } from "@/components/AdminSidebar";
+import { KomutPaleti } from "@/components/KomutPaleti";
 import { PersonelKabuk } from "@/components/PersonelKabuk";
 import { ProfilAvatarButton } from "@/components/ProfilAvatarButton";
 import { prisma } from "@/lib/db";
@@ -62,6 +63,10 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
     // telefonda ikiye bölüyordu. lg'den itibaren yan çubuk + içerik yan yana.
     <ToastProvider>
     <div className="flex min-h-dvh flex-col bg-canvas lg:flex-row">
+      {/* Ctrl/Cmd+K ile sayfa arama. Sidebar'la aynı menü ağacından
+          beslendiği için ayrıca güncellenmesi gereken bir liste yok. */}
+      <KomutPaleti gruplar={gruplar} />
+
       <AdminSidebar
         gruplar={gruplar}
         kullaniciAdi={user.name}

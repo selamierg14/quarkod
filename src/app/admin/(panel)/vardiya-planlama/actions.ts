@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { gunBaslangici, gunEkle, gunGirdisi, haftaBaslangici } from "@/lib/gun";
 import { etkinVardiyalar, gecerliVardiyaMi } from "@/lib/vardiya";
 import { csvAyristir, tabloyuCizelgeyeCevir } from "@/lib/vardiya-tablo";
+import { izinKumesiKur, izinliMi } from "@/lib/izin";
 import { denetimYaz } from "@/lib/denetim";
 
 export async function vardiyaAta(formData: FormData): Promise<void> {
@@ -276,4 +277,116 @@ export async function cizelgeyiIceAktar(
   }
 
   return { saved: parcalar.join(", ") + ".", uyarilar: uyarilar.slice(0, 20) };
+}
+
+/* --------------------------------------------------- geçen haftayı kopyala */
+
+export type HaftaKopyaState = { error?: string; saved?: string };
+
+/**
+ * Bir önceki haftanın çizelgesini bu haftaya kopyalar.
+ *
+ * Çizelgeler haftadan haftaya büyük ölçüde aynı kalıyor; 7 gün × 4 vardiya
+ * eden ızgarayı her hafta elle kurmak (ya da Excel'e gidip gelmek) işin
+ * en tekrarlı parçasıydı.
+ *
+ * Ekleme mantığı içe aktarmayla aynı: var olan atamalara dokunulmuyor,
+ * yalnızca eksikler açılıyor. Onaylı izne denk gelen günler atlanıyor —
+ * geçen hafta çalışan biri bu hafta izinliyse onu otomatik yazmak, izin
+ * takviminin varlık sebebine aykırı olurdu.
+ */
+export async function gecenHaftayiKopyala(
+  _prev: HaftaKopyaState,
+  formData: FormData,
+): Promise<HaftaKopyaState> {
+  const actor = await requirePersonelYonetimi();
+  await requireYazma();
+
+  const businessId = String(formData.get("businessId") ?? "");
+  if (!(await canAccessBusiness(actor, businessId))) {
+    return { error: "Bu işletmeye yetkiniz yok." };
+  }
+
+  const haftaBasi = haftaBaslangici(
+    new Date(String(formData.get("baslangic") ?? "") || Date.now()),
+  );
+  const haftaSonu = gunEkle(haftaBasi, 6);
+  const oncekiBasi = gunEkle(haftaBasi, -7);
+  const oncekiSonu = gunEkle(haftaBasi, -1);
+
+  const [onceki, mevcut, izinler] = await Promise.all([
+    prisma.shiftAssignment.findMany({
+      where: { businessId, date: { gte: oncekiBasi, lte: oncekiSonu } },
+      select: { userId: true, date: true, shift: true },
+    }),
+    prisma.shiftAssignment.findMany({
+      where: { businessId, date: { gte: haftaBasi, lte: haftaSonu } },
+      select: { userId: true, date: true, shift: true },
+    }),
+    prisma.leaveRequest.findMany({
+      where: {
+        businessId,
+        status: "onaylandi",
+        baslangic: { lte: haftaSonu },
+        bitis: { gte: haftaBasi },
+      },
+      select: { userId: true, baslangic: true, bitis: true, tur: true, status: true },
+    }),
+  ]);
+
+  if (onceki.length === 0) {
+    return { error: "Geçen hafta çizelgesi boş; kopyalanacak bir şey yok." };
+  }
+
+  const izinKumesi = izinKumesiKur(izinler);
+  const mevcutAnahtarlar = new Set(
+    mevcut.map((a) => `${a.userId}|${gunGirdisi(a.date)}|${a.shift}`),
+  );
+
+  const eklenecek: { businessId: string; userId: string; date: Date; shift: string }[] = [];
+  let izinNedeniyleAtlanan = 0;
+
+  for (const atama of onceki) {
+    // Geçen haftanın aynı günü: tam 7 gün ileri.
+    const yeniTarih = gunBaslangici(gunEkle(atama.date, 7));
+    const gunAnahtari = gunGirdisi(yeniTarih);
+
+    if (izinliMi(izinKumesi, atama.userId, gunAnahtari)) {
+      izinNedeniyleAtlanan++;
+      continue;
+    }
+    if (mevcutAnahtarlar.has(`${atama.userId}|${gunAnahtari}|${atama.shift}`)) continue;
+
+    eklenecek.push({ businessId, userId: atama.userId, date: yeniTarih, shift: atama.shift });
+  }
+
+  if (eklenecek.length > 0) {
+    await prisma.shiftAssignment.createMany({ data: eklenecek, skipDuplicates: true });
+  }
+
+  await denetimYaz(actor, "business.vardiya", {
+    entity: "shiftAssignment",
+    entityId: businessId,
+    detail: `Geçen hafta kopyalandı (${gunGirdisi(haftaBasi)}): ${eklenecek.length} vardiya`,
+  });
+
+  revalidatePath("/admin/vardiya-planlama");
+  revalidatePath("/admin/vardiyalarim");
+
+  if (eklenecek.length === 0) {
+    return {
+      saved:
+        izinNedeniyleAtlanan > 0
+          ? `Eklenecek yeni vardiya yok (${izinNedeniyleAtlanan} tanesi izne denk geldiği için atlandı).`
+          : "Bu hafta zaten geçen haftayla aynı.",
+    };
+  }
+
+  return {
+    saved:
+      `${eklenecek.length} vardiya kopyalandı.` +
+      (izinNedeniyleAtlanan > 0
+        ? ` ${izinNedeniyleAtlanan} tanesi izne denk geldiği için atlandı.`
+        : ""),
+  };
 }
