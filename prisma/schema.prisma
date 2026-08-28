@@ -651,6 +651,7 @@ model User {
   shiftSwapDecisions   ShiftSwapRequest[]    @relation("ShiftSwapDecider")
   leaveRequests        LeaveRequest[]        @relation("LeaveRequester")
   leaveDecisions       LeaveRequest[]        @relation("LeaveDecider")
+  pushSubscriptions    PushSubscription[]
 
   @@index([accountId])
   /// notifyLowRating her eşik altı puanda "bu işletmenin sorumlusu kim"
@@ -817,7 +818,7 @@ model MarketingConsent {
 model Notification {
   id         String    @id @default(cuid())
   feedbackId String
-  /// "email" | "whatsapp" | "telegram"
+  /// "email" | "whatsapp" | "telegram" | "push"
   channel    String
   recipient  String
   sentAt     DateTime?
@@ -833,4 +834,26 @@ model Notification {
   @@index([feedbackId])
   @@index([createdAt])
   @@map("notifications")
+}
+
+/// Push bildirim aboneliği — bir kullanıcının bir cihazına bildirim
+/// gönderebilmek için tarayıcıdan alınan uç nokta ve şifreleme anahtarları.
+///
+/// iOS'ta Web Push yalnızca site "Ana Ekrana Ekle" ile eklenmiş şekilde
+/// çalışıyor (bkz. profil sayfasındaki uyarı); bu tablo o kısıtı bilmiyor,
+/// sadece hangi tarayıcının hangi anahtarla dinlediğini tutuyor. Aynı
+/// kullanıcının birden fazla cihazı (telefon + masaüstü) olabileceği için
+/// userId değil endpoint tekil — bir cihaz çıkarsa yalnızca o satır silinir.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }

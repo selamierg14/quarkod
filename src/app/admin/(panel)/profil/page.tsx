@@ -5,6 +5,7 @@ import { ROL_ADLARI } from "@/lib/constants";
 import { PasswordForm } from "../sifre/PasswordForm";
 import Link from "next/link";
 import { PageHeader, SectionCard } from "@/components/ui";
+import { BildirimAyarlari } from "./BildirimAyarlari";
 
 export const dynamic = "force-dynamic";
 
@@ -115,6 +116,8 @@ export default async function ProfilePage() {
           <PasswordForm />
         </SectionCard>
       </div>
+
+      <BildirimAyarlari />
     </div>
   );
 }
