@@ -5,7 +5,13 @@ import { allowedBusinessIds, canAccessBusiness, requireYazma } from "@/lib/auth"
 import { denetimYaz } from "@/lib/denetim";
 import { prisma } from "@/lib/db";
 import { validateImageDataUrl } from "@/lib/image";
-import { parsePrice, serializeTags } from "@/lib/menu";
+import {
+  parseKalori,
+  parsePrice,
+  serializeAlerjenler,
+  serializeOzelBilesenler,
+  serializeTags,
+} from "@/lib/menu";
 import { uniqueConstraintMessage } from "@/lib/unique-error";
 import { menuAcikMi } from "@/lib/menu-erisim";
 
@@ -189,6 +195,10 @@ function urunAlanlari(formData: FormData):
       priceKurus: number | null;
       imageUrl: string | null;
       tags: string | null;
+      icindekiler: string | null;
+      kaloriKcal: number | null;
+      alerjenler: string | null;
+      ozelBilesenler: string | null;
     } }
   | { ok: false; error: string } {
   const name = String(formData.get("name") ?? "").trim().slice(0, 80);
@@ -207,6 +217,16 @@ function urunAlanlari(formData: FormData):
     if (gorselHatasi) return { ok: false, error: gorselHatasi };
   }
 
+  // Zorunlu menü bilgileri. Boş bırakılabiliyor (bkz. şemadaki not), ama
+  // GİRİLEN değer anlamlı olmalı: sessizce null'a düşürmek, işletmenin
+  // girdiğini sandığı kaloriyi kaybetmek demekti.
+  const icindekiler = String(formData.get("icindekiler") ?? "").trim().slice(0, 500);
+
+  const kaloriKcal = parseKalori(String(formData.get("kaloriKcal") ?? ""));
+  if (kaloriKcal === undefined) {
+    return { ok: false, error: "Kalori anlaşılmadı. Porsiyon başına kcal girin, örnek: 320" };
+  }
+
   return {
     ok: true,
     veri: {
@@ -215,6 +235,12 @@ function urunAlanlari(formData: FormData):
       priceKurus,
       imageUrl: imageUrl || null,
       tags: serializeTags(formData.getAll("tags").map(String)),
+      icindekiler: icindekiler || null,
+      kaloriKcal,
+      alerjenler: serializeAlerjenler(formData.getAll("alerjenler").map(String)),
+      ozelBilesenler: serializeOzelBilesenler(
+        formData.getAll("ozelBilesenler").map(String),
+      ),
     },
   };
 }

@@ -4,7 +4,11 @@ import {
   enIyiEnKotu,
   formatPrice,
   parsePrice,
+  parseAlerjenler,
+  parseKalori,
+  parseOzelBilesenler,
   parseTags,
+  serializeAlerjenler,
   serializeTags,
   urunPuanlari,
 } from "./menu";
@@ -113,5 +117,74 @@ describe("ürün puanları", () => {
     expect(enIyi[0].itemName).toBe("Latte");
     expect(enKotu[0].itemName).toBe("Kek");
     expect([...enIyi, ...enKotu].map((u) => u.itemName)).not.toContain("Deneme Kahve");
+  });
+});
+
+describe("zorunlu menü bilgileri", () => {
+  describe("alerjenler", () => {
+    it("tanınmayan anahtarı atar", () => {
+      // Uydurma bir alerjen sessizce kaydedilseydi müşteri tarafında hiç
+      // görünmez, işletme ise bildirdiğini sanırdı.
+      expect(parseAlerjenler("gluten,uyduruk,sut")).toEqual(["gluten", "sut"]);
+    });
+
+    it("büyük harf ve boşluğa dayanıklı", () => {
+      expect(parseAlerjenler(" Gluten , SUT ")).toEqual(["gluten", "sut"]);
+    });
+
+    it("tekrarı teke indirir", () => {
+      expect(parseAlerjenler("gluten,gluten")).toEqual(["gluten"]);
+    });
+
+    it("boş girdi boş liste", () => {
+      expect(parseAlerjenler(null)).toEqual([]);
+      expect(parseAlerjenler("")).toEqual([]);
+    });
+
+    it("serialize edilen değer geri okunabiliyor", () => {
+      const ham = serializeAlerjenler(["sut", "gluten", "uyduruk"]);
+      expect(parseAlerjenler(ham)).toEqual(["sut", "gluten"]);
+    });
+
+    it("hiç geçerli alerjen yoksa null saklanır", () => {
+      expect(serializeAlerjenler(["uyduruk"])).toBeNull();
+    });
+  });
+
+  describe("özel bileşenler", () => {
+    it("alkol ve domuz tanınır, gerisi atılır", () => {
+      expect(parseOzelBilesenler("alkol,domuz,gluten")).toEqual(["alkol", "domuz"]);
+    });
+
+    it("alerjen anahtarlarından ayrı tutulur", () => {
+      // İkisi aynı listede olsaydı "alerjenim yok" filtresi alkolü de
+      // eler, yanlış sonuç verirdi.
+      expect(parseAlerjenler("alkol")).toEqual([]);
+      expect(parseOzelBilesenler("sut")).toEqual([]);
+    });
+  });
+
+  describe("kalori", () => {
+    it("boş değer null (girilmemiş)", () => {
+      expect(parseKalori("")).toBeNull();
+      expect(parseKalori("   ")).toBeNull();
+    });
+
+    it("tam sayıyı okur", () => {
+      expect(parseKalori("320")).toBe(320);
+    });
+
+    it("ondalığı yuvarlar, virgülü kabul eder", () => {
+      expect(parseKalori("320,4")).toBe(320);
+      expect(parseKalori("320.6")).toBe(321);
+    });
+
+    it("anlamsız değeri reddeder (undefined = hata)", () => {
+      // null ile undefined farkı önemli: null "girilmedi", undefined
+      // "girildi ama anlaşılmadı" — ikincisinde form hata göstermeli.
+      expect(parseKalori("abc")).toBeUndefined();
+      expect(parseKalori("-5")).toBeUndefined();
+      expect(parseKalori("999999")).toBeUndefined();
+    });
   });
 });

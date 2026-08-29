@@ -1,7 +1,12 @@
 import bcrypt from "bcryptjs";
 import { KeyRound, Pencil, User as UserIcon, Users } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { requireKullaniciYonetimi, userScope, visibleBusinesses } from "@/lib/auth";
+import {
+  actingAccountId,
+  requireKullaniciYonetimi,
+  userScope,
+  visibleBusinesses,
+} from "@/lib/auth";
 import { ResetPasswordForm, ToggleUserButton } from "./UserForms";
 import { SEED_SIFRESI } from "./sabitler";
 import { ROL_ADLARI } from "@/lib/constants";
@@ -39,10 +44,22 @@ export default async function UsersPage({
     rol: tek("rol"),
     durum: tek("durum"),
     isletme: tek("isletme"),
+    hesap: tek("hesap"),
   };
   const filtreVar = Object.values(filtreler).some(Boolean);
 
-  const isletmeler = await visibleBusinesses(owner);
+  // Hesap seçmemiş platform yöneticisi bütün kiracıların kullanıcılarını
+  // görür; onun için anlamlı süzgeç "işletme" değil "hesap" (bir işletme
+  // listesi yüzlerce satır olurdu ve hangi müşteriye ait olduğu belirsiz).
+  const platformModu = owner.role === "superadmin" && !(await actingAccountId(owner));
+
+  const isletmeler = platformModu ? [] : await visibleBusinesses(owner);
+  const hesaplar = platformModu
+    ? await prisma.account.findMany({
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      })
+    : [];
 
   // Süzme veritabanında: onlarca işletmeli bir hesapta bütün kullanıcıları
   // çekip bellekte elemek hem yavaş hem gereksiz.
@@ -70,9 +87,14 @@ export default async function UsersPage({
             ],
           }
         : {}),
+      ...(filtreler.hesap ? { accountId: filtreler.hesap } : {}),
     },
     orderBy: [{ role: "asc" }, { name: "asc" }],
-    include: { business: true, businesses: { include: { business: true } } },
+    include: {
+      business: true,
+      businesses: { include: { business: true } },
+      account: { select: { name: true } },
+    },
   });
 
   // Her satır için ayrı bir sorguyla "varsayılan şifre mi" sormak N+1'di;
@@ -102,6 +124,7 @@ export default async function UsersPage({
       <KullaniciFiltreleri
         degerler={filtreler}
         isletmeler={isletmeler.map((b) => ({ id: b.id, name: b.name }))}
+        hesaplar={hesaplar}
         roller={acilabilirRoller(owner.role)}
         filtreVar={filtreVar}
       />
@@ -131,7 +154,9 @@ export default async function UsersPage({
                 <th className="px-4 py-2.5 font-medium">Kullanıcı adı</th>
                 <th className="px-4 py-2.5 font-medium">İletişim</th>
                 <th className="px-4 py-2.5 font-medium">Rol</th>
-                <th className="px-4 py-2.5 font-medium">İşletme</th>
+                <th className="px-4 py-2.5 font-medium">
+                  {platformModu ? "Hesap / İşletme" : "İşletme"}
+                </th>
                 <th className="px-4 py-2.5 font-medium"></th>
               </tr>
             </thead>
@@ -192,9 +217,18 @@ export default async function UsersPage({
                     <RolRozeti rol={user.role} />
                   </td>
                   <td className="px-4 py-2.5 text-ink-soft">
-                    {user.role === "bolge"
-                      ? user.businesses.map((b) => b.business.name).join(", ") || "—"
-                      : (user.business?.name ?? (user.role === "owner" ? "Hepsi" : "—"))}
+                    {/* Platform görünümünde asıl soru "hangi müşteride";
+                        işletme onun altında ikincil bilgi. */}
+                    {platformModu ? (
+                      <span className="block font-medium text-ink">
+                        {user.account?.name ?? "—"}
+                      </span>
+                    ) : null}
+                    <span className={platformModu ? "text-caption text-ink-faint" : ""}>
+                      {user.role === "bolge"
+                        ? user.businesses.map((b) => b.business.name).join(", ") || "—"
+                        : (user.business?.name ?? (user.role === "owner" ? "Hepsi" : "—"))}
+                    </span>
                   </td>
                   <td className="px-4 py-2.5">
                     {/* Satırda tek bir dolu (birincil) aksiyon var: Düzenle.

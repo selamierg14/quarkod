@@ -1,5 +1,6 @@
 "use client";
 
+import { MODULLER, MODUL_ANAHTARLARI } from "@/lib/moduller";
 import { useActionState, useState } from "react";
 import { TarihGirdisi } from "@/components/ui";
 import {
@@ -190,13 +191,14 @@ export function ToggleAccountButton({
 export function SubscriptionForm({
   accountId,
   expiresAt,
-  menuEnabled,
+  moduller,
   iysCode,
 }: {
   accountId: string;
   /** yyyy-aa-gg biçiminde ya da boş. */
   expiresAt: string;
-  menuEnabled: boolean;
+  /** Hesabın sahibine (patron) açık modüller. */
+  moduller: string[];
   iysCode: string;
 }) {
   const [state, formAction, pending] = useActionState<AccountFormState, FormData>(
@@ -213,15 +215,28 @@ export function SubscriptionForm({
 
       <GecerlilikAlani ad={accountId} baslangic={expiresAt} />
 
-      <label className="flex items-center gap-2 pb-2 text-small">
-        <input
-          type="checkbox"
-          name="menuEnabled"
-          defaultChecked={menuEnabled}
-          className="h-4 w-4 accent-[var(--color-ink)]"
-        />
-        QR menü modülü
-      </label>
+      {/* Modüller hesabın SAHİBİNE veriliyor; patron bunları kendi ekibine
+          dağıtıyor (bkz. lib/moduller.ts). Önceden burada yalnızca "QR menü"
+          vardı ve diğer dördü hiçbir ekrandan açılamıyordu — sysadmin bir
+          müşteriye İYS ya da personel operasyonu satmak istediğinde
+          dokunacağı bir yer yoktu. */}
+      <fieldset className="flex flex-col gap-1 pb-1">
+        <legend className="text-caption text-ink-muted">Açık modüller</legend>
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          {MODUL_ANAHTARLARI.map((modul) => (
+            <label key={modul} className="flex items-center gap-1.5 text-small">
+              <input
+                type="checkbox"
+                name="moduller"
+                value={modul}
+                defaultChecked={moduller.includes(modul)}
+                className="h-4 w-4 accent-[var(--color-ink)]"
+              />
+              {MODULLER[modul]}
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
       <label className="flex flex-col gap-1 pb-2">
         <span className="text-caption text-ink-muted">İYS hizmet sağlayıcı kodu</span>

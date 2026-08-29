@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { hashPassword, requireSuperadmin } from "@/lib/auth";
 import { denetimYaz } from "@/lib/denetim";
 import { prisma } from "@/lib/db";
+import { istenenModulleriSuz } from "@/lib/moduller";
 import { clearActiveAccount, setActiveAccount } from "@/lib/impersonation";
 import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
 import { uniqueConstraintMessage } from "@/lib/unique-error";
@@ -269,14 +270,34 @@ export async function updateSubscription(
 
   const iysCode = String(formData.get("iysCode") ?? "").trim();
 
-  await prisma.account.update({
-    where: { id },
-    data: {
-      expiresAt,
-      menuEnabled: formData.get("menuEnabled") === "on",
-      iysCode: iysCode || null,
-    },
-  });
+  // Platform yöneticisi kısıtsız dağıtabilir; süzgeç yine de geçiyor ki
+  // tanınmayan bir anahtar veritabanına yazılmasın.
+  const moduller = istenenModulleriSuz(
+    actor.role,
+    actor.moduller,
+    formData.getAll("moduller").map((v) => String(v)),
+  );
+
+  await prisma.$transaction([
+    prisma.account.update({
+      where: { id },
+      data: {
+        expiresAt,
+        // Müşteri karşılama ekranı bu bayrağa bakıyor (bkz. menu/_secim.ts);
+        // "menu" modülüyle birlikte yürüsün diye senkron tutuluyor, yoksa
+        // panelde açık görünen menü müşteri tarafında kapalı kalırdı.
+        menuEnabled: moduller.includes("menu"),
+        iysCode: iysCode || null,
+      },
+    }),
+    // Modüller hesabın SAHİPLERİNE veriliyor; patron bunları kendi ekibine
+    // dağıtıyor. Ekip üyelerine dokunulmuyor: patronun daha önce kısıtladığı
+    // bir sorumlunun izinleri, hesap ayarı kaydedilince sıfırlanmamalı.
+    prisma.user.updateMany({
+      where: { accountId: id, role: "owner" },
+      data: { moduller },
+    }),
+  ]);
 
   await denetimYaz(actor, "account.subscription", {
     accountId: id,

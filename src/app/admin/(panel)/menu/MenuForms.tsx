@@ -1,10 +1,19 @@
 "use client";
 
-import { Send } from "lucide-react";
+import { ChevronDown, ClipboardList, Send } from "lucide-react";
 import { useActionState, useState } from "react";
 import { ImageUpload } from "@/components/ImageUpload";
 import { SectionCard } from "@/components/ui";
-import { MENU_TAGS, formatPrice, parseTags, priceInputValue } from "@/lib/menu";
+import {
+  ALERJENLER,
+  MENU_TAGS,
+  OZEL_BILESENLER,
+  formatPrice,
+  parseAlerjenler,
+  parseOzelBilesenler,
+  parseTags,
+  priceInputValue,
+} from "@/lib/menu";
 import {
   addMenuCategory,
   addMenuItem,
@@ -34,6 +43,10 @@ export type UrunGorunumu = {
   priceKurus: number | null;
   imageUrl: string | null;
   tags: string | null;
+  icindekiler: string | null;
+  kaloriKcal: number | null;
+  alerjenler: string | null;
+  ozelBilesenler: string | null;
   soldOut: boolean;
   active: boolean;
 };
@@ -180,6 +193,107 @@ function EtiketSecimi({ secili }: { secili: string[] }) {
   );
 }
 
+/**
+ * Menüde bildirilmesi zorunlu bilgiler.
+ *
+ * Ayrı bir katlanır bölümde: dört alan birden ürün formunun üstüne
+ * konulsaydı, en sık dokunulan alanlar (ad, fiyat, tükendi) aşağı itilirdi.
+ * Ama başlıkta eksik sayısı yazıyor ve eksik varsa bölüm AÇIK geliyor —
+ * "katlanmış" ile "unutulmuş" aynı şey olmasın.
+ */
+function ZorunluBilgiler({ urun }: { urun?: UrunGorunumu }) {
+  const alerjenler = parseAlerjenler(urun?.alerjenler);
+  const ozel = parseOzelBilesenler(urun?.ozelBilesenler);
+  const eksik = [!urun?.icindekiler, urun?.kaloriKcal == null].filter(Boolean).length;
+
+  return (
+    <details open={!urun || eksik > 0} className="group rounded-control border border-line">
+      <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-small font-medium text-ink-soft">
+        <ClipboardList className="h-4 w-4 shrink-0" aria-hidden="true" />
+        <span className="flex-1">Zorunlu menü bilgileri</span>
+        {eksik > 0 ? (
+          <span className="rounded-chip bg-warning-soft px-2 py-0.5 text-caption text-warning-ink">
+            {eksik} eksik
+          </span>
+        ) : null}
+        <ChevronDown
+          className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180"
+          aria-hidden="true"
+        />
+      </summary>
+
+      <div className="flex flex-col gap-3 border-t border-line p-3">
+        <label className="flex flex-col gap-1">
+          <span className="text-caption text-ink-muted">
+            Temel bileşenler <span className="text-ink-faint">(hammaddeler)</span>
+          </span>
+          <textarea
+            name="icindekiler"
+            rows={2}
+            maxLength={500}
+            defaultValue={urun?.icindekiler ?? ""}
+            placeholder="ör. Dana kıyma, buğday unu ekmek, kaşar peyniri, domates, marul"
+            className={INPUT}
+          />
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-caption text-ink-muted">
+            Enerji <span className="text-ink-faint">(porsiyon başına kcal)</span>
+          </span>
+          <input
+            name="kaloriKcal"
+            inputMode="numeric"
+            defaultValue={urun?.kaloriKcal ?? ""}
+            placeholder="ör. 320"
+            className={`${INPUT} w-32`}
+          />
+        </label>
+
+        <fieldset className="flex flex-wrap gap-2">
+          <legend className="mb-1 text-caption text-ink-muted">
+            Alerjen içerikler
+          </legend>
+          {Object.entries(ALERJENLER).map(([deger, etiket]) => (
+            <label
+              key={deger}
+              className="flex cursor-pointer items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-caption has-checked:border-warning has-checked:bg-warning-soft has-checked:text-warning-ink"
+            >
+              <input
+                type="checkbox"
+                name="alerjenler"
+                value={deger}
+                defaultChecked={alerjenler.includes(deger as never)}
+                className="sr-only"
+              />
+              {etiket}
+            </label>
+          ))}
+        </fieldset>
+
+        <fieldset className="flex flex-wrap gap-2">
+          <legend className="mb-1 text-caption text-ink-muted">Özel bileşenler</legend>
+          {Object.entries(OZEL_BILESENLER).map(([deger, etiket]) => (
+            <label
+              key={deger}
+              className="flex cursor-pointer items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-caption has-checked:border-ink has-checked:bg-ink has-checked:text-white"
+            >
+              <input
+                type="checkbox"
+                name="ozelBilesenler"
+                value={deger}
+                defaultChecked={ozel.includes(deger as never)}
+                className="sr-only"
+              />
+              {etiket}
+            </label>
+          ))}
+        </fieldset>
+      </div>
+    </details>
+  );
+}
+
 /** Ürün ekleme ve düzenleme aynı alanları kullanıyor. */
 function UrunAlanlari({
   urun,
@@ -227,6 +341,8 @@ function UrunAlanlari({
       />
 
       <EtiketSecimi secili={parseTags(urun?.tags)} />
+
+      <ZorunluBilgiler urun={urun} />
     </>
   );
 }

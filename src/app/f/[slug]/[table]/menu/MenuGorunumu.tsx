@@ -3,7 +3,16 @@
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { Dialog } from "@/components/ui";
-import { MENU_TAGS, formatPrice, parseTags, type MenuTag } from "@/lib/menu";
+import {
+  ALERJENLER,
+  MENU_TAGS,
+  OZEL_BILESENLER,
+  formatPrice,
+  parseAlerjenler,
+  parseOzelBilesenler,
+  parseTags,
+  type MenuTag,
+} from "@/lib/menu";
 import { taslakAnahtari, taslakGuncelle, taslakOku } from "@/lib/anket-taslak";
 import { foldTr } from "@/lib/text";
 import { useDil } from "@/components/DilSaglayici";
@@ -16,6 +25,11 @@ export type MenuUrun = {
   priceKurus: number | null;
   imageUrl: string | null;
   tags: string | null;
+  /** Zorunlu menü bilgileri; girilmemişse null (bkz. prisma/schema.prisma). */
+  icindekiler: string | null;
+  kaloriKcal: number | null;
+  alerjenler: string | null;
+  ozelBilesenler: string | null;
   soldOut: boolean;
 };
 
@@ -665,8 +679,89 @@ function UrunDetayi({
               </span>
             </div>
           ) : null}
+
+          <UrunBilgileri urun={urun} />
         </div>
       ) : null}
     </Dialog>
+  );
+}
+
+/**
+ * Menüde bildirilmesi zorunlu bilgiler — müşteri tarafı.
+ *
+ * Alerjen satırı, bilgi girilmemiş olsa bile gösteriliyor: sessizce
+ * atlamak, alerjisi olan bir müşteriye "bu üründe alerjen yok" demenin
+ * dolaylı hâli olurdu. "Belirtilmemiş" en azından soru sordurur.
+ *
+ * İçindekiler ve kalori ise girilmemişse hiç görünmüyor — onlarda eksik
+ * bilgi yanıltıcı değil, yalnızca eksik.
+ */
+function UrunBilgileri({ urun }: { urun: DetayUrun }) {
+  const alerjenler = parseAlerjenler(urun.alerjenler);
+  const ozel = parseOzelBilesenler(urun.ozelBilesenler);
+
+  return (
+    <div className="flex flex-col gap-2.5 border-t border-line pt-3">
+      {urun.icindekiler ? (
+        <div>
+          <p className="text-caption font-medium text-ink-muted uppercase">
+            Temel bileşenler
+          </p>
+          <p className="mt-0.5 text-small leading-relaxed text-ink-soft">
+            {urun.icindekiler}
+          </p>
+        </div>
+      ) : null}
+
+      {urun.kaloriKcal !== null ? (
+        <div className="flex items-baseline justify-between">
+          <span className="text-caption font-medium text-ink-muted uppercase">
+            Enerji
+          </span>
+          <span className="text-small font-medium text-ink tabular">
+            {urun.kaloriKcal} kcal
+            <span className="ml-1 text-caption font-normal text-ink-faint">
+              /porsiyon
+            </span>
+          </span>
+        </div>
+      ) : null}
+
+      <div>
+        <p className="text-caption font-medium text-ink-muted uppercase">
+          Alerjen içerikler
+        </p>
+        {alerjenler.length > 0 ? (
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {alerjenler.map((a) => (
+              <span
+                key={a}
+                className="rounded-full bg-warning-soft px-2.5 py-0.5 text-caption font-medium text-warning-ink"
+              >
+                {ALERJENLER[a]}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-0.5 text-caption text-ink-faint">
+            Belirtilmemiş — alerjiniz varsa lütfen personele danışın.
+          </p>
+        )}
+      </div>
+
+      {ozel.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5">
+          {ozel.map((o) => (
+            <span
+              key={o}
+              className="rounded-full bg-ink-strong px-2.5 py-0.5 text-caption font-medium text-white"
+            >
+              {OZEL_BILESENLER[o]}
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }

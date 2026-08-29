@@ -48,6 +48,7 @@ export default async function AccountsPage() {
           role: true,
           active: true,
           businessId: true,
+          moduller: true,
         },
       },
     },
@@ -145,7 +146,7 @@ export default async function AccountsPage() {
               <SubscriptionForm
                 accountId={account.id}
                 expiresAt={dateInputValue(account.expiresAt)}
-                menuEnabled={account.menuEnabled}
+                moduller={sahipler[0]?.moduller ?? []}
                 iysCode={account.iysCode ?? ""}
               />
 

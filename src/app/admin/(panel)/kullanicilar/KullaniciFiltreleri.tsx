@@ -13,6 +13,7 @@ export type FiltreDegerleri = {
   rol: string;
   durum: string;
   isletme: string;
+  hesap: string;
 };
 
 /**
@@ -27,11 +28,14 @@ export type FiltreDegerleri = {
 export function KullaniciFiltreleri({
   degerler,
   isletmeler,
+  hesaplar,
   roller,
   filtreVar,
 }: {
   degerler: FiltreDegerleri;
   isletmeler: { id: string; name: string }[];
+  /** Yalnızca platform görünümünde dolu — orada süzgeç işletme değil hesap. */
+  hesaplar: { id: string; name: string }[];
   roller: string[];
   filtreVar: boolean;
 }) {
@@ -52,6 +56,24 @@ export function KullaniciFiltreleri({
           className={ALAN}
         />
       </label>
+
+      {/* Platform görünümünde müşteri (hesap) bazlı süzme: sysadmin için
+          "hangi şirketin kullanıcıları" asıl sorudur. */}
+      {hesaplar.length > 0 ? (
+        <label className="min-w-[170px]">
+          <span className="mb-1.5 block text-caption font-medium text-ink-muted">
+            Hesap
+          </span>
+          <select name="hesap" defaultValue={degerler.hesap} className={ALAN}>
+            <option value="">Hepsi</option>
+            {hesaplar.map((h) => (
+              <option key={h.id} value={h.id}>
+                {h.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
 
       {/* Şirket süzgeci asıl talep: bir hesapta onlarca işletme olunca
           "kim nerede çalışıyor" listeden okunamıyordu. */}

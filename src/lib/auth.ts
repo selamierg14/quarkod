@@ -246,11 +246,20 @@ export async function requirePersonelYonetimi(): Promise<SessionUser> {
  * Bilerek hiçbir modüle bağlı DEĞİL: modüller ticari bir paket, ekibini
  * yönetmek ise her hesabın temel işi. Personel operasyonu modülü kapalı bir
  * hesabın sahibi de kullanıcı açabilmeli — aksi halde modülü kapatmak
- * müşteriyi kendi hesabından kilitlerdi. Garson buraya requireTenant'ta
- * zaten giremiyor (kendi "personel" moduna düşüyor).
+ * müşteriyi kendi hesabından kilitlerdi.
+ *
+ * requireTenant DEĞİL: o kapı, hesap seçmemiş platform yöneticisini
+ * /admin/hesaplar'a atıyor. Oysa platform menüsünde "Kullanıcılar" var ve
+ * oradaki liste tam olarak "bütün hesapların kullanıcıları" demek —
+ * bağlantı kendi sayfasına gitmek yerine sessizce başka yere sekiyordu.
+ * Kapsamı userScope belirliyor: hesap seçmemiş superadmin için {} (hepsi),
+ * seçmişse o hesap.
  */
 export async function requireKullaniciYonetimi(): Promise<SessionUser> {
-  return requireTenant();
+  const user = await requireUser();
+  // Saha personeli kendi vardiya ekranına düşer.
+  if (user.role === "garson") redirect("/admin/vardiyalarim");
+  return user;
 }
 
 /** Oturuma dönüştürülecek kullanıcı kaydı. */

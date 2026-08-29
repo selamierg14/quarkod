@@ -552,9 +552,30 @@ model MenuItem {
   /// Bugün tükendi mi. Menünün en sık değişen alanı bu; ürünü silmek yerine
   /// işaretlenir, çünkü yarın geri gelecek ve geçmiş puanları ona bağlı.
   soldOut Boolean @default(false)
-  /// Diyet/alerjen etiketleri, virgülle ayrılmış: "vegan,glutensiz,aci".
+  /// Diyet/pazarlama etiketleri, virgülle ayrılmış: "vegan,glutensiz,aci".
   /// Sabit bir listeden seçildiği için ayrı tablo kurmaya değmiyor.
+  /// DİKKAT: bu alan alerjen BİLDİRİMİ değil — "glutensiz" bir pazarlama
+  /// etiketi, `alerjenler` ise zorunlu beyan. İkisi ayrı tutuluyor ki
+  /// etiketi olmayan bir ürün "alerjeni yok" sanılmasın.
   tags    String?
+
+  // --- Zorunlu menü bilgileri -------------------------------------------
+  // Menülerde temel bileşenlerin, porsiyon başına enerji değerinin, majör
+  // alerjenlerin ve alkol/domuz türevi katkıların bildirilmesi gerekiyor.
+  // Dördü de boş bırakılabilir: bir işletme yüzlerce ürünün bilgisini bir
+  // günde giremez ve kısmi doldurmaya izin verilmezse hiç doldurmaz.
+  // Eksikler panelde sayılıyor, müşteri tarafında ise "belirtilmemiş"
+  // olarak gösteriliyor — sessizce boş bırakmak, yanlış bilgi vermenin
+  // yumuşak hâli olurdu.
+
+  /// Temel bileşenler (hammaddeler), müşterinin anlayacağı düz metin.
+  icindekiler    String?
+  /// Porsiyon başına enerji, kilokalori.
+  kaloriKcal     Int?
+  /// Majör alerjenler, virgülle ayrılmış sabit anahtarlar (bkz. lib/menu.ts).
+  alerjenler     String?
+  /// Alkol / domuz türevi katkı beyanı, virgülle ayrılmış sabit anahtarlar.
+  ozelBilesenler String?
 
   sortOrder Int     @default(0)
   active    Boolean @default(true)

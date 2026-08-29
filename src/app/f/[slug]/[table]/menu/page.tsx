@@ -77,6 +77,10 @@ export default async function MenuPage({
             priceKurus: u.priceKurus,
             imageUrl: u.imageUrl,
             tags: u.tags,
+            icindekiler: u.icindekiler,
+            kaloriKcal: u.kaloriKcal,
+            alerjenler: u.alerjenler,
+            ozelBilesenler: u.ozelBilesenler,
             soldOut: u.soldOut,
           })),
         }))}

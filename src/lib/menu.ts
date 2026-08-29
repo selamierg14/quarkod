@@ -152,3 +152,106 @@ export function enIyiEnKotu(
     enKotu: [...guvenilir].reverse().slice(0, adet),
   };
 }
+
+/**
+ * Menüde bildirilmesi zorunlu majör alerjenler.
+ *
+ * Serbest metin DEĞİL sabit liste — etiketlerle aynı gerekçe, ama burada
+ * bahis daha yüksek: "fındık" yazan bir işletme ile "Fındık" yazan başka
+ * bir işletme, alerjik bir müşteri için aynı bilgiyi taşımalı ve filtre
+ * ikisini de yakalamalı. Yanlış ya da eksik bir alerjen bildiriminin
+ * sonucu geri alınamaz.
+ *
+ * Liste, gıda etiketlemesinde yerleşik olan on dört majör alerjen. Ürünün
+ * hangi alerjeni içerdiğini işletme işaretliyor; sistem tahmin etmiyor.
+ */
+export const ALERJENLER = {
+  gluten: "Gluten",
+  kabuklu: "Kabuklu deniz ürünleri",
+  yumurta: "Yumurta",
+  balik: "Balık",
+  yerfistigi: "Yer fıstığı",
+  soya: "Soya",
+  sut: "Süt",
+  sertkabuklu: "Sert kabuklu meyveler (fındık, ceviz, badem…)",
+  kereviz: "Kereviz",
+  hardal: "Hardal",
+  susam: "Susam",
+  sulfit: "Sülfit",
+  acibakla: "Acı bakla",
+  yumusakca: "Yumuşakçalar",
+} as const;
+
+export type Alerjen = keyof typeof ALERJENLER;
+
+export function isAlerjen(value: string): value is Alerjen {
+  return value in ALERJENLER;
+}
+
+export function parseAlerjenler(raw: string | null | undefined): Alerjen[] {
+  if (!raw) return [];
+  const seen = new Set<Alerjen>();
+  for (const parca of raw.split(",")) {
+    const t = parca.trim().toLowerCase();
+    if (isAlerjen(t)) seen.add(t);
+  }
+  return [...seen];
+}
+
+export function serializeAlerjenler(deger: string[]): string | null {
+  const gecerli = deger.map((t) => t.trim().toLowerCase()).filter(isAlerjen);
+  return gecerli.length ? [...new Set(gecerli)].join(",") : null;
+}
+
+/**
+ * Ayrıca beyan edilmesi gereken özel bileşenler.
+ *
+ * Alerjenden ayrı tutuluyor çünkü sebebi de farklı: bunlar sağlık değil
+ * inanç ve tercih kaynaklı kısıtlar. Aynı listede olsalardı "alerjenim
+ * yok" diyen bir filtre bunları da eleyip yanlış sonuç verirdi.
+ */
+export const OZEL_BILESENLER = {
+  alkol: "Alkol içerir",
+  domuz: "Domuz türevi katkı içerir",
+} as const;
+
+export type OzelBilesen = keyof typeof OZEL_BILESENLER;
+
+export function isOzelBilesen(value: string): value is OzelBilesen {
+  return value in OZEL_BILESENLER;
+}
+
+export function parseOzelBilesenler(raw: string | null | undefined): OzelBilesen[] {
+  if (!raw) return [];
+  const seen = new Set<OzelBilesen>();
+  for (const parca of raw.split(",")) {
+    const t = parca.trim().toLowerCase();
+    if (isOzelBilesen(t)) seen.add(t);
+  }
+  return [...seen];
+}
+
+export function serializeOzelBilesenler(deger: string[]): string | null {
+  const gecerli = deger.map((t) => t.trim().toLowerCase()).filter(isOzelBilesen);
+  return gecerli.length ? [...new Set(gecerli)].join(",") : null;
+}
+
+/**
+ * Kalori girdisini tam sayıya çevirir.
+ *
+ * Boş bırakılabiliyor: bir işletme bütün menüsünün kalorisini bir günde
+ * giremez, kısmi doldurmaya izin vermezsek hiç doldurmaz. Eksik olanı
+ * panelde sayıyoruz (bkz. menu/page.tsx) ki tamamlanacak iş görünür kalsın.
+ *
+ * Negatif ya da anlamsız büyük değerler eleniyor: 100 gramda 9 kcal'den
+ * yoğun bir gıda yok, tek porsiyon için 20.000 üst sınırı fazlasıyla geniş.
+ */
+export function parseKalori(raw: string): number | null | undefined {
+  const temiz = raw.trim();
+  if (!temiz) return null;
+  const sayi = Number(temiz.replace(",", "."));
+  if (!Number.isFinite(sayi)) return undefined;
+  const tam = Math.round(sayi);
+  if (tam < 0 || tam > 20000) return undefined;
+  return tam;
+}
