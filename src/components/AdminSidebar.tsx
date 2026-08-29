@@ -35,19 +35,23 @@ export function AdminSidebar({
   const pathname = usePathname();
   const [genis, setGenis] = useState(true);
   const [mobilAcik, setMobilAcik] = useState(false);
-  // Alt listesi olan satırlar (ör. Kullanıcılar > Listele/Ekle) açılır-
-  // kapanır. İçindeki bir sayfa aktifse grup varsayılan açık gelir; kullanıcı
-  // elle açıp kapatınca bu tercih (override) pathname değişse de korunur.
-  const [acikOverride, setAcikOverride] = useState<Map<string, boolean>>(
-    () => new Map(),
-  );
+  // Alt listesi olan satırlar (ör. Kullanıcılar > Listele/Ekle) akordiyon:
+  // aynı anda yalnızca BİRİ açık kalır. Önceden her grubun kendi bağımsız
+  // durumu vardı ve dört alt liste birden açık kalabiliyordu — kenar çubuğu
+  // yirmi satıra çıkıp hangi bölümde olduğunuzu okumayı zorlaştırıyordu.
+  //
+  // null = "kullanıcı henüz bir şey açıp kapatmadı", o zaman içinde bulunulan
+  // sayfanın grubu açık gelir. Bir kez dokunulduktan sonra tercih pathname
+  // değişse de korunur; "" ise hepsi kapalı demektir.
+  const [acikGrup, setAcikGrup] = useState<string | null>(null);
 
   function grupAcikMi(href: string, varsayilanAktif: boolean): boolean {
-    return acikOverride.has(href) ? acikOverride.get(href)! : varsayilanAktif;
+    return acikGrup === null ? varsayilanAktif : acikGrup === href;
   }
 
   function grupAc(href: string, suankiAcikMi: boolean) {
-    setAcikOverride((mevcut) => new Map(mevcut).set(href, !suankiAcikMi));
+    // Açık olana tekrar basmak kapatır; başkasına basmak öncekini kapatır.
+    setAcikGrup(suankiAcikMi ? "" : href);
   }
 
   const govde = (
@@ -85,9 +89,9 @@ export function AdminSidebar({
 
       <nav aria-label="Panel" className="flex-1 overflow-y-auto px-2 py-3">
         {gruplar.map((grup) => (
-          <div key={grup.baslik} className="mb-4 last:mb-0">
+          <div key={grup.baslik} className="mb-6 last:mb-0">
             {genis ? (
-              <p className="px-2 pb-1.5 text-overline font-semibold text-ink-faint uppercase">
+              <p className="px-2 pb-2 text-overline font-semibold text-ink-faint uppercase">
                 {grup.baslik}
               </p>
             ) : (
