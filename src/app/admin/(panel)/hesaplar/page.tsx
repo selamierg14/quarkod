@@ -10,6 +10,7 @@ import {
   SubscriptionForm,
   ToggleAccountButton,
 } from "./AccountForms";
+import { SorumluListesi } from "./SorumluListesi";
 import { hesapAktifMi, kalanGun } from "@/lib/abonelik";
 
 /** date input'unun beklediği yyyy-aa-gg; yerel saate göre. */
@@ -153,33 +154,17 @@ export default async function AccountsPage() {
                 <p className="text-[11px] font-medium tracking-wide text-ink-faint uppercase">
                   Hesap sahipleri
                 </p>
-                {sahipler.length === 0 ? (
-                  <p className="mt-1 text-small text-rating">
-                    Sahip yok — bu hesaba kimse giremez.
-                  </p>
-                ) : (
-                  <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
-                    {/* Satır içi flex-wrap: ad + kullanıcı adı + rol dar
-                        telefonda tek satıra sığmayıp kartı ekran dışına
-                        itiyordu. */}
-                    {sahipler.map((u) => (
-                      <li
-                        key={u.id}
-                        className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-small"
-                      >
-                        <span className={u.active ? "" : "text-ink-faint line-through"}>
-                          {u.name}
-                        </span>
-                        <code className="rounded bg-sunken px-1 text-caption text-ink-soft">
-                          {u.username}
-                        </code>
-                        <span className="text-caption text-ink-faint">
-                          {ROL_ADLARI[u.role] ?? u.role}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <SorumluListesi
+                  kisiler={sahipler.map((u) => ({
+                    id: u.id,
+                    name: u.name,
+                    username: u.username,
+                    active: u.active,
+                    rol: ROL_ADLARI[u.role] ?? u.role,
+                  }))}
+                  etiket="Sahip"
+                  bosMesaj="Sahip yok — bu hesaba kimse giremez."
+                />
               </div>
 
               {/* --- İşletmeler ve altlarındaki sorumlular */}
@@ -210,24 +195,14 @@ export default async function AccountsPage() {
                           {business._count.tables} QR · {business._count.feedbacks} geri bildirim
                         </p>
 
-                        {business.users.length > 0 ? (
-                          <p className="mt-1 text-caption text-ink-muted">
-                            Sorumlu:{" "}
-                            {business.users.map((u, i) => (
-                              <span key={u.id}>
-                                {i > 0 ? ", " : ""}
-                                <span className={u.active ? "" : "line-through"}>
-                                  {u.name}
-                                </span>{" "}
-                                <code className="rounded bg-sunken px-1">
-                                  {u.username}
-                                </code>
-                              </span>
-                            ))}
-                          </p>
-                        ) : (
-                          <p className="mt-1 text-caption text-rating">Sorumlu atanmamış</p>
-                        )}
+                        <SorumluListesi
+                          kisiler={business.users.map((u) => ({
+                            id: u.id,
+                            name: u.name,
+                            username: u.username,
+                            active: u.active,
+                          }))}
+                        />
                       </div>
                     </li>
                   ))}
