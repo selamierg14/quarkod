@@ -47,6 +47,7 @@ export type UrunGorunumu = {
   kaloriKcal: number | null;
   alerjenler: string | null;
   ozelBilesenler: string | null;
+  bilgilerDogrulandi: boolean;
   soldOut: boolean;
   active: boolean;
 };
@@ -205,15 +206,24 @@ function ZorunluBilgiler({ urun }: { urun?: UrunGorunumu }) {
   const alerjenler = parseAlerjenler(urun?.alerjenler);
   const ozel = parseOzelBilesenler(urun?.ozelBilesenler);
   const eksik = [!urun?.icindekiler, urun?.kaloriKcal == null].filter(Boolean).length;
+  // Şablondan gelmiş ama işletme henüz bakmamış: alanlar dolu, onay yok.
+  const sablondanGeldi = Boolean(urun) && !urun?.bilgilerDogrulandi && eksik === 0;
 
   return (
-    <details open={!urun || eksik > 0} className="group rounded-control border border-line">
+    <details
+      open={!urun || eksik > 0 || sablondanGeldi}
+      className="group rounded-control border border-line"
+    >
       <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-small font-medium text-ink-soft">
         <ClipboardList className="h-4 w-4 shrink-0" aria-hidden="true" />
         <span className="flex-1">Zorunlu menü bilgileri</span>
         {eksik > 0 ? (
           <span className="rounded-chip bg-warning-soft px-2 py-0.5 text-caption text-warning-ink">
             {eksik} eksik
+          </span>
+        ) : sablondanGeldi ? (
+          <span className="rounded-chip bg-warning-soft px-2 py-0.5 text-caption text-warning-ink">
+            doğrulanmadı
           </span>
         ) : null}
         <ChevronDown
@@ -223,6 +233,17 @@ function ZorunluBilgiler({ urun }: { urun?: UrunGorunumu }) {
       </summary>
 
       <div className="flex flex-col gap-3 border-t border-line p-3">
+        {sablondanGeldi ? (
+          // Şablon değerleri "tipik", işletmenin tarifi değil. Bunu
+          // söylemeden bırakmak, doğrulanmamış bir alerjen beyanını
+          // doğrulanmış gibi göstermek olurdu.
+          <p className="rounded-control bg-warning-soft px-3 py-2 text-caption text-warning-ink">
+            Bu bilgiler <strong>şablondan geldi ve tipik değerlerdir</strong> — sizin
+            tarifinizle birebir örtüşmeyebilir. Özellikle alerjenleri kontrol
+            edip kaydedin; kaydettiğinizde doğrulanmış sayılacak.
+          </p>
+        ) : null}
+
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">
             Temel bileşenler <span className="text-ink-faint">(hammaddeler)</span>

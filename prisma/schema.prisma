@@ -576,6 +576,18 @@ model MenuItem {
   alerjenler     String?
   /// Alkol / domuz türevi katkı beyanı, virgülle ayrılmış sabit anahtarlar.
   ozelBilesenler String?
+  /// Yukarıdaki dört alanı işletme kendisi gözden geçirdi mi?
+  ///
+  /// Şablon uygulandığında ürünler TİPİK değerlerle geliyor (bkz.
+  /// lib/menu-sablon-bilgileri.ts) ve bu alan false kalıyor. Aynı adı
+  /// taşıyan iki mutfak farklı çalışır: birinin Adana Kebap'ı lavaşla
+  /// gelir (gluten), diğerininki pilavla. "Tipik" ile "doğrulanmış"
+  /// arasındaki farkı gizlemek, hiç bilgi vermemekten tehlikeli olurdu —
+  /// yanlış bir alerjen beyanının sonucu geri alınamaz.
+  ///
+  /// İşletme ürünü panelden kaydettiğinde true oluyor: formda alanları
+  /// görmüş ve onaylamış sayılıyor.
+  bilgilerDogrulandi Boolean @default(false)
 
   sortOrder Int     @default(0)
   active    Boolean @default(true)

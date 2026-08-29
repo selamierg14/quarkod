@@ -199,6 +199,7 @@ function urunAlanlari(formData: FormData):
       kaloriKcal: number | null;
       alerjenler: string | null;
       ozelBilesenler: string | null;
+      bilgilerDogrulandi: boolean;
     } }
   | { ok: false; error: string } {
   const name = String(formData.get("name") ?? "").trim().slice(0, 80);
@@ -241,6 +242,9 @@ function urunAlanlari(formData: FormData):
       ozelBilesenler: serializeOzelBilesenler(
         formData.getAll("ozelBilesenler").map(String),
       ),
+      // Formu kaydeden kişi zorunlu bilgileri ekranda gördü; şablondan
+      // gelen tipik değerler artık "işletmenin beyanı" sayılıyor.
+      bilgilerDogrulandi: true,
     },
   };
 }
@@ -432,6 +436,7 @@ export async function sablonuUygula(
   if (hata) return { error: hata };
 
   const { MENU_SABLONLARI } = await import("@/lib/menu-sablonlari");
+  const { sablonUrunBilgisi } = await import("@/lib/menu-sablon-bilgileri");
   const sablon = MENU_SABLONLARI.find((s) => s.id === sablonId);
   if (!sablon) return { error: "Şablon bulunamadı." };
 
@@ -448,13 +453,28 @@ export async function sablonuUygula(
           name: kategori.ad,
           sortOrder: (kategoriIndex + 1) * 10,
           items: {
-            create: kategori.urunler.map((urun, urunIndex) => ({
-              businessId,
-              name: urun.ad,
-              description: urun.aciklama ?? null,
-              priceKurus: urun.fiyatKurus ?? null,
-              sortOrder: (urunIndex + 1) * 10,
-            })),
+            create: kategori.urunler.map((urun, urunIndex) => {
+              // Zorunlu menü bilgileri için tipik bir başlangıç. Eşlemesi
+              // olmayan ürün boş kalıyor — eksik bilgi, uydurulmuş
+              // bilgiden iyidir (bkz. lib/menu-sablon-bilgileri.ts).
+              const bilgi = sablonUrunBilgisi(urun.ad);
+              return {
+                businessId,
+                name: urun.ad,
+                description: urun.aciklama ?? null,
+                priceKurus: urun.fiyatKurus ?? null,
+                sortOrder: (urunIndex + 1) * 10,
+                icindekiler: bilgi?.icindekiler ?? null,
+                kaloriKcal: bilgi?.kaloriKcal ?? null,
+                alerjenler: bilgi ? serializeAlerjenler(bilgi.alerjenler) : null,
+                ozelBilesenler: bilgi
+                  ? serializeOzelBilesenler(bilgi.ozelBilesenler ?? [])
+                  : null,
+                // İşletme bu değerleri henüz görmedi: kendi tarifiyle
+                // örtüşmeyebilir, panelde doğrulaması isteniyor.
+                bilgilerDogrulandi: false,
+              };
+            }),
           },
         },
       }),
@@ -465,7 +485,11 @@ export async function sablonuUygula(
   await menuDenetim("menu.category", `Şablon uygulandı: ${sablon.ad}`);
   yenile(businessId);
 
-  return { saved: `"${sablon.ad}" şablonu uygulandı. Fiyatları düzenlemeyi unutmayın.` };
+  return {
+    saved:
+      `"${sablon.ad}" şablonu uygulandı. Fiyatları ve zorunlu menü bilgilerini ` +
+      `(içindekiler, kalori, alerjenler) kendi tarifinize göre doğrulayın.`,
+  };
 }
 
 /* ------------------------------------------------------------- çoklu şube */

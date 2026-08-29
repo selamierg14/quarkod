@@ -30,6 +30,8 @@ export type MenuUrun = {
   kaloriKcal: number | null;
   alerjenler: string | null;
   ozelBilesenler: string | null;
+  /** İşletme bu bilgileri gözden geçirdi mi (bkz. prisma/schema.prisma). */
+  bilgilerDogrulandi: boolean;
   soldOut: boolean;
 };
 
@@ -748,6 +750,16 @@ function UrunBilgileri({ urun }: { urun: DetayUrun }) {
             Belirtilmemiş — alerjiniz varsa lütfen personele danışın.
           </p>
         )}
+
+        {/* Şablondan gelen tipik değerler işletme tarafından henüz
+            onaylanmadı. Bunu söylememek, doğrulanmamış bir beyanı
+            doğrulanmış gibi göstermek olurdu. */}
+        {!urun.bilgilerDogrulandi && alerjenler.length > 0 ? (
+          <p className="mt-1 text-caption text-ink-faint">
+            Bu bilgiler genel değerlerdir, işletme tarafından henüz
+            doğrulanmadı. Alerjiniz varsa personele danışın.
+          </p>
+        ) : null}
       </div>
 
       {ozel.length > 0 ? (

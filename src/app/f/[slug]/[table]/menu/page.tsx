@@ -81,6 +81,7 @@ export default async function MenuPage({
             kaloriKcal: u.kaloriKcal,
             alerjenler: u.alerjenler,
             ozelBilesenler: u.ozelBilesenler,
+            bilgilerDogrulandi: u.bilgilerDogrulandi,
             soldOut: u.soldOut,
           })),
         }))}
