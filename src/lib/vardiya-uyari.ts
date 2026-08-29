@@ -156,3 +156,69 @@ export function uyarilariHucreyeDagit(
   }
   return harita;
 }
+
+/** Bir kişinin bir uyarı türündeki tüm uyarıları, tek satırda özetlenmiş. */
+export type UyariOzeti = {
+  ad: string;
+  tur: UyariTuru;
+  /** Kaç kez tekrarladığı — "4 gün" gibi bir sayıya karşılık gelir. */
+  adet: number;
+  /** Kısa özet satırı: "ahmet agmet — 4 kez kısa dinlenme". */
+  baslik: string;
+  /** Açılınca görünen tekil uyarılar. */
+  detaylar: string[];
+};
+
+const TUR_ADLARI: Record<UyariTuru, string> = {
+  dinlenme: "kısa dinlenme",
+  aralikszCalisma: "aralıksız çalışma",
+  bosVardiya: "boş vardiya",
+};
+
+/**
+ * Uyarıları kişi + tür bazında gruplar.
+ *
+ * Çizelge ekranı bunları düz bir madde listesi olarak basıyordu ve aynı
+ * cümle aynı kişi için dört kez alt alta tekrarlanabiliyordu ("ahmet
+ * agmet: akşam vardiyasından sonra ertesi gün sabah" ×4). Sekiz maddelik
+ * bir sarı blok, içindeki tek gerçek bilgiyi (kaç kişi, kaç sorun)
+ * gizliyordu. Gruplama o bilgiyi başlığa çıkarıyor, tekilleri detaya
+ * indiriyor.
+ *
+ * Sıralama en çok tekrarlayandan aza: en çok yüklenen kişi en üstte.
+ */
+export function uyarilariGrupla(uyarilar: VardiyaUyarisi[]): UyariOzeti[] {
+  const gruplar = new Map<string, UyariOzeti>();
+
+  for (const uyari of uyarilar) {
+    if (uyari.tur === "bosVardiya") continue;
+    const ad = uyari.ad ?? "—";
+    const anahtar = `${uyari.userId ?? ad}|${uyari.tur}`;
+
+    const mevcut = gruplar.get(anahtar);
+    if (mevcut) {
+      mevcut.adet += 1;
+      mevcut.detaylar.push(uyari.mesaj);
+      continue;
+    }
+    gruplar.set(anahtar, {
+      ad,
+      tur: uyari.tur,
+      adet: 1,
+      baslik: "",
+      detaylar: [uyari.mesaj],
+    });
+  }
+
+  return [...gruplar.values()]
+    .map((grup) => ({
+      ...grup,
+      // Tek seferlik bir uyarıda "1 kez" demek gürültü; sayı yalnızca
+      // gerçekten tekrarladığında bilgi taşıyor.
+      baslik:
+        grup.adet > 1
+          ? `${grup.ad} — ${grup.adet} kez ${TUR_ADLARI[grup.tur]}`
+          : `${grup.ad} — ${TUR_ADLARI[grup.tur]}`,
+    }))
+    .sort((a, b) => b.adet - a.adet || a.ad.localeCompare(b.ad, "tr"));
+}

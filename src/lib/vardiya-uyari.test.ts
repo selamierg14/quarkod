@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { uyarilariHucreyeDagit, vardiyaUyarilariniHesapla } from "./vardiya-uyari";
+import {
+  uyarilariGrupla,
+  uyarilariHucreyeDagit,
+  vardiyaUyarilariniHesapla,
+  type UyariTuru,
+  type VardiyaUyarisi,
+} from "./vardiya-uyari";
 import type { Shift } from "./constants";
 
 /** 24.08.2026 pazartesi başlayan hafta. */
@@ -192,5 +198,62 @@ describe("bilinmeyen veri", () => {
     const uyarilar = vardiyaUyarilariniHesapla([], GUNLER, ["sabah"]);
     expect(uyarilar).toHaveLength(7);
     expect(uyarilar.every((u) => u.tur === "bosVardiya")).toBe(true);
+  });
+});
+
+describe("uyarı gruplama", () => {
+  const uyari = (ad: string, tur: UyariTuru, gun: string): VardiyaUyarisi => ({
+    tur,
+    userId: ad,
+    ad,
+    gun,
+    mesaj: `${ad}: ${tur} ${gun}`,
+  });
+
+  it("aynı kişinin aynı tür uyarısını tek satırda toplar", () => {
+    // Ekranda dört kez alt alta tekrarlanan cümlenin kaynağı buydu.
+    const ozet = uyarilariGrupla([
+      uyari("ahmet", "dinlenme", "2026-01-01"),
+      uyari("ahmet", "dinlenme", "2026-01-02"),
+      uyari("ahmet", "dinlenme", "2026-01-03"),
+      uyari("ahmet", "dinlenme", "2026-01-04"),
+    ]);
+
+    expect(ozet).toHaveLength(1);
+    expect(ozet[0].adet).toBe(4);
+    expect(ozet[0].baslik).toBe("ahmet — 4 kez kısa dinlenme");
+    expect(ozet[0].detaylar).toHaveLength(4);
+  });
+
+  it("aynı kişinin farklı türlerini ayrı tutar", () => {
+    const ozet = uyarilariGrupla([
+      uyari("ahmet", "dinlenme", "2026-01-01"),
+      uyari("ahmet", "aralikszCalisma", "2026-01-01"),
+    ]);
+    expect(ozet).toHaveLength(2);
+  });
+
+  it("tek seferlik uyarıda sayı yazmaz", () => {
+    const ozet = uyarilariGrupla([uyari("ayse", "aralikszCalisma", "2026-01-01")]);
+    expect(ozet[0].baslik).toBe("ayse — aralıksız çalışma");
+  });
+
+  it("en çok tekrarlayan en üstte", () => {
+    const ozet = uyarilariGrupla([
+      uyari("ayse", "dinlenme", "2026-01-01"),
+      uyari("ahmet", "dinlenme", "2026-01-01"),
+      uyari("ahmet", "dinlenme", "2026-01-02"),
+    ]);
+    expect(ozet[0].ad).toBe("ahmet");
+  });
+
+  it("boş vardiya uyarıları gruplamaya girmez", () => {
+    // Onlar kişiye ait değil; ekranda ayrı bir satır olarak sayılıyor.
+    const ozet = uyarilariGrupla([
+      { tur: "bosVardiya", gun: "2026-01-01", mesaj: "boş" },
+      uyari("ahmet", "dinlenme", "2026-01-01"),
+    ]);
+    expect(ozet).toHaveLength(1);
+    expect(ozet[0].ad).toBe("ahmet");
   });
 });

@@ -1,9 +1,9 @@
 "use client";
 
 import { useActionState } from "react";
-import { CopyPlus, TriangleAlert } from "lucide-react";
+import { ChevronDown, CopyPlus, TriangleAlert } from "lucide-react";
 import { gecenHaftayiKopyala, type HaftaKopyaState } from "./actions";
-import type { VardiyaUyarisi } from "@/lib/vardiya-uyari";
+import { uyarilariGrupla, type VardiyaUyarisi } from "@/lib/vardiya-uyari";
 
 /**
  * Hafta üstü araç şeridi: geçen haftayı kopyalama ve çizelge uyarıları.
@@ -29,7 +29,10 @@ export function HaftaAraclari({
   // Boş vardiya uyarıları hücrede zaten "—" olarak görünüyor; şeritte
   // yalnızca sayısı veriliyor ki 28 satırlık bir liste oluşmasın.
   const bosVardiyalar = uyarilar.filter((u) => u.tur === "bosVardiya");
-  const kisiUyarilari = uyarilar.filter((u) => u.tur !== "bosVardiya");
+  // Aynı cümle aynı kişi için dört kez tekrarlanabiliyordu; kişi + tür
+  // bazında gruplanıyor (bkz. lib/vardiya-uyari.ts).
+  const ozetler = uyarilariGrupla(uyarilar);
+  const toplamUyari = ozetler.reduce((toplam, o) => toplam + o.adet, 0);
 
   return (
     <div className="flex flex-col gap-3">
@@ -59,28 +62,64 @@ export function HaftaAraclari({
         ) : null}
       </form>
 
-      {kisiUyarilari.length > 0 || bosVardiyalar.length > 0 ? (
-        <div className="rounded-control bg-warning-soft px-4 py-3 ring-1 ring-warning/25">
-          <p className="flex items-center gap-2 text-caption font-semibold text-warning-ink uppercase">
-            <TriangleAlert className="h-3.5 w-3.5" aria-hidden="true" />
-            Çizelge uyarıları
-          </p>
-          <ul className="mt-1.5 flex list-disc flex-col gap-0.5 pl-5 text-small text-warning-ink">
-            {kisiUyarilari.map((u, i) => (
-              <li key={i}>{u.mesaj}</li>
-            ))}
-            {bosVardiyalar.length > 0 ? (
-              <li>
-                Bu hafta <strong>{bosVardiyalar.length}</strong> vardiyaya kimse
-                atanmadı (tabloda &quot;—&quot; ile işaretli).
-              </li>
-            ) : null}
-          </ul>
-          <p className="mt-1.5 text-caption text-warning-ink/80">
-            Bunlar yalnızca hatırlatma — bilerek böyle planladıysanız bir şey
-            yapmanız gerekmiyor.
-          </p>
-        </div>
+      {ozetler.length > 0 || bosVardiyalar.length > 0 ? (
+        <details className="group rounded-card border border-warning/25 bg-warning-soft/50">
+          {/* Uyarılar kaydı engellemiyor, yalnızca hatırlatma. Bu yüzden
+              varsayılan KAPALI: çizelgeyi kurarken ekranın üçte birini
+              kaplayan sarı bir blok, asıl işin (tablonun) önüne geçiyordu.
+              Başlıkta sayı var — açmadan da "bir şey var mı" görülüyor. */}
+          <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-small font-medium text-warning-ink">
+            <TriangleAlert className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="flex-1">
+              {ozetler.length > 0 ? (
+                <>
+                  {ozetler.length} personel için {toplamUyari} hatırlatma
+                </>
+              ) : null}
+              {ozetler.length > 0 && bosVardiyalar.length > 0 ? " · " : null}
+              {bosVardiyalar.length > 0 ? (
+                <>{bosVardiyalar.length} vardiya boş</>
+              ) : null}
+            </span>
+            <ChevronDown
+              className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180"
+              aria-hidden="true"
+            />
+          </summary>
+
+          <div className="border-t border-warning/20 px-4 py-3">
+            <ul className="flex flex-col gap-2">
+              {ozetler.map((ozet) => (
+                <li key={`${ozet.ad}-${ozet.tur}`} className="text-small text-warning-ink">
+                  <span className="font-medium">{ozet.baslik}</span>
+                  {/* Tekrarlayan uyarılarda tek tek hangi günler olduğu
+                      ancak istendiğinde açılıyor. */}
+                  {ozet.adet > 1 ? (
+                    <ul className="mt-0.5 flex list-disc flex-col gap-0.5 pl-5 text-caption text-warning-ink/80">
+                      {ozet.detaylar.map((detay, i) => (
+                        <li key={i}>{detay}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </li>
+              ))}
+              {bosVardiyalar.length > 0 ? (
+                <li className="text-small text-warning-ink">
+                  <span className="font-medium">
+                    {bosVardiyalar.length} vardiyaya kimse atanmadı
+                  </span>
+                  <span className="block text-caption text-warning-ink/80">
+                    Tabloda &quot;—&quot; ile işaretli.
+                  </span>
+                </li>
+              ) : null}
+            </ul>
+            <p className="mt-2.5 text-caption text-warning-ink/80">
+              Bunlar yalnızca hatırlatma — bilerek böyle planladıysanız bir şey
+              yapmanız gerekmiyor.
+            </p>
+          </div>
+        </details>
       ) : null}
     </div>
   );
