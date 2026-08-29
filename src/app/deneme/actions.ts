@@ -171,6 +171,8 @@ export async function denemeBaslat(
   }
 
   await setSessionCookie({
+    // Jeton modül taşımaz; etkin küme her istekte DB'den okunuyor.
+    moduller: [],
     id: kullanici.id,
     name: kullanici.name,
     email: kullanici.email,

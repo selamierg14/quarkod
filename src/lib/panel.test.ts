@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { acilabilirRoller, aktifMi, panelMenusu, panelModu } from "./panel";
+import { MODUL_ANAHTARLARI } from "./moduller";
 
 /** Menüdeki tüm bağlantı adreslerini düz listeye indirger. */
 function adresler(modu: Parameters<typeof panelMenusu>[0], role: Parameters<typeof panelMenusu>[1]) {
@@ -19,7 +20,7 @@ describe("panel modu", () => {
   });
 
   it("diğer roller her zaman kiracı modundadır", () => {
-    for (const role of ["owner", "bolge", "manager", "viewer"] as const) {
+    for (const role of ["owner", "bolge", "manager"] as const) {
       expect(panelModu(role, false)).toBe("kiraci");
     }
   });
@@ -76,10 +77,30 @@ describe("kiracı menüsü", () => {
     expect(manager).not.toContain("/admin/kiyaslama");
   });
 
-  it("salt okunur kullanıcı da yönetim ekranlarını görmez", () => {
-    const viewer = adresler("kiraci", "viewer");
-    expect(viewer).toContain("/admin/urunler");
-    expect(viewer).not.toContain("/admin/kullanicilar");
+  it("kapalı modülün menüde hiç bağlantısı olmaz", () => {
+    // Menü ile sayfa kapıları aynı kaynaktan beslenmeli: burada görünmeyen
+    // her adresin arkasında requireModul var (bkz. lib/auth.ts). Bu test o
+    // eşleşmenin menü tarafını tutuyor.
+    const hicbiri = panelMenusu("kiraci", "owner", []).flatMap((g) =>
+      g.linkler.flatMap((l) => [l.href, ...(l.altLinkler?.map((a) => a.href) ?? [])]),
+    );
+    expect(hicbiri).not.toContain("/admin/menu");
+    expect(hicbiri).not.toContain("/admin/geri-bildirimler");
+    expect(hicbiri).not.toContain("/admin/izinler");
+    expect(hicbiri).not.toContain("/admin/entegrasyonlar");
+    expect(hicbiri).not.toContain("/admin/vardiya-planlama");
+    // Modülden bağımsız olanlar durmalı: hesap sahibi modülsüz kalsa bile
+    // kullanıcılarını ve işletmesini yönetebilmeli.
+    expect(hicbiri).toContain("/admin/kullanicilar");
+  });
+
+  it("yalnızca açık modül menüye girer", () => {
+    const sadeceMenu = panelMenusu("kiraci", "owner", ["menu"]).flatMap((g) =>
+      g.linkler.flatMap((l) => [l.href, ...(l.altLinkler?.map((a) => a.href) ?? [])]),
+    );
+    expect(sadeceMenu).toContain("/admin/menu");
+    expect(sadeceMenu).not.toContain("/admin/geri-bildirimler");
+    expect(sadeceMenu).not.toContain("/admin/vardiya-planlama");
   });
 
   it("tek işletmeli sorumlu kendi işletme ayarlarına sidebar'dan ulaşır", () => {
@@ -89,7 +110,7 @@ describe("kiracı menüsü", () => {
     const manager = panelMenusu(
       "kiraci",
       "manager",
-      { menuIzni: true, anketIzni: true },
+      MODUL_ANAHTARLARI,
       "isletme-1",
     ).flatMap((g) =>
       g.linkler.flatMap((l) => [l.href, ...(l.altLinkler?.map((alt) => alt.href) ?? [])]),
@@ -181,7 +202,7 @@ describe("açılabilir roller", () => {
     // bizim göremediğimiz sahipler türemesin.
     const owner = acilabilirRoller("owner");
     expect(owner).not.toContain("owner");
-    expect(owner).toEqual(["bolge", "manager", "viewer", "garson"]);
+    expect(owner).toEqual(["bolge", "manager", "garson"]);
   });
 
   it("platform yöneticisi sahip açabilir", () => {
@@ -189,7 +210,7 @@ describe("açılabilir roller", () => {
   });
 
   it("salt okunur hiç kullanıcı açamaz", () => {
-    expect(acilabilirRoller("viewer")).toEqual([]);
+    expect(acilabilirRoller("garson")).toEqual([]);
   });
 
   it("sorumlu ve bölge müdürü yalnızca garson açabilir", () => {

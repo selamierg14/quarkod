@@ -6,7 +6,7 @@ import {
   actingAccountId,
   canAccessBusiness,
   hashPassword,
-  requirePersonelYonetimi,
+  requireKullaniciYonetimi,
   requireUser,
   setSessionCookie,
   userScope,
@@ -17,6 +17,7 @@ import { acilabilirRoller } from "@/lib/panel";
 import { gecerliRolMu } from "@/lib/session-token";
 import { sifreSorunu } from "@/lib/sifre";
 import { prisma } from "@/lib/db";
+import { istenenModulleriSuz, modulDagitabilirMi } from "@/lib/moduller";
 import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
 import { uniqueConstraintMessage } from "@/lib/unique-error";
 import { issueOtp, verifyOtp } from "@/lib/otp";
@@ -37,7 +38,7 @@ export async function createUser(
   // atayabileceği aşağıda acilabilirRoller() ve canAccessBusiness() ile
   // ayrıca doğrulanıyor — bu kapı yalnızca "panele giren biri mi" sorusuna
   // bakar.
-  const actor = await requirePersonelYonetimi();
+  const actor = await requireKullaniciYonetimi();
   await requireYazma();
 
   const name = String(formData.get("name") ?? "").trim();
@@ -155,7 +156,7 @@ export async function updateUser(
   _prev: UserFormState,
   formData: FormData,
 ): Promise<UserFormState> {
-  const actor = await requirePersonelYonetimi();
+  const actor = await requireKullaniciYonetimi();
   await requireYazma();
 
   const id = String(formData.get("id") ?? "");
@@ -176,8 +177,12 @@ export async function updateUser(
     .getAll("bolgeIsletmeleri")
     .map((v) => String(v))
     .filter(Boolean);
-  const menuIzni = formData.get("menuIzni") === "on";
-  const anketIzni = formData.get("anketIzni") === "on";
+  // Formdan gelen modüller iki süzgeçten geçiyor: tanınmayan anahtarlar
+  // atılıyor ve actor'ın KENDİ sahip olmadıkları düşülüyor. İkincisi asıl
+  // güvenlik kapısı — form alanı gizlense bile istek elle kurulabilir, ve
+  // modül dağıtma yetkisi olmayan bir rol (bölge/sorumlu) için
+  // verilebilirModuller boş döndüğü için sonuç da boş kalır.
+  const istenenModuller = formData.getAll("moduller").map((v) => String(v));
 
   if (!name) return { error: "Ad soyad gerekli." };
   if (!/^\S+@\S+\.\S+$/.test(email)) return { error: "Geçerli bir e-posta girin." };
@@ -224,8 +229,18 @@ export async function updateUser(
           phone,
           role: etkinRol,
           businessId: etkinRol === "manager" || etkinRol === "garson" ? businessId : null,
-          menuIzni,
-          anketIzni,
+          // Modül dağıtamayan bir rol formu göndermişse bu alan hiç
+          // dokunulmamalı: aksi halde bir sorumlu, kullanıcıyı düzenlerken
+          // farkında olmadan modüllerini sıfırlardı.
+          ...(modulDagitabilirMi(actor.role)
+            ? {
+                moduller: istenenModulleriSuz(
+                  actor.role,
+                  actor.moduller,
+                  istenenModuller,
+                ),
+              }
+            : {}),
         },
       }),
       // Bölge atamaları tamamen yeniden yazılır: form o an ekranda ne
@@ -260,7 +275,7 @@ export async function resetPassword(
   _prev: UserFormState,
   formData: FormData,
 ): Promise<UserFormState> {
-  const actor = await requirePersonelYonetimi();
+  const actor = await requireKullaniciYonetimi();
   await requireYazma();
 
   const id = String(formData.get("userId") ?? "");
@@ -306,7 +321,7 @@ export async function resetPassword(
 }
 
 export async function toggleUser(formData: FormData) {
-  const owner = await requirePersonelYonetimi();
+  const owner = await requireKullaniciYonetimi();
   await requireYazma();
   const id = String(formData.get("userId") ?? "");
 
@@ -392,6 +407,8 @@ export async function changeOwnPassword(
     // oturumumuzu tazeliyoruz; yoksa kullanıcı kendi işleminden sonra
     // giriş ekranına düşerdi.
     await setSessionCookie({
+      // Jeton modül taşımaz; etkin küme her istekte DB'den okunuyor.
+      moduller: [],
       id: user.id,
       name: user.name,
       email: user.email,

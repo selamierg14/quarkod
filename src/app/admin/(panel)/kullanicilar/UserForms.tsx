@@ -8,6 +8,11 @@ import {
   updateUser,
   type UserFormState,
 } from "./actions";
+import {
+  MODULLER,
+  MODUL_ACIKLAMALARI,
+  type ModulAnahtari,
+} from "@/lib/moduller";
 
 const INPUT =
   "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
@@ -172,8 +177,7 @@ export type EditableUser = {
   role: string;
   businessId: string | null;
   bolgeIsletmeleri: string[];
-  menuIzni: boolean;
-  anketIzni: boolean;
+  moduller: string[];
 };
 
 /**
@@ -184,10 +188,13 @@ export function EditUserForm({
   user,
   businesses,
   roller,
+  verilebilirModuller,
 }: {
   user: EditableUser;
   businesses: Business[];
   roller: string[];
+  /** Formu açan kişinin KENDİ sahip olduğu modüller — fazlasını veremez. */
+  verilebilirModuller: ModulAnahtari[];
 }) {
   const [role, setRole] = useState(user.role);
   const [state, formAction, pending] = useActionState<UserFormState, FormData>(
@@ -313,41 +320,37 @@ export function EditUserForm({
         ) : null}
       </div>
 
-      {/* Garson zaten rapor/menü modüllerine hiç giremiyor (kendi vardiya
-          ekranına düşüyor) — bu izinler onun için anlamsız. */}
-      {!rolSabit && role !== "garson" ? (
+      {/* Modül dağıtımı ticari bir karar: yalnızca platform yöneticisi ve
+          hesap sahibi yapabilir (bkz. lib/moduller.ts). Bölge müdürü ya da
+          işletme sorumlusu kendi altına kullanıcı açabilir ama patronun
+          kapattığı bir modülü ekibine açamaz — bölüm onlara hiç görünmüyor.
+          Garson da bu ekranlara zaten hiç girmiyor.
+
+          Listede yalnızca dağıtan kişinin KENDİ sahip olduğu modüller var;
+          sunucuda istenenModulleriSuz() aynı kesişimi tekrar alıyor, yani
+          form alanı elle kurulsa bile fazlası geçmiyor. */}
+      {verilebilirModuller.length > 0 && !rolSabit && role !== "garson" ? (
         <fieldset className="flex flex-col gap-2 rounded-chip border border-line bg-canvas p-3">
           <legend className="px-1 text-caption font-medium tracking-wide text-ink-muted uppercase">
             Modül izinleri
           </legend>
-          <label className="flex items-start gap-2 text-small text-ink-soft">
-            <input
-              type="checkbox"
-              name="menuIzni"
-              defaultChecked={user.menuIzni}
-              className="mt-0.5 h-4 w-4 accent-[var(--color-ink)]"
-            />
-            <span>
-              QR Menü modülü
-              <span className="block text-caption text-ink-faint">
-                Kapalıysa bu kullanıcı QR Menü sekmesini göremez, düzenleyemez.
+          {verilebilirModuller.map((modul) => (
+            <label key={modul} className="flex items-start gap-2 text-small text-ink-soft">
+              <input
+                type="checkbox"
+                name="moduller"
+                value={modul}
+                defaultChecked={user.moduller.includes(modul)}
+                className="mt-0.5 h-4 w-4 accent-[var(--color-ink)]"
+              />
+              <span>
+                {MODULLER[modul]}
+                <span className="block text-caption text-ink-faint">
+                  {MODUL_ACIKLAMALARI[modul]}
+                </span>
               </span>
-            </span>
-          </label>
-          <label className="flex items-start gap-2 text-small text-ink-soft">
-            <input
-              type="checkbox"
-              name="anketIzni"
-              defaultChecked={user.anketIzni}
-              className="mt-0.5 h-4 w-4 accent-[var(--color-ink)]"
-            />
-            <span>
-              QR değerlendirme (geri bildirim) modülü
-              <span className="block text-caption text-ink-faint">
-                Kapalıysa bu kullanıcı geri bildirimleri göremez.
-              </span>
-            </span>
-          </label>
+            </label>
+          ))}
         </fieldset>
       ) : null}
 

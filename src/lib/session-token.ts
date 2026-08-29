@@ -14,13 +14,16 @@ export const SESSION_MAX_AGE = 60 * 60 * 12; // 12 saat
  * manager    — yalnızca kendi işletmesi.
  * garson     — saha personeli; yalnızca kendi vardiyasını ve günlük
  *              görevlerini görür, rapor/ayar ekranlarına hiç girmez.
+ *
+ * Rolün ne görebildiği ile hangi MODÜLLERE erişebildiği ayrı iki eksen:
+ * rol "bu kişi ne yapabilir"i, moduller ise "hesap hangi modülleri
+ * kullanıyor"u anlatır (bkz. lib/moduller.ts).
  */
 export const ROLLER = [
   "superadmin",
   "owner",
   "bolge",
   "manager",
-  "viewer",
   "garson",
 ] as const;
 
@@ -39,11 +42,15 @@ export function gecerliRolMu(value: string): value is Role {
 }
 
 /**
- * Yazma yetkisi olmayan roller. Salt okunur kullanıcı hesabın her yerini
- * görür ama hiçbir kaydı değiştiremez; kontrol tek yerden yapılsın diye
- * liste burada duruyor.
+ * Yazma yetkisi olmayan roller.
+ *
+ * "Salt okunur" (viewer) rolü kaldırıldı: pratikte hiç kullanılmıyordu
+ * (üretimde tek kullanıcısı yoktu) ama her yetki kontrolüne ekstra bir dal
+ * ekliyor, rol listesini uzatıyor ve "bu kişi neyi görebiliyor" sorusunu
+ * zorlaştırıyordu. Liste artık boş — fonksiyon duruyor ki ileride bir
+ * salt-okunur rol gerekirse tek yerden geri gelsin.
  */
-export const SALT_OKUNUR_ROLLER: Role[] = ["viewer"];
+export const SALT_OKUNUR_ROLLER: Role[] = [];
 
 export function yazabilirMi(role: Role): boolean {
   return !SALT_OKUNUR_ROLLER.includes(role);
@@ -59,12 +66,14 @@ export type SessionUser = {
   /** manager için dolu; owner ve superadmin için null. */
   businessId: string | null;
   /**
-   * Etkin izinler — yalnızca `getSession()` doldurur (DB'den taze okur);
-   * owner/superadmin için kısıttan bağımsız her zaman true. Jetona
-   * yazılmaz, diğer üretim yerlerinde boş bırakılabilir.
+   * Etkin modüller — yalnızca `getSession()` doldurur, her istekte DB'den
+   * taze okuyarak (bkz. lib/moduller.ts). Jetona YAZILMAZ: 12 saat yaşayan
+   * bir jetonda taşınsaydı, kapatılan bir modül yarım gün daha açık kalırdı.
+   *
+   * Jetondan üretilen nesnelerde bilerek boş: bir modül kontrolü yanlışlıkla
+   * oraya düşerse erişim kapanır, açılmaz.
    */
-  menuIzni?: boolean;
-  anketIzni?: boolean;
+  moduller: string[];
 };
 
 /** Jetonun hâlâ geçerli sayılıp sayılmayacağını belirleyen kullanıcı hâli. */
@@ -157,6 +166,8 @@ export async function verifySessionToken(
       role,
       accountId,
       businessId: (payload.businessId as string | null) ?? null,
+      // Jeton modül taşımaz; gerçek küme getSession'da DB'den okunuyor.
+      moduller: [],
       issuedAt: typeof payload.iat === "number" ? payload.iat : 0,
     };
   } catch {

@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
   // Garson kendi çizelgesini indiremez: bu ekran planlayan tarafın
   // (bkz. requirePersonelYonetimi) ve tüm ekibin verisini taşıyor.
-  if (user.role === "garson" || user.role === "viewer") {
+  if (user.role === "garson" || !user.moduller.includes("personel")) {
     return NextResponse.json({ error: "Bu işleme yetkiniz yok." }, { status: 403 });
   }
 

@@ -97,6 +97,7 @@ describe("jeton rolleri", () => {
     // atılıyordu: kullanıcı "şifrem yanlış" sanıyordu.
     for (const role of ROLLER) {
       const jeton = await createSessionToken({
+        moduller: [],
         id: "u1",
         name: "Test",
         email: "t@example.com",
@@ -111,6 +112,6 @@ describe("jeton rolleri", () => {
 
   it("tanımsız rolü reddeder", () => {
     expect(gecerliRolMu("kasiyer")).toBe(false);
-    expect(gecerliRolMu("viewer")).toBe(true);
+    expect(gecerliRolMu("viewer")).toBe(false);
   });
 });

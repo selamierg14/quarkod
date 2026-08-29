@@ -1,4 +1,5 @@
 import type { Role } from "./session-token";
+import { MODUL_ANAHTARLARI } from "./moduller";
 
 /**
  * Panelin iki ayrı yüzü.
@@ -77,23 +78,23 @@ function yonetici(role: Role): boolean {
  * müşterinin kendi hesabından bizim göremediğimiz sahipler türeyebiliyordu.
  */
 export function acilabilirRoller(actorRole: Role): Role[] {
-  if (actorRole === "superadmin") return ["owner", "bolge", "manager", "viewer", "garson"];
-  if (actorRole === "owner") return ["bolge", "manager", "viewer", "garson"];
+  if (actorRole === "superadmin") return ["owner", "bolge", "manager", "garson"];
+  if (actorRole === "owner") return ["bolge", "manager", "garson"];
   // İşletme sorumlusu (tek işletmeye bağlı) ve bölge müdürü (birden fazla
   // işletmeye bağlı) günlük personel devrini kendileri çeviriyor — her yeni
   // garson için hesap sahibine gitmek zorunda kalmasınlar diye yalnızca
   // "garson" açabiliyorlar. Kendilerine eş ya da üst bir rol (manager,
-  // bolge, owner, viewer) açamazlar.
+  // bolge, owner) açamazlar.
   if (actorRole === "manager" || actorRole === "bolge") return ["garson"];
   return [];
 }
 
-export type ModulIzinleri = { menuIzni: boolean; anketIzni: boolean };
+
 
 export function panelMenusu(
   modu: PanelModu,
   role: Role,
-  izinler: ModulIzinleri = { menuIzni: true, anketIzni: true },
+  moduller: readonly string[] = MODUL_ANAHTARLARI,
   /** Hesabın tek işletmesi varsa kimliği — "Düzenle" kısayolu doğrudan ona gider. */
   tekIsletmeId: string | null = null,
 ): NavGrup[] {
@@ -148,7 +149,7 @@ export function panelMenusu(
   // geri bildirim verisinin farklı kesitleri olduğu için tek başlık altında
   // toplandı — beş dağınık rapor sekmesi yerine tek bir "Geri bildirimler"
   // modülü, içinde üç görünüm.
-  if (izinler.anketIzni) {
+  if (moduller.includes("anket")) {
     gunluk.push({
       href: "/admin/geri-bildirimler",
       label: "Geri bildirimler",
@@ -162,7 +163,7 @@ export function panelMenusu(
   }
 
   const yonetim: NavLink[] = [];
-  if (izinler.menuIzni) {
+  if (moduller.includes("menu")) {
     yonetim.push(
       {
         href: "/admin/menu",
@@ -220,10 +221,24 @@ export function panelMenusu(
           { href: "/admin/kullanicilar/ekle", label: "Ekle" },
         ],
       },
-      { href: "/admin/izinler", label: "Pazarlama izinleri", ikon: "izin" },
-      { href: "/admin/entegrasyonlar", label: "Entegrasyonlar", ikon: "entegrasyon" },
       { href: "/admin/denetim", label: "İşlem geçmişi", ikon: "denetim" },
     );
+    // Pazarlama ve İYS ayrı satılan modüller: izni olmayan hesapta menüde
+    // hiç görünmüyor (sayfa kapısı requireModul ile ayrıca korunuyor).
+    if (moduller.includes("pazarlama")) {
+      yonetim.splice(yonetim.length - 1, 0, {
+        href: "/admin/izinler",
+        label: "Pazarlama izinleri",
+        ikon: "izin",
+      });
+    }
+    if (moduller.includes("iys")) {
+      yonetim.splice(yonetim.length - 1, 0, {
+        href: "/admin/entegrasyonlar",
+        label: "Entegrasyonlar",
+        ikon: "entegrasyon",
+      });
+    }
   } else if (role === "manager" && tekIsletmeId) {
     // İşletme sorumlusunun tek işletmesi var; "İşletmeler" (çoğul, liste)
     // ona hiç görünmüyordu ve ayarlarına ulaşmanın tek yolu Profil sayfasına
@@ -263,11 +278,10 @@ export function panelMenusu(
     });
   }
 
-  // Vardiya çizelgesi ve görev şablonu yalnızca planlayan tarafta (yazma
-  // yetkisi olan owner/bölge/manager); garson zaten "personel" moduna
-  // düşüyor, viewer salt okunur olduğu için buraya girmiyor.
+  // Vardiya çizelgesi ve görev şablonu yalnızca planlayan tarafta (garson
+  // zaten "personel" moduna düşüyor) ve yalnızca modül açıksa.
   const personel: NavLink[] = [];
-  if (role === "owner" || role === "bolge" || role === "manager" || role === "superadmin") {
+  if (moduller.includes("personel") && role !== "garson") {
     personel.push({
       href: "/admin/vardiya-planlama",
       label: "Personel operasyonu",
@@ -280,8 +294,7 @@ export function panelMenusu(
         { href: "/admin/vardiya-planlama/izinler", label: "İzin & müsaitlik" },
         { href: "/admin/vardiya-planlama/sablon", label: "Görev şablonu" },
         // Personelin kendisi bu gruba hiç girmiyor (garson "personel"
-        // moduna düşüyor, viewer salt okunur olduğu için buraya hiç
-        // girmiyor) — performans kartı yalnızca planlayan tarafa görünür.
+        // moduna düşüyor) — performans kartı yalnızca planlayan tarafa görünür.
         { href: "/admin/vardiya-planlama/performans", label: "Performans" },
       ],
     });

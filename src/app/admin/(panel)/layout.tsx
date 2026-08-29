@@ -38,7 +38,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const gruplar = panelMenusu(
     modu,
     user.role,
-    { menuIzni: user.menuIzni ?? true, anketIzni: user.anketIzni ?? true },
+    user.moduller,
     isletmeler.length === 1 ? isletmeler[0].id : null,
   );
 
@@ -115,15 +115,6 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
           >
             <span className="font-semibold">Abonelik:</span> {uyari.mesaj} Yenilemek
             için bizimle iletişime geçin.
-          </div>
-        ) : null}
-
-        {/* Salt okunur kullanıcı düğmelere basıp hata almasın: kısıt baştan
-            söyleniyor. Asıl koruma sunucudaki requireYazma kapısı. */}
-        {user.role === "viewer" ? (
-          <div className="print-hidden bg-sunken px-4 py-2 text-small text-ink-soft ring-1 ring-inset ring-line">
-            <span className="font-semibold">Salt okunur erişim:</span> raporları
-            görebilirsiniz, kayıtlarda değişiklik yapamazsınız.
           </div>
         ) : null}
 

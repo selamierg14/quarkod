@@ -61,13 +61,6 @@ const bolgeA: TenantScope = {
   businessId: null,
   userId: "bolge-a",
 };
-// A hesabının tamamını görebilen ama hiçbir şeyi değiştiremeyen kullanıcı.
-const okuyucuA: TenantScope = {
-  role: "viewer",
-  accountId: ids.hesapA,
-  businessId: null,
-  userId: "okuyucu-a",
-};
 
 beforeAll(async () => {
   const base = process.env.DATABASE_URL;
@@ -335,18 +328,12 @@ describe("bölge müdürü", () => {
   });
 });
 
-describe("salt okunur kullanıcı", () => {
-  it("hesabın tamamını görür", async () => {
-    const izinli = await allowedBusinessIdsFor(prisma, okuyucuA);
-    expect(izinli.sort()).toEqual([ids.aKafe1, ids.aKafe2].sort());
-  });
-
-  it("başka hesabın işletmesine erişemez", async () => {
-    expect(await canAccessBusinessFor(prisma, okuyucuA, ids.bKafe1)).toBe(false);
-  });
-
-  it("yazma yetkisi yoktur", () => {
-    expect(yazabilirMi("viewer")).toBe(false);
+describe("yazma yetkisi", () => {
+  // "Salt okunur" (viewer) rolü kaldırıldı; şu an yazamayan rol yok.
+  // Test duruyor ki ileride bir salt-okunur rol eklenirse burası kırmızı
+  // yansın ve kimin yazabildiği bilinçli bir karar olarak kalsın.
+  it("kalan rollerin hepsi yazabilir", () => {
+    expect(yazabilirMi("manager")).toBe(true);
     expect(yazabilirMi("owner")).toBe(true);
     expect(yazabilirMi("bolge")).toBe(true);
   });

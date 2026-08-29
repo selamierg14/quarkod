@@ -203,6 +203,8 @@ export async function loginAction(
 
     await clearChallenge();
     await setSessionCookie({
+      // Jeton modül taşımaz; etkin küme her istekte DB'den okunuyor.
+      moduller: [],
       id: user.id,
       name: user.name,
       email: user.email,

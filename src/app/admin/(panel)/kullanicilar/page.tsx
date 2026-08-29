@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import { Users } from "lucide-react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { requirePersonelYonetimi, userScope } from "@/lib/auth";
+import { requireKullaniciYonetimi, userScope } from "@/lib/auth";
 import { ResetPasswordForm, ToggleUserButton } from "./UserForms";
 import { SEED_SIFRESI } from "./sabitler";
 import { ROL_ADLARI } from "@/lib/constants";
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Kullanıcılar" };
 
 export default async function UsersPage() {
-  const owner = await requirePersonelYonetimi();
+  const owner = await requireKullaniciYonetimi();
 
   const users = await prisma.user.findMany({
     where: await userScope(owner),
@@ -110,7 +110,7 @@ export default async function UsersPage() {
                       // baktığı listede tek bakışta görünmeli.
                       user.businesses.map((b) => b.business.name).join(", ") || "—"
                     : (user.business?.name ??
-                      (user.role === "owner" || user.role === "viewer" ? "Hepsi" : "—"))}
+                      (user.role === "owner" ? "Hepsi" : "—"))}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap items-center justify-end gap-2">

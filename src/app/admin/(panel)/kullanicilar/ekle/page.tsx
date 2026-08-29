@@ -1,7 +1,7 @@
 import { Plus, User } from "lucide-react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { actingAccountId, requirePersonelYonetimi, visibleBusinesses } from "@/lib/auth";
+import { actingAccountId, requireKullaniciYonetimi, visibleBusinesses } from "@/lib/auth";
 import { NewUserForm } from "../UserForms";
 import { acilabilirRoller } from "@/lib/panel";
 import { PageHeader, SectionCard } from "@/components/ui";
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Yeni kullanıcı" };
 
 export default async function NewUserPage() {
-  const owner = await requirePersonelYonetimi();
+  const owner = await requireKullaniciYonetimi();
   const businesses = await visibleBusinesses(owner);
 
   // Yeni kullanıcının açılacağı hesap: platform yöneticisi için "girilen"

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
   }
-  if (!user.anketIzni) {
+  if (!user.moduller.includes("anket")) {
     return NextResponse.json({ error: "Bu modüle erişim izniniz yok." }, { status: 403 });
   }
 

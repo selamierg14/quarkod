@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { prisma } from "./db";
+import { etkinModuller, type ModulAnahtari } from "./moduller";
 import {
   SESSION_COOKIE,
   SESSION_MAX_AGE,
@@ -86,8 +87,7 @@ export const getSession = cache(async (): Promise<SessionUser | null> => {
       businessId: true,
       active: true,
       passwordChangedAt: true,
-      menuIzni: true,
-      anketIzni: true,
+      moduller: true,
       account: { select: { active: true, expiresAt: true } },
     },
   });
@@ -110,9 +110,6 @@ export const getSession = cache(async (): Promise<SessionUser | null> => {
   if (iptal || !user) return null;
 
   const role = user.role as Role;
-  // Sahip ve platform yöneticisi modül kısıtının dışında: kısıt yalnızca
-  // ekip üyelerini (manager/bölge/viewer) sınırlamak için var.
-  const sinirsiz = role === "owner" || role === "superadmin";
 
   return {
     id: user.id,
@@ -121,8 +118,9 @@ export const getSession = cache(async (): Promise<SessionUser | null> => {
     role,
     accountId: user.accountId,
     businessId: user.businessId,
-    menuIzni: sinirsiz || user.menuIzni,
-    anketIzni: sinirsiz || user.anketIzni,
+    // Platform yöneticisi listeye bakılmaksızın hepsine erişir; kural
+    // etkinModuller() içinde (bkz. lib/moduller.ts), burada değil.
+    moduller: [...etkinModuller(role, user.moduller)],
   };
 });
 
@@ -216,28 +214,43 @@ export async function requireTenantOwner(): Promise<SessionUser> {
   return user;
 }
 
+/**
+ * Bir modülün kapısı. İzni olmayan sayfaya hiç giremez — menüde bağlantısı
+ * da görünmez (bkz. panelMenusu), yani bu yalnızca adresi elle yazan için
+ * son kapı.
+ */
+export async function requireModul(modul: ModulAnahtari): Promise<SessionUser> {
+  const user = await requireTenant();
+  if (!user.moduller.includes(modul)) redirect("/admin");
+  return user;
+}
+
 /** QR Menü modülüne erişim izni olmayan personel bu sayfalara giremez. */
 export async function requireMenuErisim(): Promise<SessionUser> {
-  const user = await requireTenant();
-  if (!user.menuIzni) redirect("/admin");
-  return user;
+  return requireModul("menu");
 }
 
 /** Geri bildirim/anket sonuçlarına erişim izni olmayan personel bu sayfalara giremez. */
 export async function requireAnketErisim(): Promise<SessionUser> {
-  const user = await requireTenant();
-  if (!user.anketIzni) redirect("/admin");
-  return user;
+  return requireModul("anket");
+}
+
+/** Vardiya çizelgesi ve görev şablonu — planlayan taraf. */
+export async function requirePersonelYonetimi(): Promise<SessionUser> {
+  return requireModul("personel");
 }
 
 /**
- * Vardiya çizelgesi ve görev şablonu — planlayan taraf. Salt okunur
- * kullanıcı buradan da yazamaz; garson zaten requireTenant'ta ayrılıyor.
+ * Kullanıcı ekranları (listele/ekle/düzenle).
+ *
+ * Bilerek hiçbir modüle bağlı DEĞİL: modüller ticari bir paket, ekibini
+ * yönetmek ise her hesabın temel işi. Personel operasyonu modülü kapalı bir
+ * hesabın sahibi de kullanıcı açabilmeli — aksi halde modülü kapatmak
+ * müşteriyi kendi hesabından kilitlerdi. Garson buraya requireTenant'ta
+ * zaten giremiyor (kendi "personel" moduna düşüyor).
  */
-export async function requirePersonelYonetimi(): Promise<SessionUser> {
-  const user = await requireTenant();
-  if (user.role === "viewer") redirect("/admin");
-  return user;
+export async function requireKullaniciYonetimi(): Promise<SessionUser> {
+  return requireTenant();
 }
 
 /** Oturuma dönüştürülecek kullanıcı kaydı. */
@@ -290,6 +303,9 @@ export async function authenticate(
 /** Doğrulanmış kullanıcıdan oturum nesnesi (2FA sonrası). */
 export function toSessionUser(user: AuthenticatedUser): SessionUser {
   return {
+    // Modüller bilerek boş: bu nesne yalnızca jeton üretmek için kullanılıyor,
+    // etkin küme her istekte getSession'da DB'den okunuyor.
+    moduller: [],
     id: user.id,
     name: user.name,
     email: user.email,

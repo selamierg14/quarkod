@@ -2,7 +2,8 @@ import { Pencil, User } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { requirePersonelYonetimi, userScope, visibleBusinesses } from "@/lib/auth";
+import { requireKullaniciYonetimi, userScope, visibleBusinesses } from "@/lib/auth";
+import { verilebilirModuller } from "@/lib/moduller";
 import { EditUserForm } from "../../UserForms";
 import { acilabilirRoller } from "@/lib/panel";
 import { PageHeader, SectionCard } from "@/components/ui";
@@ -16,7 +17,7 @@ export default async function EditUserPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const owner = await requirePersonelYonetimi();
+  const owner = await requireKullaniciYonetimi();
   const { id } = await params;
 
   const [target, businesses] = await Promise.all([
@@ -69,11 +70,11 @@ export default async function EditUserPage({
               role: target.role,
               businessId: target.businessId,
               bolgeIsletmeleri: target.businesses.map((b) => b.businessId),
-              menuIzni: target.menuIzni,
-              anketIzni: target.anketIzni,
+              moduller: target.moduller,
             }}
             businesses={businesses.map((b) => ({ id: b.id, name: b.name }))}
             roller={acilabilirRoller(owner.role)}
+            verilebilirModuller={verilebilirModuller(owner.role, owner.moduller)}
           />
         )}
       </SectionCard>
