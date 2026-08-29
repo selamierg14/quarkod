@@ -1,5 +1,5 @@
 import { Mail } from "lucide-react";
-import { allowedBusinessIds, requireTenantOwner } from "@/lib/auth";
+import { allowedBusinessIds, requireModul, requireTenantOwner } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { EmptyState, PageHeader, formatDateTime } from "@/components/ui";
 import { IYS_CHANNELS, type IysChannel } from "@/lib/iys";
@@ -11,6 +11,9 @@ export const metadata = { title: "Pazarlama izinleri" };
 
 export default async function ConsentsPage() {
   const user = await requireTenantOwner();
+  // Menüde gizlemek yetmez: modülü kapalı bir hesabın sahibi adresi elle
+  // yazarak buraya girebiliyordu.
+  await requireModul("pazarlama");
   const ids = await allowedBusinessIds(user);
 
   const [consents, bekleyen] = await Promise.all([

@@ -13,7 +13,9 @@ import { IYS_EXPORT_HEADERS, formatConsentDate } from "@/lib/iys";
  */
 export async function GET(request: NextRequest) {
   const user = await getSession();
-  if (!user || user.role === "manager") {
+  // Modül kapalıysa dışa aktarım da kapalı: sayfa gizlenirken bu uç açık
+  // kalsaydı, izin listesinin tamamı tek bir adresle indirilebilirdi.
+  if (!user || user.role === "manager" || !user.moduller.includes("pazarlama")) {
     return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
   }
 

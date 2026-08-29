@@ -1,8 +1,8 @@
-import { FolderOpen } from "lucide-react";
+import { ChevronDown, FolderOpen, Settings2 } from "lucide-react";
 import { requireSuperadmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getActiveAccountId } from "@/lib/impersonation";
-import { formatDateTime } from "@/components/ui";
+import { PageHeader, formatDateTime } from "@/components/ui";
 import { BUSINESS_TYPES, type BusinessType, ROL_ADLARI } from "@/lib/constants";
 import {
   EnterAccountButton,
@@ -11,6 +11,7 @@ import {
   ToggleAccountButton,
 } from "./AccountForms";
 import { SorumluListesi } from "./SorumluListesi";
+import { MODUL_ANAHTARLARI } from "@/lib/moduller";
 import { hesapAktifMi, kalanGun } from "@/lib/abonelik";
 
 /** date input'unun beklediği yyyy-aa-gg; yerel saate göre. */
@@ -55,23 +56,15 @@ export default async function AccountsPage() {
   });
 
   return (
-    <div className="flex flex-col gap-5">
-      <div>
-        <h1 className="flex items-center gap-2.5 text-title font-semibold">
-          <span
-            aria-hidden="true"
-            className="flex h-9 w-9 items-center justify-center rounded-control bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-md shadow-indigo-500/25"
-          >
-            <FolderOpen className="h-4 w-4" />
-          </span>
-          Hesaplar
-        </h1>
-        <p className="mt-1 text-small text-ink-muted">
-          Sistemi kullanan müşteriler ve altlarındaki işletme/kullanıcı yapısı.
-          Bir hesaba geçtiğinizde panel tam olarak o müşterinin gördüğü hale
-          gelir.
-        </p>
-      </div>
+    <div className="flex flex-col gap-4">
+      {/* Elle kopyalanmış bir başlık vardı; ortak bileşene alındı ki
+          açıklama (i) davranışı ve boşluklar diğer sayfalarla aynı olsun. */}
+      <PageHeader
+        ikon={<FolderOpen className="h-4 w-4" aria-hidden="true" />}
+        renk="indigo"
+        title="Hesaplar"
+        description="Sistemi kullanan müşteriler ve altlarındaki işletme/kullanıcı yapısı. Bir hesaba geçtiğinizde panel tam olarak o müşterinin gördüğü hale gelir."
+      />
 
       <ul className="flex flex-col gap-4">
         {accounts.map((account) => {
@@ -83,6 +76,14 @@ export default async function AccountsPage() {
           // abonelik süresinin dolmamış olması.
           const calisiyor = hesapAktifMi(account);
           const gun = kalanGun(account);
+          // Modüller hesabın sahiplerinde duruyor (bkz. hesaplar/actions.ts).
+          const sahipModulleri = sahipler[0]?.moduller ?? [];
+          const acikModulSayisi = sahipModulleri.filter((m) =>
+            (MODUL_ANAHTARLARI as string[]).includes(m),
+          ).length;
+          const sonTarih = account.expiresAt
+            ? account.expiresAt.toLocaleDateString("tr-TR")
+            : "süresiz";
 
           return (
             <li
@@ -117,11 +118,11 @@ export default async function AccountsPage() {
                         {gun} gün kaldı
                       </span>
                     ) : null}
-                    {account.menuEnabled ? (
-                      <span className="rounded bg-sunken px-1.5 py-0.5 text-caption text-ink-soft">
-                        QR menü
-                      </span>
-                    ) : null}
+                    {/* Beş modül varken tek bir "QR menü" rozeti yanıltıcıydı:
+                        diğer dördü açık mı kapalı mı görünmüyordu. */}
+                    <span className="rounded bg-sunken px-1.5 py-0.5 text-caption text-ink-soft">
+                      {acikModulSayisi}/{MODUL_ANAHTARLARI.length} modül
+                    </span>
                     {goruntuleniyor ? (
                       <span className="rounded bg-ink px-1.5 py-0.5 text-caption text-white">
                         görüntüleniyor
@@ -143,12 +144,31 @@ export default async function AccountsPage() {
                 </div>
               </div>
 
-              <SubscriptionForm
-                accountId={account.id}
-                expiresAt={dateInputValue(account.expiresAt)}
-                moduller={sahipler[0]?.moduller ?? []}
-                iysCode={account.iysCode ?? ""}
-              />
+              {/* Ayarlar katlanıyor: bir hesaba bakarken sorulan ilk soru
+                  "kim, kaç işletme, kaç kullanıcı" — tarih kutusu, beş
+                  modül kutucuğu ve İYS kodu her kartta açık dururken bu
+                  yapı görünmez oluyordu. Süresi dolmak üzere olan ya da
+                  dolmuş hesapta bölüm kendiliğinden açılıyor: asıl
+                  müdahale gereken yer orası. */}
+              <details open={!calisiyor || (gun !== null && gun <= 14)} className="group">
+                <summary className="flex cursor-pointer list-none items-center gap-2 border-b border-line bg-canvas/60 px-4 py-2 text-caption font-medium text-ink-soft hover:bg-canvas">
+                  <Settings2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  <span className="flex-1">Abonelik ve modüller</span>
+                  <span className="text-ink-faint">
+                    {sonTarih}
+                  </span>
+                  <ChevronDown
+                    className="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-180"
+                    aria-hidden="true"
+                  />
+                </summary>
+                <SubscriptionForm
+                  accountId={account.id}
+                  expiresAt={dateInputValue(account.expiresAt)}
+                  moduller={sahipModulleri}
+                  iysCode={account.iysCode ?? ""}
+                />
+              </details>
 
               {/* --- Hesap sahipleri */}
               <div className="px-4 py-2.5">

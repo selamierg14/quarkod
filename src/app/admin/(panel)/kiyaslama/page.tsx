@@ -1,5 +1,5 @@
 import { BarChart3, TrendingUp, Trophy } from "lucide-react";
-import { allowedBusinessIds, requireTenantOwner } from "@/lib/auth";
+import { allowedBusinessIds, requireModul, requireTenantOwner } from "@/lib/auth";
 import { getBusinessStats } from "@/lib/stats";
 import { EmptyState, PageHeader, SectionCard, TabLink } from "@/components/ui";
 import { DeltaBadge, TrendChart } from "@/components/TrendChart";
@@ -10,6 +10,10 @@ export const metadata = { title: "Şube karşılaştırma" };
 
 export default async function ComparisonPage() {
   const user = await requireTenantOwner();
+  // Sayfa geri bildirim istatistiği gösteriyor; anket modülüne bağlı.
+  // Özet'in (/admin) kendisi bilerek kapısız: requireModul oraya
+  // yönlendirdiği için kapı koymak sonsuz döngü olurdu.
+  await requireModul("anket");
   // Kapsamsız çağrı bütün kiracıların işletmelerini getirirdi.
   const stats = await getBusinessStats(await allowedBusinessIds(user));
   const withData = stats.filter((stat) => stat.total > 0);

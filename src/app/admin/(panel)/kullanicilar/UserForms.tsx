@@ -43,11 +43,21 @@ export function NewUserForm({
   businesses,
   roller,
   hint,
+  verilebilirModuller = [],
+  hesaplar = [],
 }: {
   businesses: Business[];
   /** Ekleyen kişinin açmaya yetkili olduğu roller — sunucuda da doğrulanır. */
   roller: string[];
   hint?: ReactNode;
+  /** Formu açan kişinin KENDİ sahip olduğu modüller — fazlasını veremez. */
+  verilebilirModuller?: ModulAnahtari[];
+  /**
+   * Yalnızca hesap seçmemiş platform yöneticisi için dolu: kullanıcının
+   * hangi müşteriye açılacağı formda seçiliyor. Boşken kullanıcı, içinde
+   * bulunulan hesaba açılır.
+   */
+  hesaplar?: { id: string; name: string }[];
 }) {
   const [role, setRole] = useState(roller[0] ?? "manager");
   const [state, formAction, pending] = useActionState<UserFormState, FormData>(
@@ -60,6 +70,26 @@ export function NewUserForm({
       {hint ? <div className="text-small text-ink-muted">{hint}</div> : null}
 
       <div className="grid gap-3 sm:grid-cols-2">
+        {/* Platform yöneticisi bir hesaba "girmeden" de kullanıcı
+            açabilmeli: menüdeki Kullanıcılar > Ekle bağlantısı oraya
+            gidiyor ve önceden burada "önce bir hesaba geçin" hatasıyla
+            duvara toslanıyordu. */}
+        {hesaplar.length > 0 ? (
+          <label className="flex flex-col gap-1 sm:col-span-2">
+            <span className="text-caption text-ink-muted">
+              Hangi hesaba açılacak
+            </span>
+            <select name="hedefHesapId" required className={INPUT}>
+              <option value="">Hesap seçin</option>
+              {hesaplar.map((h) => (
+                <option key={h.id} value={h.id}>
+                  {h.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Ad soyad</span>
           <input name="name" required className={INPUT} />
@@ -156,6 +186,33 @@ export function NewUserForm({
           />
         </label>
       </div>
+
+      {/* Düzenleme formundakiyle aynı bölüm: kullanıcıyı açarken izin
+          veremeyip sonra ikinci bir ekrandan dönmek gereksiz bir adımdı.
+          Garson bu ekranlara hiç girmiyor, ona gösterilmiyor. */}
+      {verilebilirModuller.length > 0 && role !== "garson" ? (
+        <fieldset className="flex flex-col gap-2 rounded-chip border border-line bg-canvas p-3">
+          <legend className="px-1 text-caption font-medium tracking-wide text-ink-muted uppercase">
+            Modül izinleri
+          </legend>
+          {verilebilirModuller.map((modul) => (
+            <label key={modul} className="flex items-start gap-2 text-small text-ink-soft">
+              <input
+                type="checkbox"
+                name="moduller"
+                value={modul}
+                className="mt-0.5 h-4 w-4 accent-[var(--color-ink)]"
+              />
+              <span>
+                {MODULLER[modul]}
+                <span className="block text-caption text-ink-faint">
+                  {MODUL_ACIKLAMALARI[modul]}
+                </span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
+      ) : null}
 
       <Feedback state={state} />
 

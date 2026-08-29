@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { actingAccountId, requireKullaniciYonetimi, visibleBusinesses } from "@/lib/auth";
 import { NewUserForm } from "../UserForms";
 import { acilabilirRoller } from "@/lib/panel";
+import { verilebilirModuller } from "@/lib/moduller";
 import { PageHeader, SectionCard } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,15 @@ export default async function NewUserPage() {
         select: { name: true },
       })
     : null;
+
+  // Hesap seçmemiş platform yöneticisi hedefi formdan seçiyor.
+  const hesaplar =
+    !hedefHesapId && owner.role === "superadmin"
+      ? await prisma.account.findMany({
+          select: { id: true, name: true },
+          orderBy: { name: "asc" },
+        })
+      : [];
 
   return (
     <div className="flex flex-col gap-5">
@@ -51,6 +61,8 @@ export default async function NewUserPage() {
         <NewUserForm
           businesses={businesses.map((b) => ({ id: b.id, name: b.name }))}
           roller={acilabilirRoller(owner.role)}
+          verilebilirModuller={verilebilirModuller(owner.role, owner.moduller)}
+          hesaplar={hesaplar}
           hint={
             // "Hangi kafeye kullanıcı açıyorum?" sorusu formun en kritik ama
             // en görünmez parçasıydı: kullanıcı her zaman içinde bulunulan
@@ -69,6 +81,8 @@ export default async function NewUserPage() {
                 )}{" "}
                 görebilecek.
               </>
+            ) : hesaplar.length > 0 ? (
+              "Kullanıcının açılacağı hesabı aşağıdan seçin."
             ) : (
               "Kullanıcı, içinde bulunduğunuz hesaba açılır."
             )

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { notFound } from "next/navigation";
-import { canAccessBusiness, requireTenantOwner } from "@/lib/auth";
+import { canAccessBusiness, requireModul, requireTenantOwner } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatDateTime } from "@/components/ui";
 import { IYS_CHANNELS, type IysChannel } from "@/lib/iys";
@@ -17,6 +17,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const user = await requireTenantOwner();
+  await requireModul("pazarlama");
   const { id } = await params;
 
   const consent = await prisma.marketingConsent.findUnique({

@@ -148,8 +148,13 @@ export default async function AdminHomePage({
 
   // Şube karşılaştırma yalnızca birden fazla işletmesi olan sahip/platform
   // yöneticisi için anlamlı; tek işletmeli hesap bu sekmeyi hiç görmez.
+  // Karşılaştırma geri bildirim verisi gösteriyor: anket modülü kapalıysa
+  // sekme de görünmemeli (sayfanın kendi kapısı requireModul ile ayrıca
+  // korunuyor).
   const kiyaslamaGoster =
-    businesses.length > 1 && (user.role === "owner" || user.role === "superadmin");
+    businesses.length > 1 &&
+    (user.role === "owner" || user.role === "superadmin") &&
+    user.moduller.includes("anket");
 
   return (
     <div className="flex flex-col gap-7">

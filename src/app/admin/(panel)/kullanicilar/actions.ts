@@ -77,14 +77,32 @@ export async function createUser(
     return { error: "Bölge müdürü için en az bir işletme seçin." };
   }
 
-  // Yeni kullanıcı her zaman ekleyenin hesabına açılır ve yalnızca o hesabın
+  // Yeni kullanıcı ekleyenin hesabına açılır ve yalnızca o hesabın
   // işletmesine atanabilir; aksi halde bir kiracı diğerinin işletmesine
   // kullanıcı yerleştirebilirdi.
-  const accountId = await actingAccountId(actor);
+  //
+  // Tek istisna platform yöneticisi: bir hesaba "girmeden" de kullanıcı
+  // açabiliyor, hedef hesabı formdan seçiyor. Önceden burası "önce bir
+  // hesaba geçin" hatası veriyordu ama menüdeki Kullanıcılar > Ekle
+  // bağlantısı tam da oraya gidiyordu — bağlantı çalışmayan bir duvara
+  // çıkıyordu.
+  const aktifHesap = await actingAccountId(actor);
+  const secilenHesap = String(formData.get("hedefHesapId") ?? "").trim();
+  const accountId =
+    aktifHesap ?? (actor.role === "superadmin" ? secilenHesap : null);
+
   if (!accountId) {
     return {
-      error: "Önce Hesaplar sayfasından bir hesaba geçin; kullanıcı o hesaba açılacak.",
+      error:
+        actor.role === "superadmin"
+          ? "Kullanıcının açılacağı hesabı seçin."
+          : "Hesabınız bulunamadı.",
     };
+  }
+  // Seçilen hesap gerçekten var mı? Yalnızca platform yöneticisi bu yola
+  // girebiliyor ama kimlik yine de doğrulanmalı.
+  if (!aktifHesap && !(await prisma.account.findUnique({ where: { id: accountId } }))) {
+    return { error: "Seçilen hesap bulunamadı." };
   }
   if (businessId && !(await canAccessBusiness(actor, businessId))) {
     return { error: "Bu işletmeye kullanıcı atama yetkiniz yok." };
@@ -120,6 +138,13 @@ export async function createUser(
         role,
         businessId: role === "manager" || role === "garson" ? businessId : null,
         passwordHash: await hashPassword(password),
+        // Modül dağıtamayan bir rol formu göndermişse liste boş kalır
+        // (istenenModulleriSuz kesişimi zaten boş döner).
+        moduller: istenenModulleriSuz(
+          actor.role,
+          actor.moduller,
+          formData.getAll("moduller").map((v) => String(v)),
+        ),
         ...(role === "bolge"
           ? {
               businesses: {

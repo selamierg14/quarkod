@@ -1,5 +1,5 @@
 import { Plug } from "lucide-react";
-import { requireTenantOwner } from "@/lib/auth";
+import { requireModul, requireTenantOwner } from "@/lib/auth";
 import { PageHeader } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -47,6 +47,8 @@ const ENTEGRASYONLAR: Entegrasyon[] = [
 
 export default async function EntegrasyonlarPage() {
   await requireTenantOwner();
+  // Menüde gizlemek yetmez; adres elle yazılabilir.
+  await requireModul("iys");
 
   return (
     <div className="flex flex-col gap-5">
