@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { aktifMi, grupAktifMi, type IkonAdi, type NavGrup } from "@/lib/panel";
 import { APP_VERSION } from "@/lib/constants";
 import { ProfilAvatarButton } from "./ProfilAvatarButton";
+import { CikisButonu } from "./CikisButonu";
 
 /**
  * Panelin sol gezinme çubuğu.
@@ -217,14 +218,13 @@ export function AdminSidebar({
             </span>
           ) : null}
         </Link>
-        <form action={cikisAction}>
-          <button
-            type="submit"
-            title={genis ? undefined : "Çıkış"}
-            className={`flex w-full items-center justify-center gap-2 rounded-chip border border-line bg-surface text-small text-ink-soft transition hover:bg-canvas hover:text-ink ${
-              genis ? "px-3 py-1.5" : "px-0 py-2"
-            }`}
-          >
+        <CikisButonu
+          action={cikisAction}
+          title={genis ? undefined : "Çıkış"}
+          className={`flex w-full items-center justify-center gap-2 rounded-chip border border-line bg-surface text-small text-ink-soft transition hover:bg-canvas hover:text-ink disabled:opacity-45 ${
+            genis ? "px-3 py-1.5" : "px-0 py-2"
+          }`}
+        >
             <svg
               viewBox="0 0 24 24"
               className="h-4 w-4 shrink-0"
@@ -237,9 +237,8 @@ export function AdminSidebar({
             >
               <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
             </svg>
-            {genis ? "Çıkış" : null}
-          </button>
-        </form>
+          {genis ? "Çıkış" : null}
+        </CikisButonu>
         {genis ? (
           <p className="mt-2.5 text-center font-mono text-[11px] text-ink-faint">
             Quarkod v{APP_VERSION}

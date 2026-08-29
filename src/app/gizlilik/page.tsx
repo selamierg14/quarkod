@@ -23,6 +23,7 @@ const BOLUMLER = [
       "**Müşteri geri bildirimi:** Verilen yıldız puanları, kategori puanları, serbest yorum ve isteğe bağlı fotoğraf. Ad soyad sorulmuyor — geri bildirim varsayılan olarak anonim.",
       "**İsteğe bağlı iletişim bilgisi:** Müşteri geri bildirim bırakırken kendi isteğiyle telefon veya e-posta girerse, yalnızca açık rızasıyla saklanır.",
       "**Teknik kayıtlar:** Tekrar eden gönderimleri ayıklamak için IP adresinin karması ve tarayıcı başına rastgele bir kimlik. Ham IP yalnızca ticari ileti izninin ispatı için, 6563 sayılı kanun gereği tutulur.",
+      "**Bildirim aboneliği:** Panel kullanıcısı telefonuna anlık bildirim açarsa, tarayıcısının ürettiği bildirim adresi ve şifreleme anahtarları saklanır. Yalnızca o cihaza bildirim göndermeye yarar; konum ya da başka bir cihaz bilgisi toplanmaz. Kullanıcı bildirimleri kapattığında ya da çıkış yaptığında abonelik kapatılır.",
     ],
   },
   {
@@ -30,6 +31,7 @@ const BOLUMLER = [
     maddeler: [
       "Puan ve yorumlar hizmet kalitesini ölçmek için — işletmenin meşru menfaati kapsamında.",
       "İletişim bilgisi yalnızca o geri bildirim hakkında müşteriye dönüş yapmak için — açık rızaya dayanır.",
+      "Bildirim aboneliği yalnızca kullanıcının kendi açtığı uyarıları iletmek için — açık rızaya dayanır, istendiği an kapatılabilir.",
       "Ticari elektronik ileti (kampanya duyurusu) yalnızca ayrı bir kutuyla verilen onaya dayanır ve İYS'ye bildirilir.",
     ],
   },

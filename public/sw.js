@@ -1,33 +1,26 @@
 /**
- * Panelin service worker'ı.
+ * Panelin service worker'ı. Tek işi var: push bildirimlerini karşılamak.
  *
- * İki iş görüyor:
- * 1. "Ana ekrana ekle" ile kurulan panelin birkaç temel dosyayı (kabuk,
- *    ikonlar) cihazda tutması — internet anlık kesildiğinde beyaz bir
- *    hata sayfası yerine en azından uygulamanın kabuğu açılsın diye.
- *    Panel verisi (geri bildirimler, çizelge) bilerek önbelleğe alınmıyor:
- *    bayat bir çizelgeyi "güncel" gibi göstermek, hiç göstermemekten kötü.
- * 2. Push bildirimlerini karşılayıp göstermek (bkz. src/lib/push.ts).
+ * Önceden burada bir "uygulama kabuğu" önbelleği vardı ve `/admin` onun
+ * içindeydi. `/admin` bir kabuk değil — giriş yapmış kullanıcının Özet
+ * panosu: geri bildirimler, işletme adları, puanlar. Üç sorun birden
+ * doğuruyordu:
  *
- * Panelin geri kalanı (rota bazlı, sürekli değişen sayfalar) bilerek
- * önbelleğe alınmıyor: agresif bir cache stratejisi "menüyü güncelledim
- * ama müşteri hâlâ eskisini görüyor" tarzı hatalara yol açar — burada da
- * "yönetici hâlâ dün akşamki çizelgeyi görüyor" karşılığı olurdu.
+ *  1. `cache.addAll` aynı köken isteğine çerezi ekler, yani kiracıya ait
+ *     veri cihazda diske yazılıyordu.
+ *  2. Cache API, `Cache-Control: no-store` başlığını tamamen yok sayar;
+ *     Next'in `force-dynamic` koruması burada işlemiyordu.
+ *  3. Çıkış yapmak önbelleğe dokunmuyordu — kayıt oturumdan uzun yaşıyordu.
+ *
+ * Ortak bir tablette bu, "bir hesabın kullanıcısı başka bir hesabın
+ * verisini göremez" sözünü çiğniyordu. Karşılığında kazandığımız şey ise
+ * yoktu: sunucuda render edilen, tamamen dinamik bir panelin çevrimdışı
+ * kopyası zaten kullanılabilir bir şey göstermez. Bu yüzden önbellek
+ * tamamen kaldırıldı; `activate` artık ESKİ sürümün bıraktığı kayıtları da
+ * siliyor, yani düzeltme daha önce kaydolmuş cihazlara da ulaşıyor.
  */
 
-const ONBELLEK = "mm-kabuk-v1";
-const KABUK_DOSYALARI = ["/admin", "/icon", "/apple-icon"];
-
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches
-      .open(ONBELLEK)
-      .then((cache) => cache.addAll(KABUK_DOSYALARI))
-      .catch(() => {
-        // Kurulum sırasında ağ yoksa sessizce geç: service worker yine de
-        // kaydolsun, bir sonraki ziyarette kabuk dosyaları önbelleğe girer.
-      }),
-  );
+self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
@@ -35,27 +28,11 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((anahtarlar) =>
-        Promise.all(
-          anahtarlar
-            .filter((ad) => ad !== ONBELLEK)
-            .map((ad) => caches.delete(ad)),
-        ),
-      )
+      // Artık hiçbir önbellek kullanmıyoruz. Bu döngünün asıl işi geçmişi
+      // temizlemek: eski "mm-kabuk-v1" önbelleğinde duran panel HTML'i
+      // ancak burada silinir, kullanıcıdan bir şey yapması istenmeden.
+      .then((anahtarlar) => Promise.all(anahtarlar.map((ad) => caches.delete(ad))))
       .then(() => self.clients.claim()),
-  );
-});
-
-self.addEventListener("fetch", (event) => {
-  // Yalnızca GET ve yalnızca kendi kökenimiz: form gönderimlerine ya da
-  // başka bir siteye giden isteklere karışmıyoruz.
-  if (event.request.method !== "GET") return;
-  if (new URL(event.request.url).origin !== self.location.origin) return;
-
-  // Ağ öncelikli, önbellek yalnızca ağ tamamen düştüğünde devreye giriyor
-  // (offline'da "hiçbir şey açılmadı" yerine en azından kabuk açılsın).
-  event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request)),
   );
 });
 
@@ -83,13 +60,16 @@ self.addEventListener("notificationclick", (event) => {
 
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((liste) => {
-      // Panel zaten açık bir sekmede duruyorsa yeni sekme açmak yerine
-      // onu öne getirip oraya yönlendiriyoruz.
-      for (const client of liste) {
-        if ("focus" in client) {
-          client.navigate(url);
-          return client.focus();
-        }
+      // Yalnızca panel sekmeleri aday: müşteri QR sayfası (/f/...) açık bir
+      // telefonda, ilk bulunan pencereyi yönlendirmek müşterinin doldurduğu
+      // anketi kapatırdı.
+      const panelPenceresi = liste.find(
+        (client) => new URL(client.url).pathname.startsWith("/admin") && "focus" in client,
+      );
+
+      if (panelPenceresi) {
+        panelPenceresi.navigate(url);
+        return panelPenceresi.focus();
       }
       return self.clients.openWindow(url);
     }),

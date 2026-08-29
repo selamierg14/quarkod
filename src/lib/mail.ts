@@ -1,7 +1,7 @@
 import "server-only";
 import { prisma } from "./db";
 import { postaAktifMi, sendMail, starLine } from "./mailer";
-import { kullaniciyaPushGonder, vapidHazirMi } from "./push";
+import { kullanicilaraPushGonder, vapidHazirMi } from "./push";
 
 /**
  * Eşik altı puan geldiğinde ilgili işletme sorumlusuna ve patrona haber verir.
@@ -85,31 +85,37 @@ export async function notifyLowRating(feedbackId: string): Promise<void> {
 
   // Push kısa ve tek amaçlı: tam metin e-postada, burada yalnızca "bir şey
   // oldu, bak" bilgisi + doğrudan o kayda giden bir bağlantı yeterli.
-  // VAPID_* ayarlanmamışsa özellik tamamen kapalı — e-postadaki
-  // postaAktifMi() kısayoluyla simetrik: kapalı kanal için Notification
-  // satırı bile açmıyoruz.
-  for (const user of vapidHazirMi() ? users : []) {
-    const record = await prisma.notification.create({
-      data: { feedbackId: feedback.id, channel: "push", recipient: user.id },
-    });
+  if (vapidHazirMi()) {
+    const gonderimler = await kullanicilaraPushGonder(
+      users.map((user) => user.id),
+      {
+        baslik: `${feedback.business.name} — ${feedback.overallRating}/5 ⭐`,
+        govde: feedback.comment
+          ? feedback.comment.slice(0, 120)
+          : `${konum} — yorum bırakılmamış.`,
+        url: panelAdresi,
+      },
+    );
 
-    const { gonderilen } = await kullaniciyaPushGonder(user.id, {
-      baslik: `${feedback.business.name} — ${feedback.overallRating}/5 ⭐`,
-      govde: feedback.comment
-        ? feedback.comment.slice(0, 120)
-        : `${konum} — yorum bırakılmamış.`,
-      url: panelAdresi,
-    }).catch((error) => {
-      console.error("[push] beklenmeyen hata:", error);
-      return { gonderilen: 0 };
-    });
+    for (const user of users) {
+      const gonderilen = gonderimler.get(user.id);
+      // Haritada hiç yoksa o kullanıcının açık bir cihazı yok. Bunun için
+      // "gönderilemedi" kaydı açmak yanlış olurdu: panelde her düşük puanın
+      // altında kalıcı bir sahte alarm birikir, gerçek arıza da onun içinde
+      // kaybolurdu. Push'u hiç açmamak bir hata değil, bir tercih.
+      if (gonderilen === undefined) continue;
 
-    await prisma.notification.update({
-      where: { id: record.id },
-      data:
-        gonderilen > 0
-          ? { sentAt: new Date() }
-          : { error: "Aboneliği yok ya da push kapalı." },
-    });
+      await prisma.notification.create({
+        data: {
+          feedbackId: feedback.id,
+          channel: "push",
+          // E-posta kanalıyla aynı biçim: panelde bu alan olduğu gibi
+          // ekrana basılıyor, ham kullanıcı kimliği okunabilir değil.
+          recipient: user.email,
+          sentAt: gonderilen > 0 ? new Date() : null,
+          error: gonderilen > 0 ? null : "Kayıtlı cihazların hiçbirine ulaşılamadı.",
+        },
+      });
+    }
   }
 }

@@ -850,10 +850,19 @@ model PushSubscription {
   endpoint  String   @unique
   p256dh    String
   auth      String
-  createdAt DateTime @default(now())
+  /// Abonelik neden kapandı: kullanıcı "Kapat" dedi, çıkış yaptı ya da
+  /// push servisi cihazın artık var olmadığını bildirdi (404/410).
+  /// Satır silinmiyor: "bildirim gelmiyor" şikayetinde aboneliğin hiç
+  /// açılmadığı mı yoksa cihazın mı düştüğü ancak bu izle ayırt edilebilir.
+  disabledAt     DateTime?
+  disabledReason String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
+  /// Gönderim tarafı hep "bu kullanıcının AÇIK abonelikleri" diye soruyor;
+  /// kapatılmış satırlar zamanla birikeceği için indeks ikisini birlikte tutuyor.
+  @@index([userId, disabledAt])
   @@map("push_subscriptions")
 }

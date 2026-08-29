@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ProfilAvatarButton } from "./ProfilAvatarButton";
+import { CikisButonu } from "./CikisButonu";
 import { APP_VERSION } from "@/lib/constants";
 import { logout } from "@/app/admin/giris/actions";
 
@@ -36,14 +37,12 @@ export function PersonelKabuk({
         <span className="font-semibold tracking-tight text-ink">Memnuniyet Paneli</span>
         <div className="flex items-center gap-2">
           <span className="hidden text-caption text-ink-faint sm:inline">v{APP_VERSION}</span>
-          <form action={logout}>
-            <button
-              type="submit"
-              className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas"
-            >
-              Çıkış
-            </button>
-          </form>
+          <CikisButonu
+            action={logout}
+            className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas disabled:opacity-45"
+          >
+            Çıkış
+          </CikisButonu>
           <ProfilAvatarButton ad={ad} />
         </div>
       </header>

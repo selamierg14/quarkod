@@ -14,6 +14,14 @@ import { RespondForm } from "./RespondForm";
 
 export const dynamic = "force-dynamic";
 
+/** Notification.channel değerlerinin okunur karşılıkları. */
+const KANAL_ADLARI: Record<string, string> = {
+  email: "E-posta",
+  push: "Telefon",
+  whatsapp: "WhatsApp",
+  telegram: "Telegram",
+};
+
 export const metadata = { title: "Geri bildirim detayı" };
 
 export default async function FeedbackDetailPage({
@@ -282,7 +290,7 @@ export default async function FeedbackDetailPage({
             ikon={<Bell className="h-4 w-4" aria-hidden="true" />}
             renk="slate"
             title="Bildirimler"
-            description="Bu kayıt için gönderilen uyarı e-postaları."
+            description="Bu kayıt için gönderilen uyarılar."
           >
             {feedback.notifications.length === 0 ? (
               <p className="text-small text-ink-faint">
@@ -292,6 +300,11 @@ export default async function FeedbackDetailPage({
               <ul className="space-y-2 text-small">
                 {feedback.notifications.map((notification) => (
                   <li key={notification.id}>
+                    {/* Aynı kişiye hem e-posta hem push gidebiliyor; kanal
+                        yazmazsak iki satır birbirinin kopyası gibi görünür. */}
+                    <span className="mr-1.5 text-caption text-ink-faint">
+                      {KANAL_ADLARI[notification.channel] ?? notification.channel}
+                    </span>
                     <span className="text-ink-soft">{notification.recipient}</span>
                     {notification.sentAt ? (
                       <span className="ml-2 text-caption text-success">

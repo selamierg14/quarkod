@@ -25,8 +25,16 @@ export async function pushAboneOl(abonelik: {
     where: { endpoint: abonelik.endpoint },
     // Aynı endpoint başka bir kullanıcıya kayıtlıysa (ör. aynı cihazda
     // önce başka biri giriş yapmıştı) bu satır artık ONA değil, giriş
-    // yapmış olan kişiye ait sayılmalı.
-    update: { userId: user.id, p256dh: abonelik.keys.p256dh, auth: abonelik.keys.auth },
+    // yapmış olan kişiye ait sayılmalı. `disabledAt: null` da şart:
+    // daha önce kapatılmış bir cihaz yeniden abone olduğunda satır
+    // canlanmalı, yoksa kullanıcı butona basar ama bildirim gelmez.
+    update: {
+      userId: user.id,
+      p256dh: abonelik.keys.p256dh,
+      auth: abonelik.keys.auth,
+      disabledAt: null,
+      disabledReason: null,
+    },
     create: {
       userId: user.id,
       endpoint: abonelik.endpoint,
@@ -38,12 +46,24 @@ export async function pushAboneOl(abonelik: {
   return { saved: true };
 }
 
-/** Bu cihazın aboneliğini kaldırır — "Bildirimleri kapat" düğmesi. */
-export async function pushAbonelikSil(endpoint: string): Promise<void> {
+/**
+ * Bu cihazın aboneliğini kapatır — "Bildirimleri kapat" düğmesi ve çıkış.
+ *
+ * Satır silinmiyor, `disabledAt` işaretleniyor: "bildirim gelmiyor"
+ * şikayetinde aboneliğin hiç açılmadığı mı, kullanıcının kendi mi
+ * kapattığı mı, yoksa cihazın mı düştüğü ancak bu izle ayırt edilebilir.
+ */
+export async function pushAbonelikSil(
+  endpoint: string,
+  sebep = "Kullanıcı kapattı.",
+): Promise<void> {
   const user = await requireUser();
   if (!endpoint) return;
 
-  // Yalnızca kendi aboneliğini silebilir: başka bir kullanıcının cihaz
-  // kaydını endpoint tahmin ederek kapatamasın.
-  await prisma.pushSubscription.deleteMany({ where: { endpoint, userId: user.id } });
+  // Yalnızca kendi aboneliğini kapatabilir: başka bir kullanıcının cihaz
+  // kaydını endpoint tahmin ederek susturamasın.
+  await prisma.pushSubscription.updateMany({
+    where: { endpoint, userId: user.id, disabledAt: null },
+    data: { disabledAt: new Date(), disabledReason: sebep },
+  });
 }

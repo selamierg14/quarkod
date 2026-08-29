@@ -2,6 +2,7 @@
 
 import { createHash } from "node:crypto";
 import { headers } from "next/headers";
+import { after } from "next/server";
 import { prisma } from "@/lib/db";
 import { notifyLowRating } from "@/lib/mail";
 import { validateImageDataUrl } from "@/lib/image";
@@ -434,9 +435,16 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
     }
   }
 
-  // Bildirim gönderimi anketi bekletmesin; hata olursa kayıt yine de durur.
-  await notifyLowRating(feedback.id).catch((error) => {
-    console.error("[bildirim] beklenmeyen hata:", error);
+  // Bildirim gönderimi anketi bekletmesin: `after` bu işi yanıt gittikten
+  // SONRA çalıştırıyor. Önceden burada `await` vardı ve yorum ile kod
+  // birbirini tutmuyordu — müşteri, SMTP'yi (ve push eklendikten sonra
+  // Apple/Google'a giden istekleri) teşekkür ekranını görmeden bekliyordu.
+  // Düşük puan veren, yani zaten memnuniyetsiz müşteriyi bekletmek en
+  // pahalı yerdi. Hata olursa kayıt yine de durur.
+  after(async () => {
+    await notifyLowRating(feedback.id).catch((error) => {
+      console.error("[bildirim] beklenmeyen hata:", error);
+    });
   });
 
   return {

@@ -3,20 +3,12 @@ import webpush from "web-push";
 import { prisma } from "./db";
 
 /**
- * Push bildirimi altyapısı.
+ * Web Push gönderimi.
  *
- * Web Push standardı: tarayıcı bir "abonelik" (endpoint + iki anahtar)
- * üretir, biz o aboneliğe VAPID anahtarlarımızla imzalanmış bir mesaj
- * göndeririz, Apple/Google'ın push servisi bunu cihaza iletir. Sunucumuz
- * hiçbir zaman cihazla doğrudan konuşmaz ve sürekli bir bağlantı tutmaz —
- * tek seferlik, olay bazlı bir HTTP isteği, tıpkı e-posta göndermek gibi.
- *
- * iOS 16.4+ bunu destekliyor ama YALNIZCA site "Ana Ekrana Ekle" ile
- * eklenmişken; Safari sekmesinde açıkken abone olma isteği reddedilir.
- * Bu kısıt burada değil, abonelik arayüzünde (BildirimAyarlari.tsx)
- * kontrol ediliyor.
+ * VAPID anahtarları yoksa özellik tamamen kapalı: hiçbir sorgu atılmaz,
+ * hiçbir kayıt açılmaz. Bu, e-postadaki `postaAktifMi()` ile aynı desen —
+ * kurulmamış bir kanal sessizce yok sayılır, hata üretmez.
  */
-
 export function vapidHazirMi(): boolean {
   return Boolean(
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY,
@@ -34,35 +26,43 @@ function vapidYapilandir() {
   yapilandirildi = true;
 }
 
-export type PushIcerik = {
-  baslik: string;
-  govde: string;
-  /** Bildirime tıklanınca açılacak adres, örn. "/admin/geri-bildirimler/abc". */
-  url: string;
-};
+export type PushIcerik = { baslik: string; govde: string; url: string };
 
 /**
- * Bir kullanıcının tüm cihazlarına bildirim gönderir.
+ * Birden fazla kullanıcının tüm açık cihazlarına aynı bildirimi gönderir.
  *
- * Tek bir kullanıcının telefonu + masaüstü gibi birden fazla abone
- * kaydı olabilir; hepsine aynı anda, paralel gönderilir. Geçersiz hâle
- * gelmiş bir abonelik (kullanıcı bildirimleri kapattı, tarayıcı verisini
- * sildi) push servisinden 404/410 döner — bu satır artık işe yaramıyor
- * demektir, sessizce siliniyor ki tablo ölü kayıtlarla şişmesin.
+ * Tek kullanıcılık bir sürüm yerine çoğul: çağıran taraf (düşük puan
+ * bildirimi) hep "bu işletmenin sahibi + sorumlusu" gibi bir küme ile
+ * geliyordu ve kullanıcı başına ayrı sorgu atmak, müşteriye ait sıcak
+ * yolda gereksiz bir N+1 demekti. Artık tek findMany yetiyor.
+ *
+ * Dönen harita YALNIZCA açık aboneliği olan kullanıcıları içerir: anahtarın
+ * hiç olmaması "cihazı yok" (kayıt açmaya değmez), değerin 0 olması
+ * "cihazı var ama ulaşılamadı" (kaydedilmeli) demek. Bu ayrım, panelde
+ * her düşük puan için sahte "gönderilemedi" satırı birikmesini önlüyor.
  */
-export async function kullaniciyaPushGonder(
-  userId: string,
+export async function kullanicilaraPushGonder(
+  userIds: string[],
   icerik: PushIcerik,
-): Promise<{ gonderilen: number }> {
-  if (!vapidHazirMi()) return { gonderilen: 0 };
+): Promise<Map<string, number>> {
+  const sonuc = new Map<string, number>();
+  if (!vapidHazirMi() || userIds.length === 0) return sonuc;
   vapidYapilandir();
 
-  const abonelikler = await prisma.pushSubscription.findMany({ where: { userId } });
-  if (abonelikler.length === 0) return { gonderilen: 0 };
+  const abonelikler = await prisma.pushSubscription.findMany({
+    where: { userId: { in: userIds }, disabledAt: null },
+  });
+  if (abonelikler.length === 0) return sonuc;
+
+  for (const abonelik of abonelikler) {
+    sonuc.set(abonelik.userId, 0);
+  }
 
   const yuk = JSON.stringify(icerik);
 
-  const sonuclar = await Promise.all(
+  // Cihazlar birbirini beklemesin: biri zaman aşımına uğrarsa diğerleri
+  // yine de zamanında düşsün.
+  await Promise.all(
     abonelikler.map(async (abonelik) => {
       try {
         await webpush.sendNotification(
@@ -72,22 +72,28 @@ export async function kullaniciyaPushGonder(
           },
           yuk,
         );
-        return true;
+        sonuc.set(abonelik.userId, (sonuc.get(abonelik.userId) ?? 0) + 1);
       } catch (error) {
         const durum = (error as { statusCode?: number }).statusCode;
-        // 404/410: push servisi bu aboneliğin artık geçersiz olduğunu
-        // söylüyor (kullanıcı izni geri aldı, tarayıcı verisi silindi vb.).
+        // 404/410: push servisi "bu cihaz artık yok" diyor. Satırı silmek
+        // yerine kapatıyoruz — "bildirimim gelmiyor" şikayetinde aboneliğin
+        // hiç açılmadığı mı, yoksa cihazın mı düştüğü ancak böyle anlaşılır.
         if (durum === 404 || durum === 410) {
           await prisma.pushSubscription
-            .delete({ where: { id: abonelik.id } })
+            .update({
+              where: { id: abonelik.id },
+              data: {
+                disabledAt: new Date(),
+                disabledReason: `Push servisi cihazı tanımıyor (${durum}).`,
+              },
+            })
             .catch(() => {});
         } else {
           console.error("[push] gönderilemedi:", error);
         }
-        return false;
       }
     }),
   );
 
-  return { gonderilen: sonuclar.filter(Boolean).length };
+  return sonuc;
 }

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, BellOff, BellRing } from "lucide-react";
-import { SectionCard } from "@/components/ui";
+import { Bell, BellRing } from "lucide-react";
+import { Alert, Button, SectionCard } from "@/components/ui";
 import { pushAboneOl, pushAbonelikSil } from "./push-actions";
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -40,6 +40,23 @@ function bagimsizModda(): boolean {
   return window.matchMedia("(display-mode: standalone)").matches;
 }
 
+/**
+ * Apple'ın "Ana Ekrana Ekle" kısıtına tabi bir cihaz mı?
+ *
+ * Kullanıcı ajanına bakmak tek başına yetmiyor: iPadOS 13'ten beri iPad
+ * kendini "Macintosh" olarak tanıtıyor, yani /iPad/ testi modern iPad'lerde
+ * hiç tutmuyordu ve kullanıcı yararlı "önce ana ekrana ekle" yönergesi
+ * yerine genel bir hata görüyordu. Dokunmatik bir "Mac" pratikte iPad'dir.
+ */
+function appleKisitiVarMi(): boolean {
+  if (/iPhone|iPad|iPod/.test(navigator.userAgent)) return true;
+  return /Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1;
+}
+
+function abonelikDisiDurum(): Durum {
+  return !bagimsizModda() && appleKisitiVarMi() ? "kurulum-gerekli" : "kapali";
+}
+
 export function BildirimAyarlari() {
   const [durum, setDurum] = useState<Durum>("yukleniyor");
   const [hata, setHata] = useState<string | null>(null);
@@ -58,13 +75,7 @@ export function BildirimAyarlari() {
       const abonelik = await kayit.pushManager.getSubscription();
 
       if (iptal) return;
-      if (abonelik) {
-        setDurum("acik");
-      } else if (!bagimsizModda() && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
-        setDurum("kurulum-gerekli");
-      } else {
-        setDurum("kapali");
-      }
+      setDurum(abonelik ? "acik" : abonelikDisiDurum());
     }
 
     kontrolEt().catch(() => {
@@ -117,11 +128,7 @@ export function BildirimAyarlari() {
         await pushAbonelikSil(abonelik.endpoint);
         await abonelik.unsubscribe();
       }
-      setDurum(
-        !bagimsizModda() && /iPhone|iPad|iPod/.test(navigator.userAgent)
-          ? "kurulum-gerekli"
-          : "kapali",
-      );
+      setDurum(abonelikDisiDurum());
     } finally {
       setIslemde(false);
     }
@@ -139,52 +146,57 @@ export function BildirimAyarlari() {
       {durum === "yukleniyor" ? (
         <p className="text-small text-ink-muted">Kontrol ediliyor…</p>
       ) : durum === "kurulum-gerekli" ? (
-        <div className="flex items-start gap-3 rounded-control bg-warning-soft p-4 ring-1 ring-warning/25">
-          <BellOff className="mt-0.5 h-4 w-4 shrink-0 text-warning-ink" aria-hidden="true" />
-          <p className="text-small text-warning-ink">
-            iPhone&apos;da bildirim alabilmek için önce bu sayfayı{" "}
-            <strong>paylaş menüsünden &quot;Ana Ekrana Ekle&quot;</strong> ile kurman
-            gerekiyor — Safari sekmesinde açıkken Apple bildirim iznine izin
-            vermiyor. Kurduktan sonra uygulamayı oradan aç, bu kart aç/kapat
-            düğmesine dönüşecek.
-          </p>
-        </div>
+        <Alert tone="uyari" baslik="Önce ana ekrana eklemen gerekiyor">
+          iPhone ve iPad&apos;de bildirim alabilmek için bu sayfayı{" "}
+          <strong>paylaş menüsünden &quot;Ana Ekrana Ekle&quot;</strong> ile kurman
+          gerekiyor — Safari sekmesinde açıkken Apple bildirim iznine izin
+          vermiyor. Kurduktan sonra uygulamayı oradan aç, bu kart aç/kapat
+          düğmesine dönüşecek.
+        </Alert>
       ) : durum === "acik" ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-control bg-success-soft p-4 ring-1 ring-success/25">
-          <p className="flex items-center gap-2 text-small font-medium text-success-ink">
-            <BellRing className="h-4 w-4" aria-hidden="true" />
-            Bu cihazda bildirimler açık.
-          </p>
-          <button
-            type="button"
-            onClick={bildirimleriKapat}
-            disabled={islemde}
-            className="rounded-control border border-line bg-surface px-3.5 py-2 text-small font-medium text-ink-soft transition hover:bg-canvas disabled:opacity-60"
-          >
-            Kapat
-          </button>
-        </div>
+        <Alert
+          tone="basari"
+          baslik={
+            <span className="flex items-center gap-2">
+              <BellRing className="h-4 w-4" aria-hidden="true" />
+              Bu cihazda bildirimler açık.
+            </span>
+          }
+          aksiyon={
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={bildirimleriKapat}
+              disabled={islemde}
+            >
+              Kapat
+            </Button>
+          }
+        />
       ) : (
         <div className="flex flex-col gap-3">
           <p className="text-small text-ink-muted">
             Şu an bu cihazda bildirimler kapalı. Panel açık olmasa bile eşiğin
             altında bir puan geldiğinde haber alırsın.
           </p>
-          <button
-            type="button"
+          {/* Bu düğmeye pratikte telefondan basılıyor: `lg` boyutu 48px
+              dokunma hedefi veriyor (bkz. components/ui/Button.tsx). */}
+          <Button
+            size="lg"
+            className="w-fit"
             onClick={bildirimleriAc}
-            disabled={islemde}
-            className="w-fit rounded-control bg-gradient-to-b from-accent-600 to-accent-700 px-4 py-2 text-small font-medium text-white shadow-card transition hover:brightness-110 disabled:opacity-60"
+            loading={islemde}
+            loadingLabel="Açılıyor…"
           >
-            {islemde ? "Açılıyor…" : "Bildirimleri aç"}
-          </button>
+            Bildirimleri aç
+          </Button>
         </div>
       )}
 
       {hata ? (
-        <p className="mt-3 rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
-          {hata}
-        </p>
+        <div className="mt-3">
+          <Alert tone="hata">{hata}</Alert>
+        </div>
       ) : null}
     </SectionCard>
   );
