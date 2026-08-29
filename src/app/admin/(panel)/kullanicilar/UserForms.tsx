@@ -8,6 +8,8 @@ import {
   updateUser,
   type UserFormState,
 } from "./actions";
+import { KeyRound, UserCheck, UserX } from "lucide-react";
+import { Button } from "@/components/ui";
 import {
   MODULLER,
   MODUL_ACIKLAMALARI,
@@ -376,13 +378,17 @@ export function ResetPasswordForm({ userId }: { userId: string }) {
 
   if (!open) {
     return (
-      <button
+      <Button
         type="button"
+        variant="secondary"
+        size="sm"
+        className="px-2"
         onClick={() => setOpen(true)}
-        className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas"
+        title="Şifre sıfırla"
       >
-        Şifre sıfırla
-      </button>
+        <KeyRound className="h-3.5 w-3.5" aria-hidden="true" />
+        <span className="sr-only">Şifre sıfırla</span>
+      </Button>
     );
   }
 
@@ -435,14 +441,30 @@ export function ToggleUserButton({
   return (
     <form action={toggleUser}>
       <input type="hidden" name="userId" value={userId} />
-      <button
+      {/* Pasifleştirme geri alınabilir ama girişi kesen bir işlem:
+          "Düzenle" ile aynı görsel ağırlıkta durunca yanlışlıkla
+          tıklanabiliyordu. Aktifleştirme riskli değil, nötr kalıyor. */}
+      <Button
         type="submit"
+        variant={active ? "destructive" : "secondary"}
+        size="sm"
+        className="px-2"
         disabled={disabled}
-        title={disabled ? "Kendi hesabınızı kapatamazsınız" : undefined}
-        className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas disabled:opacity-40"
+        title={
+          disabled
+            ? "Kendi hesabınızı kapatamazsınız"
+            : active
+              ? "Pasifleştir — panele giremez, kaydı silinmez"
+              : "Aktifleştir"
+        }
       >
-        {active ? "Pasifleştir" : "Aktifleştir"}
-      </button>
+        {active ? (
+          <UserX className="h-3.5 w-3.5" aria-hidden="true" />
+        ) : (
+          <UserCheck className="h-3.5 w-3.5" aria-hidden="true" />
+        )}
+        <span className="sr-only">{active ? "Pasifleştir" : "Aktifleştir"}</span>
+      </Button>
     </form>
   );
 }

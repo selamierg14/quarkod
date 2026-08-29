@@ -2,19 +2,7 @@ import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { createScriptClient } from "./prisma-client";
 
-/**
- * Her rolden bir deneme kullanıcısı kurar.
- *
- * Hiyerarşiyi elle test etmek için her seferinde kullanıcı açıp şifre
- * sıfırlamak gerekiyordu. Bu betik beş rolü de aynı hesapta, bilinen tek
- * bir şifreyle hazırlar — böylece "patron neyi görüyor, sorumlu neyi
- * görmüyor" sorusu bir dakikada denenebilir.
- *
- * Yalnızca geliştirme içindir: gerçek veriyle çalışan bir kurulumda
- * çalıştırmayın.
- *
- *   npm run demo:kullanicilar
- */
+
 
 const SIFRE = "Deneme1234";
 
@@ -76,15 +64,6 @@ async function main() {
       businessId: isletmeler[0]?.id ?? null,
       bolge: [],
       aciklama: isletmeler[0]?.name ?? "—",
-    },
-    {
-      username: "demo.okuyucu",
-      name: "Demo Salt Okunur",
-      role: "viewer",
-      accountId: hesap.id,
-      businessId: null,
-      bolge: [],
-      aciklama: `${hesap.name} hesabının tamamı, yalnızca okuma.`,
     },
   ];
 
