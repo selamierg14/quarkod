@@ -927,3 +927,42 @@ model PushSubscription {
   @@index([userId, disabledAt])
   @@map("push_subscriptions")
 }
+
+/// Biyerlere (tüketici) hesabı.
+///
+/// Panel kullanıcısı `User` DEĞİL ve olamaz. `User` zorunlu olarak bir
+/// `Account`'a bağlıdır ve yalnızca o hesabın verisini görür; kiracı
+/// izolasyonunun tamamı (bkz. lib/tenancy.ts) bu varsayım üzerine kurulu.
+/// Tüketici ise hiçbir işletmeye ait değildir ve TÜM işletmeleri görmesi
+/// gerekir. İkisini tek modelde birleştirmek, uygulamanın en güçlü
+/// garantisini — "bir hesabın kullanıcısı başka hesabın verisini göremez" —
+/// tek bir rol eklemesiyle delerdi.
+///
+/// Şimdilik yalnızca kullanıcı adı + şifre. Telefon doğrulaması, Apple/Google
+/// ile giriş ve davet kodu sonraki turlarda; bu tablo o alanları ekleyecek
+/// şekilde sade tutuldu.
+model AppUser {
+  id           String @id @default(cuid())
+  /// Giriş kimliği. Panel kullanıcılarıyla AYNI ad havuzunu paylaşmaz —
+  /// iki ayrı tablo, iki ayrı tekillik. "ahmet" hem bir kafede personel
+  /// hem Biyerlere'de tüketici olabilir.
+  username     String @unique
+  passwordHash String
+  name         String
+
+  /// Şifrenin en son değiştiği an. Bu andan ÖNCE üretilmiş jetonlar
+  /// geçersiz sayılır — `User`'daki ile aynı mantık, aynı gerekçe:
+  /// şifresini değiştiren kişinin çalınmış oturumu da kapansın.
+  passwordChangedAt DateTime?
+
+  /// Askıya alınan tüketici giriş yapamaz. Kayıt silmiyoruz: yorumları ve
+  /// ziyaret geçmişi başka kayıtlara bağlı.
+  active Boolean @default(true)
+
+  /// Kaşif puanı. Rozet eşikleri ve seviye bundan hesaplanıyor.
+  puan Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@map("app_users")
+}
