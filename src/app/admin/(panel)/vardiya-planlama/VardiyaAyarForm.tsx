@@ -24,26 +24,27 @@ export function VardiyaAyarForm({
     {},
   );
 
+  // Önceden bu bileşen kendi kartıydı (kendi shadow/ring/border'ı):
+  // sayfada üst üste dizilince "İşletme seç", "Geçen haftayı kopyala",
+  // "Vardiya saatleri" ayrı ayrı kutular gibi görünüp gerçek işi (tablo)
+  // aşağı itiyordu. Artık üst kapsayıcı (page.tsx) tek bir "Araçlar"
+  // kartı içinde bunu bir satır olarak sarıyor; burası yalnızca kendi
+  // içeriğini veriyor.
   return (
-    <div className="overflow-hidden rounded-card bg-surface shadow-card ring-1 ring-line">
+    <div>
       <button
         type="button"
         onClick={() => setAcik((v) => !v)}
         aria-expanded={acik}
-        className="flex w-full items-center gap-2.5 bg-teal-50/60 px-4 py-3 text-small font-medium text-teal-900 transition hover:bg-teal-50"
+        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-small font-medium text-ink-soft transition hover:bg-canvas"
       >
-        <span
-          aria-hidden="true"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip bg-gradient-to-br from-teal-500 to-teal-700 text-white shadow-sm"
-        >
-          <Settings className="h-3.5 w-3.5" />
-        </span>
+        <Settings className="h-4 w-4 shrink-0 text-ink-faint" aria-hidden="true" />
         <span className="flex-1 text-start">
           Hangi vardiyalar kullanılıyor, saat kaçta başlıyor?
         </span>
         <span
           aria-hidden="true"
-          className={`text-teal-600 transition-transform ${acik ? "rotate-180" : ""}`}
+          className={`text-ink-faint transition-transform ${acik ? "rotate-180" : ""}`}
         >
           ▾
         </span>

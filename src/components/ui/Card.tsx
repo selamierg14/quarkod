@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { modulTonu, type ModulRengi } from "@/lib/modul-rengi";
+import { BilgiIpucu } from "./BilgiIpucu";
 
 /**
  * Panelin taşıyıcı yüzeyi. Gölge yerine ince bir çizgi + çok yumuşak gölge:
@@ -120,6 +121,7 @@ export function SectionCard({
  * tek bir yerde duruyor; burası yalnızca panelin alışılmış adını koruyor.
  */
 export type SayfaRengi = ModulRengi;
+export { BilgiIpucu };
 
 /**
  * Sayfa başlığı: her ekranın tepesinde aynı ritim, kendi rengi.
@@ -181,29 +183,6 @@ export function PageHeader({
  * JS yok: fareyle üstüne gelince ve klavyeyle odaklanınca açılıyor.
  * Dokunmatikte butona basmak odak verdiği için orada da çalışıyor.
  */
-export function BilgiIpucu({ children }: { children: ReactNode }) {
-  return (
-    <span className="group relative inline-flex shrink-0 align-middle">
-      <button
-        type="button"
-        aria-label="Açıklama"
-        className="flex h-5 w-5 items-center justify-center rounded-full text-ink-faint transition hover:bg-sunken hover:text-ink-soft focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-600"
-      >
-        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-          <circle cx="12" cy="12" r="9" />
-          <path strokeLinecap="round" d="M12 16v-4M12 8h.01" />
-        </svg>
-      </button>
-      <span
-        role="tooltip"
-        className="pointer-events-none absolute top-full left-0 z-30 mt-1.5 w-max max-w-xs rounded-control bg-ink-strong px-3 py-2 text-caption leading-relaxed text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
-      >
-        {children}
-      </span>
-    </span>
-  );
-}
-
 /** Kart içi bölüm başlığı; küçük, harfleri aralıklı, gürültüsüz. */
 export function Overline({ children }: { children: ReactNode }) {
   return (

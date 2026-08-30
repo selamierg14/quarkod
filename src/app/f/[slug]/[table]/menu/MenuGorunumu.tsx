@@ -411,16 +411,44 @@ export function MenuGorunumu({
         </div>
       ) : (
         // "Deneyiminizi değerlendirin" CTA'sı burada bilerek yok — karşılama
-        // ekranında zaten var, menüde tekrarı gereksizdi.
-        <p className="mt-7 text-center text-caption text-ink-faint">
-          {t("menu.kdv")}
-          {fiyatTarihi ? (
-            <>
-              <br />
-              {t("menu.fiyatGuncelleme", { tarih: fiyatTarihi })}
-            </>
-          ) : null}
-        </p>
+        // ekranında zaten var, menüde tekrarı gereksizdi. Ama "bir şikayetim
+        // var, hemen şimdi" ihtiyacı ayrı: rakip menülerde üstte sabit bir
+        // "Şikayet & Öneri" bağlantısı olarak duruyor. Bizde zaten TAM
+        // OLARAK bu işi yapan bir sayfa var — anket — o yüzden yeni bir
+        // form kurmak yerine oraya yönlendiriyoruz; ayrı bir sistem
+        // olmadığı için tek bir kayıt havuzu, tek bir bildirim akışı kalıyor.
+        <div className="mt-7 flex flex-col items-center gap-2 text-center text-caption text-ink-faint">
+          <a
+            href={anketAdresi}
+            className="inline-flex items-center gap-1.5 rounded-chip border border-line bg-surface px-3 py-1.5 font-medium text-ink-soft transition hover:border-line-strong hover:bg-canvas"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="h-3.5 w-3.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.8}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"
+              />
+            </svg>
+            {t("menu.sikayetOneri")}
+          </a>
+
+          <p>
+            {t("menu.kdv")}
+            {fiyatTarihi ? (
+              <>
+                <br />
+                {t("menu.fiyatGuncelleme", { tarih: fiyatTarihi })}
+              </>
+            ) : null}
+          </p>
+        </div>
       )}
 
       <UrunDetayi

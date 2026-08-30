@@ -144,15 +144,32 @@ export default async function VardiyaPlanlamaPage({
     <div className="flex flex-col gap-5">
       <VardiyaSekmeleri aktif="cizelge" />
 
-      {/* Hafta gezinmesi başlığın kendi aksiyon alanında: PageHeader artık
-          kendi yüzeyi olan bir kart, yanına ayrı bir öbek koymak onu
-          sayfanın yarısında bırakıyordu. */}
+      {/* Başlık artık yalnızca kimlik: ne olduğu ve hangi hafta. Hafta
+          gezinme + işletme seçici + kopyalama + uyarılar + vardiya saatleri
+          önceden dört-beş ayrı kutuydu ("İşletme seç" kutusu, kopyalama
+          satırı, uyarı şeridi, teal ayar barı) ve alt alta dizilince
+          sayfanın üçte biri asıl işten (tablo) önce, birbirinden görsel
+          olarak ayrışmayan bir yığın oluşturuyordu. Tek "Araçlar" kartında
+          toplanıp aralarına ince bir çizgi konunca hem daha az yer
+          kaplıyor hem hangi satırın ne işe yaradığı daha okunaklı. */}
       <PageHeader
         ikon={<CalendarDays className="h-4 w-4" aria-hidden="true" />}
         renk="teal"
         title="Vardiya çizelgesi"
         description={`${haftaBasi.toLocaleDateString("tr-TR")} – ${haftaSonu.toLocaleDateString("tr-TR")}`}
-        action={
+      />
+
+      <div className="flex flex-col divide-y divide-line rounded-card bg-surface shadow-card ring-1 ring-line">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+          {businesses.length > 1 ? (
+            <IsletmeSecici
+              businesses={businesses}
+              seciliId={secili.id}
+              taban="/admin/vardiya-planlama"
+            />
+          ) : (
+            <span />
+          )}
           <div className="flex gap-1">
             <Link
               href={haftaHref(gunEkle(haftaBasi, -7))}
@@ -167,30 +184,30 @@ export default async function VardiyaPlanlamaPage({
               Sonraki hafta →
             </Link>
           </div>
-        }
-      />
+        </div>
 
-      <IsletmeSecici businesses={businesses} seciliId={secili.id} taban="/admin/vardiya-planlama" />
+        <div className="px-4 py-3">
+          <HaftaAraclari
+            businessId={secili.id}
+            baslangic={gunGirdisi(haftaBasi)}
+            uyarilar={uyarilar}
+          />
+        </div>
 
-      <HaftaAraclari
-        businessId={secili.id}
-        baslangic={gunGirdisi(haftaBasi)}
-        uyarilar={uyarilar}
-      />
-
-      <VardiyaAyarForm
-        businessId={secili.id}
-        ayarlar={{
-          vardiyaSabahAktif: secili.vardiyaSabahAktif,
-          vardiyaSabahSaat: secili.vardiyaSabahSaat,
-          vardiyaOgleAktif: secili.vardiyaOgleAktif,
-          vardiyaOgleSaat: secili.vardiyaOgleSaat,
-          vardiyaAksamAktif: secili.vardiyaAksamAktif,
-          vardiyaAksamSaat: secili.vardiyaAksamSaat,
-          vardiyaGeceAktif: secili.vardiyaGeceAktif,
-          vardiyaGeceSaat: secili.vardiyaGeceSaat,
-        }}
-      />
+        <VardiyaAyarForm
+          businessId={secili.id}
+          ayarlar={{
+            vardiyaSabahAktif: secili.vardiyaSabahAktif,
+            vardiyaSabahSaat: secili.vardiyaSabahSaat,
+            vardiyaOgleAktif: secili.vardiyaOgleAktif,
+            vardiyaOgleSaat: secili.vardiyaOgleSaat,
+            vardiyaAksamAktif: secili.vardiyaAksamAktif,
+            vardiyaAksamSaat: secili.vardiyaAksamSaat,
+            vardiyaGeceAktif: secili.vardiyaGeceAktif,
+            vardiyaGeceSaat: secili.vardiyaGeceSaat,
+          }}
+        />
+      </div>
 
       {bekleyenTalepler.length > 0 ? (
         <section className="rounded-control bg-warning-soft p-4 ring-1 ring-warning/25">
