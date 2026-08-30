@@ -57,3 +57,21 @@ export function dataUrlCoz(
     return null;
   }
 }
+
+/**
+ * Duyuru/etkinlik afişinin adresi.
+ *
+ * Logo ve kapakla aynı gerekçe ve aynı desen: afişler de data URI olarak
+ * saklanıyor ve Biyerlere keşfet listesine gömüldüklerinde tek mekanlık
+ * bir yanıtı 164 KB'a çıkarıyorlardı. Adres yine içerik özetini taşıyor,
+ * yani afiş değişince adres de değişiyor ve uzun önbellek güvenli kalıyor.
+ */
+export function duyuruGorselAdresi(
+  duyuruId: string,
+  deger: string | null | undefined,
+): string | null {
+  if (!deger) return null;
+  if (/^https?:\/\//i.test(deger)) return deger;
+  if (!deger.startsWith("data:")) return null;
+  return `/g/duyuru/${duyuruId}?s=${gorselSurumu(deger)}`;
+}

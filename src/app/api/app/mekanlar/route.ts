@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { duyuruAktifMi } from "@/lib/duyuru";
 import { ozellikleriCoz } from "@/lib/mekan";
+import { duyuruGorselAdresi, gorselAdresi } from "@/lib/gorsel-adres";
 import { mekanlariSuz, sinirKutusu, sorguCoz } from "@/lib/kesfet";
 
 export const dynamic = "force-dynamic";
@@ -111,10 +112,14 @@ export async function GET(request: NextRequest) {
       adres: m.address,
       // Görselin KENDİSİ değil adresi dönüyor. Data URI'leri listeye
       // gömmek tek mekanlı bir yanıtı 164 KB yapıyordu; elli mekanlı bir
-      // keşfet ekranı mobil veriyle açılamazdı. Mobil taraf bu adresleri
-      // görünür oldukça yükleyip HTTP önbelleğinde tutuyor.
-      logoUrl: m.logoUrl ? `/api/app/gorsel/logo/${m.id}` : null,
-      kapakUrl: m.coverUrl ? `/api/app/gorsel/kapak/${m.id}` : null,
+      // keşfet ekranı mobil veriyle açılamazdı.
+      //
+      // Adresi müşteri QR sayfalarıyla AYNI yardımcı üretiyor: aynı işi
+      // yapan ikinci bir uç yazmak yerine mevcut /g/... ucu kullanılıyor.
+      // O uç içerik özetini adrese koyup ETag ile 304 dönebiliyor, yani
+      // görsel bir kez inip bir daha inmiyor.
+      logoUrl: gorselAdresi(m.id, "logo", m.logoUrl),
+      kapakUrl: gorselAdresi(m.id, "kapak", m.coverUrl),
       markaRengi: m.brandColor,
       instagram: m.instagramUrl,
       konum: { enlem: m.latitude, boylam: m.longitude },
@@ -129,7 +134,7 @@ export async function GET(request: NextRequest) {
         id: d.id,
         baslik: d.baslik,
         aciklama: d.aciklama,
-        gorselUrl: d.imageUrl ? `/api/app/gorsel/etkinlik/${d.id}` : null,
+        gorselUrl: duyuruGorselAdresi(d.id, d.imageUrl),
         baslangic: d.baslangic,
         bitis: d.bitis,
       })),
