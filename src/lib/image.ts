@@ -76,3 +76,32 @@ export function validateImageDataUrl(
 
   return null;
 }
+
+/** Data URI'den çözülmüş görsel: ham baytlar ve MIME türü. */
+export type CozulmusGorsel = { baytlar: Buffer; tur: string };
+
+/**
+ * Data URI'yi gerçek baytlara çevirir.
+ *
+ * Biyerlere mobil API'si için gerekli: görseller veritabanında data URI
+ * olarak duruyor ve bunları JSON listesine gömmek yanıtı şişiriyordu —
+ * tek mekanlı bir liste 164 KB'a çıkıyor, elli mekanlı bir keşfet ekranı
+ * mobil veriyle açılamaz hale geliyordu. Artık liste yalnızca adresi
+ * veriyor, baytları bu çözümleme üzerinden ayrı bir uç sunuyor; böylece
+ * görseller tembel yükleniyor ve HTTP önbelleğine giriyor.
+ *
+ * Yalnızca izin verilen MIME türleri kabul ediliyor: veritabanındaki bir
+ * değer bir şekilde bozulmuşsa tarayıcıya rastgele bir içerik türü
+ * sunmuyoruz.
+ */
+export function dataUriCoz(deger: string | null | undefined): CozulmusGorsel | null {
+  if (!deger) return null;
+  const eslesme = deger.match(/^data:(image\/(?:png|jpeg|webp));base64,([\s\S]+)$/);
+  if (!eslesme) return null;
+
+  try {
+    return { tur: eslesme[1], baytlar: Buffer.from(eslesme[2], "base64") };
+  } catch {
+    return null;
+  }
+}
