@@ -16,6 +16,7 @@ export const MODULLER = {
   iys: "İYS hizmeti",
   pazarlama: "Pazarlama izinleri",
   personel: "Personel operasyonu",
+  kesfet: "Biyerlere keşfet",
 } as const;
 
 export type ModulAnahtari = keyof typeof MODULLER;
@@ -29,6 +30,8 @@ export const MODUL_ACIKLAMALARI: Record<ModulAnahtari, string> = {
   iys: "Ticari ileti izinlerinin İYS'ye bildirilmesi.",
   pazarlama: "Pazarlama izni listesi ve dışa aktarım.",
   personel: "Vardiya çizelgesi, izinler ve görev şablonları.",
+  kesfet:
+    "İşletme, Biyerlere mobil uygulamasında haritada ve keşfet akışında görünür.",
 };
 
 export function gecerliModulMu(deger: string): deger is ModulAnahtari {

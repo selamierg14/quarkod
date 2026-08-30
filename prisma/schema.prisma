@@ -141,6 +141,24 @@ model Business {
   /// güncellendi" olarak gösterilir (fiyat şeffaflığı / yönetmelik).
   menuPriceUpdatedAt DateTime?
 
+  // --- Keşfet (Biyerlere) alanları --------------------------------------
+  // Bu dört alanın tüketicisi Quarkod paneli değil, Biyerlere mobil
+  // uygulaması: haritadaki pin ve filtre çubuğu buradan besleniyor.
+  // Dördü de isteğe bağlı — doldurulmamış işletme keşfette listelenmez,
+  // panelin geri kalanı etkilenmez.
+
+  /// Mekanın haritadaki yeri. İkisi birden dolu ya da ikisi birden boş
+  /// olur (bkz. lib/mekan.ts, koordinatCoz). Genelde işletmenin zaten
+  /// yapıştırdığı Google Haritalar bağlantısından çıkarılıyor.
+  latitude      Float?
+  longitude     Float?
+  /// "ucuz" | "orta" | "pahali" — bütçe segmenti (bkz. FIYAT_SEGMENTLERI).
+  priceSegment  String?
+  /// Mekan özellikleri, virgülle ayrılmış sabit anahtarlar:
+  /// "priz,bahce,wifi" (bkz. MEKAN_OZELLIKLERI). Menüdeki `tags`
+  /// alanıyla karıştırılmamalı — o ÜRÜNÜN, bu MEKANIN özelliği.
+  mekanOzellikleri String?
+
   /// Vardiya planlaması ve otomatik etiketleme için: hangi vardiyalar
   /// kullanılıyor ve saat kaçta başlıyor. Sabit üçlü (sabah/akşam/gece) her
   /// işletmeye uymuyor — gece çalışmayan bir kafe ya da öğle vardiyası olan

@@ -15,6 +15,13 @@ import { denetimYaz } from "@/lib/denetim";
 import { secenekleriAyristir, secenekleriBirlestir } from "@/lib/anket-detay";
 import { sifreSorunu } from "@/lib/sifre";
 import { prisma } from "@/lib/db";
+import {
+  gecerliSegmentMi,
+  googleLinkindenKoordinat,
+  koordinatCoz,
+  ozellikleriYaz,
+  type Koordinat,
+} from "@/lib/mekan";
 import { BUSINESS_TYPES, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/constants";
 import { validateImageDataUrl } from "@/lib/image";
 import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
@@ -205,6 +212,36 @@ export async function updateBusiness(
     siparisLinkleri[alan] = deger || null;
   }
 
+  // Keşfet alanları. Modül kapalıysa hiçbirine dokunulmuyor: form alanı
+  // zaten gösterilmiyor ama istek elle kurulabilir, ve modülü kapalı bir
+  // hesabın var olan konumu bir kaydetmeyle silinmemeli.
+  const kesfetAcik = user.moduller.includes("kesfet");
+
+  let koordinat: Koordinat | null = null;
+  if (kesfetAcik) {
+    const cozulen = koordinatCoz(
+      String(formData.get("latitude") ?? ""),
+      String(formData.get("longitude") ?? ""),
+    );
+    if (cozulen === undefined) {
+      return {
+        error:
+          "Konum okunamadı. Enlem ve boylamı birlikte girin (ör. 40.8715 ve 29.2329) " +
+          "ya da ikisini de boş bırakın.",
+      };
+    }
+    // Elle girilmediyse Google bağlantısından çıkarmayı deniyoruz: çoğu
+    // kafe sahibi enlem/boylamı nereden bulacağını bilmiyor ama Google
+    // linkini zaten yapıştırmış oluyor. Elle girilen değer her zaman
+    // öncelikli — otomatik çıkarım onu ezmiyor.
+    koordinat = cozulen ?? googleLinkindenKoordinat(googleReviewUrl);
+  }
+
+  const priceSegment = String(formData.get("priceSegment") ?? "").trim();
+  if (kesfetAcik && priceSegment && !gecerliSegmentMi(priceSegment)) {
+    return { error: "Bütçe segmenti geçersiz." };
+  }
+
   // Görseller data URI olarak gelir; boş dize "kaldır" demek. Sunucu boyut ve
   // biçimi yeniden doğrular — tarayıcının küçültmesine güvenmiyoruz.
   const rawLogo = String(formData.get("logoUrl") ?? "");
@@ -241,6 +278,16 @@ export async function updateBusiness(
       // var olan değer korunuyor, silinmiyor de.
       ...(user.moduller.includes("iys")
         ? { iysBrandCode: String(formData.get("iysBrandCode") ?? "").trim() || null }
+        : {}),
+      ...(kesfetAcik
+        ? {
+            latitude: koordinat?.enlem ?? null,
+            longitude: koordinat?.boylam ?? null,
+            priceSegment: priceSegment || null,
+            mekanOzellikleri: ozellikleriYaz(
+              formData.getAll("mekanOzellikleri").map((v) => String(v)),
+            ),
+          }
         : {}),
       logoUrl,
       coverUrl,

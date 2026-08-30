@@ -5,6 +5,11 @@ import { ChevronDown } from "lucide-react";
 import { BUSINESS_TYPE_LIST, qrCardText } from "@/lib/constants";
 import { ImageUpload } from "@/components/ImageUpload";
 import { useToast } from "@/components/ui";
+import {
+  FIYAT_SEGMENTLERI,
+  MEKAN_OZELLIKLERI,
+  ozellikleriCoz,
+} from "@/lib/mekan";
 import { updateBusiness, type FormState } from "../actions";
 
 const INPUT =
@@ -28,6 +33,10 @@ type Business = {
   googleRedirect: boolean;
   qrCardText: string | null;
   iysBrandCode: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  priceSegment: string | null;
+  mekanOzellikleri: string | null;
   logoUrl: string | null;
   coverUrl: string | null;
   instagramUrl: string | null;
@@ -87,11 +96,14 @@ export function SettingsForm({
   business,
   isOwner,
   iysAcik,
+  kesfetAcik,
 }: {
   business: Business;
   isOwner: boolean;
   /** İYS hizmeti modülü kapalıysa marka kodu alanı hiç gösterilmiyor. */
   iysAcik: boolean;
+  /** Keşfet modülü kapalıysa konum/özellik bölümü hiç gösterilmiyor. */
+  kesfetAcik: boolean;
 }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     updateBusiness,
@@ -113,6 +125,9 @@ export function SettingsForm({
     if (state.error) bildir(state.error, "hata");
     else if (state.saved) bildir("İşletme ayarları kaydedildi.");
   }, [state, bildir]);
+
+  const seciliOzellikler = ozellikleriCoz(business.mekanOzellikleri);
+  const ozellikSayisi = seciliOzellikler.length;
 
   const sosyalOzet = [
     business.instagramUrl ? "Instagram" : null,
@@ -287,6 +302,97 @@ export function SettingsForm({
               İYS&apos;de bu işletmenin bağlı olduğu marka kodu.
             </span>
           </label>
+        </Bolum>
+      ) : null}
+
+      {/* Keşfet alanlarının tüketicisi panel değil, Biyerlere mobil
+          uygulaması: haritadaki pin ve filtre çubuğu buradan besleniyor.
+          Modül kapalıysa işletme keşfette hiç listelenmiyor, o yüzden
+          bölüm de gösterilmiyor. */}
+      {kesfetAcik ? (
+        <Bolum
+          baslik="Konum ve mekan özellikleri"
+          ozet={
+            business.latitude !== null && business.longitude !== null
+              ? `haritada · ${ozellikSayisi} özellik`
+              : "konum girilmedi"
+          }
+          varsayilanAcik={business.latitude === null}
+        >
+          <div className="rounded-control bg-canvas px-3 py-2.5">
+            <p className={YARDIM}>
+              Bu bilgiler <strong>Biyerlere</strong> uygulamasında görünür:
+              koordinat haritadaki pini, özellikler ise &quot;priz var mı,
+              bahçesi var mı&quot; filtrelerini besler. Boş bırakırsanız
+              işletme keşfet ekranında listelenmez.
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1">
+              <span className={ETIKET}>Enlem (latitude)</span>
+              <input
+                name="latitude"
+                inputMode="decimal"
+                defaultValue={business.latitude ?? ""}
+                placeholder="ör. 40.8715146"
+                className={INPUT}
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className={ETIKET}>Boylam (longitude)</span>
+              <input
+                name="longitude"
+                inputMode="decimal"
+                defaultValue={business.longitude ?? ""}
+                placeholder="ör. 29.2329381"
+                className={INPUT}
+              />
+            </label>
+          </div>
+          <span className={YARDIM}>
+            Bu sayıları elle bulmanız gerekmiyor: yukarıdaki{" "}
+            <strong>Google yorum linki</strong> bir Google Haritalar adresiyse
+            koordinat kaydederken oradan otomatik alınır. Elle girdiğiniz
+            değer her zaman önceliklidir.
+          </span>
+
+          <label className="flex flex-col gap-1 border-t border-line pt-3">
+            <span className={ETIKET}>Bütçe segmenti</span>
+            <select
+              name="priceSegment"
+              defaultValue={business.priceSegment ?? ""}
+              className={`${INPUT} w-52`}
+            >
+              <option value="">Belirtilmedi</option>
+              {Object.entries(FIYAT_SEGMENTLERI).map(([deger, etiket]) => (
+                <option key={deger} value={deger}>
+                  {etiket}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <fieldset className="flex flex-col gap-2 border-t border-line pt-3">
+            <legend className={ETIKET}>Mekan özellikleri</legend>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(MEKAN_OZELLIKLERI).map(([deger, etiket]) => (
+                <label
+                  key={deger}
+                  className="flex cursor-pointer items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-caption has-checked:border-accent-600 has-checked:bg-accent-50 has-checked:text-accent-700"
+                >
+                  <input
+                    type="checkbox"
+                    name="mekanOzellikleri"
+                    value={deger}
+                    defaultChecked={seciliOzellikler.includes(deger as never)}
+                    className="sr-only"
+                  />
+                  {etiket}
+                </label>
+              ))}
+            </div>
+          </fieldset>
         </Bolum>
       ) : null}
 

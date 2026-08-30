@@ -43,6 +43,10 @@ export default async function BusinessSettingsPage({
             googleRedirect: business.googleRedirect,
             qrCardText: business.qrCardText,
             iysBrandCode: business.iysBrandCode,
+            latitude: business.latitude,
+            longitude: business.longitude,
+            priceSegment: business.priceSegment,
+            mekanOzellikleri: business.mekanOzellikleri,
             logoUrl: business.logoUrl,
             coverUrl: business.coverUrl,
             instagramUrl: business.instagramUrl,
@@ -57,6 +61,7 @@ export default async function BusinessSettingsPage({
           }}
           isOwner={user.role === "owner"}
           iysAcik={user.moduller.includes("iys")}
+          kesfetAcik={user.moduller.includes("kesfet")}
         />
       </SectionCard>
 
