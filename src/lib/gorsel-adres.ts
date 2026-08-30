@@ -75,3 +75,21 @@ export function duyuruGorselAdresi(
   if (!deger.startsWith("data:")) return null;
   return `/g/duyuru/${duyuruId}?s=${gorselSurumu(deger)}`;
 }
+
+/**
+ * Menü ürünü fotoğrafının adresi.
+ *
+ * Logo/kapak/afişle aynı gerekçe. Burada bahis daha yüksek: bir menüde
+ * onlarca ürün var, hepsi fotoğraflıysa tek bir mekan detayı yanıtı
+ * megabaytlara çıkar. 55 ürünlük bir menüde ürün başına ~250 KB sınırı
+ * (bkz. MAX_MENU_BYTES) en kötü durumda ~14 MB demek.
+ */
+export function urunGorselAdresi(
+  urunId: string,
+  deger: string | null | undefined,
+): string | null {
+  if (!deger) return null;
+  if (/^https?:\/\//i.test(deger)) return deger;
+  if (!deger.startsWith("data:")) return null;
+  return `/g/urun/${urunId}?s=${gorselSurumu(deger)}`;
+}
