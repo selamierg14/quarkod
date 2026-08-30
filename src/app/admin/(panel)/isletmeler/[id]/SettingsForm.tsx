@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
+import { ChevronDown } from "lucide-react";
 import { BUSINESS_TYPE_LIST, qrCardText } from "@/lib/constants";
 import { ImageUpload } from "@/components/ImageUpload";
 import { useToast } from "@/components/ui";
@@ -8,6 +9,13 @@ import { updateBusiness, type FormState } from "../actions";
 
 const INPUT =
   "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
+
+// Önceden etiketler `text-caption text-ink-muted` idi: küçük punto +
+// orta-açık gri, ekran görüntüsünde "silik" ve "anlaşılmıyor" diye
+// şikayet edildi. Alan adları formun asıl bilgisi — açıklama metninden
+// (aşağıdaki YARDIM) daha belirgin durmalı, ondan daha soluk değil.
+const ETIKET = "text-small font-medium text-ink-soft";
+const YARDIM = "text-caption text-ink-faint";
 
 type Business = {
   id: string;
@@ -33,12 +41,57 @@ type Business = {
   migrosUrl: string | null;
 };
 
+/**
+ * Katlanır ayar bölümü.
+ *
+ * Form 20'den fazla alan taşıyor ve hepsi aynı anda açık dururken hangi
+ * bilginin nerede olduğu kayboluyordu — "çırılçıplak ortada duran bir
+ * bilgi yığını". Yalnızca kimlik bilgileri (ad/tür/adres) her zaman açık;
+ * gerisi konu başlığına göre gruplanıp katlanıyor. `ozet` başlığın
+ * yanında kısa bir ipucu veriyor ki açmadan da "burada ne var" belli olsun.
+ */
+function Bolum({
+  baslik,
+  ozet,
+  varsayilanAcik = false,
+  children,
+}: {
+  baslik: string;
+  ozet?: string;
+  varsayilanAcik?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <details
+      open={varsayilanAcik}
+      className="group rounded-control border border-line bg-surface"
+    >
+      <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-small font-medium text-ink">
+        <span className="flex-1">{baslik}</span>
+        {ozet ? (
+          <span className="hidden text-caption font-normal text-ink-faint sm:inline">
+            {ozet}
+          </span>
+        ) : null}
+        <ChevronDown
+          className="h-4 w-4 shrink-0 text-ink-faint transition-transform group-open:rotate-180"
+          aria-hidden="true"
+        />
+      </summary>
+      <div className="flex flex-col gap-3 border-t border-line p-4">{children}</div>
+    </details>
+  );
+}
+
 export function SettingsForm({
   business,
   isOwner,
+  iysAcik,
 }: {
   business: Business;
   isOwner: boolean;
+  /** İYS hizmeti modülü kapalıysa marka kodu alanı hiç gösterilmiyor. */
+  iysAcik: boolean;
 }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     updateBusiness,
@@ -61,65 +114,31 @@ export function SettingsForm({
     else if (state.saved) bildir("İşletme ayarları kaydedildi.");
   }, [state, bildir]);
 
+  const sosyalOzet = [
+    business.instagramUrl ? "Instagram" : null,
+    business.wifiSsid ? "Wi-Fi" : null,
+    [business.yemeksepetiUrl, business.getirUrl, business.trendyolUrl, business.migrosUrl].some(
+      Boolean,
+    )
+      ? "sipariş linki"
+      : null,
+  ].filter(Boolean);
+
   return (
     <form action={formAction} className="flex flex-col gap-3">
       <input type="hidden" name="id" value={business.id} />
 
-      {/* Anket ekranında görünen görseller. Marka rengiyle birlikte müşterinin
-          doğru yere geldiğini anlamasını sağlar. */}
-      <div className="grid gap-4 rounded-chip bg-canvas p-4 sm:grid-cols-2">
-        <ImageUpload
-          name="logoUrl"
-          kind="logo"
-          label="Logo"
-          hint="Kare görünür. PNG/JPEG/WebP, kendiliğinden küçültülür."
-          initial={business.logoUrl}
-          brandColor={business.brandColor}
-        />
-        <ImageUpload
-          name="coverUrl"
-          kind="cover"
-          label="Kapak fotoğrafı (isteğe bağlı)"
-          hint="Anket ekranının tepesinde geniş görünür. Kafenin bir fotoğrafı olabilir."
-          initial={business.coverUrl}
-          brandColor={business.brandColor}
-        />
-
-        {/* Form uzun; görselleri seçen kişi en alttaki kaydet düğmesini
-            görmüyordu. Aynı formu buradan da gönderebilsin. */}
-        <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
-          <button
-            type="submit"
-            disabled={pending}
-            className="rounded-control bg-accent-600 px-4 py-2.5 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
-          >
-            {pending ? "Kaydediliyor..." : "Görselleri kaydet"}
-          </button>
-          {state.saved && !pending ? (
-            <span className="text-small font-medium text-success-ink">
-              ✓ Görseller kaydedildi
-            </span>
-          ) : state.error && !pending ? (
-            <span className="text-small font-medium text-danger-ink">
-              Kaydedilemedi — aşağıya bakın
-            </span>
-          ) : (
-            <span className="text-caption text-ink-muted">
-              Aşağıdaki ayarlarla birlikte kaydedilir.
-            </span>
-          )}
-        </div>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2">
+      {/* Kimlik: her zaman açık. Formun geri kalanı katlanabilir ama bu üçü
+          (özellikle ad) neredeyse her ziyarette dokunulan alanlar. */}
+      <div className="grid gap-3 rounded-control border border-line bg-surface p-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
-          <span className="text-caption text-ink-muted">İşletme adı</span>
+          <span className={ETIKET}>İşletme adı</span>
           <input name="name" defaultValue={business.name} required className={INPUT} />
         </label>
 
         {isOwner ? (
           <label className="flex flex-col gap-1">
-            <span className="text-caption text-ink-muted">Tür</span>
+            <span className={ETIKET}>Tür</span>
             <select name="type" defaultValue={business.type} className={INPUT}>
               {BUSINESS_TYPE_LIST.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -130,30 +149,68 @@ export function SettingsForm({
           </label>
         ) : null}
 
-        <label className="flex flex-col gap-1">
-          <span className="text-caption text-ink-muted">Adres</span>
+        <label className="flex flex-col gap-1 sm:col-span-2">
+          <span className={ETIKET}>Adres</span>
           <input name="address" defaultValue={business.address ?? ""} className={INPUT} />
         </label>
+      </div>
 
-        <label className="flex flex-col gap-1 sm:col-span-2">
-          <span className="text-caption text-ink-muted">Google yorum linki</span>
+      <Bolum baslik="Görseller ve marka rengi" ozet={business.logoUrl ? "Logo yüklü" : "Logo yok"}>
+        {/* Anket ekranında görünen görseller. Marka rengiyle birlikte müşterinin
+            doğru yere geldiğini anlamasını sağlar. */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <ImageUpload
+            name="logoUrl"
+            kind="logo"
+            label="Logo"
+            hint="Kare görünür. PNG/JPEG/WebP, kendiliğinden küçültülür."
+            initial={business.logoUrl}
+            brandColor={business.brandColor}
+          />
+          <ImageUpload
+            name="coverUrl"
+            kind="cover"
+            label="Kapak fotoğrafı (isteğe bağlı)"
+            hint="Anket ekranının tepesinde geniş görünür. Kafenin bir fotoğrafı olabilir."
+            initial={business.coverUrl}
+            brandColor={business.brandColor}
+          />
+        </div>
+
+        <label className="flex flex-col gap-1">
+          <span className={ETIKET}>Marka rengi</span>
           <input
-            name="googleReviewUrl"
-            type="url"
-            placeholder="https://search.google.com/local/writereview?placeid=..."
-            defaultValue={business.googleReviewUrl ?? ""}
-            className={INPUT}
+            name="brandColor"
+            type="color"
+            defaultValue={business.brandColor}
+            className="h-9 w-20 rounded-chip border border-line bg-surface p-1"
           />
         </label>
 
+        {/* Form uzun; görselleri seçen kişi en alttaki kaydet düğmesine
+            kadar kaydırmak istemeyebilir. Aynı formu buradan da gönderir. */}
+        <div className="flex flex-wrap items-center gap-3 border-t border-line pt-3">
+          <button
+            type="submit"
+            disabled={pending}
+            className="rounded-control bg-accent-600 px-4 py-2.5 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+          >
+            {pending ? "Kaydediliyor..." : "Görselleri kaydet"}
+          </button>
+          <span className={YARDIM}>Aşağıdaki ayarlarla birlikte kaydedilir.</span>
+        </div>
+      </Bolum>
+
+      <Bolum
+        baslik="Bildirim ve Google"
+        ozet={`${business.notifyThreshold} ve altı · ${business.googleRedirect ? "Google açık" : "Google kapalı"}`}
+      >
         <label className="flex flex-col gap-1">
-          <span className="text-caption text-ink-muted">
-            Bildirim eşiği (bu puan ve altında haber ver)
-          </span>
+          <span className={ETIKET}>Bildirim eşiği (bu puan ve altında haber ver)</span>
           <select
             name="notifyThreshold"
             defaultValue={String(business.notifyThreshold)}
-            className={INPUT}
+            className={`${INPUT} w-40`}
           >
             {[1, 2, 3, 4, 5].map((value) => (
               <option key={value} value={value}>
@@ -164,18 +221,40 @@ export function SettingsForm({
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-caption text-ink-muted">Marka rengi</span>
+          <span className={ETIKET}>Google yorum linki</span>
           <input
-            name="brandColor"
-            type="color"
-            defaultValue={business.brandColor}
-            className="h-9 w-20 rounded-chip border border-line bg-surface p-1"
+            name="googleReviewUrl"
+            type="url"
+            placeholder="https://search.google.com/local/writereview?placeid=..."
+            defaultValue={business.googleReviewUrl ?? ""}
+            className={INPUT}
           />
         </label>
 
-        <label className="flex flex-col gap-1 sm:col-span-2">
-          <span className="text-caption text-ink-muted">
-            QR kartındaki çağrı metni — masadaki kartta karekodun üstünde yazar
+        <label className="flex items-start gap-3 rounded-chip bg-canvas p-3">
+          <input
+            type="checkbox"
+            name="googleRedirect"
+            defaultChecked={business.googleRedirect}
+            className="mt-0.5 h-4 w-4"
+          />
+          <span className="text-small">
+            <span className="font-medium text-ink">
+              5 yıldızda Google&apos;a yönlendir
+            </span>
+            <span className={`mt-0.5 block ${YARDIM}`}>
+              Kapatırsanız herkes aynı nötr teşekkür ekranını görür; Google linki
+              gösterilmez. Yorum filtreleme (review-gating) politikası nedeniyle
+              ileride bu varyanta geçmek isterseniz kod değişikliği gerekmez.
+            </span>
+          </span>
+        </label>
+      </Bolum>
+
+      <Bolum baslik="QR kartındaki çağrı metni">
+        <label className="flex flex-col gap-1">
+          <span className={ETIKET}>
+            Masadaki kartta karekodun üstünde yazan cümle
           </span>
           <input
             name="qrCardText"
@@ -184,27 +263,39 @@ export function SettingsForm({
             maxLength={80}
             className={INPUT}
           />
-          <span className="text-caption text-ink-faint">
+          <span className={YARDIM}>
             Boş bırakırsanız varsayılan kullanılır. Kısa, karşılığı belli ve süre
             veren cümleler daha çok okutulur.
           </span>
         </label>
+      </Bolum>
 
+      {/* Menüde gizlemek yetmez ama burada zaten hiç göstermiyoruz —
+          modül kapalıyken alan formda yok, sunucu da (updateBusiness)
+          gönderilse bile bu değeri yok sayıyor. */}
+      {iysAcik ? (
+        <Bolum baslik="İYS" ozet={business.iysBrandCode ?? "kod girilmedi"}>
+          <label className="flex flex-col gap-1">
+            <span className={ETIKET}>İYS marka kodu</span>
+            <input
+              name="iysBrandCode"
+              defaultValue={business.iysBrandCode ?? ""}
+              placeholder="ör. 654321"
+              className={`${INPUT} w-40`}
+            />
+            <span className={YARDIM}>
+              İYS&apos;de bu işletmenin bağlı olduğu marka kodu.
+            </span>
+          </label>
+        </Bolum>
+      ) : null}
+
+      <Bolum
+        baslik="Sosyal ve sipariş linkleri"
+        ozet={sosyalOzet.length > 0 ? sosyalOzet.join(", ") : "hiçbiri dolu değil"}
+      >
         <label className="flex flex-col gap-1">
-          <span className="text-caption text-ink-muted">İYS marka kodu</span>
-          <input
-            name="iysBrandCode"
-            defaultValue={business.iysBrandCode ?? ""}
-            placeholder="ör. 654321"
-            className={INPUT}
-          />
-          <span className="text-caption text-ink-faint">
-            İYS&apos;de bu işletmenin bağlı olduğu marka kodu.
-          </span>
-        </label>
-
-        <label className="flex flex-col gap-1 sm:col-span-2">
-          <span className="text-caption text-ink-muted">Instagram linki</span>
+          <span className={ETIKET}>Instagram linki</span>
           <input
             name="instagramUrl"
             type="url"
@@ -212,37 +303,37 @@ export function SettingsForm({
             defaultValue={business.instagramUrl ?? ""}
             className={INPUT}
           />
-          <span className="text-caption text-ink-faint">
+          <span className={YARDIM}>
             Doldurulursa QR karşılama ekranında Instagram simgesi görünür.
           </span>
         </label>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-caption text-ink-muted">Wi-Fi ağ adı (SSID)</span>
-          <input
-            name="wifiSsid"
-            defaultValue={business.wifiSsid ?? ""}
-            className={INPUT}
-          />
-        </label>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="flex flex-col gap-1">
+            <span className={ETIKET}>Wi-Fi ağ adı (SSID)</span>
+            <input
+              name="wifiSsid"
+              defaultValue={business.wifiSsid ?? ""}
+              className={INPUT}
+            />
+          </label>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-caption text-ink-muted">Wi-Fi şifresi</span>
-          <input
-            name="wifiPassword"
-            defaultValue={business.wifiPassword ?? ""}
-            className={INPUT}
-          />
-          <span className="text-caption text-ink-faint">
-            İkisi de doluysa QR ekranında müşteri kopyalayabileceği bir Wi-Fi
-            butonu görünür.
-          </span>
-        </label>
+          <label className="flex flex-col gap-1">
+            <span className={ETIKET}>Wi-Fi şifresi</span>
+            <input
+              name="wifiPassword"
+              defaultValue={business.wifiPassword ?? ""}
+              className={INPUT}
+            />
+          </label>
+        </div>
+        <span className={YARDIM}>
+          İkisi de doluysa QR ekranında müşteri kopyalayabileceği bir Wi-Fi
+          butonu görünür.
+        </span>
 
-        <div className="flex flex-col gap-1 sm:col-span-2">
-          <span className="text-caption text-ink-muted">
-            Online sipariş linkleri
-          </span>
+        <div className="flex flex-col gap-1 border-t border-line pt-3">
+          <span className={ETIKET}>Online sipariş linkleri</span>
           <div className="grid gap-2 sm:grid-cols-2">
             <input
               name="yemeksepetiUrl"
@@ -273,16 +364,19 @@ export function SettingsForm({
               className={INPUT}
             />
           </div>
-          <span className="text-caption text-ink-faint">
+          <span className={YARDIM}>
             Doldurduğunuz platformlar QR karşılama ekranında sipariş butonu
             olarak görünür. Boş bıraktıklarınız gösterilmez.
           </span>
         </div>
+      </Bolum>
 
-        <label className="flex flex-col gap-1 sm:col-span-2">
-          <span className="text-caption text-ink-muted">
-            Duyuru — QR menünün tepesinde görünür
-          </span>
+      <Bolum
+        baslik="Duyuru"
+        ozet={business.announcementActive ? "yayında" : "kapalı"}
+      >
+        <label className="flex flex-col gap-1">
+          <span className={ETIKET}>QR menünün tepesinde görünen duyuru</span>
           <input
             name="announcement"
             defaultValue={business.announcement ?? ""}
@@ -290,44 +384,27 @@ export function SettingsForm({
             maxLength={120}
             className={INPUT}
           />
-          <span className="text-caption text-ink-faint">
+          <span className={YARDIM}>
             Kampanya bitince metni silmenize gerek yok; aşağıdaki kutuyu
             kapatıp sonra geri açabilirsiniz.
           </span>
         </label>
-      </div>
 
-      <label className="flex items-start gap-3 rounded-chip bg-canvas p-3">
-        <input
-          type="checkbox"
-          name="announcementActive"
-          defaultChecked={business.announcementActive}
-          className="mt-0.5 h-4 w-4"
-        />
-        <span className="text-small">
-          <span className="font-medium">Duyuruyu menüde göster</span>
-          <span className="mt-0.5 block text-caption text-ink-muted">
-            Kapalıyken müşteri şeridi görmez.
+        <label className="flex items-start gap-3 rounded-chip bg-canvas p-3">
+          <input
+            type="checkbox"
+            name="announcementActive"
+            defaultChecked={business.announcementActive}
+            className="mt-0.5 h-4 w-4"
+          />
+          <span className="text-small">
+            <span className="font-medium text-ink">Duyuruyu menüde göster</span>
+            <span className={`mt-0.5 block ${YARDIM}`}>
+              Kapalıyken müşteri şeridi görmez.
+            </span>
           </span>
-        </span>
-      </label>
-
-      <label className="flex items-start gap-3 rounded-chip bg-canvas p-3">
-        <input
-          type="checkbox"
-          name="googleRedirect"
-          defaultChecked={business.googleRedirect}
-          className="mt-0.5 h-4 w-4"
-        />
-        <span className="text-small">
-          <span className="font-medium">5 yıldızda Google&apos;a yönlendir</span>
-          <span className="mt-0.5 block text-caption text-ink-muted">
-            Kapatırsanız herkes aynı nötr teşekkür ekranını görür; Google linki
-            gösterilmez. Yorum filtreleme (review-gating) politikası nedeniyle
-            ileride bu varyanta geçmek isterseniz kod değişikliği gerekmez.
-          </span>
-        </span>
-      </label>
+        </label>
+      </Bolum>
 
       {state.error ? (
         <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">

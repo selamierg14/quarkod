@@ -56,6 +56,7 @@ export default async function BusinessSettingsPage({
             migrosUrl: business.migrosUrl,
           }}
           isOwner={user.role === "owner"}
+          iysAcik={user.moduller.includes("iys")}
         />
       </SectionCard>
 

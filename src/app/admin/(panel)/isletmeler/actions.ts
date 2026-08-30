@@ -236,7 +236,12 @@ export async function updateBusiness(
       notifyThreshold: threshold,
       googleRedirect: formData.get("googleRedirect") === "on",
       qrCardText: String(formData.get("qrCardText") ?? "").trim().slice(0, 80) || null,
-      iysBrandCode: String(formData.get("iysBrandCode") ?? "").trim() || null,
+      // Menüde gizlemek yetmez: form alanı elle kurulabilir. Modül kapalı
+      // bir hesapta bu alana ne gönderilirse gönderilsin dokunulmuyor —
+      // var olan değer korunuyor, silinmiyor de.
+      ...(user.moduller.includes("iys")
+        ? { iysBrandCode: String(formData.get("iysBrandCode") ?? "").trim() || null }
+        : {}),
       logoUrl,
       coverUrl,
       instagramUrl: instagramUrl || null,
