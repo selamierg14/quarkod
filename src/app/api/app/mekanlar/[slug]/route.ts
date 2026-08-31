@@ -38,7 +38,13 @@ export async function GET(
       account: {
         active: true,
         OR: [{ expiresAt: null }, { expiresAt: { gt: simdi } }],
-        users: { some: { role: "owner", moduller: { has: "kesfet" } } },
+        // `active: true` şart: askıya alınmış tek sahibi olan bir işletme
+        // aksi halde uygulamada görünmeye devam ederdi. Hesabı yöneten
+        // kimse kalmamışken mekanı keşfette tutmak, güncellenmeyen bir
+        // menüyü ve kapanmış olabilecek bir yeri müşteriye önermek olurdu.
+        users: {
+          some: { role: "owner", active: true, moduller: { has: "kesfet" } },
+        },
       },
     },
     // Alanlar tek tek: Business'ta bildirim eşiği, İYS kodu ve Wi-Fi
