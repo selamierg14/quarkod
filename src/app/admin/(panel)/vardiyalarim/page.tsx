@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { SHIFTS } from "@/lib/constants";
 import { gunAdi, gunBaslangici, gunEkle, gunGirdisi, gunGirdisindenTarih } from "@/lib/gun";
+import { etkinVardiyalar } from "@/lib/vardiya";
 import { EmptyState, PageHeader } from "@/components/ui";
 import { DegisimTalebi } from "./DegisimTalebi";
 import { IzinTalebi } from "./IzinTalebi";
@@ -38,6 +39,27 @@ export default async function VardiyalarimPage() {
       })
     : [];
   const bekleyenSet = new Set(bekleyenTalepler.map((t) => t.assignmentId));
+
+  // Hedef vardiya seçimi için: garson/manager tek bir işletmeye bağlı
+  // (businessId sabit), o yüzden tek sorgu yetiyor.
+  const isletmeVardiyalari = user.businessId
+    ? await prisma.business.findUnique({
+        where: { id: user.businessId },
+        select: {
+          vardiyaSabahAktif: true,
+          vardiyaSabahSaat: true,
+          vardiyaOgleAktif: true,
+          vardiyaOgleSaat: true,
+          vardiyaAksamAktif: true,
+          vardiyaAksamSaat: true,
+          vardiyaGeceAktif: true,
+          vardiyaGeceSaat: true,
+        },
+      })
+    : null;
+  const vardiyaSecenekleri = isletmeVardiyalari
+    ? etkinVardiyalar(isletmeVardiyalari).map((deger) => [deger, SHIFTS[deger]] as const)
+    : [];
 
   // Kendi izin talepleri — en yeniler üstte, geçmiş kayıtlar da görünsün ki
   // "talebim ne oldu" sorusu ekranı terk etmeden cevaplansın.
@@ -118,6 +140,7 @@ export default async function VardiyalarimPage() {
                       label={`${SHIFTS[a.shift as keyof typeof SHIFTS] ?? a.shift} · ${a.business.name}`}
                       bekliyor={bekleyenSet.has(a.id)}
                       koyu={bugunMu}
+                      vardiyaSecenekleri={vardiyaSecenekleri}
                     />
                   ))}
                 </div>

@@ -9,6 +9,7 @@ import { gunAdi, gunBaslangici, gunEkle, gunGirdisi, haftaBaslangici } from "@/l
 import { etkinVardiyalar } from "@/lib/vardiya";
 import { IZIN_TURLERI, izinKumesiKur, izinliMi, type IzinTuru } from "@/lib/izin";
 import { vardiyaUyarilariniHesapla } from "@/lib/vardiya-uyari";
+import { talepDurumunuBelirle, type BekleyenDegisimTalebi } from "@/lib/vardiya-degisim";
 import { IsletmeSecici } from "../menu/MenuUst";
 import { degisimKararVer, vardiyaAta, vardiyaKaldir } from "./actions";
 import { CizelgeAktarim } from "./CizelgeAktarim";
@@ -98,6 +99,45 @@ export default async function VardiyaPlanlamaPage({
   ]);
   const kirilimByShift = new Map(vardiyaKirilimi.map((k) => [k.shift, k]));
   const izinKumesi = izinKumesiKur(izinler);
+
+  // Değişim taleplerinin durumu (eşleşti / hedef boş / hedef dolu / hedefsiz).
+  // Hedef başka bir haftaya düşebileceği için görüntülenen haftanın
+  // atamalarıyla YETİNMİYORUZ — taleplerin hedef tarihlerini ayrıca sorguluyoruz.
+  const hedefTarihler = [
+    ...new Set(
+      bekleyenTalepler
+        .map((t) => t.hedefTarih?.getTime())
+        .filter((t): t is number => t !== undefined),
+    ),
+  ].map((t) => new Date(t));
+  const hedefAtamalari = hedefTarihler.length
+    ? await prisma.shiftAssignment.findMany({
+        where: { businessId: secili.id, date: { in: hedefTarihler } },
+        select: { businessId: true, userId: true, date: true, shift: true },
+      })
+    : [];
+  const talepGirdileri: BekleyenDegisimTalebi[] = bekleyenTalepler.map((t) => ({
+    id: t.id,
+    requestedById: t.requestedById,
+    businessId: t.assignment.businessId,
+    kaynakTarih: t.assignment.date,
+    kaynakVardiya: t.assignment.shift,
+    hedefTarih: t.hedefTarih,
+    hedefVardiya: t.hedefVardiya,
+  }));
+  const talepDurumlari = new Map(
+    talepGirdileri.map((t) => [t.id, talepDurumunuBelirle(t, talepGirdileri, hedefAtamalari)]),
+  );
+  // Eşleşen çiftler tek kart olarak gösteriliyor — ikinci tarafı listeden çıkar.
+  const gosterilenTalepIdleri = new Set(bekleyenTalepler.map((t) => t.id));
+  for (const [id, durum] of talepDurumlari) {
+    if (durum.tur === "eslesti" && gosterilenTalepIdleri.has(durum.digerTalepId)) {
+      // İkisinden yalnızca biri (id'si küçük olan) kart olarak kalsın —
+      // aksi hâlde aynı takas iki kez görünürdü.
+      if (id > durum.digerTalepId) gosterilenTalepIdleri.delete(id);
+      else gosterilenTalepIdleri.delete(durum.digerTalepId);
+    }
+  }
 
   // Notlar hücre bazında toplanıyor: "gün:vardiya" → o vardiyaya bırakılanlar.
   const notlarByHucre = new Map<string, { yazar: string; metin: string }[]>();
@@ -226,56 +266,101 @@ export default async function VardiyaPlanlamaPage({
       {bekleyenTalepler.length > 0 ? (
         <section className="rounded-control bg-warning-soft p-4 ring-1 ring-warning/25">
           <h2 className="text-caption font-medium tracking-wide text-warning-ink uppercase">
-            Bekleyen vardiya bırakma talepleri
+            Bekleyen vardiya değişim/bırakma talepleri
           </h2>
-          {/* Onaylamanın ne yaptığı belirsizdi: "değişim" kelimesi otomatik
-              bir yer değiştirme çağrıştırıyor ama sistemde öyle bir şey yok —
-              onay yalnızca hücreyi boşaltıyor, kimseyi otomatik atamıyor. */}
-          <p className="mt-0.5 text-caption text-warning-ink/80">
-            Onaylarsanız bu vardiya boşalır; yerine birini siz atamanız gerekir.
-          </p>
           <ul className="mt-2 flex flex-col gap-2">
-            {bekleyenTalepler.map((talep) => (
-              <li
-                key={talep.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-chip bg-surface px-3 py-2 text-small"
-              >
-                <span>
-                  <span className="font-medium">{talep.requestedBy.name}</span>
-                  {" — "}
-                  {SHIFTS[talep.assignment.shift as keyof typeof SHIFTS] ?? talep.assignment.shift}
-                  {" · "}
-                  {gunAdi(talep.assignment.date)}, {talep.assignment.date.toLocaleDateString("tr-TR")}
-                  {talep.note ? (
-                    <span className="block text-caption text-ink-faint">
-                      &quot;{talep.note}&quot;
+            {bekleyenTalepler
+              .filter((talep) => gosterilenTalepIdleri.has(talep.id))
+              .map((talep) => {
+                const durum = talepDurumlari.get(talep.id)!;
+                const kaynakEtiket = `${SHIFTS[talep.assignment.shift as keyof typeof SHIFTS] ?? talep.assignment.shift} · ${gunAdi(talep.assignment.date)}, ${talep.assignment.date.toLocaleDateString("tr-TR")}`;
+                const hedefEtiket =
+                  talep.hedefTarih && talep.hedefVardiya
+                    ? `${SHIFTS[talep.hedefVardiya as keyof typeof SHIFTS] ?? talep.hedefVardiya} · ${gunAdi(talep.hedefTarih)}, ${talep.hedefTarih.toLocaleDateString("tr-TR")}`
+                    : null;
+
+                // Eşleşen çift için karşı tarafın bilgisi de gerekiyor.
+                const digerTalep =
+                  durum.tur === "eslesti"
+                    ? bekleyenTalepler.find((t) => t.id === durum.digerTalepId)
+                    : undefined;
+
+                return (
+                  <li
+                    key={talep.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-chip bg-surface px-3 py-2 text-small"
+                  >
+                    <span>
+                      {durum.tur === "eslesti" && digerTalep ? (
+                        <>
+                          <span className="font-medium">{talep.requestedBy.name}</span>
+                          {" ("}
+                          {kaynakEtiket}
+                          {") ↔ "}
+                          <span className="font-medium">{digerTalep.requestedBy.name}</span>
+                          {" ("}
+                          {`${SHIFTS[digerTalep.assignment.shift as keyof typeof SHIFTS] ?? digerTalep.assignment.shift} · ${gunAdi(digerTalep.assignment.date)}, ${digerTalep.assignment.date.toLocaleDateString("tr-TR")}`}
+                          {") — yer değiştirmek istiyorlar"}
+                        </>
+                      ) : hedefEtiket ? (
+                        <>
+                          <span className="font-medium">{talep.requestedBy.name}</span>
+                          {" — "}
+                          {kaynakEtiket} yerine {hedefEtiket} istiyor
+                          {durum.tur === "hedefDolu" ? (
+                            <span className="ml-1.5 rounded-full bg-warning/20 px-1.5 py-0.5 text-caption text-warning-ink">
+                              hedefte biri çalışıyor, eşleşme bekleniyor
+                            </span>
+                          ) : null}
+                        </>
+                      ) : (
+                        <>
+                          <span className="font-medium">{talep.requestedBy.name}</span>
+                          {" — "}
+                          {kaynakEtiket}
+                          <span className="ml-1.5 rounded-full bg-ink-faint/15 px-1.5 py-0.5 text-caption text-ink-faint">
+                            bırakma
+                          </span>
+                        </>
+                      )}
+                      {talep.note ? (
+                        <span className="block text-caption text-ink-faint">
+                          &quot;{talep.note}&quot;
+                        </span>
+                      ) : null}
+                      {durum.tur === "hedefsiz" ? (
+                        <span className="block text-caption text-ink-faint">
+                          Onaylarsanız vardiya boşalır; yerine birini siz atamanız gerekir.
+                        </span>
+                      ) : null}
                     </span>
-                  ) : null}
-                </span>
-                <span className="flex gap-1.5">
-                  <form action={degisimKararVer}>
-                    <input type="hidden" name="id" value={talep.id} />
-                    <input type="hidden" name="karar" value="onayla" />
-                    <button
-                      type="submit"
-                      className="rounded-chip bg-success px-2.5 py-1 text-caption font-medium text-white hover:opacity-90"
-                    >
-                      Onayla
-                    </button>
-                  </form>
-                  <form action={degisimKararVer}>
-                    <input type="hidden" name="id" value={talep.id} />
-                    <input type="hidden" name="karar" value="reddet" />
-                    <button
-                      type="submit"
-                      className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas"
-                    >
-                      Reddet
-                    </button>
-                  </form>
-                </span>
-              </li>
-            ))}
+                    <span className="flex gap-1.5">
+                      {durum.tur !== "hedefDolu" ? (
+                        <form action={degisimKararVer}>
+                          <input type="hidden" name="id" value={talep.id} />
+                          <input type="hidden" name="karar" value="onayla" />
+                          <button
+                            type="submit"
+                            className="rounded-chip bg-success px-2.5 py-1 text-caption font-medium text-white hover:opacity-90"
+                          >
+                            Onayla
+                          </button>
+                        </form>
+                      ) : null}
+                      <form action={degisimKararVer}>
+                        <input type="hidden" name="id" value={talep.id} />
+                        <input type="hidden" name="karar" value="reddet" />
+                        <button
+                          type="submit"
+                          className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas"
+                        >
+                          Reddet
+                        </button>
+                      </form>
+                    </span>
+                  </li>
+                );
+              })}
           </ul>
         </section>
       ) : null}

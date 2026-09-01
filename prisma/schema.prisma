@@ -247,14 +247,27 @@ model ShiftAssignment {
   @@map("shift_assignments")
 }
 
-/// Bir personelin kendi vardiyasını bırakma talebi. Onay/red yöneticide;
-/// onaylanırsa atama kaldırılır, kim başka biri koyacaksa çizelgeden ayrıca
-/// atanır — talep otomatik yer değiştirme yapmaz, yalnızca boşaltır.
+/// Bir personelin kendi vardiyasından çıkma/değişim talebi.
+///
+/// hedefTarih+hedefVardiya BOŞSA: "bırakma" talebi — onaylanırsa atama
+/// kalkar, kimse otomatik gelmez, yöneticinin çizelgeden ayrıca ataması
+/// gerekir.
+///
+/// DOLUYSA: "değişim" talebi. Karşı tarafta TAM TERSİNİ isteyen başka bir
+/// bekleyen talep varsa (bkz. lib/vardiya-degisim.ts) ikisi eşleşmiş sayılır
+/// ve onay ikisini birden karşılıklı takas eder. Eşleşme yoksa ve hedef
+/// hücre boşsa yönetici tek taraflı onaylayıp kişiyi doğrudan oraya
+/// taşıyabilir; hedef doluysa (orada zaten çalışan biri var ama o kişi bir
+/// takas talep etmedi) onay verilemez — habersizce birini vardiyadan
+/// düşürmemek için yalnızca bilgi olarak gösterilir.
 model ShiftSwapRequest {
   id            String    @id @default(cuid())
   assignmentId  String
   requestedById String
   note          String?
+  hedefTarih    DateTime?
+  /// "sabah" | "aksam" | "gece" — SHIFTS ile aynı sözlük. hedefTarih boşsa bu da boş.
+  hedefVardiya  String?
   /// "bekliyor" | "onaylandi" | "reddedildi"
   status        String    @default("bekliyor")
   decidedById   String?

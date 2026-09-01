@@ -70,10 +70,22 @@ export async function vardiyaKaldir(formData: FormData): Promise<void> {
   revalidatePath("/admin/vardiya-planlama");
 }
 
+function etiketle(tarih: Date, vardiya: string, isletmeAdi?: string): string {
+  const temel = `${gunAdi(tarih)} ${SHIFTS[vardiya as Shift] ?? vardiya}`;
+  return isletmeAdi ? `${temel} · ${isletmeAdi}` : temel;
+}
+
 /**
- * Değişim talebine karar: onaylanırsa atama tamamen kaldırılır (yöneticinin
- * çizelgeden yeniden atamasını bekler), reddedilirse personel aynı
- * vardiyada kalır.
+ * Değişim/bırakma talebine karar.
+ *
+ * Dört hâl (bkz. lib/vardiya-degisim.ts):
+ * - Reddet: her zaman mümkün, yalnızca bu talebi kapatır.
+ * - Hedefsiz onay: eski davranış — atama kalkar, kimse otomatik gelmez.
+ * - Eşleşen onay: karşı tarafta tam tersini isteyen bekleyen bir talep
+ *   varsa, TEK onay ikisini birden karşılıklı takas eder.
+ * - Hedefli onay (eşleşme yok): hedef hücre boşsa kişi doğrudan oraya
+ *   taşınır; doluysa (UI zaten onay düğmesi göstermiyor ama savunma amaçlı)
+ *   hiçbir şey yapılmaz.
  */
 export async function degisimKararVer(formData: FormData): Promise<void> {
   const actor = await requirePersonelYonetimi();
@@ -90,46 +102,169 @@ export async function degisimKararVer(formData: FormData): Promise<void> {
   if (!talep || talep.status !== "bekliyor") return;
   if (!(await canAccessBusiness(actor, talep.assignment.businessId))) return;
 
-  const onaylandi = karar === "onayla";
+  const kaynakEtiket = etiketle(
+    talep.assignment.date,
+    talep.assignment.shift,
+    talep.assignment.business.name,
+  );
 
-  await prisma.$transaction([
-    prisma.shiftSwapRequest.update({
+  if (karar === "reddet") {
+    await prisma.shiftSwapRequest.update({
       where: { id },
-      data: {
-        status: onaylandi ? "onaylandi" : "reddedildi",
-        decidedById: actor.id,
-        decidedAt: new Date(),
-      },
-    }),
-    ...(onaylandi
-      ? [prisma.shiftAssignment.delete({ where: { id: talep.assignmentId } })]
-      : []),
-  ]);
+      data: { status: "reddedildi", decidedById: actor.id, decidedAt: new Date() },
+    });
+    await denetimYaz(actor, "business.vardiya", {
+      entity: "shiftSwapRequest",
+      entityId: id,
+      detail: `${kaynakEtiket} değişim/bırakma talebi reddedildi`,
+    });
+    await bildirimGonder([talep.requestedById], {
+      tur: "vardiya.degisim.karar",
+      baslik: "Vardiya talebin reddedildi",
+      govde: `${kaynakEtiket} — bu vardiyada kalmaya devam ediyorsun.`,
+      url: "/admin/vardiyalarim",
+    });
+    revalidatePath("/admin/vardiya-planlama");
+    revalidatePath("/admin/vardiyalarim");
+    return;
+  }
 
-  const vardiyaEtiketi = `${gunAdi(talep.assignment.date)} ${SHIFTS[talep.assignment.shift as Shift] ?? talep.assignment.shift} · ${talep.assignment.business.name}`;
+  // --- Onay ---
 
-  // Kararın kendisi ayrı bir denetim satırı — onay/red sonrası "bu vardiya
-  // neden boş" sorusu bir hafta sonra sorulduğunda AuditLog dışında hiçbir
-  // yerde iz kalmıyordu (atama silindiği için tablo kendisi de sessiz).
+  if (!talep.hedefTarih || !talep.hedefVardiya) {
+    // Hedefsiz: yalnızca boşalt.
+    await prisma.$transaction([
+      prisma.shiftSwapRequest.update({
+        where: { id },
+        data: { status: "onaylandi", decidedById: actor.id, decidedAt: new Date() },
+      }),
+      prisma.shiftAssignment.delete({ where: { id: talep.assignmentId } }),
+    ]);
+    await denetimYaz(actor, "business.vardiya", {
+      entity: "shiftSwapRequest",
+      entityId: id,
+      detail: `${kaynakEtiket} bırakma talebi onaylandı, vardiya boşaltıldı`,
+    });
+    await bildirimGonder([talep.requestedById], {
+      tur: "vardiya.degisim.karar",
+      baslik: "Vardiya bırakma talebin onaylandı",
+      govde: `${kaynakEtiket} — vardiya boşaltıldı, yerine kimse otomatik atanmadı.`,
+      url: "/admin/vardiyalarim",
+    });
+    revalidatePath("/admin/vardiya-planlama");
+    revalidatePath("/admin/vardiyalarim");
+    return;
+  }
+
+  const hedefEtiket = etiketle(talep.hedefTarih, talep.hedefVardiya, talep.assignment.business.name);
+
+  // Karşı tarafta tam tersini isteyen bekleyen bir talep var mı — aynı
+  // işletmenin tüm bekleyen talepleri arasından aranıyor (kaynak hafta ile
+  // sınırlı değil, hedef başka bir haftaya düşebilir).
+  const digerBekleyenler = await prisma.shiftSwapRequest.findMany({
+    where: {
+      status: "bekliyor",
+      id: { not: id },
+      assignment: { businessId: talep.assignment.businessId },
+    },
+    include: { assignment: true },
+  });
+  const esleşen = digerBekleyenler.find(
+    (d) =>
+      d.hedefTarih &&
+      d.hedefVardiya &&
+      d.assignment.date.getTime() === talep.hedefTarih!.getTime() &&
+      d.assignment.shift === talep.hedefVardiya &&
+      d.hedefTarih.getTime() === talep.assignment.date.getTime() &&
+      d.hedefVardiya === talep.assignment.shift,
+  );
+
+  if (esleşen) {
+    try {
+      await prisma.$transaction([
+        prisma.shiftSwapRequest.update({
+          where: { id: talep.id },
+          data: { status: "onaylandi", decidedById: actor.id, decidedAt: new Date() },
+        }),
+        prisma.shiftSwapRequest.update({
+          where: { id: esleşen.id },
+          data: { status: "onaylandi", decidedById: actor.id, decidedAt: new Date() },
+        }),
+        prisma.shiftAssignment.update({
+          where: { id: talep.assignmentId },
+          data: { date: talep.hedefTarih, shift: talep.hedefVardiya },
+        }),
+        prisma.shiftAssignment.update({
+          where: { id: esleşen.assignmentId },
+          data: { date: esleşen.hedefTarih!, shift: esleşen.hedefVardiya! },
+        }),
+      ]);
+    } catch {
+      // Tekillik hatası (biri araya girip aynı hücreye başka bir atama
+      // koymuş olabilir) — sessizce yut, talep "bekliyor" kalır, yönetici
+      // tekrar dener.
+      return;
+    }
+
+    await denetimYaz(actor, "business.vardiya", {
+      entity: "shiftSwapRequest",
+      entityId: id,
+      detail: `${kaynakEtiket} ↔ ${hedefEtiket} karşılıklı değişim onaylandı`,
+    });
+    await bildirimGonder([talep.requestedById], {
+      tur: "vardiya.degisim.karar",
+      baslik: "Vardiya değişim talebin onaylandı",
+      govde: `Artık ${hedefEtiket} çalışıyorsun (önceden ${kaynakEtiket}).`,
+      url: "/admin/vardiyalarim",
+    });
+    await bildirimGonder([esleşen.requestedById], {
+      tur: "vardiya.degisim.karar",
+      baslik: "Vardiya değişim talebin onaylandı",
+      govde: `Artık ${kaynakEtiket} çalışıyorsun (önceden ${hedefEtiket}).`,
+      url: "/admin/vardiyalarim",
+    });
+    revalidatePath("/admin/vardiya-planlama");
+    revalidatePath("/admin/vardiyalarim");
+    return;
+  }
+
+  // Eşleşme yok — hedef hücre gerçekten boş mu (savunma: UI zaten doluysa
+  // onay düğmesi göstermiyor, ama form doğrudan da çağrılabilir).
+  const dolduran = await prisma.shiftAssignment.findFirst({
+    where: {
+      businessId: talep.assignment.businessId,
+      date: talep.hedefTarih,
+      shift: talep.hedefVardiya,
+    },
+  });
+  if (dolduran) return;
+
+  try {
+    await prisma.$transaction([
+      prisma.shiftSwapRequest.update({
+        where: { id },
+        data: { status: "onaylandi", decidedById: actor.id, decidedAt: new Date() },
+      }),
+      prisma.shiftAssignment.update({
+        where: { id: talep.assignmentId },
+        data: { date: talep.hedefTarih, shift: talep.hedefVardiya },
+      }),
+    ]);
+  } catch {
+    return;
+  }
+
   await denetimYaz(actor, "business.vardiya", {
     entity: "shiftSwapRequest",
     entityId: id,
-    detail: onaylandi
-      ? `${vardiyaEtiketi} bırakma talebi onaylandı, vardiya boşaltıldı`
-      : `${vardiyaEtiketi} bırakma talebi reddedildi`,
+    detail: `${kaynakEtiket} → ${hedefEtiket} değişim talebi onaylandı`,
   });
-
-  // Onaylanınca vardiya kimseye otomatik geçmiyor — sadece boşalıyor. Bunu
-  // mesajda açıkça yazmazsak personel "değişim oldu, biri devraldı" sanır.
   await bildirimGonder([talep.requestedById], {
     tur: "vardiya.degisim.karar",
-    baslik: onaylandi ? "Vardiya bırakma talebin onaylandı" : "Vardiya bırakma talebin reddedildi",
-    govde: onaylandi
-      ? `${vardiyaEtiketi} — vardiya boşaltıldı, yerine kimse otomatik atanmadı.`
-      : `${vardiyaEtiketi} — bu vardiyada kalmaya devam ediyorsun.`,
+    baslik: "Vardiya değişim talebin onaylandı",
+    govde: `Artık ${hedefEtiket} çalışıyorsun (önceden ${kaynakEtiket}).`,
     url: "/admin/vardiyalarim",
   });
-
   revalidatePath("/admin/vardiya-planlama");
   revalidatePath("/admin/vardiyalarim");
 }
