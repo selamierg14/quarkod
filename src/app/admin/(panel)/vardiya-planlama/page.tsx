@@ -452,10 +452,11 @@ function VardiyaPuanRozeti({
         : "bg-danger-soft text-danger-ink";
   return (
     <span
-      title={`Son 30 gün, ${kirilim.count} geri bildirim`}
-      className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${renk}`}
+      title={`Son 30 gün, ${kirilim.count} geri bildirim — bu haftaya değil vardiyanın genel eğilimine ait`}
+      className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${renk}`}
     >
       ★ {kirilim.average.toFixed(1)}
+      <span className="font-normal opacity-70">· 30g</span>
     </span>
   );
 }
