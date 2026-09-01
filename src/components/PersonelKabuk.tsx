@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { BildirimZili } from "./BildirimZili";
 import { ProfilAvatarButton } from "./ProfilAvatarButton";
 import { CikisButonu } from "./CikisButonu";
 import { APP_VERSION } from "@/lib/constants";
@@ -43,6 +44,7 @@ export function PersonelKabuk({
           >
             Çıkış
           </CikisButonu>
+          <BildirimZili />
           <ProfilAvatarButton ad={ad} />
         </div>
       </header>

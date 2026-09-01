@@ -3,11 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { canAccessBusiness, requirePersonelYonetimi, requireYazma } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { gunBaslangici, gunEkle, gunGirdisi, haftaBaslangici } from "@/lib/gun";
+import { gunAdi, gunBaslangici, gunEkle, gunGirdisi, haftaBaslangici } from "@/lib/gun";
 import { etkinVardiyalar, gecerliVardiyaMi } from "@/lib/vardiya";
 import { csvAyristir, tabloyuCizelgeyeCevir } from "@/lib/vardiya-tablo";
 import { izinKumesiKur, izinliMi } from "@/lib/izin";
 import { denetimYaz } from "@/lib/denetim";
+import { bildirimGonder } from "@/lib/bildirim";
+import { SHIFTS, type Shift } from "@/lib/constants";
 
 export async function vardiyaAta(formData: FormData): Promise<void> {
   const actor = await requirePersonelYonetimi();
@@ -30,12 +32,26 @@ export async function vardiyaAta(formData: FormData): Promise<void> {
 
   const date = gunBaslangici(new Date(tarihStr));
 
+  let atandi = false;
   try {
     await prisma.shiftAssignment.create({
       data: { businessId, userId, date, shift },
     });
+    atandi = true;
   } catch {
     // Zaten atanmış (tekillik hatası) — sessizce yut, aynı sonuca varır.
+  }
+
+  // Bildirim yalnızca GERÇEKTEN yeni bir atamada gider: zaten atanmışken
+  // aynı hücreye tekrar basmak (çift tıklama, form yeniden gönderimi)
+  // personele aynı "vardiyana atandın" mesajını ikinci kez düşürmemeli.
+  if (atandi) {
+    await bildirimGonder([userId], {
+      tur: "vardiya.atandi",
+      baslik: "Vardiyaya atandın",
+      govde: `${gunAdi(date)} ${SHIFTS[shift as Shift]} vardiyasına atandın.`,
+      url: "/admin/vardiyalarim",
+    });
   }
 
   revalidatePath("/admin/vardiya-planlama");

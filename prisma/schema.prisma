@@ -720,6 +720,7 @@ model User {
   leaveRequests        LeaveRequest[]        @relation("LeaveRequester")
   leaveDecisions       LeaveRequest[]        @relation("LeaveDecider")
   pushSubscriptions    PushSubscription[]
+  panelNotifications   PanelNotification[]
 
   @@index([accountId])
   /// notifyLowRating her eşik altı puanda "bu işletmenin sorumlusu kim"
@@ -899,6 +900,39 @@ model MarketingConsent {
   @@index([businessId, reportedAt])
   @@index([feedbackId])
   @@map("marketing_consents")
+}
+
+/// Panel içi bildirim zili.
+///
+/// Web Push (bkz. PushSubscription) ile bilerek ayrı: push, izin verilmiş
+/// bir cihaza VARSA gider ve panel kapalıyken de düşer, ama izni yoksa ya da
+/// cihaz değiştiyse iz bırakmaz. Bu tablo panelde HER ZAMAN duran bir
+/// geçmiş — kullanıcı bildirim iznini hiç açmamış olsa bile zili tıklayınca
+/// "izin talebiniz onaylandı" gibi olayları burada görür. İkisi aynı
+/// olaydan doğuyor (bkz. lib/bildirim.ts) ama biri "şimdi haber ver", diğeri
+/// "her zaman görülebilir kalsın" sorusuna cevap veriyor.
+model PanelNotification {
+  id    String @id @default(cuid())
+  userId String
+
+  /// "vardiya.atandi" | "izin.talep" | "izin.karar" — bkz. lib/bildirim.ts.
+  /// Serbest metin, tıpkı AuditLog.action gibi: yeni bir tür eklemek şema
+  /// değişikliği gerektirmesin diye.
+  type  String
+  title String
+  body  String
+  /// Tıklanınca gidilecek panel adresi; yoksa zil satırı tıklanamaz.
+  url   String?
+
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Zil dropdown'ı hep "bu kullanıcının okunmamışları + son N'i" okuyor.
+  @@index([userId, read])
+  @@index([userId, createdAt])
+  @@map("panel_notifications")
 }
 
 model Notification {

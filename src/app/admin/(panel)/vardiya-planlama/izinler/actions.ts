@@ -8,9 +8,17 @@ import {
   requireYazma,
 } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { bildirimGonder } from "@/lib/bildirim";
 import { denetimYaz } from "@/lib/denetim";
 import { gunBaslangici } from "@/lib/gun";
 import { araliklarKesisiyorMu, gecerliIzinTuru } from "@/lib/izin";
+
+/** İki tarih aynı günse tek gün, değilse aralık olarak yazar. */
+function tarihAraligiYaz(baslangic: Date, bitis: Date): string {
+  const b = baslangic.toLocaleDateString("tr-TR");
+  const s = bitis.toLocaleDateString("tr-TR");
+  return b === s ? b : `${b} – ${s}`;
+}
 
 export type IzinFormState = { error?: string; saved?: string };
 
@@ -100,6 +108,30 @@ export async function izinTalepEt(
     },
   });
 
+  // Hesabın sahibi + bu işletmenin sorumlusu: onaylama yetkisi kimdeyse
+  // haber ona gider. notifyLowRating'deki (lib/mail.ts) alıcı kuralıyla
+  // aynı — kural iki yerde ayrı yaşıyor çünkü biri hesap+işletme bazlı
+  // Business üzerinden, diğeri (burası) doğrudan oturumdaki accountId
+  // üzerinden sorguluyor; tek fonksiyona çıkarmak bu değişikliğin kapsamını
+  // aşardı.
+  const yoneticiler = await prisma.user.findMany({
+    where: {
+      active: true,
+      accountId: user.accountId,
+      OR: [{ role: "owner" }, { role: "manager", businessId: user.businessId }],
+    },
+    select: { id: true },
+  });
+  await bildirimGonder(
+    yoneticiler.map((y) => y.id),
+    {
+      tur: "izin.talep",
+      baslik: "Yeni izin talebi",
+      govde: `${user.name} — ${tarihAraligiYaz(baslangic!, bitis!)}`,
+      url: "/admin/vardiya-planlama/izinler",
+    },
+  );
+
   revalidatePath("/admin/vardiyalarim");
   revalidatePath("/admin/vardiya-planlama");
   revalidatePath("/admin/vardiya-planlama/izinler");
@@ -186,10 +218,12 @@ export async function izinKararVer(formData: FormData): Promise<void> {
   if (!talep || talep.status !== "bekliyor") return;
   if (!(await canAccessBusiness(actor, talep.businessId))) return;
 
+  const onaylandi = karar === "onayla";
+
   await prisma.leaveRequest.update({
     where: { id },
     data: {
-      status: karar === "onayla" ? "onaylandi" : "reddedildi",
+      status: onaylandi ? "onaylandi" : "reddedildi",
       decidedById: actor.id,
       decidedAt: new Date(),
     },
@@ -198,7 +232,14 @@ export async function izinKararVer(formData: FormData): Promise<void> {
   await denetimYaz(actor, "business.izin", {
     entity: "leaveRequest",
     entityId: id,
-    detail: `${talep.user.name} izni ${karar === "onayla" ? "onaylandı" : "reddedildi"}`,
+    detail: `${talep.user.name} izni ${onaylandi ? "onaylandı" : "reddedildi"}`,
+  });
+
+  await bildirimGonder([talep.userId], {
+    tur: "izin.karar",
+    baslik: onaylandi ? "İzin talebin onaylandı" : "İzin talebin reddedildi",
+    govde: tarihAraligiYaz(talep.baslangic, talep.bitis),
+    url: "/admin/vardiyalarim",
   });
 
   revalidatePath("/admin/vardiya-planlama");

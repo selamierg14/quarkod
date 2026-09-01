@@ -3,6 +3,7 @@ import { getActiveAccount } from "@/lib/impersonation";
 import { exitAccount } from "./hesaplar/actions";
 import { logout } from "../giris/actions";
 import { AdminSidebar } from "@/components/AdminSidebar";
+import { BildirimZili } from "@/components/BildirimZili";
 import { KomutPaleti } from "@/components/KomutPaleti";
 import { PersonelKabuk } from "@/components/PersonelKabuk";
 import { ProfilAvatarButton } from "@/components/ProfilAvatarButton";
@@ -80,7 +81,8 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
             aramak yerine buradan tek tıkla gidilsin. Mobilde bu rozet
             AdminSidebar'ın kendi başlık çubuğunda — burada tekrar
             göstermek iki üst üste çubuk demek olurdu. */}
-        <div className="print-hidden hidden items-center justify-end border-b border-line bg-surface px-4 py-2.5 lg:flex lg:px-8">
+        <div className="print-hidden hidden items-center justify-end gap-1.5 border-b border-line bg-surface px-4 py-2.5 lg:flex lg:px-8">
+          <BildirimZili />
           <ProfilAvatarButton ad={user.name} />
         </div>
 

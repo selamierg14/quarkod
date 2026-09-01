@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { aktifMi, grupAktifMi, type IkonAdi, type NavGrup } from "@/lib/panel";
 import { APP_VERSION } from "@/lib/constants";
+import { BildirimZili } from "./BildirimZili";
 import { ProfilAvatarButton } from "./ProfilAvatarButton";
 import { CikisButonu } from "./CikisButonu";
 
@@ -269,6 +270,7 @@ export function AdminSidebar({
         <Link href="/admin" className="flex-1 font-semibold tracking-tight text-ink">
           Memnuniyet Paneli
         </Link>
+        <BildirimZili />
         <ProfilAvatarButton ad={kullaniciAdi} />
       </div>
 
