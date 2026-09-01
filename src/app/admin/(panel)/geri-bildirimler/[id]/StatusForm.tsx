@@ -65,11 +65,17 @@ export function StatusForm({
         {/* "Kim yazdı, ne zaman yazdı" ekranda hiç görünmüyordu — not tek
             bir metin kutusuydu, üzerine her kaydedilişte sessizce
             değişiyordu. Yalnızca metin gerçekten değiştiğinde bu ikisi
-            güncelleniyor (bkz. actions.ts). */}
+            güncelleniyor (bkz. actions.ts).
+
+            Alttaki "Kaydedildi." mesajı yalnızca BU sekmedeki son kaydetme
+            işlemi için var — sayfa yenilenince ya da geri dönülünce kaybolur,
+            oysa kayıt kalıcı. Bu satır o boşluğu dolduruyor: sayfa yeniden
+            açılsa bile "evet, gerçekten kaydedildi" burada duruyor. */}
         {internalNoteBy ? (
-          <span className="text-caption text-ink-faint">
-            Son yazan: <strong className="font-medium text-ink-soft">{internalNoteBy}</strong>
-            {internalNoteAt ? ` — ${internalNoteAt}` : ""}
+          <span className="flex w-fit items-center gap-1.5 rounded-chip bg-success-soft px-2.5 py-1.5 text-caption text-success-ink">
+            <span aria-hidden="true">✓</span>
+            Kaydedildi — <strong className="font-medium">{internalNoteBy}</strong>
+            {internalNoteAt ? ` · ${internalNoteAt}` : ""}
           </span>
         ) : null}
       </label>
