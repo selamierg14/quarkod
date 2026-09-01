@@ -43,6 +43,9 @@ export function SablonForm({ businessId }: { businessId: string }) {
       </button>
 
       {state.error ? <p className="w-full text-caption text-danger">{state.error}</p> : null}
+      {state.saved ? (
+        <p className="w-full text-caption text-success-ink">{state.saved}</p>
+      ) : null}
     </form>
   );
 }

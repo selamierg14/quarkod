@@ -442,7 +442,11 @@ export function ItemRow({
           <input type="hidden" name="itemId" value={urun.id} />
           <UrunAlanlari urun={urun} brandColor={brandColor} />
 
+          {/* Ekleme formunda "saved" zaten gösteriliyordu, düzenleme
+              formunda unutulmuştu — "kaydet dedim, oldu mu olmadı mı
+              anlamıyorum" şikayetinin kaynağı tam olarak buydu. */}
           {state.error ? <p className="text-small text-danger">{state.error}</p> : null}
+          {state.saved ? <p className="text-small text-success-ink">{state.saved}</p> : null}
 
           <div className="flex gap-2">
             <button

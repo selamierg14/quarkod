@@ -127,6 +127,12 @@ export function ShiftNotuFormu({
       {state.error ? (
         <p className="w-full text-caption text-danger">{state.error}</p>
       ) : null}
+      {/* Alan uncontrolled: sunucu isteği bitince metin kutuda kalıyordu,
+          "gitti mi gitmedi mi" izlenimi veriyordu. Ekleme aşağıdaki listede
+          zaten görünüyor ama bu satır anlık bir doğrulama sağlıyor. */}
+      {state.saved ? (
+        <p className="w-full text-caption text-success-ink">{state.saved}</p>
+      ) : null}
     </form>
   );
 }

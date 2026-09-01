@@ -316,7 +316,15 @@ export async function gecenHaftayiKopyala(
 
   const [onceki, mevcut, izinler] = await Promise.all([
     prisma.shiftAssignment.findMany({
-      where: { businessId, date: { gte: oncekiBasi, lte: oncekiSonu } },
+      where: {
+        businessId,
+        date: { gte: oncekiBasi, lte: oncekiSonu },
+        // Pasifleştirilmiş biri geçen hafta çalışmış olabilir ama yeni
+        // haftaya kopyalanacak atama GELECEĞE ait — artık aktif olmayan
+        // birini oraya yazmak, tam da bu kopyalamanın çözmeye çalıştığı
+        // "boş vardiya" sorununu gizli şekilde geri getirirdi.
+        user: { active: true },
+      },
       select: { userId: true, date: true, shift: true },
     }),
     prisma.shiftAssignment.findMany({

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { EmptyState, PageHeader } from "@/components/ui";
 import { getShiftBreakdown } from "@/lib/stats";
 import { SHIFTS, type Shift } from "@/lib/constants";
-import { gunAdi, gunEkle, gunGirdisi, haftaBaslangici } from "@/lib/gun";
+import { gunAdi, gunBaslangici, gunEkle, gunGirdisi, haftaBaslangici } from "@/lib/gun";
 import { etkinVardiyalar } from "@/lib/vardiya";
 import { IZIN_TURLERI, izinKumesiKur, izinliMi, type IzinTuru } from "@/lib/izin";
 import { vardiyaUyarilariniHesapla } from "@/lib/vardiya-uyari";
@@ -51,7 +51,20 @@ export default async function VardiyaPlanlamaPage({
       select: { id: true, name: true, role: true },
     }),
     prisma.shiftAssignment.findMany({
-      where: { businessId: secili.id, date: { gte: haftaBasi, lte: haftaSonu } },
+      where: {
+        businessId: secili.id,
+        date: { gte: haftaBasi, lte: haftaSonu },
+        // Pasifleştirilen personel çizelgeden "kalkmalı" ama geçmiş
+        // atamaları silinmemeli — geçen ay çalıştığı vardiyalar hâlâ
+        // gerçek. Bu yüzden yalnızca BUGÜNDEN İLERİSİ aktiflik şartına
+        // bağlı: geçmiş günler kim atanmışsa öyle kalıyor, gelecekteki
+        // bir atama ise artık aktif olmayan biri için hiç görünmüyor —
+        // sanki hiç atanmamış gibi, o hücre yeniden boş görünüyor.
+        OR: [
+          { date: { lt: gunBaslangici() } },
+          { user: { active: true } },
+        ],
+      },
       include: { user: { select: { name: true } } },
     }),
     prisma.shiftSwapRequest.findMany({
