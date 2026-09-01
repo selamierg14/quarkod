@@ -69,7 +69,10 @@ export default async function MasalarPage({
             havuzda toplanır.
           </p>
           <div className="mt-4">
-            <TekQrKurulum businessId={business.id} mevcutMu={Boolean(girisQr?.active)} />
+            <TekQrKurulum
+              businessId={business.id}
+              girisMasasi={girisQr ? { id: girisQr.id, active: girisQr.active } : null}
+            />
           </div>
         </SectionCard>
       </div>

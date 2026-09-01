@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { addTables, toggleTable, type FormState } from "../actions";
+import { addTables, toggleTable, tumMasalariAc, tumMasalariKapat, type FormState } from "../actions";
 
 type TableRow = {
   id: string;
@@ -22,8 +22,45 @@ export function TableManager({
     {},
   );
 
+  const acikSayisi = tables.filter((t) => t.active).length;
+  const kapaliSayisi = tables.length - acikSayisi;
+
   return (
     <div className="flex flex-col gap-3">
+      {tables.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2 text-caption text-ink-muted">
+          <span>
+            {acikSayisi} açık{kapaliSayisi > 0 ? `, ${kapaliSayisi} kapalı` : ""}
+          </span>
+          <span className="text-ink-faint">·</span>
+          {/* Toplu işlemler: onlarca masası olan bir işletme için tek tek
+              kapatmak kullanılamaz hale gelirdi. Silme değil — aynı toggle
+              mekanizması, isterse toplu geri açılabilir. */}
+          {acikSayisi > 0 ? (
+            <form action={tumMasalariKapat}>
+              <input type="hidden" name="businessId" value={businessId} />
+              <button
+                type="submit"
+                className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas"
+              >
+                Tümünü kapat
+              </button>
+            </form>
+          ) : null}
+          {kapaliSayisi > 0 ? (
+            <form action={tumMasalariAc}>
+              <input type="hidden" name="businessId" value={businessId} />
+              <button
+                type="submit"
+                className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas"
+              >
+                Tümünü aç
+              </button>
+            </form>
+          ) : null}
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap gap-2">
         {tables.map((table) => (
           <form key={table.id} action={toggleTable}>

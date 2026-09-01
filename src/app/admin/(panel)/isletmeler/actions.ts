@@ -551,6 +551,53 @@ export async function toggleTable(formData: FormData) {
   revalidatePath(`/admin/isletmeler/${table.businessId}`);
 }
 
+/**
+ * Masaya özel QR'ların TAMAMINI tek seferde kapatır (girişteki tek ortak
+ * QR hariç — o kendi düğmesinden ayrıca kapatılır).
+ *
+ * SİLMİYOR: `toggleTable` ile aynı mekanizma, `active: false`. Masalar
+ * veritabanında duruyor; işletme fikrini değiştirirse "Aç" ile toplu geri
+ * dönüş de mümkün olsun diye (bkz. tumMasalariAc).
+ */
+export async function tumMasalariKapat(formData: FormData): Promise<void> {
+  const user = await requireYazma();
+  const businessId = String(formData.get("businessId") ?? "");
+  if (!(await canAccessBusiness(user, businessId))) return;
+
+  const sonuc = await prisma.table.updateMany({
+    where: { businessId, isEntrance: false, active: true },
+    data: { active: false },
+  });
+
+  await denetimYaz(user, "business.table", {
+    entity: "business",
+    entityId: businessId,
+    detail: `${sonuc.count} masa QR'ı toplu kapatıldı`,
+  });
+  revalidatePath(`/admin/isletmeler/${businessId}/masalar`);
+  revalidatePath(`/admin/isletmeler/${businessId}/qr`);
+}
+
+/** Toplu kapatmanın tersi: kapalı masaya özel QR'ların hepsini açar. */
+export async function tumMasalariAc(formData: FormData): Promise<void> {
+  const user = await requireYazma();
+  const businessId = String(formData.get("businessId") ?? "");
+  if (!(await canAccessBusiness(user, businessId))) return;
+
+  const sonuc = await prisma.table.updateMany({
+    where: { businessId, isEntrance: false, active: false },
+    data: { active: true },
+  });
+
+  await denetimYaz(user, "business.table", {
+    entity: "business",
+    entityId: businessId,
+    detail: `${sonuc.count} masa QR'ı toplu açıldı`,
+  });
+  revalidatePath(`/admin/isletmeler/${businessId}/masalar`);
+  revalidatePath(`/admin/isletmeler/${businessId}/qr`);
+}
+
 /* ------------------------------------------------------------- çoklu şube */
 
 /**
