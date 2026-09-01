@@ -113,6 +113,13 @@ export async function updateFeedback(
   }
 
   const statusChanged = status !== feedback.status;
+  // "Değişti" (eski/yeni metin trim edilmiş halde farklı) ayrı bir sorudan
+  // ayrı: kullanıcı formu hiçbir şeye dokunmadan tekrar kaydettiğinde
+  // "kim yazdı" bilgisini bozmamalı — yalnızca gerçek bir değişiklik yeni
+  // yazar/tarih damgası almalı.
+  const eskiNot = (feedback.internalNote ?? "").trim();
+  const yeniNot = internalNote.trim();
+  const notDegisti = yeniNot !== eskiNot;
   const now = new Date();
 
   await prisma.feedback.update({
@@ -120,6 +127,9 @@ export async function updateFeedback(
     data: {
       status,
       internalNote: internalNote || null,
+      ...(notDegisti
+        ? { internalNoteBy: yeniNot ? user.name : null, internalNoteAt: yeniNot ? now : null }
+        : {}),
       ...(statusChanged ? { statusChangedAt: now } : {}),
       // resolvedAt yalnızca ilk çözülüşte yazılır: kayıt tekrar açılıp
       // kapatılırsa yanıt süresi metriği bozulmasın.
@@ -132,7 +142,9 @@ export async function updateFeedback(
     entityId: id,
     detail: statusChanged
       ? `${FEEDBACK_STATUSES[feedback.status as keyof typeof FEEDBACK_STATUSES] ?? feedback.status} → ${FEEDBACK_STATUSES[status as keyof typeof FEEDBACK_STATUSES]}`
-      : "Dahili not güncellendi",
+      : notDegisti
+        ? "Dahili not güncellendi"
+        : "Kayıt yeniden kaydedildi (değişiklik yok)",
   });
 
   revalidatePath(`/admin/geri-bildirimler/${id}`);

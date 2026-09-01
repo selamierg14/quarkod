@@ -8,10 +8,16 @@ export function StatusForm({
   id,
   status,
   internalNote,
+  internalNoteBy,
+  internalNoteAt,
 }: {
   id: string;
   status: string;
   internalNote: string | null;
+  /** Notu en son yazan kişinin adı; hiç yazılmadıysa null. */
+  internalNoteBy: string | null;
+  /** O yazının anı; hiç yazılmadıysa null. */
+  internalNoteAt: string | null;
 }) {
   const [state, formAction, pending] = useActionState<UpdateState, FormData>(
     updateFeedback,
@@ -56,6 +62,16 @@ export function StatusForm({
           placeholder="Ne yapıldı? Kiminle konuşuldu?"
           className="w-full resize-none rounded-control border border-line p-3 text-small outline-none focus:border-line-strong"
         />
+        {/* "Kim yazdı, ne zaman yazdı" ekranda hiç görünmüyordu — not tek
+            bir metin kutusuydu, üzerine her kaydedilişte sessizce
+            değişiyordu. Yalnızca metin gerçekten değiştiğinde bu ikisi
+            güncelleniyor (bkz. actions.ts). */}
+        {internalNoteBy ? (
+          <span className="text-caption text-ink-faint">
+            Son yazan: <strong className="font-medium text-ink-soft">{internalNoteBy}</strong>
+            {internalNoteAt ? ` — ${internalNoteAt}` : ""}
+          </span>
+        ) : null}
       </label>
 
       {state.error ? (

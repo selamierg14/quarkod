@@ -258,6 +258,10 @@ export default async function FeedbackDetailPage({
                 id={feedback.id}
                 status={feedback.status}
                 internalNote={feedback.internalNote}
+                internalNoteBy={feedback.internalNoteBy}
+                internalNoteAt={
+                  feedback.internalNoteAt ? formatDateTime(feedback.internalNoteAt) : null
+                }
               />
             ) : (
               <div className="flex flex-col gap-3">
@@ -278,6 +282,17 @@ export default async function FeedbackDetailPage({
                       <span className="text-ink-faint">Not eklenmemiş.</span>
                     )}
                   </p>
+                  {feedback.internalNoteBy ? (
+                    <p className="mt-1 text-caption text-ink-faint">
+                      Son yazan:{" "}
+                      <strong className="font-medium text-ink-soft">
+                        {feedback.internalNoteBy}
+                      </strong>
+                      {feedback.internalNoteAt
+                        ? ` — ${formatDateTime(feedback.internalNoteAt)}`
+                        : ""}
+                    </p>
+                  ) : null}
                 </div>
                 <p className="text-caption text-ink-faint">
                   Hesabınız salt okunur; durum ve notu değiştiremezsiniz.

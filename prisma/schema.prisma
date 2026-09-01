@@ -498,6 +498,11 @@ model Feedback {
   /// "yeni" | "incelendi" | "cozuldu"
   status          String    @default("yeni")
   internalNote    String?
+  /// İç notu en son yazan/değiştiren kişi ve an. Not güncellenmediyse
+  /// (yalnızca durum değiştiyse) bu ikisi dokunulmadan kalır — "kim
+  /// yazdı" sorusu ancak metin gerçekten değiştiğinde anlamlı.
+  internalNoteBy   String?
+  internalNoteAt   DateTime?
   /// Durumun en son değiştiği an.
   statusChangedAt DateTime?
   /// "cozuldu" durumuna ilk geçiş anı — yanıt süresi bundan hesaplanır.
