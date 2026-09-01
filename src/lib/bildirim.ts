@@ -17,7 +17,12 @@ import { kullanicilaraPushGonder } from "./push";
  * bir hata (ör. push servisi zaman aşımı) o işlemi geri almaz — yalnızca
  * log'a düşer.
  */
-export type BildirimTuru = "vardiya.atandi" | "izin.talep" | "izin.karar";
+export type BildirimTuru =
+  | "vardiya.atandi"
+  | "vardiya.degisim.talep"
+  | "vardiya.degisim.karar"
+  | "izin.talep"
+  | "izin.karar";
 
 export async function bildirimGonder(
   userIds: string[],

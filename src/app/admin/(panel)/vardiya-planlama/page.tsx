@@ -226,8 +226,14 @@ export default async function VardiyaPlanlamaPage({
       {bekleyenTalepler.length > 0 ? (
         <section className="rounded-control bg-warning-soft p-4 ring-1 ring-warning/25">
           <h2 className="text-caption font-medium tracking-wide text-warning-ink uppercase">
-            Bekleyen değişim talepleri
+            Bekleyen vardiya bırakma talepleri
           </h2>
+          {/* Onaylamanın ne yaptığı belirsizdi: "değişim" kelimesi otomatik
+              bir yer değiştirme çağrıştırıyor ama sistemde öyle bir şey yok —
+              onay yalnızca hücreyi boşaltıyor, kimseyi otomatik atamıyor. */}
+          <p className="mt-0.5 text-caption text-warning-ink/80">
+            Onaylarsanız bu vardiya boşalır; yerine birini siz atamanız gerekir.
+          </p>
           <ul className="mt-2 flex flex-col gap-2">
             {bekleyenTalepler.map((talep) => (
               <li
@@ -239,7 +245,7 @@ export default async function VardiyaPlanlamaPage({
                   {" — "}
                   {SHIFTS[talep.assignment.shift as keyof typeof SHIFTS] ?? talep.assignment.shift}
                   {" · "}
-                  {new Date(talep.assignment.date).toLocaleDateString("tr-TR")}
+                  {gunAdi(talep.assignment.date)}, {talep.assignment.date.toLocaleDateString("tr-TR")}
                   {talep.note ? (
                     <span className="block text-caption text-ink-faint">
                       &quot;{talep.note}&quot;

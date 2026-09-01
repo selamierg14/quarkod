@@ -38,7 +38,7 @@ export function DegisimTalebi({
               koyu ? "bg-white/20" : "bg-warning-soft text-warning-ink"
             }`}
           >
-            değişim bekliyor
+            bırakma talebi bekliyor
           </span>
         ) : (
           <button
@@ -48,14 +48,22 @@ export function DegisimTalebi({
               koyu ? "text-white/70 hover:text-white" : "text-ink-faint hover:text-ink-soft"
             }`}
           >
-            değişim talep et
+            bu vardiyayı bırak
           </button>
         )}
       </span>
 
+      {/* "Değişim" kelimesi biriyle takas çağrıştırıyor ama sistemde otomatik
+          bir yer değiştirme yok: onaylanırsa vardiya sadece boşalıyor,
+          yöneticinin başka birini ataması gerekiyor — bu satır o beklentiyi
+          baştan düzeltiyor. */}
       {acik && !beklemedeMi ? (
         <form action={formAction} className="flex w-full flex-col gap-1.5">
           <input type="hidden" name="assignmentId" value={assignmentId} />
+          <p className={`text-caption ${koyu ? "text-white/70" : "text-ink-faint"}`}>
+            Onaylanırsa bu vardiya boşalır; kimseyle otomatik takas olmaz,
+            yöneticiniz yerine birini atar.
+          </p>
           <input
             name="note"
             placeholder="sebep (isteğe bağlı)"

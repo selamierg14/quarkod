@@ -85,24 +85,50 @@ export async function degisimKararVer(formData: FormData): Promise<void> {
 
   const talep = await prisma.shiftSwapRequest.findUnique({
     where: { id },
-    include: { assignment: true },
+    include: { assignment: { include: { business: { select: { name: true } } } } },
   });
   if (!talep || talep.status !== "bekliyor") return;
   if (!(await canAccessBusiness(actor, talep.assignment.businessId))) return;
+
+  const onaylandi = karar === "onayla";
 
   await prisma.$transaction([
     prisma.shiftSwapRequest.update({
       where: { id },
       data: {
-        status: karar === "onayla" ? "onaylandi" : "reddedildi",
+        status: onaylandi ? "onaylandi" : "reddedildi",
         decidedById: actor.id,
         decidedAt: new Date(),
       },
     }),
-    ...(karar === "onayla"
+    ...(onaylandi
       ? [prisma.shiftAssignment.delete({ where: { id: talep.assignmentId } })]
       : []),
   ]);
+
+  const vardiyaEtiketi = `${gunAdi(talep.assignment.date)} ${SHIFTS[talep.assignment.shift as Shift] ?? talep.assignment.shift} · ${talep.assignment.business.name}`;
+
+  // Kararın kendisi ayrı bir denetim satırı — onay/red sonrası "bu vardiya
+  // neden boş" sorusu bir hafta sonra sorulduğunda AuditLog dışında hiçbir
+  // yerde iz kalmıyordu (atama silindiği için tablo kendisi de sessiz).
+  await denetimYaz(actor, "business.vardiya", {
+    entity: "shiftSwapRequest",
+    entityId: id,
+    detail: onaylandi
+      ? `${vardiyaEtiketi} bırakma talebi onaylandı, vardiya boşaltıldı`
+      : `${vardiyaEtiketi} bırakma talebi reddedildi`,
+  });
+
+  // Onaylanınca vardiya kimseye otomatik geçmiyor — sadece boşalıyor. Bunu
+  // mesajda açıkça yazmazsak personel "değişim oldu, biri devraldı" sanır.
+  await bildirimGonder([talep.requestedById], {
+    tur: "vardiya.degisim.karar",
+    baslik: onaylandi ? "Vardiya bırakma talebin onaylandı" : "Vardiya bırakma talebin reddedildi",
+    govde: onaylandi
+      ? `${vardiyaEtiketi} — vardiya boşaltıldı, yerine kimse otomatik atanmadı.`
+      : `${vardiyaEtiketi} — bu vardiyada kalmaya devam ediyorsun.`,
+    url: "/admin/vardiyalarim",
+  });
 
   revalidatePath("/admin/vardiya-planlama");
   revalidatePath("/admin/vardiyalarim");
