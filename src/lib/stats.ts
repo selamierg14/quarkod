@@ -324,17 +324,26 @@ export async function getPersonelPerformansi(
  * Vardiyaya göre kırılım. Vardiya etiketi her kayda otomatik yazılıyor;
  * "gece vardiyasında puan düşüyor" gibi bir bulgu doğrudan personel kararına
  * dönüştüğü için ayrı bir görünüm hak ediyor.
+ *
+ * `window`: ya kayan bir pencere (`{ from }`, "bugünden geriye N gün") ya da
+ * kapalı bir aralık (`{ from, to }`, "şu haftanın günleri"). Rapor sayfası
+ * ilkini, vardiya çizelgesi ikincisini kullanıyor — çizelgede "3 hafta önce"
+ * görünümüne gelen birine BUGÜNE göre kayan bir ortalama gösterilirse, o
+ * hafta hiç veri içermese bile başka haftaların puanı sanki oradaymış gibi
+ * görünür.
  */
 export async function getShiftBreakdown(
   businessIds: string[],
-  days = 30,
+  window: { from: Date; to?: Date } = { from: daysAgo(30) },
 ): Promise<ShiftBreakdown[]> {
   const [grouped, businesses] = await Promise.all([
     prisma.feedback.groupBy({
       by: ["shift"],
       where: {
         businessId: { in: businessIds },
-        createdAt: { gte: daysAgo(days) },
+        createdAt: window.to
+          ? { gte: window.from, lt: window.to }
+          : { gte: window.from },
         shift: { not: null },
       },
       _avg: { overallRating: true },

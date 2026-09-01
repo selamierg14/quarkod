@@ -9,6 +9,10 @@ import { RaporSekmeleri } from "@/components/RaporSekmeleri";
 import { PeriyotFiltre } from "@/components/PeriyotFiltre";
 import { gunEkle, gunBaslangici } from "@/lib/gun";
 
+function daysAgo(days: number): Date {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+}
+
 export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Vardiya & masa" };
@@ -46,7 +50,7 @@ export default async function BreakdownPage({
     : 30;
 
   const [shifts, tables, doldurmaSuresi, huni, atamalar] = await Promise.all([
-    getShiftBreakdown(selected, days),
+    getShiftBreakdown(selected, { from: daysAgo(days) }),
     getTableBreakdown(selected, days),
     getDoldurmaSuresi(selected, days),
     getAnketHunisi(selected, days),

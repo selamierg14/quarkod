@@ -61,7 +61,7 @@ export function MusteriKabuk({
     <DilSaglayici>
     <main data-marka style={markaStili(business.brandColor)} className="min-h-dvh bg-canvas">
       <div
-        className={`relative z-10 w-full ${
+        className={`relative z-30 w-full ${
           kompakt ? "h-36 sm:h-40" : "h-64 sm:h-72"
         }`}
       >

@@ -72,10 +72,11 @@ export default async function VardiyaPlanlamaPage({
       include: { requestedBy: { select: { name: true } }, assignment: true },
       orderBy: { createdAt: "asc" },
     }),
-    // Satır başlıklarındaki puan rozeti için: hangi vardiya son 30 günde
-    // gerçekten iyi/kötü geçmiş. Bu haftanın çizelgesinden bağımsız, genel
-    // bir eğilim — o yüzden haftaBasi/haftaSonu değil sabit bir pencere.
-    getShiftBreakdown([secili.id], 30),
+    // Satır başlıklarındaki puan rozeti: TAM OLARAK görüntülenen haftanın
+    // ortalaması. Sabit bir pencere (ör. son 30 gün) kullanılırsa, boş bir
+    // haftaya gelen kullanıcı başka haftaların puanını o haftaya aitmiş gibi
+    // görür — rozet haftaBasi/haftaSonu'na bağlı, bir gün sonrasına kadar.
+    getShiftBreakdown([secili.id], { from: haftaBasi, to: gunEkle(haftaSonu, 1) }),
     // Bu haftaya değen onaylı izinler: aralık haftayla kesişiyorsa yeter.
     prisma.leaveRequest.findMany({
       where: {
@@ -452,11 +453,10 @@ function VardiyaPuanRozeti({
         : "bg-danger-soft text-danger-ink";
   return (
     <span
-      title={`Son 30 gün, ${kirilim.count} geri bildirim — bu haftaya değil vardiyanın genel eğilimine ait`}
-      className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${renk}`}
+      title={`Bu hafta, ${kirilim.count} geri bildirim`}
+      className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${renk}`}
     >
       ★ {kirilim.average.toFixed(1)}
-      <span className="font-normal opacity-70">· 30g</span>
     </span>
   );
 }
