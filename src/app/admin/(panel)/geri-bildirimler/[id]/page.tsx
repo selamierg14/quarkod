@@ -43,6 +43,20 @@ export default async function FeedbackDetailPage({
 
   if (!feedback || !await canAccessBusiness(user, feedback.businessId)) notFound();
 
+  // Bu kaydın durum/not geçmişi. Ayrı bir sayfaya (İşlem geçmişi) gitmeden
+  // "kim, ne zaman, ne yaptı" burada görünsün diye — biri notu yazıp
+  // gitti, saatler sonra bir başkası durumu değiştirdiyse ikisi de kendi
+  // satırında kalıyor (bkz. actions.ts, updateFeedback).
+  const gecmis = await prisma.auditLog.findMany({
+    where: {
+      entity: "feedback",
+      entityId: id,
+      action: { in: ["feedback.status", "feedback.note"] },
+    },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, actorName: true, detail: true, createdAt: true },
+  });
+
   const ratings: Record<string, number> = feedback.categoryRatings
     ? JSON.parse(feedback.categoryRatings)
     : {};
@@ -299,6 +313,29 @@ export default async function FeedbackDetailPage({
                 </p>
               </div>
             )}
+
+            {/* Durum ve not ayrı olaylar, bilerek ayrı satırlarda: biri
+                notu yazıp gitti, saatler sonra bir başkası durumu
+                değiştirdiyse ikisi de burada kendi zaman damgasıyla
+                kalıyor — tek bir "son işlem" alanı ikinciyi birinciyi
+                sildiği için yetersizdi. */}
+            {gecmis.length > 0 ? (
+              <div className="mt-4 border-t border-line pt-4">
+                <span className="text-caption font-medium tracking-wide text-ink-muted uppercase">
+                  Geçmiş
+                </span>
+                <ul className="mt-2 flex flex-col gap-2">
+                  {gecmis.map((kayit) => (
+                    <li key={kayit.id} className="text-small">
+                      <span className="text-ink-soft">{kayit.detail}</span>
+                      <span className="ml-1.5 text-caption text-ink-faint">
+                        — {kayit.actorName}, {formatDateTime(kayit.createdAt)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </SectionCard>
 
           <SectionCard

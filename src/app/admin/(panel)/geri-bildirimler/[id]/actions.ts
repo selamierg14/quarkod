@@ -137,15 +137,25 @@ export async function updateFeedback(
     },
   });
 
-  await denetimYaz(user, "feedback.status", {
-    entity: "feedback",
-    entityId: id,
-    detail: statusChanged
-      ? `${FEEDBACK_STATUSES[feedback.status as keyof typeof FEEDBACK_STATUSES] ?? feedback.status} → ${FEEDBACK_STATUSES[status as keyof typeof FEEDBACK_STATUSES]}`
-      : notDegisti
-        ? "Dahili not güncellendi"
-        : "Kayıt yeniden kaydedildi (değişiklik yok)",
-  });
+  // Durum ve not ayrı olaylar: biri notu yazıp gitti, saatler sonra bir
+  // başkası durumu değiştirdiyse ikisi de KENDİ satırında görünmeli — tek
+  // bir "son işlem" alanına sığdırılınca ikincisi birinciyi silerdi.
+  // Gerçek bir değişiklik yoksa (form dokunulmadan tekrar kaydedildiyse)
+  // hiç yazmıyoruz; aksi halde bu kaydın geçmişi anlamsız satırlarla dolardı.
+  if (statusChanged) {
+    await denetimYaz(user, "feedback.status", {
+      entity: "feedback",
+      entityId: id,
+      detail: `${FEEDBACK_STATUSES[feedback.status as keyof typeof FEEDBACK_STATUSES] ?? feedback.status} → ${FEEDBACK_STATUSES[status as keyof typeof FEEDBACK_STATUSES]}`,
+    });
+  }
+  if (notDegisti) {
+    await denetimYaz(user, "feedback.note", {
+      entity: "feedback",
+      entityId: id,
+      detail: yeniNot ? "Dahili not güncellendi" : "Dahili not silindi",
+    });
+  }
 
   revalidatePath(`/admin/geri-bildirimler/${id}`);
   revalidatePath("/admin/geri-bildirimler");
