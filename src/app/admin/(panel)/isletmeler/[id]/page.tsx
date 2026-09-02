@@ -1,8 +1,9 @@
-import { Settings } from "lucide-react";
+import { Settings, Zap } from "lucide-react";
 import { visibleBusinesses } from "@/lib/auth";
 import { SectionCard } from "@/components/ui";
 import { AyarlariKopyala } from "./AyarlariKopyala";
 import { SettingsForm } from "./SettingsForm";
+import { FlasIndirim } from "./FlasIndirim";
 import { IsletmeUst } from "./IsletmeUst";
 import { isletmeyiYukle } from "./_veri";
 
@@ -66,6 +67,17 @@ export default async function BusinessSettingsPage({
           kesfetAcik={user.moduller.includes("kesfet")}
         />
       </SectionCard>
+
+      {user.moduller.includes("kesfet") ? (
+        <SectionCard
+          ikon={<Zap className="h-4 w-4" aria-hidden="true" />}
+          renk="amber"
+          title="Flaş indirim başlat"
+          description="Kısa süreli, öne çıkan bir kampanya duyurusu — bkz. aşağıdaki not."
+        >
+          <FlasIndirim businessId={business.id} pushKredisi={business.pushKredisi} />
+        </SectionCard>
+      ) : null}
 
       <AyarlariKopyala businessId={business.id} hedefler={kardesler} />
     </div>

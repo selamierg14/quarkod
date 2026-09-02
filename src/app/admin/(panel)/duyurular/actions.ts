@@ -169,3 +169,74 @@ export async function duyuruSil(formData: FormData): Promise<void> {
   await prisma.duyuru.delete({ where: { id } });
   revalidatePath("/admin/duyurular");
 }
+
+/**
+ * Kısa süreli "flaş indirim" duyurusu — bir push kredisi harcıyor.
+ *
+ * ÖNEMLİ SINIR: superadmin panelinden tanımlanan push kredisi (bkz.
+ * admin/sponsorlar) şu an yalnızca burada HARCANIYOR — yakındaki abone
+ * kullanıcılara gerçek bir anlık bildirim GÖNDERİLMİYOR. Bunun için
+ * tüketici tarafında bir push-abonelik akışı (AppPushSubscription, servis
+ * çalışanı, gönderim ardışık düzeni) gerekiyor ve henüz kurulmadı. Kredi
+ * harcamak dürüst olsun diye burada açıkça söyleniyor — sahibine "push
+ * gönderildi" izlenimi vermeden, gerçekte ne olduğunu (kısa süreli, öne
+ * çıkan bir duyuru) anlatıyoruz.
+ */
+export async function flasIndirimBaslat(
+  _prev: DuyuruFormState,
+  formData: FormData,
+): Promise<DuyuruFormState> {
+  const actor = await requireMenuErisim();
+  await requireYazma();
+
+  const businessId = String(formData.get("businessId") ?? "");
+  const baslik = String(formData.get("baslik") ?? "").trim();
+  const sureSaat = Number(formData.get("sureSaat") ?? "2");
+
+  if (!(await canAccessBusiness(actor, businessId))) return { error: "Bu işletmeye yetkiniz yok." };
+  if (!baslik) return { error: "Başlık gerekli." };
+  if (!Number.isFinite(sureSaat) || sureSaat <= 0 || sureSaat > 24) {
+    return { error: "Süre 1-24 saat arasında olmalı." };
+  }
+
+  const business = await prisma.business.findUnique({
+    where: { id: businessId },
+    select: { pushKredisi: true, name: true },
+  });
+  if (!business) return { error: "İşletme bulunamadı." };
+  if (business.pushKredisi <= 0) {
+    return { error: "Push kredin kalmadı. Kredi tanımlaması için Quarkod ile iletişime geç." };
+  }
+
+  const simdi = new Date();
+  const bitis = new Date(simdi.getTime() + sureSaat * 60 * 60 * 1000);
+
+  const sonSira = await prisma.duyuru.findFirst({
+    where: { businessId },
+    orderBy: { sortOrder: "desc" },
+    select: { sortOrder: true },
+  });
+
+  await prisma.$transaction([
+    prisma.business.update({ where: { id: businessId }, data: { pushKredisi: { decrement: 1 } } }),
+    prisma.duyuru.create({
+      data: {
+        businessId,
+        baslik: `⚡ ${baslik}`,
+        baslangic: simdi,
+        bitis,
+        sortOrder: (sonSira?.sortOrder ?? -1) + 1,
+      },
+    }),
+  ]);
+
+  await denetimYaz(actor, "business.flasIndirim", {
+    entity: "business",
+    entityId: businessId,
+    detail: `Flaş indirim başlatıldı: ${baslik} (${sureSaat} sa, kalan kredi: ${business.pushKredisi - 1})`,
+  });
+
+  revalidatePath("/admin/duyurular");
+  revalidatePath(`/admin/isletmeler/${businessId}`);
+  return { saved: `Yayında! ${sureSaat} saat sonra otomatik biter.` };
+}

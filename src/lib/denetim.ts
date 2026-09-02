@@ -23,6 +23,7 @@ export type DenetimEylemi =
   | "business.category"
   | "business.table"
   | "business.duyuru"
+  | "business.flasIndirim"
   | "business.vardiya"
   | "business.izin"
   | "user.create"
@@ -52,6 +53,7 @@ export const EYLEM_METNI: Record<DenetimEylemi, string> = {
   "business.category": "Anket kategorisi",
   "business.table": "Masa",
   "business.duyuru": "Duyuru",
+  "business.flasIndirim": "Flaş indirim",
   "business.vardiya": "Vardiya çizelgesi",
   "business.izin": "Personel izni",
   "user.create": "Kullanıcı açıldı",
