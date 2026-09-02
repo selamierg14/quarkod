@@ -25,7 +25,7 @@ export async function GET(request: Request) {
   const oturum = await appKullaniciGerekli(request);
   if ("yanit" in oturum) return oturum.yanit;
 
-  const [rozetler, ziyaretler, ziyaretSayisi, kuponSayisi] = await Promise.all([
+  const [rozetler, ziyaretler, ziyaretSayisi, kuponSayisi, davetSayisi] = await Promise.all([
     prisma.appBadge.findMany({
       where: { appUserId: oturum.kullanici.id },
       select: { rozet: true, createdAt: true },
@@ -44,6 +44,7 @@ export async function GET(request: Request) {
     prisma.coupon.count({
       where: { appUserId: oturum.kullanici.id, used: false },
     }),
+    prisma.appUser.count({ where: { referredById: oturum.kullanici.id } }),
   ]);
 
   const kazanilanlar = new Map(
@@ -59,6 +60,7 @@ export async function GET(request: Request) {
       sonrakiSeviyeyeKalan: sonrakiSeviyeyeKalan(oturum.kullanici.puan),
       dogrulanmisZiyaret: ziyaretSayisi,
       cuzdandakiKupon: kuponSayisi,
+      davetEttigiKisiSayisi: davetSayisi,
     },
     rozetler: ROZET_ANAHTARLARI.map((anahtar) => ({
       anahtar,

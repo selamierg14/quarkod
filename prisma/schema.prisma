@@ -532,10 +532,19 @@ model Feedback {
   /// Tarayıcı başına rastgele kimlik (çerez). Kafe Wi-Fi'ında herkes aynı IP'yi
   /// paylaştığı için tekrar kontrolünün asıl dayanağı budur.
   visitorId String?
+
+  /// Anketi dolduran kişi AYNI ANDA Biyerlere'ye de giriş yapmışsa (aynı
+  /// tarayıcıda geçerli bir jetonu varsa) buraya bağlanır. Anket girişi
+  /// bilerek bu bağa ZORUNLU DEĞİL — Biyerlere hesabı olmayan bir müşteri
+  /// de anketi doldurabilmeli; bağlantı varsa Biyerlere tarafında "%100
+  /// doğrulanmış masa yorumu" olarak isim+rozetle gösterilir (bkz.
+  /// Adım 4, mekan profili) ve puan/rozet kazandırır.
+  appUserId String?
   createdAt DateTime @default(now())
 
   business      Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
   table         Table?             @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  appUser       AppUser?           @relation(fields: [appUserId], references: [id], onDelete: SetNull)
   coupons       Coupon[]
   notifications Notification[]
   consents      MarketingConsent[]
@@ -548,6 +557,8 @@ model Feedback {
   /// Masa kırılımı ve masa silme bu sütundan geçiyor; en hızlı büyüyen
   /// tablo burası olduğu için indeks bugünden duruyor.
   @@index([tableId])
+  /// Mekan profilindeki "doğrulanmış yorumlar" sorgusu.
+  @@index([businessId, appUserId])
   @@map("feedbacks")
 }
 
@@ -1034,11 +1045,25 @@ model AppUser {
   /// Kaşif puanı. Rozet eşikleri ve seviye bundan hesaplanıyor.
   puan Int @default(0)
 
+  /// Arkadaş davet kodu — kayıtta üretilir, hiç değişmez. Kullanıcı adından
+  /// ayrı bir alan olmasının sebebi: kullanıcı adı değişebilir hâle
+  /// gelirse (ileride) paylaşılmış eski linkler kırılmasın.
+  referralCode String @unique
+
+  /// Bu kişiyi kim davet etti — yalnızca kayıt anında set edilir, sonradan
+  /// değişmez. Kendi kendini davet edemez (kayıt ucu bunu ayrıca kontrol
+  /// eder). Ödül DAVET EDENE kayıt anında verilir; davet edilenin de puan
+  /// kazanması için ayrıca bir "hoş geldin" ödülü var (bkz. lib/davet.ts).
+  referredById String?
+
   createdAt DateTime @default(now())
 
+  referredBy AppUser?   @relation("Davetler", fields: [referredById], references: [id], onDelete: SetNull)
+  davetEttikleri AppUser[] @relation("Davetler")
   ziyaretler AppVisit[]
   kuponlar   Coupon[]
   rozetler   AppBadge[]
+  yorumlar   Feedback[]
 
   @@map("app_users")
 }

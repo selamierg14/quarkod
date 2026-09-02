@@ -21,6 +21,7 @@ export type AppKullanici = {
   username: string;
   name: string;
   puan: number;
+  referralCode: string;
 };
 
 /** Tutarlı hata gövdesi: mobil taraf tek bir biçim beklesin. */
@@ -52,6 +53,7 @@ export async function appKullaniciOku(
       username: true,
       name: true,
       puan: true,
+      referralCode: true,
       active: true,
       passwordChangedAt: true,
     },
@@ -65,6 +67,7 @@ export async function appKullaniciOku(
     username: kullanici.username,
     name: kullanici.name,
     puan: kullanici.puan,
+    referralCode: kullanici.referralCode,
   };
 }
 

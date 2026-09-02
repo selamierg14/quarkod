@@ -54,6 +54,7 @@ export async function POST(request: Request) {
       username: kullanici.username,
       name: kullanici.name,
       puan: kullanici.puan,
+      referralCode: kullanici.referralCode,
     },
   });
 }

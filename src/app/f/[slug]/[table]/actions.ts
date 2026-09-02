@@ -15,6 +15,8 @@ import { VARSAYILAN_DIL, gecerliDilMi } from "@/lib/diller";
 import { CONTACT_TYPES, KVKK_VERSION, type ContactType } from "@/lib/kvkk";
 import { getOrCreateVisitorId } from "@/lib/visitor";
 import { hesapAktifMi } from "@/lib/abonelik";
+import { ANKET_KATILIM_PUANI } from "@/lib/ziyaret";
+import { appJetonCoz, appOturumIptalSebebi } from "@/lib/app-oturum";
 import {
   DEFAULT_IYS_SOURCE,
   MARKETING_TEXT_VERSION,
@@ -29,6 +31,12 @@ export type SubmitResult =
       /** 5 yıldızda Google'a yönlendirme gösterilecek mi. */
       redirectToGoogle: boolean;
       googleReviewUrl: string | null;
+      /**
+       * Anket bir Biyerlere hesabına bağlandıysa kazanılan puan — bağ
+       * yoksa (jeton gelmedi ya da geçersizdi) null. Rozet burada AÇILMAZ
+       * (bkz. ANKET_KATILIM_PUANI'nin yorumu); yalnızca puan.
+       */
+      appOdulPuani: number | null;
     }
   | { ok: false; error: string };
 
@@ -54,6 +62,11 @@ export type SurveyInput = {
   dil?: string;
   /// Müşterinin seçip puanladığı menü ürünleri.
   itemRatings?: { menuItemId: string; rating: number }[];
+  /// Aynı tarayıcıda geçerli bir Biyerlere oturumu varsa jetonu — anketi
+  /// dolduran kişiyle Biyerlere hesabını bağlamak, yorumu "%100 doğrulanmış"
+  /// olarak göstermek ve küçük bir katılım puanı vermek için (isteğe bağlı,
+  /// yoksa anket eskisi gibi tamamen anonim ilerler).
+  appJeton?: string;
 };
 
 /** Aynı ziyaretçinin aynı masadan tekrar göndermesi bu süre boyunca engellenir. */
@@ -306,10 +319,30 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
     business.googleRedirect &&
     googleYorumLinkiGecerliMi(business.googleReviewUrl);
 
+  // Biyerlere bağı isteğe bağlı ve anketin akışını hiç değiştirmiyor: jeton
+  // yoksa ya da geçersizse (süresi dolmuş, hesap askıda, şifre değişmiş)
+  // anket tamamen anonim ilerlemeye devam eder — hata döndürmüyoruz,
+  // sessizce appUserId boş kalıyor.
+  let appUserId: string | null = null;
+  const appJetonHam = asText(input.appJeton ?? "").trim();
+  if (appJetonHam) {
+    const cozulen = await appJetonCoz(appJetonHam);
+    if (cozulen) {
+      const appUser = await prisma.appUser.findUnique({
+        where: { id: cozulen.id },
+        select: { id: true, active: true, passwordChangedAt: true },
+      });
+      if (!appOturumIptalSebebi(appUser, cozulen.issuedAt)) {
+        appUserId = appUser!.id;
+      }
+    }
+  }
+
   const feedback = await prisma.feedback.create({
     data: {
       businessId: business.id,
       tableId: table.id,
+      appUserId,
       overallRating: rating,
       categoryRatings: Object.keys(categoryRatings).length
         ? JSON.stringify(categoryRatings)
@@ -447,11 +480,24 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
     });
   });
 
+  // Biyerlere puanı da yanıtı bekletmesin — anketin asıl işi zaten bitti,
+  // puan artışı gecikse de müşteri fark etmez.
+  if (appUserId) {
+    after(async () => {
+      await prisma.appUser
+        .update({ where: { id: appUserId! }, data: { puan: { increment: ANKET_KATILIM_PUANI } } })
+        .catch((error) => {
+          console.error("[biyerlere] anket puanı yazılamadı:", error);
+        });
+    });
+  }
+
   return {
     ok: true,
     feedbackId: feedback.id,
     redirectToGoogle,
     googleReviewUrl: redirectToGoogle ? business.googleReviewUrl : null,
+    appOdulPuani: appUserId ? ANKET_KATILIM_PUANI : null,
   };
 }
 

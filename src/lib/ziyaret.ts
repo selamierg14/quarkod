@@ -34,6 +34,18 @@ export const ZIYARET_BEKLEME_SAATI = 4;
 /** Doğrulanmış bir ziyaretin kazandırdığı kaşif puanı. */
 export const ZIYARET_PUANI = 50;
 
+/**
+ * Masa anketini doldurmanın kazandırdığı puan — ZIYARET_PUANI'NDEN
+ * BİLEREK KÜÇÜK.
+ *
+ * Anket, ziyaretin aksine GPS doğrulaması istemiyor: fiziksel QR'ı bilen
+ * herkes (masaya oturmadan, linki biri paylaşsa bile) doldurabilir. Aynı
+ * puanı vermek "doğrulanmış ziyaret" iddiasının değerini düşürürdü — bu
+ * yüzden anket kendi başına rozet de açmıyor, yalnızca küçük bir teşekkür
+ * puanı veriyor (bkz. src/app/f/[slug]/[table]/actions.ts, submitFeedback).
+ */
+export const ANKET_KATILIM_PUANI = 10;
+
 export type ZiyaretRedNedeni =
   | "konum-yok"
   | "mekan-konumsuz"

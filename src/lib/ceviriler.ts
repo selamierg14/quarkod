@@ -141,6 +141,11 @@ const tr = {
   "tesekkur.icBaslik": "Geri bildiriminiz için teşekkürler",
   "tesekkur.icMetin":
     "Yazdıklarınız doğrudan işletme sorumlusuna iletildi. Eksiğimizi söylediğiniz için teşekkür ederiz — en kısa sürede ilgileneceğiz.",
+  "tesekkur.biyerlerePuan": "🎉 +{puan} Kaşif Puanı kazandın!",
+  "tesekkur.biyerlereGit": "Biyerlere Keşfet'e geç",
+  "tesekkur.biyerlereDavet": "Biyerlere'yi henüz keşfetmedin mi?",
+  "tesekkur.biyerlereDavetMetin": "Ücretsiz kaydol, puan biriktir, rozet ve ücretsiz kahve kazan.",
+  "tesekkur.biyerlereKayitOl": "Ücretsiz kaydol",
 
   // --- KVKK
   "kvkk.ozet":
@@ -344,6 +349,11 @@ const en: Sozluk = {
   "tesekkur.icBaslik": "Thank you for your feedback",
   "tesekkur.icMetin":
     "Your message went straight to the venue manager. Thank you for telling us what fell short — we’ll look into it right away.",
+  "tesekkur.biyerlerePuan": "🎉 You earned +{puan} Explorer Points!",
+  "tesekkur.biyerlereGit": "Go to Biyerlere Discover",
+  "tesekkur.biyerlereDavet": "Haven't discovered Biyerlere yet?",
+  "tesekkur.biyerlereDavetMetin": "Sign up for free, earn points, unlock badges and free coffee.",
+  "tesekkur.biyerlereKayitOl": "Sign up for free",
 
   "kvkk.ozet":
     "I have read the privacy notice. If I leave contact details, I consent to them being shared with {ad} and kept for {gun} days solely to respond to this feedback.",
@@ -537,6 +547,11 @@ const ar: Sozluk = {
   "tesekkur.icBaslik": "شكراً على ملاحظاتك",
   "tesekkur.icMetin":
     "وصلت رسالتك مباشرة إلى مسؤول المكان. شكراً لإخبارنا بما كان ناقصاً — سنعالج الأمر في أقرب وقت.",
+  "tesekkur.biyerlerePuan": "🎉 ربحت +{puan} نقطة مستكشف!",
+  "tesekkur.biyerlereGit": "انتقل إلى استكشاف Biyerlere",
+  "tesekkur.biyerlereDavet": "لم تكتشف Biyerlere بعد؟",
+  "tesekkur.biyerlereDavetMetin": "سجّل مجاناً، اجمع نقاطاً، واحصل على أوسمة وقهوة مجانية.",
+  "tesekkur.biyerlereKayitOl": "سجّل مجاناً",
 
   "kvkk.ozet":
     "لقد قرأت إشعار الخصوصية. إذا تركت بيانات تواصل، فإنني أوافق صراحةً على مشاركتها مع {ad} وحفظها لمدة {gun} يوماً للرد على هذه الملاحظة فقط.",
@@ -730,6 +745,11 @@ const ru: Sozluk = {
   "tesekkur.icBaslik": "Спасибо за отзыв",
   "tesekkur.icMetin":
     "Ваше сообщение получил управляющий заведением. Спасибо, что рассказали о недостатках — мы разберёмся в ближайшее время.",
+  "tesekkur.biyerlerePuan": "🎉 Вы заработали +{puan} очков исследователя!",
+  "tesekkur.biyerlereGit": "Перейти в Biyerlere",
+  "tesekkur.biyerlereDavet": "Ещё не открыли для себя Biyerlere?",
+  "tesekkur.biyerlereDavetMetin": "Зарегистрируйтесь бесплатно, копите баллы, получайте значки и бесплатный кофе.",
+  "tesekkur.biyerlereKayitOl": "Регистрация бесплатно",
 
   "kvkk.ozet":
     "Я прочитал(а) уведомление о конфиденциальности. Если я оставлю контактные данные, я даю явное согласие на их передачу {ad} и хранение в течение {gun} дней исключительно для ответа на этот отзыв.",

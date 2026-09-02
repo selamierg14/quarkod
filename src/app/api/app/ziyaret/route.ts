@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { gecerliKoordinatMi } from "@/lib/mekan";
@@ -9,7 +10,11 @@ import {
 } from "@/lib/ziyaret";
 import { rozetleriDegerlendir } from "@/lib/rozet-verme";
 import { seviye } from "@/lib/rozet";
+import { SADAKAT_ESIGI, sadakatDurumuHesapla } from "@/lib/sadakat";
 import { apiHata, appKullaniciGerekli, govdeOku, metin } from "@/lib/app-api";
+
+/** Sadakat hediyesi kuponunun geçerlilik süresi. */
+const SADAKAT_KUPON_GECERLILIK_GUN = 30;
 
 export const dynamic = "force-dynamic";
 
@@ -119,6 +124,30 @@ export async function POST(request: Request) {
   // yeni kaydı da sayıyor (ör. ilk ziyarette "İlk Adım").
   const rozetSonucu = await rozetleriDegerlendir(oturum.kullanici.id);
 
+  // Sadakat damga kartı: bu mekandaki TOPLAM doğrulanmış ziyaret sayısı
+  // (yeni kayıt dahil) eşiği tam bu ziyarette geçtiyse bir kupon açılır.
+  // Kupon businessId taşıyor (bkz. lib/davet.ts'teki puan/kupon ayrımı) —
+  // sadakat tek bir mekana bağlı olduğu için burada kupon anlamlı.
+  const buMekandakiZiyaretSayisi = await prisma.appVisit.count({
+    where: { appUserId: oturum.kullanici.id, businessId: mekan.id },
+  });
+  const sadakat = sadakatDurumuHesapla(buMekandakiZiyaretSayisi, SADAKAT_ESIGI);
+  let sadakatKuponu: { id: string; indirim: string } | null = null;
+
+  if (sadakat.hediyeKazanildiMi) {
+    const kupon = await prisma.coupon.create({
+      data: {
+        businessId: mekan.id,
+        appUserId: oturum.kullanici.id,
+        code: `SADAKAT-${randomBytes(6).toString("hex")}`,
+        discount: "Ücretsiz kahve (sadakat ödülü)",
+        expiresAt: new Date(Date.now() + SADAKAT_KUPON_GECERLILIK_GUN * 24 * 60 * 60 * 1000),
+      },
+      select: { id: true, discount: true },
+    });
+    sadakatKuponu = { id: kupon.id, indirim: kupon.discount };
+  }
+
   return NextResponse.json(
     {
       ziyaret: {
@@ -134,6 +163,13 @@ export async function POST(request: Request) {
       yeniRozetler: rozetSonucu.yeniRozetler,
       toplamPuan: rozetSonucu.toplamPuan,
       seviye: seviye(rozetSonucu.toplamPuan),
+      sadakat: {
+        damgaSayisi: sadakat.damgaSayisi,
+        esik: sadakat.esik,
+        kalanZiyaret: sadakat.kalanZiyaret,
+        // Doluysa cüzdanda hemen görünsün diye kuponun kendisi de dönüyor.
+        kazanilanKupon: sadakatKuponu,
+      },
     },
     { status: 201 },
   );

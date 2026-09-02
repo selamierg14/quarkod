@@ -67,14 +67,14 @@ describe("sözlük bütünlüğü", () => {
     for (const dil of DIL_LISTESI) {
       for (const anahtar of TUM_ANAHTARLAR) {
         if (BOS_OLABILIR.has(anahtar) && dil === VARSAYILAN_DIL) continue;
-        const metin = cevir(dil, anahtar, { no: "1", ad: "Kafe", gun: 90, kanal: "SMS", adet: 3, sayi: 4, terim: "x", tarih: "01.01.2026", boyut: "10 MB" });
+        const metin = cevir(dil, anahtar, { no: "1", ad: "Kafe", gun: 90, kanal: "SMS", adet: 3, sayi: 4, terim: "x", tarih: "01.01.2026", boyut: "10 MB", puan: 10 });
         expect(metin.length, `${dil}/${anahtar} boş`).toBeGreaterThan(0);
       }
     }
   });
 
   it("hiçbir metinde doldurulmamış yer tutucu kalmaz", () => {
-    const degiskenler = { no: "1", ad: "Kafe", gun: 90, kanal: "SMS", adet: 3, sayi: 4, terim: "x", tarih: "01.01.2026", boyut: "10 MB" };
+    const degiskenler = { no: "1", ad: "Kafe", gun: 90, kanal: "SMS", adet: 3, sayi: 4, terim: "x", tarih: "01.01.2026", boyut: "10 MB", puan: 10 };
     for (const dil of DIL_LISTESI) {
       for (const anahtar of TUM_ANAHTARLAR) {
         expect(cevir(dil, anahtar, degiskenler), `${dil}/${anahtar}`).not.toMatch(/\{\w+\}/);

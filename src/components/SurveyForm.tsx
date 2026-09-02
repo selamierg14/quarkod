@@ -10,6 +10,8 @@ import { useDil } from "./DilSaglayici";
 import { KvkkNotice } from "./KvkkNotice";
 import { CONTACT_RETENTION_DAYS, CONTACT_TYPES, type ContactType } from "@/lib/kvkk";
 import { markGoogleClick, recordSurveyStart, submitFeedback } from "@/app/f/[slug]/[table]/actions";
+import { BIYERLERE_JETON_ANAHTARI } from "@/lib/biyerlere-jeton";
+import type { MetinAnahtari } from "@/lib/ceviriler";
 
 type Props = {
   slug: string;
@@ -31,8 +33,8 @@ type Props = {
 
 type Screen =
   | { kind: "form" }
-  | { kind: "thanks-google"; url: string; feedbackId: string }
-  | { kind: "thanks-internal"; rating: number };
+  | { kind: "thanks-google"; url: string; feedbackId: string; appOdulPuani: number | null }
+  | { kind: "thanks-internal"; rating: number; appOdulPuani: number | null };
 
 export function SurveyForm({
   slug,
@@ -152,6 +154,16 @@ export function SurveyForm({
     }
 
     startTransition(async () => {
+      // Aynı tarayıcıda geçerli bir Biyerlere oturumu varsa yorumu ona
+      // bağlamak için jetonu ekliyoruz — yoksa (localStorage boş/erişilemez)
+      // anket eskisi gibi tamamen anonim ilerler, hata üretmiyoruz.
+      let appJeton: string | undefined;
+      try {
+        appJeton = localStorage.getItem(BIYERLERE_JETON_ANAHTARI) ?? undefined;
+      } catch {
+        appJeton = undefined;
+      }
+
       const result = await submitFeedback({
         slug,
         tableNumber,
@@ -170,6 +182,7 @@ export function SurveyForm({
         itemRatings: secilenUrunler
           .filter((id) => (urunPuanlari[id] ?? 0) > 0)
           .map((id) => ({ menuItemId: id, rating: urunPuanlari[id] })),
+        appJeton,
       });
 
       if (!result.ok) {
@@ -185,9 +198,10 @@ export function SurveyForm({
           kind: "thanks-google",
           url: result.googleReviewUrl,
           feedbackId: result.feedbackId,
+          appOdulPuani: result.appOdulPuani,
         });
       } else {
-        setScreen({ kind: "thanks-internal", rating: overall });
+        setScreen({ kind: "thanks-internal", rating: overall, appOdulPuani: result.appOdulPuani });
       }
     });
   }
@@ -213,6 +227,7 @@ export function SurveyForm({
         <p className="mt-4 text-center text-small text-ink-faint">
           {t("tesekkur.googleAtla")}
         </p>
+        <BiyerlereTesekkurKarti appOdulPuani={screen.appOdulPuani} t={t} />
       </ThanksShell>
     );
   }
@@ -222,6 +237,7 @@ export function SurveyForm({
       <ThanksShell brandColor={brandColor} businessName={businessName} logoUrl={logoUrl}>
         <h1 className="text-2xl font-semibold text-ink">{t("tesekkur.icBaslik")}</h1>
         <p className="mt-3 text-ink-soft">{t("tesekkur.icMetin")}</p>
+        <BiyerlereTesekkurKarti appOdulPuani={screen.appOdulPuani} t={t} />
       </ThanksShell>
     );
   }
@@ -645,6 +661,54 @@ function ThanksShell({
 
       <div className="mt-5">{children}</div>
       <p className="mt-8 text-caption text-ink-faint">{businessName}</p>
+    </div>
+  );
+}
+
+/**
+ * Teşekkür ekranının altına eklenen Biyerlere köprüsü.
+ *
+ * Anket her zaman anonim doldurulabilir; bu kart onu ZORUNLU KILMIYOR,
+ * yalnızca iki hâli ayrı ayrı ele alıyor: kişi zaten Biyerlere'ye
+ * girişliyse (appOdulPuani dolu) kazandığı puanı gösterip Keşfet'e
+ * yönlendiriyor, girişli değilse yumuşak bir davetle kaydolmaya çağırıyor.
+ * "Rozet açıldı" iddiası bilerek burada YOK — anket GPS doğrulaması
+ * istemiyor, bu yüzden puan veriyor ama doğrulanmış ziyaret rozetlerini
+ * açmıyor (bkz. lib/ziyaret.ts, ANKET_KATILIM_PUANI).
+ */
+function BiyerlereTesekkurKarti({
+  appOdulPuani,
+  t,
+}: {
+  appOdulPuani: number | null;
+  t: (anahtar: MetinAnahtari, degiskenler?: Record<string, string | number>) => string;
+}) {
+  return (
+    <div className="mt-6 rounded-control bg-[#0F172A] p-5 text-start ring-1 ring-black/10">
+      {appOdulPuani !== null ? (
+        <>
+          <p className="text-base font-semibold text-white">
+            {t("tesekkur.biyerlerePuan", { puan: appOdulPuani })}
+          </p>
+          <a
+            href="/kesfet"
+            className="mt-3 block w-full rounded-control bg-[#6366F1] px-4 py-3 text-center text-small font-semibold text-white active:scale-[0.99]"
+          >
+            {t("tesekkur.biyerlereGit")}
+          </a>
+        </>
+      ) : (
+        <>
+          <p className="text-small font-semibold text-white">{t("tesekkur.biyerlereDavet")}</p>
+          <p className="mt-1 text-caption text-slate-300">{t("tesekkur.biyerlereDavetMetin")}</p>
+          <a
+            href="/kayit"
+            className="mt-3 block w-full rounded-control bg-[#6366F1] px-4 py-3 text-center text-small font-semibold text-white active:scale-[0.99]"
+          >
+            {t("tesekkur.biyerlereKayitOl")}
+          </a>
+        </>
+      )}
     </div>
   );
 }
