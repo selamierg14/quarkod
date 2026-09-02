@@ -5,7 +5,7 @@ import { Search } from "lucide-react";
 import type { MekanOzet } from "@/lib/kesfet-veri";
 import { BUSINESS_TYPES, type BusinessType, MEKAN_OZELLIK_ANAHTARLARI, MEKAN_OZELLIKLERI } from "@/lib/mekan";
 import { appGet } from "../../lib/api-istemci";
-import { MekanKarti } from "../kesfet/MekanKarti";
+import { MekanKarti, MekanKartiSkeleton } from "../kesfet/MekanKarti";
 
 type Liste = { adet: number; mekanlar: MekanOzet[] };
 
@@ -124,7 +124,11 @@ export function AramaIcerik() {
             Bir kategori seç ya da mekan adı yaz, arayalım.
           </p>
         ) : yukleniyor ? (
-          <p className="mt-2 text-center text-small text-slate-500">Yükleniyor…</p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {Array.from({ length: 4 }, (_, i) => (
+              <MekanKartiSkeleton key={i} />
+            ))}
+          </div>
         ) : !veri || veri.mekanlar.length === 0 ? (
           <p className="mt-2 text-center text-small text-slate-500">
             Bu ölçütlere uyan mekan bulunamadı.

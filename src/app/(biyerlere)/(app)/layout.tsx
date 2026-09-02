@@ -1,5 +1,6 @@
 import { BottomNav } from "../components/BottomNav";
 import { Header } from "../components/Header";
+import { PullToRefresh } from "../components/PullToRefresh";
 
 /**
  * Uygulama içi sayfaların ortak kabuğu: üstte Header, altta BottomNav,
@@ -13,7 +14,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative mx-auto flex min-h-dvh max-w-md flex-col">
       <Header />
-      <main className="flex-1 px-4 pb-24 pt-3">{children}</main>
+      <main className="flex-1 px-4 pb-24 pt-3">
+        <PullToRefresh>{children}</PullToRefresh>
+      </main>
       <BottomNav />
     </div>
   );

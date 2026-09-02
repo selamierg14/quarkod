@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { appAuthGet } from "../../lib/api-istemci";
 import { useOturum } from "../../lib/OturumSaglayici";
+import { KartListesiIskeleti } from "../../components/Skeleton";
 import { KuponKarti, type Kupon } from "./KuponKarti";
 
 type SadakatKarti = {
@@ -87,7 +88,7 @@ export function CuzdanIcerik() {
   }, [oturum.durum]);
 
   if (oturum.durum === "yukleniyor") {
-    return <p className="text-center text-small text-slate-500">Yükleniyor…</p>;
+    return <KartListesiIskeleti />;
   }
   if (oturum.durum === "cikisli") {
     return (
@@ -103,7 +104,7 @@ export function CuzdanIcerik() {
     );
   }
   if (!veri) {
-    return <p className="text-center text-small text-slate-500">Yükleniyor…</p>;
+    return <KartListesiIskeleti />;
   }
 
   return (

@@ -5,6 +5,7 @@ import { Award, Ticket, Megaphone } from "lucide-react";
 import { appAuthGet } from "../../lib/api-istemci";
 import { useOturum } from "../../lib/OturumSaglayici";
 import { bildirimSonGorulmeYaz } from "../../lib/bildirim-sayaci";
+import { KartListesiIskeleti } from "../../components/Skeleton";
 
 type BildirimTuru = "rozet" | "kupon" | "duyuru";
 
@@ -60,7 +61,7 @@ export function BildirimlerIcerik() {
   }, [oturum.durum]);
 
   if (oturum.durum === "yukleniyor") {
-    return <p className="text-center text-small text-slate-500">Yükleniyor…</p>;
+    return <KartListesiIskeleti />;
   }
   if (oturum.durum === "cikisli") {
     return (
@@ -76,7 +77,7 @@ export function BildirimlerIcerik() {
     );
   }
   if (!ogeler) {
-    return <p className="text-center text-small text-slate-500">Yükleniyor…</p>;
+    return <KartListesiIskeleti />;
   }
   if (ogeler.length === 0) {
     return (

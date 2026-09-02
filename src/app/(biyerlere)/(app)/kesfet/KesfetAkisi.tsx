@@ -8,7 +8,7 @@ import { appGet } from "../../lib/api-istemci";
 import { useKonum } from "../../lib/konum";
 import { StoriesBar } from "./StoriesBar";
 import { HeroBanner } from "./HeroBanner";
-import { MekanKarti } from "./MekanKarti";
+import { MekanKarti, MekanKartiSkeleton } from "./MekanKarti";
 import { FiltreSheet, type KesfetFiltreleri } from "./FiltreSheet";
 
 type Liste = { adet: number; mekanlar: MekanOzet[] };
@@ -118,7 +118,11 @@ export function KesfetAkisi({ ilkVeri }: { ilkVeri: Liste }) {
         </div>
 
         {yukleniyor ? (
-          <p className="mt-4 text-center text-small text-slate-500">Yükleniyor…</p>
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {Array.from({ length: 4 }, (_, i) => (
+              <MekanKartiSkeleton key={i} />
+            ))}
+          </div>
         ) : veri.mekanlar.length === 0 ? (
           <p className="mt-4 text-center text-small text-slate-500">
             Bu ölçütlere uyan mekan bulunamadı. Filtreleri genişletmeyi dene.

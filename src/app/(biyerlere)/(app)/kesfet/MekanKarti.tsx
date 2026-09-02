@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Star, MapPin } from "lucide-react";
 import type { MekanOzet } from "@/lib/kesfet-veri";
+import { Skeleton } from "../../components/Skeleton";
 
 /** Kategori özelliklerinin rozet rengi — spec'teki sabit palet. */
 const OZELLIK_RENGI: Record<string, string> = {
@@ -82,5 +83,18 @@ export function MekanKarti({ mekan }: { mekan: MekanOzet }) {
         {mesafe ? <span className="text-[12px] font-medium text-slate-400">{mesafe}</span> : null}
       </div>
     </Link>
+  );
+}
+
+/** `MekanKarti` ile aynı hatlar — liste henüz gelmemişken yerini tutuyor. */
+export function MekanKartiSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/85">
+      <Skeleton className="h-36 w-full rounded-none" />
+      <div className="flex items-center justify-between px-3.5 py-2.5">
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-4 w-10" />
+      </div>
+    </div>
   );
 }

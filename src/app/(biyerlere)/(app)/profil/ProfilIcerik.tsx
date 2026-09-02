@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Heart, LogOut, Share2 } from "lucide-react";
 import { appAuthGet } from "../../lib/api-istemci";
 import { useOturum } from "../../lib/OturumSaglayici";
+import { KartListesiIskeleti } from "../../components/Skeleton";
 
 type FavoriMekan = { id: string; slug: string; ad: string; logoUrl: string | null; markaRengi: string | null };
 
@@ -64,7 +65,7 @@ export function ProfilIcerik() {
   }, [oturum.durum]);
 
   if (oturum.durum === "yukleniyor") {
-    return <p className="text-center text-small text-slate-500">Yükleniyor…</p>;
+    return <KartListesiIskeleti />;
   }
   if (oturum.durum === "cikisli") {
     return (
@@ -80,7 +81,7 @@ export function ProfilIcerik() {
     );
   }
   if (!veri) {
-    return <p className="text-center text-small text-slate-500">Yükleniyor…</p>;
+    return <KartListesiIskeleti />;
   }
 
   const { kullanici, rozetler } = veri;
