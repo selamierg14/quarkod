@@ -26,6 +26,7 @@ export type BiyerlereKullanici = {
   puan: number;
   referralCode: string;
   cuzdandakiKupon: number;
+  plusUyeMi: boolean;
 };
 
 type OturumDurumu =

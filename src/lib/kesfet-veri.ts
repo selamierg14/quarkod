@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "./db";
+import { sponsorMu } from "./sponsorluk";
 import { duyuruAktifMi } from "./duyuru";
 import { ozellikleriCoz } from "./mekan";
 import { duyuruGorselAdresi, gorselAdresi, urunGorselAdresi } from "./gorsel-adres";
@@ -46,6 +47,8 @@ export type MekanOzet = {
   ozellikler: string[];
   puan: number | null;
   degerlendirmeSayisi: number;
+  /** Bu hafta satın alınmış hero banner sponsorluğu (bkz. admin/sponsorlar). */
+  sponsorluMu: boolean;
   etkinlikler: {
     id: string;
     baslik: string;
@@ -178,6 +181,7 @@ export async function mekanlariGetir(
       longitude: true,
       priceSegment: true,
       mekanOzellikleri: true,
+      sponsorHaftasi: true,
       duyurular: {
         where: { aktif: true },
         orderBy: { sortOrder: "asc" },
@@ -223,6 +227,7 @@ export async function mekanlariGetir(
       ozellikler: ozellikleriCoz(m.mekanOzellikleri),
       puan: puanHaritasi.get(m.id) ?? null,
       degerlendirmeSayisi: m._count.feedbacks,
+      sponsorluMu: sponsorMu(m.sponsorHaftasi, simdi),
       etkinlikler: m.duyurular
         .filter((d) => duyuruAktifMi(d))
         .map((d) => ({
@@ -267,6 +272,8 @@ export type MekanDetay = MekanOzet & {
   };
   /** +905XXXXXXXXX — hem "Ara" hem "WhatsApp'ta yaz" düğmesi bunu kullanır. */
   telefon: string | null;
+  /** Biyerlere Plus üyelerine günde bir ücretsiz kahve veren anlaşmalı mekan mı. */
+  biyerlerePlusOrtagi: boolean;
   /**
    * %100 doğrulanmış masa yorumları — yalnızca anketi dolduran kişi AYNI
    * ANDA Biyerlere'ye de girişliyse (bkz. Feedback.appUserId, lib/davet.ts
@@ -310,6 +317,8 @@ export async function mekanDetayGetir(slug: string): Promise<MekanDetay | null> 
       longitude: true,
       priceSegment: true,
       mekanOzellikleri: true,
+      sponsorHaftasi: true,
+      biyerlerePlusOrtagi: true,
       menuPriceUpdatedAt: true,
       yemeksepetiUrl: true,
       getirUrl: true,
@@ -396,6 +405,7 @@ export async function mekanDetayGetir(slug: string): Promise<MekanDetay | null> 
     ozellikler: ozellikleriCoz(mekan.mekanOzellikleri),
     puan: puan._avg.overallRating,
     degerlendirmeSayisi: mekan._count.feedbacks,
+    sponsorluMu: sponsorMu(mekan.sponsorHaftasi, simdi),
     siparisLinkleri: {
       yemeksepeti: mekan.yemeksepetiUrl,
       getir: mekan.getirUrl,
@@ -403,6 +413,7 @@ export async function mekanDetayGetir(slug: string): Promise<MekanDetay | null> 
       migros: mekan.migrosUrl,
     },
     telefon: mekan.phone,
+    biyerlerePlusOrtagi: mekan.biyerlerePlusOrtagi,
     etkinlikler: mekan.duyurular
       .filter((d) => duyuruAktifMi(d))
       .map((d) => ({

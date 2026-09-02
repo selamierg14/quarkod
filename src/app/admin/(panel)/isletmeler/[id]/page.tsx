@@ -59,6 +59,7 @@ export default async function BusinessSettingsPage({
             getirUrl: business.getirUrl,
             trendyolUrl: business.trendyolUrl,
             migrosUrl: business.migrosUrl,
+            biyerlerePlusOrtagi: business.biyerlerePlusOrtagi,
           }}
           isOwner={user.role === "owner"}
           iysAcik={user.moduller.includes("iys")}

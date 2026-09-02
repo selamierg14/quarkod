@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { checkLoginAllowed, recordLoginAttempt } from "@/lib/login-guard";
 import { appJetonUret } from "@/lib/app-oturum";
 import { apiHata, govdeOku, metin } from "@/lib/app-api";
+import { plusGecerliMi } from "@/lib/biyerlere-plus";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +65,7 @@ export async function POST(request: Request) {
       puan: kullanici.puan,
       referralCode: kullanici.referralCode,
       cuzdandakiKupon,
+      plusUyeMi: plusGecerliMi(kullanici),
     },
   });
 }

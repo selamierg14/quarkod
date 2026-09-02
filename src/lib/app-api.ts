@@ -6,6 +6,7 @@ import {
   appOturumIptalSebebi,
   bearerJetonu,
 } from "./app-oturum";
+import { plusGecerliMi } from "./biyerlere-plus";
 
 /**
  * Biyerlere mobil uygulamasının API katmanı için ortak yardımcılar.
@@ -22,6 +23,8 @@ export type AppKullanici = {
   name: string;
   puan: number;
   referralCode: string;
+  /** Biyerlere Plus üyesi mi — bkz. AppUser.plusUyeMi şema yorumu. */
+  plusUyeMi: boolean;
 };
 
 /** Tutarlı hata gövdesi: mobil taraf tek bir biçim beklesin. */
@@ -56,6 +59,8 @@ export async function appKullaniciOku(
       referralCode: true,
       active: true,
       passwordChangedAt: true,
+      plusUyeMi: true,
+      plusBitis: true,
     },
   });
 
@@ -68,6 +73,7 @@ export async function appKullaniciOku(
     name: kullanici.name,
     puan: kullanici.puan,
     referralCode: kullanici.referralCode,
+    plusUyeMi: plusGecerliMi(kullanici),
   };
 }
 

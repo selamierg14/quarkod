@@ -117,7 +117,14 @@ export function ProfilIcerik() {
           {kullanici.name.charAt(0).toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-lg font-bold text-white">{kullanici.name}</h1>
+          <h1 className="flex items-center gap-1.5 truncate text-lg font-bold text-white">
+            {kullanici.name}
+            {oturum.durum === "girisli" && oturum.kullanici.plusUyeMi ? (
+              <span className="rounded-full bg-[#F59E0B]/15 px-2 py-0.5 text-[11px] font-semibold text-[#F59E0B]">
+                👑 Plus
+              </span>
+            ) : null}
+          </h1>
           <p className="text-small text-[#818CF8]">
             🏆 Seviye {kullanici.seviye} · {SEVIYE_ADI[kullanici.seviye] ?? "Kaşif"}
           </p>

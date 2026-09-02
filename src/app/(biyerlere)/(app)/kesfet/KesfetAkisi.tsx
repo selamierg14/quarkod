@@ -59,8 +59,12 @@ export function KesfetAkisi({ ilkVeri }: { ilkVeri: Liste }) {
     .flatMap((m) => m.etkinlikler.map((duyuru) => ({ mekan: m, duyuru })))
     .slice(0, 12);
 
-  const heroMekan = veri.mekanlar.find((m) => m.etkinlikler.length > 0);
-  const heroEtkinlik = heroMekan?.etkinlikler[0];
+  // Bu haftanın satın alınmış sponsoru varsa etkinliği olmasa bile önce o
+  // gelir (bkz. HeroBanner.tsx'teki yorum); yoksa eski davranış: en yakın
+  // etkinliği olan mekan.
+  const heroMekan =
+    veri.mekanlar.find((m) => m.sponsorluMu) ?? veri.mekanlar.find((m) => m.etkinlikler.length > 0);
+  const heroEtkinlik = heroMekan?.etkinlikler[0] ?? null;
 
   const filtreAktif =
     filtreler.segment !== null ||
@@ -125,7 +129,7 @@ export function KesfetAkisi({ ilkVeri }: { ilkVeri: Liste }) {
 
       <StoriesBar hikayeler={hikayeler} />
 
-      {heroMekan && heroEtkinlik ? <HeroBanner mekan={heroMekan} duyuru={heroEtkinlik} /> : null}
+      {heroMekan ? <HeroBanner mekan={heroMekan} duyuru={heroEtkinlik} /> : null}
 
       <div>
         <div className="flex items-center justify-between">

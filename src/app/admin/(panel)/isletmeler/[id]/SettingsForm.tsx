@@ -49,6 +49,7 @@ type Business = {
   getirUrl: string | null;
   trendyolUrl: string | null;
   migrosUrl: string | null;
+  biyerlerePlusOrtagi: boolean;
 };
 
 /**
@@ -395,6 +396,23 @@ export function SettingsForm({
               ))}
             </div>
           </fieldset>
+
+          <label className="flex cursor-pointer items-start gap-2.5 border-t border-line pt-3">
+            <input
+              type="checkbox"
+              name="biyerlerePlusOrtagi"
+              defaultChecked={business.biyerlerePlusOrtagi}
+              className="mt-0.5 shrink-0"
+            />
+            <span>
+              <span className={ETIKET}>Biyerlere Plus ortağıyım</span>
+              <span className={`block ${YARDIM}`}>
+                Açarsanız Plus üyeleri günde bir kez işletmenizden ücretsiz kahve talep
+                edebilir (kupon olarak düşer). Plus aboneliği ayrı yönetiliyor,
+                bu yalnızca SİZİN katılıp katılmadığınız.
+              </span>
+            </span>
+          </label>
         </Bolum>
       ) : null}
 

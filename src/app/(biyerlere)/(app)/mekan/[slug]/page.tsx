@@ -7,6 +7,7 @@ import { BUSINESS_TYPES } from "@/lib/mekan";
 import { prisma } from "@/lib/db";
 import { FavoriButonu } from "./FavoriButonu";
 import { YolTarifiButonu } from "./YolTarifiButonu";
+import { PlusHakkiKutusu } from "./PlusHakkiKutusu";
 
 export const dynamic = "force-dynamic";
 
@@ -150,6 +151,8 @@ export default async function MekanDetayPage({
             />
           ) : null}
         </div>
+
+        {mekan.biyerlerePlusOrtagi ? <PlusHakkiKutusu businessId={mekan.id} /> : null}
 
         {mekan.etkinlikler.length > 0 ? (
           <section>

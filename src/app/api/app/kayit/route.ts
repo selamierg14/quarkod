@@ -106,7 +106,12 @@ export async function POST(request: Request) {
   return NextResponse.json(
     // Yeni hesabın cüzdanı zaten boş — kupon almanın tek yolu bu satırdan
     // sonraki bir ziyaret/sadakat döngüsü, o yüzden burada sorgusuz 0.
-    { jeton: await appJetonUret(kullanici), kullanici: { ...kullanici, cuzdandakiKupon: 0 } },
+    {
+      jeton: await appJetonUret(kullanici),
+      // Yeni açılan hesap hiçbir zaman Plus üyesi olarak başlamıyor —
+      // sorgusuz false (bkz. giris/route.ts'teki gerçek hesaplama).
+      kullanici: { ...kullanici, cuzdandakiKupon: 0, plusUyeMi: false },
+    },
     { status: 201 },
   );
 }

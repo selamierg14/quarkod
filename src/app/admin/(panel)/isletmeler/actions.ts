@@ -295,6 +295,7 @@ export async function updateBusiness(
             mekanOzellikleri: ozellikleriYaz(
               formData.getAll("mekanOzellikleri").map((v) => String(v)),
             ),
+            biyerlerePlusOrtagi: formData.get("biyerlerePlusOrtagi") === "on",
           }
         : {}),
       logoUrl,
