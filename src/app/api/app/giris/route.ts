@@ -47,6 +47,14 @@ export async function POST(request: Request) {
 
   await recordLoginAttempt(username, true);
 
+  const cuzdandakiKupon = await prisma.coupon.count({
+    where: {
+      appUserId: kullanici.id,
+      used: false,
+      OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+    },
+  });
+
   return NextResponse.json({
     jeton: await appJetonUret(kullanici),
     kullanici: {
@@ -55,6 +63,7 @@ export async function POST(request: Request) {
       name: kullanici.name,
       puan: kullanici.puan,
       referralCode: kullanici.referralCode,
+      cuzdandakiKupon,
     },
   });
 }

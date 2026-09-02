@@ -118,6 +118,12 @@ model Business {
 
   /// QR karşılama ekranında ikon olarak gösterilir.
   instagramUrl       String?
+  /// +905XXXXXXXXX biçiminde. Biyerlere mekan profilindeki "Ara" ve
+  /// "WhatsApp'ta yaz" düğmelerinin ikisi de bu TEK numaradan besleniyor —
+  /// Türkiye'de kafelerin WhatsApp hattı pratikte hep aynı telefon hattı,
+  /// ayrı bir alan istemek çoğu işletme sahibinin dolduracağı bir alanı
+  /// ikiye katlamak olurdu.
+  phone              String?
   /// QR menünün tepesinde görünen duyuru şeridi ("Hafta sonu canlı müzik").
   /// Metin dolu kalsa da şerit ayrı bir anahtarla kapatılabilir: kampanya
   /// bittiğinde metni silmek yerine kapatıp sonra geri açmak isteniyor.

@@ -179,6 +179,8 @@ export type MekanDetay = MekanOzet & {
     trendyol: string | null;
     migros: string | null;
   };
+  /** +905XXXXXXXXX — hem "Ara" hem "WhatsApp'ta yaz" düğmesi bunu kullanır. */
+  telefon: string | null;
   /**
    * %100 doğrulanmış masa yorumları — yalnızca anketi dolduran kişi AYNI
    * ANDA Biyerlere'ye de girişliyse (bkz. Feedback.appUserId, lib/davet.ts
@@ -217,6 +219,7 @@ export async function mekanDetayGetir(slug: string): Promise<MekanDetay | null> 
       coverUrl: true,
       brandColor: true,
       instagramUrl: true,
+      phone: true,
       latitude: true,
       longitude: true,
       priceSegment: true,
@@ -313,6 +316,7 @@ export async function mekanDetayGetir(slug: string): Promise<MekanDetay | null> 
       trendyol: mekan.trendyolUrl,
       migros: mekan.migrosUrl,
     },
+    telefon: mekan.phone,
     etkinlikler: mekan.duyurular
       .filter((d) => duyuruAktifMi(d))
       .map((d) => ({

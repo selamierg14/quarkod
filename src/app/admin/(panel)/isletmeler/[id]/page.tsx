@@ -50,6 +50,7 @@ export default async function BusinessSettingsPage({
             logoUrl: business.logoUrl,
             coverUrl: business.coverUrl,
             instagramUrl: business.instagramUrl,
+            phone: business.phone,
             wifiSsid: business.wifiSsid,
             wifiPassword: business.wifiPassword,
             announcement: business.announcement,

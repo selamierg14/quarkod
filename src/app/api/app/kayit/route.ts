@@ -104,7 +104,9 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json(
-    { jeton: await appJetonUret(kullanici), kullanici },
+    // Yeni hesabın cüzdanı zaten boş — kupon almanın tek yolu bu satırdan
+    // sonraki bir ziyaret/sadakat döngüsü, o yüzden burada sorgusuz 0.
+    { jeton: await appJetonUret(kullanici), kullanici: { ...kullanici, cuzdandakiKupon: 0 } },
     { status: 201 },
   );
 }

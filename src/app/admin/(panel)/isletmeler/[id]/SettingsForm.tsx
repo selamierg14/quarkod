@@ -40,6 +40,7 @@ type Business = {
   logoUrl: string | null;
   coverUrl: string | null;
   instagramUrl: string | null;
+  phone: string | null;
   wifiSsid: string | null;
   wifiPassword: string | null;
   announcement: string | null;
@@ -131,6 +132,7 @@ export function SettingsForm({
 
   const sosyalOzet = [
     business.instagramUrl ? "Instagram" : null,
+    business.phone ? "Telefon" : null,
     business.wifiSsid ? "Wi-Fi" : null,
     [business.yemeksepetiUrl, business.getirUrl, business.trendyolUrl, business.migrosUrl].some(
       Boolean,
@@ -411,6 +413,21 @@ export function SettingsForm({
           />
           <span className={YARDIM}>
             Doldurulursa QR karşılama ekranında Instagram simgesi görünür.
+          </span>
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className={ETIKET}>Telefon (WhatsApp)</span>
+          <input
+            name="phone"
+            type="tel"
+            placeholder="+905XXXXXXXXX"
+            defaultValue={business.phone ?? ""}
+            className={INPUT}
+          />
+          <span className={YARDIM}>
+            Doldurulursa Biyerlere&apos;deki mekan profilinizde &quot;Ara&quot; ve
+            &quot;WhatsApp&apos;ta yaz&quot; düğmeleri görünür — ikisi de aynı numarayı kullanır.
           </span>
         </label>
 

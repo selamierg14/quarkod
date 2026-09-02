@@ -198,6 +198,14 @@ export async function updateBusiness(
     return { error: "Instagram linki http:// veya https:// ile başlamalı." };
   }
 
+  // Biyerlere'deki "Ara" ve "WhatsApp'ta yaz" düğmelerinin ikisi de bu
+  // numarayı kullanıyor (bkz. lib/kesfet-veri.ts) — biçim E.164: + ve
+  // ardından yalnızca rakam.
+  const phone = String(formData.get("phone") ?? "").trim();
+  if (phone && !/^\+\d{10,15}$/.test(phone)) {
+    return { error: "Telefon +90 ile başlayıp yalnızca rakam içermeli (ör. +905551234567)." };
+  }
+
   const wifiSsid = String(formData.get("wifiSsid") ?? "").trim();
   const wifiPassword = String(formData.get("wifiPassword") ?? "").trim();
 
@@ -292,6 +300,7 @@ export async function updateBusiness(
       logoUrl,
       coverUrl,
       instagramUrl: instagramUrl || null,
+      phone: phone || null,
       wifiSsid: wifiSsid || null,
       wifiPassword: wifiPassword || null,
       announcement:
