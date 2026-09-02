@@ -35,7 +35,8 @@ export type DenetimEylemi =
   | "account.payment"
   | "account.enter"
   | "account.exit"
-  | "consent.reported";
+  | "consent.reported"
+  | "platform.rota";
 
 export const EYLEM_METNI: Record<DenetimEylemi, string> = {
   "feedback.status": "Geri bildirim durumu",
@@ -61,6 +62,7 @@ export const EYLEM_METNI: Record<DenetimEylemi, string> = {
   "account.enter": "Hesaba giriş (platform)",
   "account.exit": "Hesaptan çıkış (platform)",
   "consent.reported": "İYS bildirimi",
+  "platform.rota": "Biyerlere rotası",
 };
 
 /**

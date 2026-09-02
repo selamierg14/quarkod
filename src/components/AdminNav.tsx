@@ -25,6 +25,7 @@ const LINKS: NavLink[] = [
   { href: "/admin/kullanicilar", label: "Kullanıcılar", ownerOnly: true },
   { href: "/admin/denetim", label: "Denetim kaydı", ownerOnly: true },
   { href: "/admin/hesaplar", label: "Hesaplar", superadminOnly: true },
+  { href: "/admin/rotalar", label: "Rotalar (Biyerlere)", superadminOnly: true },
   { href: "/admin/sistem", label: "Sistem", superadminOnly: true },
   { href: "/admin/profil", label: "Profil" },
 ];

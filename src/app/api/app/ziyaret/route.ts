@@ -11,6 +11,7 @@ import {
 import { rozetleriDegerlendir } from "@/lib/rozet-verme";
 import { seviye } from "@/lib/rozet";
 import { SADAKAT_ESIGI, sadakatDurumuHesapla } from "@/lib/sadakat";
+import { ROTA_TAMAMLAMA_PUANI, rotalariDegerlendir } from "@/lib/rota-tamamlama";
 import { apiHata, appKullaniciGerekli, govdeOku, metin } from "@/lib/app-api";
 
 /** Sadakat hediyesi kuponunun geçerlilik süresi. */
@@ -120,6 +121,11 @@ export async function POST(request: Request) {
     }),
   ]);
 
+  // Rota tamamlama ÖNCE değerlendiriliyor: puanı doğrudan DB'ye yazıyor,
+  // rozet değerlendirmesi (aşağıda) `toplamPuan`'ı DB'den okuyor — sıra
+  // ters olsaydı yanıttaki toplam puan rota bonusunu içermezdi.
+  const tamamlananRotalar = await rotalariDegerlendir(oturum.kullanici.id, mekan.id);
+
   // Rozet değerlendirmesi ziyaret YAZILDIKTAN sonra: kazanma koşulları
   // yeni kaydı da sayıyor (ör. ilk ziyarette "İlk Adım").
   const rozetSonucu = await rozetleriDegerlendir(oturum.kullanici.id);
@@ -170,6 +176,11 @@ export async function POST(request: Request) {
         // Doluysa cüzdanda hemen görünsün diye kuponun kendisi de dönüyor.
         kazanilanKupon: sadakatKuponu,
       },
+      // Bu ziyaretle tamamlanan rota(lar) — genelde 0 ya da 1 eleman, iki
+      // ayrı rotanın son durağı aynı ziyaret olması nadir ama imkansız
+      // değil, o yüzden liste.
+      tamamlananRotalar,
+      rotaTamamlamaPuani: ROTA_TAMAMLAMA_PUANI,
     },
     { status: 201 },
   );

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { SlidersHorizontal, Search } from "lucide-react";
+import Link from "next/link";
+import { SlidersHorizontal, Search, CalendarDays, MapPinned } from "lucide-react";
 import type { MekanOzet } from "@/lib/kesfet-veri";
 import { VARSAYILAN_YARICAP_METRE } from "@/lib/kesfet";
 import { appGet } from "../../lib/api-istemci";
@@ -93,6 +94,23 @@ export function KesfetAkisi({ ilkVeri }: { ilkVeri: Liste }) {
           <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
           Filtrele
         </button>
+      </div>
+
+      <div className="flex gap-2">
+        <Link
+          href="/etkinlikler"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-control border border-slate-800 bg-slate-900/85 py-2.5 text-small font-medium text-slate-200"
+        >
+          <CalendarDays className="h-4 w-4 text-[#818CF8]" aria-hidden="true" />
+          Etkinlikler
+        </Link>
+        <Link
+          href="/rotalar"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-control border border-slate-800 bg-slate-900/85 py-2.5 text-small font-medium text-slate-200"
+        >
+          <MapPinned className="h-4 w-4 text-[#EC4899]" aria-hidden="true" />
+          Rotalar
+        </Link>
       </div>
 
       {durum !== "verildi" ? (
