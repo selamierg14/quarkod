@@ -8,6 +8,9 @@
  * testlenebilir halde duruyor.
  */
 
+import { BUSINESS_TYPES, type BusinessType } from "./constants";
+export { BUSINESS_TYPES, type BusinessType };
+
 /**
  * Keşfet ekranındaki mekan özellikleri.
  *
@@ -66,6 +69,20 @@ export type FiyatSegmenti = keyof typeof FIYAT_SEGMENTLERI;
 
 export function gecerliSegmentMi(deger: string): deger is FiyatSegmenti {
   return deger in FIYAT_SEGMENTLERI;
+}
+
+/**
+ * Mekan kategorisi (`Business.type`).
+ *
+ * Ayrı bir Biyerlere listesi YOK: panelin işletme türü listesini (bkz.
+ * lib/constants.ts — anket kategori şablonlarını belirleyen alan)
+ * doğrudan kullanıyoruz. Bir ara "cafe"/"restoran"/"bar" gibi ayrı,
+ * uydurma bir küme vardı; gerçek verideki hiçbir işletme onlarla eşleşmedi
+ * çünkü panel hep "yeme_icme"/"balikci"/"gece_kulubu" yazıyordu — kategori
+ * filtresi ve harita pin rengi sessizce hep varsayılana düşüyordu.
+ */
+export function gecerliTurMu(deger: string): deger is BusinessType {
+  return deger in BUSINESS_TYPES;
 }
 
 /** Enlem/boylam çifti; ikisi birden dolu ya da ikisi birden boş olur. */

@@ -1,8 +1,10 @@
 import {
   gecerliKoordinatMi,
   gecerliSegmentMi,
+  gecerliTurMu,
   mesafeMetre,
   ozellikleriCoz,
+  type BusinessType,
   type FiyatSegmenti,
   type Koordinat,
   type MekanOzelligi,
@@ -25,6 +27,8 @@ export type KesfetSorgusu = {
   yaricapMetre: number;
   ozellikler: MekanOzelligi[];
   segment: FiyatSegmenti | null;
+  /** Kategori — /ara sayfasının "Kafe/Restoran/Balıkçı" çiplerinden gelir. */
+  tur: BusinessType | null;
   arama: string;
 };
 
@@ -61,6 +65,7 @@ export function sorguCoz(params: URLSearchParams): KesfetSorgusu {
 
   const yaricap = sayiCoz(params.get("mesafe"), VARSAYILAN_YARICAP_METRE);
   const segment = params.get("segment") ?? "";
+  const tur = params.get("tur") ?? "";
 
   return {
     konum: konumVar ? { enlem, boylam } : null,
@@ -70,6 +75,7 @@ export function sorguCoz(params: URLSearchParams): KesfetSorgusu {
       .map((o) => o.trim())
       .filter(gecerliOzellikMi),
     segment: gecerliSegmentMi(segment) ? segment : null,
+    tur: gecerliTurMu(tur) ? tur : null,
     arama: (params.get("q") ?? "").trim().slice(0, 60),
   };
 }
@@ -78,6 +84,7 @@ export function sorguCoz(params: URLSearchParams): KesfetSorgusu {
 export type KesfetAdayi = {
   id: string;
   name: string;
+  type: string;
   latitude: number | null;
   longitude: number | null;
   priceSegment: string | null;
@@ -108,6 +115,7 @@ export function mekanlariSuz<T extends KesfetAdayi>(
   const sonuc: MesafeliMekan<T>[] = [];
 
   for (const aday of adaylar) {
+    if (sorgu.tur && aday.type !== sorgu.tur) continue;
     if (sorgu.segment && aday.priceSegment !== sorgu.segment) continue;
 
     if (sorgu.ozellikler.length > 0) {

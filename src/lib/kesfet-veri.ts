@@ -56,6 +56,92 @@ export type MekanOzet = {
   }[];
 };
 
+export type EtkinlikOzet = {
+  id: string;
+  baslik: string;
+  aciklama: string | null;
+  gorselUrl: string | null;
+  baslangic: Date | null;
+  bitis: Date | null;
+  mekan: { id: string; slug: string; ad: string; logoUrl: string | null; markaRengi: string };
+};
+
+/**
+ * `/etkinlikler` takviminin ham verisi — TÜM görünür mekanların duyuru/
+ * etkinlik akışını tek bir listede topluyor. `mekanlariGetir` her mekanın
+ * KENDİ duyurularını döndürüyordu; burası bunun tersi: tek bir mekan değil,
+ * tüm şehrin akışı.
+ *
+ * BİLEREK `duyuruAktifMi`'yi KULLANMIYOR: o fonksiyon "şu an mekanda canlı
+ * mı" sorusuna cevap veriyor (mekan profilindeki "Bu haftaki etkinlikler"
+ * için doğru soru bu), ileri tarihli bir duyuruyu henüz başlamadığı için
+ * ELİYOR. Ama bir TAKVİMİN bütün amacı "yaklaşan ne var" — ileri tarihli
+ * bir etkinliği göstermemek takvimi işlevsiz kılardı. Burada tek kural:
+ * bitmemiş olmak (bitis yoksa ya da hâlâ gelecekte).
+ */
+export async function etkinlikleriGetir(): Promise<EtkinlikOzet[]> {
+  const simdi = new Date();
+
+  const isletmeler = await prisma.business.findMany({
+    where: {
+      account: GORUNURLUK_KOSULU(simdi),
+      duyurular: { some: { aktif: true } },
+    },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      logoUrl: true,
+      brandColor: true,
+      duyurular: {
+        where: { aktif: true },
+        orderBy: { sortOrder: "asc" },
+        select: {
+          id: true,
+          baslik: true,
+          aciklama: true,
+          imageUrl: true,
+          baslangic: true,
+          bitis: true,
+          aktif: true,
+        },
+      },
+    },
+    take: 200,
+  });
+
+  const etkinlikler = isletmeler.flatMap((m) =>
+    m.duyurular
+      .filter((d) => !d.bitis || d.bitis >= simdi)
+      .map((d) => ({
+        id: d.id,
+        baslik: d.baslik,
+        aciklama: d.aciklama,
+        gorselUrl: duyuruGorselAdresi(d.id, d.imageUrl),
+        baslangic: d.baslangic,
+        bitis: d.bitis,
+        mekan: {
+          id: m.id,
+          slug: m.slug,
+          ad: m.name,
+          logoUrl: gorselAdresi(m.id, "logo", m.logoUrl),
+          markaRengi: m.brandColor,
+        },
+      })),
+  );
+
+  // Tarihi belli olanlar en yakın tarihe göre öne, tarihsiz (süresiz)
+  // duyurular en sona — "bu hafta ne var" sorusuna cevap veren bir takvim.
+  etkinlikler.sort((a, b) => {
+    if (a.baslangic && b.baslangic) return a.baslangic.getTime() - b.baslangic.getTime();
+    if (a.baslangic) return -1;
+    if (b.baslangic) return 1;
+    return 0;
+  });
+
+  return etkinlikler;
+}
+
 /** Keşfet listesi — StoriesBar, HeroBanner ve MekanKarti'nin ham verisi. */
 export async function mekanlariGetir(
   sorgu: KesfetSorgusu,

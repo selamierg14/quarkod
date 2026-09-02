@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { after } from "next/server";
 import { Star, MapPin, Phone, MessageCircle, ClipboardList } from "lucide-react";
 import { mekanDetayGetir } from "@/lib/kesfet-veri";
+import { BUSINESS_TYPES } from "@/lib/mekan";
 import { prisma } from "@/lib/db";
 import { FavoriButonu } from "./FavoriButonu";
 import { YolTarifiButonu } from "./YolTarifiButonu";
@@ -18,14 +19,6 @@ export async function generateMetadata({
   const mekan = await mekanDetayGetir(slug);
   return { title: mekan?.ad ?? "Mekan bulunamadı" };
 }
-
-/** Business.type -> okunur ad. Business modelinde sabit bir liste olarak
- * tanımlı değil (serbest metin), bu yüzden yalnızca bilinenler çevriliyor. */
-const TUR_ADI: Record<string, string> = {
-  cafe: "Kafe",
-  restoran: "Restoran",
-  bar: "Bar",
-};
 
 export default async function MekanDetayPage({
   params,
@@ -83,7 +76,7 @@ export default async function MekanDetayPage({
           <div className="min-w-0 pb-1">
             <h1 className="truncate text-xl font-bold text-white">{mekan.ad}</h1>
             <p className="flex items-center gap-2 text-caption text-slate-300">
-              {TUR_ADI[mekan.tur] ?? mekan.tur}
+              {BUSINESS_TYPES[mekan.tur as keyof typeof BUSINESS_TYPES] ?? mekan.tur}
               {mekan.fiyatSegmenti ? (
                 <span>
                   ·{" "}

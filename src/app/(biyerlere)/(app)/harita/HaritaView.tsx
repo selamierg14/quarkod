@@ -17,12 +17,15 @@ const VARSAYILAN_MERKEZ: [number, number] = [41.0082, 28.9784];
  * "Flaş indirim" (spec'teki yeşil) bağımsız bir alan olarak veride yok;
  * en yakın karşılığı "bu hafta aktif bir duyurusu/etkinliği var" —
  * kullanıcı için pratikte aynı anlama geliyor: "şu an mekanda bir şey
- * dönüyor". Kahveci ise Business.type alanından okunuyor.
+ * dönüyor". Kategori ise Business.type'tan — burada "cafe" diye bir değer
+ * hiç olmadı (bkz. BUSINESS_TYPES: yeme_icme/balikci/gece_kulubu), o
+ * karşılaştırma hep varsayılana düşüyordu; gerçek değerlerle düzeltildi.
  */
 function pinRengi(mekan: MekanOzet): string {
   if (mekan.ozellikler.includes("canliMuzik")) return "#EC4899";
   if (mekan.etkinlikler.length > 0) return "#10B981";
-  if (mekan.tur === "cafe") return "#F59E0B";
+  if (mekan.tur === "yeme_icme") return "#F59E0B";
+  if (mekan.tur === "balikci") return "#0EA5E9";
   return "#6366F1";
 }
 

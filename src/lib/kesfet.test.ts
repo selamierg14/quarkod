@@ -26,11 +26,13 @@ function mekan(
     boylam: number;
     segment: string | null;
     ozellikler: string | null;
+    tur: string;
   }> = {},
 ) {
   return {
     id: ad,
     name: ad,
+    type: ekler.tur ?? "yeme_icme",
     latitude: ekler.enlem ?? MERKEZ.enlem,
     longitude: ekler.boylam ?? MERKEZ.boylam,
     priceSegment: ekler.segment ?? null,
@@ -43,6 +45,7 @@ const BOS_SORGU: KesfetSorgusu = {
   yaricapMetre: VARSAYILAN_YARICAP_METRE,
   ozellikler: [],
   segment: null,
+  tur: null,
   arama: "",
 };
 
@@ -88,6 +91,11 @@ describe("sorgu çözümü", () => {
     expect(s.ozellikler).toEqual(["priz", "wifi"]);
     expect(s.segment).toBeNull();
   });
+
+  it("geçerli türü okur, tanınmayanı yok sayar", () => {
+    expect(sorguCoz(new URLSearchParams({ tur: "balikci" })).tur).toBe("balikci");
+    expect(sorguCoz(new URLSearchParams({ tur: "cafe" })).tur).toBeNull();
+  });
 });
 
 describe("özellik süzmesi", () => {
@@ -132,6 +140,23 @@ describe("segment süzmesi", () => {
   it("segmenti belirtilmemiş mekan segment filtresinde çıkmaz", () => {
     const sonuc = mekanlariSuz(adaylar, { ...BOS_SORGU, segment: "orta" });
     expect(sonuc.map((m) => m.name)).toEqual(["Orta"]);
+  });
+});
+
+describe("tür süzmesi", () => {
+  const adaylar = [
+    mekan("Lokanta", { tur: "yeme_icme" }),
+    mekan("Balık Evi", { tur: "balikci" }),
+    mekan("Gece Kulübü", { tur: "gece_kulubu" }),
+  ];
+
+  it("filtresizken hepsi gelir", () => {
+    expect(mekanlariSuz(adaylar, BOS_SORGU)).toHaveLength(3);
+  });
+
+  it("seçilen türü getirir", () => {
+    const sonuc = mekanlariSuz(adaylar, { ...BOS_SORGU, tur: "balikci" });
+    expect(sonuc.map((m) => m.name)).toEqual(["Balık Evi"]);
   });
 });
 

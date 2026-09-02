@@ -57,7 +57,7 @@ export function Header() {
 
       <div className="flex shrink-0 items-center gap-1">
         <Link
-          href="/kesfet"
+          href="/ara"
           aria-label="Mekan ara"
           className="flex h-9 w-9 items-center justify-center rounded-full text-slate-300 transition hover:bg-white/5"
         >
