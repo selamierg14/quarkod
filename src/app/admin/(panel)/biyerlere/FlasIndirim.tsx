@@ -1,8 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { flasIndirimBaslat } from "../../duyurular/actions";
-import type { DuyuruFormState } from "../../duyurular/actions";
+import { flasIndirimBaslat, type FlasIndirimFormState } from "./actions";
 
 const INPUT =
   "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
@@ -10,7 +9,7 @@ const INPUT =
 const SURE_SECENEKLERI = [1, 2, 4, 8, 24];
 
 export function FlasIndirim({ businessId, pushKredisi }: { businessId: string; pushKredisi: number }) {
-  const [state, formAction, pending] = useActionState<DuyuruFormState, FormData>(
+  const [state, formAction, pending] = useActionState<FlasIndirimFormState, FormData>(
     flasIndirimBaslat,
     {},
   );

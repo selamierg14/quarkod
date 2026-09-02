@@ -53,6 +53,9 @@ describe("platform menüsü", () => {
       "/admin/kullanicilar",
       "/admin/kullanicilar",
       "/admin/kullanicilar/ekle",
+      "/admin/rotalar",
+      "/admin/sponsorlar",
+      "/admin/plus",
       "/admin/denetim",
       "/admin/sistem",
     ]);
@@ -89,9 +92,19 @@ describe("kiracı menüsü", () => {
     expect(hicbiri).not.toContain("/admin/izinler");
     expect(hicbiri).not.toContain("/admin/entegrasyonlar");
     expect(hicbiri).not.toContain("/admin/vardiya-planlama");
+    expect(hicbiri).not.toContain("/admin/biyerlere");
     // Modülden bağımsız olanlar durmalı: hesap sahibi modülsüz kalsa bile
     // kullanıcılarını ve işletmesini yönetebilmeli.
     expect(hicbiri).toContain("/admin/kullanicilar");
+  });
+
+  it("kesfet modülü açıksa Biyerlere ayrı bir bağlantı olarak görünür", () => {
+    // İşletme ayarları'nın altına gömülü değil — kendi adresi var (bkz.
+    // app/admin/(panel)/biyerlere), o yüzden burada da ayrı test ediliyor.
+    const sadeceKesfet = panelMenusu("kiraci", "owner", ["kesfet"]).flatMap((g) =>
+      g.linkler.flatMap((l) => [l.href, ...(l.altLinkler?.map((a) => a.href) ?? [])]),
+    );
+    expect(sadeceKesfet).toContain("/admin/biyerlere");
   });
 
   it("yalnızca açık modül menüye girer", () => {

@@ -43,7 +43,9 @@ export type IkonAdi =
   | "entegrasyon"
   | "takvim"
   | "gorev"
-  | "duyuru";
+  | "duyuru"
+  | "biyerlere"
+  | "rota";
 
 export type AltNavLink = {
   href: string;
@@ -130,6 +132,14 @@ export function panelMenusu(
         ],
       },
       {
+        baslik: "Biyerlere",
+        linkler: [
+          { href: "/admin/rotalar", label: "Rotalar", ikon: "rota" },
+          { href: "/admin/sponsorlar", label: "Sponsorlar ve kredi", ikon: "yildiz" },
+          { href: "/admin/plus", label: "Biyerlere Plus", ikon: "yildiz" },
+        ],
+      },
+      {
         baslik: "Denetim",
         linkler: [
           { href: "/admin/denetim", label: "Denetim kaydı", ikon: "denetim" },
@@ -187,6 +197,13 @@ export function panelMenusu(
       },
       { href: "/admin/duyurular", label: "Duyurular", ikon: "duyuru" },
     );
+  }
+  // Biyerlere (B2C keşfet uygulaması) kendi ayrı ayar sayfası: konum,
+  // mekan özellikleri, Plus ortaklığı ve flaş indirim — İşletme
+  // ayarları'nın altına gömülü DEĞİL, ayrı bir modül olarak duruyor
+  // (bkz. app/admin/(panel)/biyerlere).
+  if (moduller.includes("kesfet")) {
+    yonetim.push({ href: "/admin/biyerlere", label: "Biyerlere", ikon: "biyerlere" });
   }
   if (yonetici(role)) {
     yonetim.push(

@@ -240,6 +240,11 @@ export async function requirePersonelYonetimi(): Promise<SessionUser> {
   return requireModul("personel");
 }
 
+/** Biyerlere (B2C keşfet) ayar sayfası — bkz. app/admin/(panel)/biyerlere. */
+export async function requireKesfetErisim(): Promise<SessionUser> {
+  return requireModul("kesfet");
+}
+
 /**
  * Kullanıcı ekranları (listele/ekle/düzenle).
  *

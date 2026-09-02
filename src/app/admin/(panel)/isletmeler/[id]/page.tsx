@@ -1,9 +1,8 @@
-import { Settings, Zap } from "lucide-react";
+import { Settings } from "lucide-react";
 import { visibleBusinesses } from "@/lib/auth";
 import { SectionCard } from "@/components/ui";
 import { AyarlariKopyala } from "./AyarlariKopyala";
 import { SettingsForm } from "./SettingsForm";
-import { FlasIndirim } from "./FlasIndirim";
 import { IsletmeUst } from "./IsletmeUst";
 import { isletmeyiYukle } from "./_veri";
 
@@ -44,14 +43,9 @@ export default async function BusinessSettingsPage({
             googleRedirect: business.googleRedirect,
             qrCardText: business.qrCardText,
             iysBrandCode: business.iysBrandCode,
-            latitude: business.latitude,
-            longitude: business.longitude,
-            priceSegment: business.priceSegment,
-            mekanOzellikleri: business.mekanOzellikleri,
             logoUrl: business.logoUrl,
             coverUrl: business.coverUrl,
             instagramUrl: business.instagramUrl,
-            phone: business.phone,
             wifiSsid: business.wifiSsid,
             wifiPassword: business.wifiPassword,
             announcement: business.announcement,
@@ -60,24 +54,11 @@ export default async function BusinessSettingsPage({
             getirUrl: business.getirUrl,
             trendyolUrl: business.trendyolUrl,
             migrosUrl: business.migrosUrl,
-            biyerlerePlusOrtagi: business.biyerlerePlusOrtagi,
           }}
           isOwner={user.role === "owner"}
           iysAcik={user.moduller.includes("iys")}
-          kesfetAcik={user.moduller.includes("kesfet")}
         />
       </SectionCard>
-
-      {user.moduller.includes("kesfet") ? (
-        <SectionCard
-          ikon={<Zap className="h-4 w-4" aria-hidden="true" />}
-          renk="amber"
-          title="Flaş indirim başlat"
-          description="Kısa süreli, öne çıkan bir kampanya duyurusu — bkz. aşağıdaki not."
-        >
-          <FlasIndirim businessId={business.id} pushKredisi={business.pushKredisi} />
-        </SectionCard>
-      ) : null}
 
       <AyarlariKopyala businessId={business.id} hedefler={kardesler} />
     </div>

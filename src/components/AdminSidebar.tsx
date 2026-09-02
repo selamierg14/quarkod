@@ -423,5 +423,21 @@ function Ikon({ ad }: { ad: IkonAdi }) {
           <path d="M11 8l7-3v14l-7-3M18 10v4" />
         </svg>
       );
+    case "biyerlere":
+      return (
+        <svg viewBox="0 0 24 24" className={ortak} {...p}>
+          <path d="M12 21s7-6.5 7-11.5a7 7 0 10-14 0C5 14.5 12 21 12 21z" />
+          <circle cx="12" cy="9.5" r="2.3" />
+        </svg>
+      );
+    case "rota":
+      return (
+        <svg viewBox="0 0 24 24" className={ortak} {...p}>
+          <circle cx="5" cy="6" r="2" />
+          <circle cx="19" cy="6" r="2" />
+          <circle cx="12" cy="18" r="2" />
+          <path d="M6.8 7.2L11 16M17.2 7.2L13 16" />
+        </svg>
+      );
   }
 }

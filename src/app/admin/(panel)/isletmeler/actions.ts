@@ -15,13 +15,6 @@ import { denetimYaz } from "@/lib/denetim";
 import { secenekleriAyristir, secenekleriBirlestir } from "@/lib/anket-detay";
 import { sifreSorunu } from "@/lib/sifre";
 import { prisma } from "@/lib/db";
-import {
-  gecerliSegmentMi,
-  googleLinkindenKoordinat,
-  koordinatCoz,
-  ozellikleriYaz,
-  type Koordinat,
-} from "@/lib/mekan";
 import { BUSINESS_TYPES, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/constants";
 import { validateImageDataUrl } from "@/lib/image";
 import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
@@ -198,14 +191,6 @@ export async function updateBusiness(
     return { error: "Instagram linki http:// veya https:// ile başlamalı." };
   }
 
-  // Biyerlere'deki "Ara" ve "WhatsApp'ta yaz" düğmelerinin ikisi de bu
-  // numarayı kullanıyor (bkz. lib/kesfet-veri.ts) — biçim E.164: + ve
-  // ardından yalnızca rakam.
-  const phone = String(formData.get("phone") ?? "").trim();
-  if (phone && !/^\+\d{10,15}$/.test(phone)) {
-    return { error: "Telefon +90 ile başlayıp yalnızca rakam içermeli (ör. +905551234567)." };
-  }
-
   const wifiSsid = String(formData.get("wifiSsid") ?? "").trim();
   const wifiPassword = String(formData.get("wifiPassword") ?? "").trim();
 
@@ -218,36 +203,6 @@ export async function updateBusiness(
       return { error: "Sipariş linkleri http:// veya https:// ile başlamalı." };
     }
     siparisLinkleri[alan] = deger || null;
-  }
-
-  // Keşfet alanları. Modül kapalıysa hiçbirine dokunulmuyor: form alanı
-  // zaten gösterilmiyor ama istek elle kurulabilir, ve modülü kapalı bir
-  // hesabın var olan konumu bir kaydetmeyle silinmemeli.
-  const kesfetAcik = user.moduller.includes("kesfet");
-
-  let koordinat: Koordinat | null = null;
-  if (kesfetAcik) {
-    const cozulen = koordinatCoz(
-      String(formData.get("latitude") ?? ""),
-      String(formData.get("longitude") ?? ""),
-    );
-    if (cozulen === undefined) {
-      return {
-        error:
-          "Konum okunamadı. Enlem ve boylamı birlikte girin (ör. 40.8715 ve 29.2329) " +
-          "ya da ikisini de boş bırakın.",
-      };
-    }
-    // Elle girilmediyse Google bağlantısından çıkarmayı deniyoruz: çoğu
-    // kafe sahibi enlem/boylamı nereden bulacağını bilmiyor ama Google
-    // linkini zaten yapıştırmış oluyor. Elle girilen değer her zaman
-    // öncelikli — otomatik çıkarım onu ezmiyor.
-    koordinat = cozulen ?? googleLinkindenKoordinat(googleReviewUrl);
-  }
-
-  const priceSegment = String(formData.get("priceSegment") ?? "").trim();
-  if (kesfetAcik && priceSegment && !gecerliSegmentMi(priceSegment)) {
-    return { error: "Bütçe segmenti geçersiz." };
   }
 
   // Görseller data URI olarak gelir; boş dize "kaldır" demek. Sunucu boyut ve
@@ -287,21 +242,9 @@ export async function updateBusiness(
       ...(user.moduller.includes("iys")
         ? { iysBrandCode: String(formData.get("iysBrandCode") ?? "").trim() || null }
         : {}),
-      ...(kesfetAcik
-        ? {
-            latitude: koordinat?.enlem ?? null,
-            longitude: koordinat?.boylam ?? null,
-            priceSegment: priceSegment || null,
-            mekanOzellikleri: ozellikleriYaz(
-              formData.getAll("mekanOzellikleri").map((v) => String(v)),
-            ),
-            biyerlerePlusOrtagi: formData.get("biyerlerePlusOrtagi") === "on",
-          }
-        : {}),
       logoUrl,
       coverUrl,
       instagramUrl: instagramUrl || null,
-      phone: phone || null,
       wifiSsid: wifiSsid || null,
       wifiPassword: wifiPassword || null,
       announcement:
