@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Star, MapPin, Phone, MessageCircle, Navigation, ClipboardList } from "lucide-react";
+import { after } from "next/server";
+import { Star, MapPin, Phone, MessageCircle, ClipboardList } from "lucide-react";
 import { mekanDetayGetir } from "@/lib/kesfet-veri";
+import { prisma } from "@/lib/db";
+import { FavoriButonu } from "./FavoriButonu";
+import { YolTarifiButonu } from "./YolTarifiButonu";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +36,17 @@ export default async function MekanDetayPage({
   const mekan = await mekanDetayGetir(slug);
   if (!mekan) notFound();
 
+  // Görüntüleme sayacı — panelin "Biyerlere bu hafta" istatistik kartının
+  // ham verisi. Yanıtı bekletmesin diye `after()` ile isteğin arkasına
+  // bırakılıyor (bkz. f/[slug]/[table]/actions.ts'teki aynı desen).
+  after(async () => {
+    await prisma.mekanEtkilesim
+      .create({ data: { businessId: mekan.id, tur: "goruntuleme" } })
+      .catch((error) => {
+        console.error("[biyerlere] mekan görüntüleme sayılamadı:", error);
+      });
+  });
+
   const whatsappHref = mekan.telefon
     ? `https://wa.me/${mekan.telefon.replace(/\D/g, "")}?text=${encodeURIComponent(
         `Merhaba, ${mekan.ad} için rezervasyon yaptırmak istiyorum.`,
@@ -53,6 +68,10 @@ export default async function MekanDetayPage({
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-[#0F172A]/20 to-transparent" />
+
+        <div className="absolute right-4 top-3">
+          <FavoriButonu businessId={mekan.id} />
+        </div>
 
         <div className="absolute inset-x-4 bottom-3 flex items-end gap-3">
           <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-slate-900 ring-2 ring-[#0F172A]">
@@ -132,15 +151,10 @@ export default async function MekanDetayPage({
             </a>
           ) : null}
           {mekan.konum.enlem !== null ? (
-            <a
+            <YolTarifiButonu
+              businessId={mekan.id}
               href={`https://www.google.com/maps/dir/?api=1&destination=${mekan.konum.enlem},${mekan.konum.boylam}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex flex-col items-center gap-1.5 rounded-2xl border border-slate-800 bg-slate-900/85 py-3 text-[11px] font-medium text-slate-200"
-            >
-              <Navigation className="h-5 w-5 text-[#EC4899]" aria-hidden="true" />
-              Yol tarifi
-            </a>
+            />
           ) : null}
         </div>
 

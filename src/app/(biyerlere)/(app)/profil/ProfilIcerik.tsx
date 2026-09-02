@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LogOut, Share2 } from "lucide-react";
+import { Heart, LogOut, Share2 } from "lucide-react";
 import { appAuthGet } from "../../lib/api-istemci";
 import { useOturum } from "../../lib/OturumSaglayici";
+
+type FavoriMekan = { id: string; slug: string; ad: string; logoUrl: string | null; markaRengi: string | null };
 
 type ProfilVerisi = {
   kullanici: {
@@ -44,6 +46,7 @@ const SEVIYE_ADI: Record<number, string> = {
 export function ProfilIcerik() {
   const { oturum, cikisYap } = useOturum();
   const [veri, setVeri] = useState<ProfilVerisi | null>(null);
+  const [favoriler, setFavoriler] = useState<FavoriMekan[] | null>(null);
   const [davetKopyalandi, setDavetKopyalandi] = useState(false);
 
   useEffect(() => {
@@ -51,6 +54,9 @@ export function ProfilIcerik() {
     let iptal = false;
     appAuthGet<ProfilVerisi>("/api/app/profil").then((sonuc) => {
       if (!iptal && sonuc.ok) setVeri(sonuc.veri);
+    });
+    appAuthGet<{ mekanlar: FavoriMekan[] }>("/api/app/favoriler").then((sonuc) => {
+      if (!iptal && sonuc.ok) setFavoriler(sonuc.veri.mekanlar);
     });
     return () => {
       iptal = true;
@@ -175,6 +181,41 @@ export function ProfilIcerik() {
           WhatsApp&apos;ta davet et
         </button>
       </div>
+
+      {favoriler && favoriler.length > 0 ? (
+        <div>
+          <h2 className="flex items-center gap-1.5 text-base font-bold text-white">
+            <Heart className="h-4 w-4 fill-[#FF5A36] text-[#FF5A36]" aria-hidden="true" />
+            Favori mekanlarım
+          </h2>
+          <div className="-mx-4 mt-2.5 flex gap-3 overflow-x-auto px-4 pb-1">
+            {favoriler.map((mekan) => (
+              <a
+                key={mekan.id}
+                href={`/mekan/${mekan.slug}`}
+                className="flex w-20 shrink-0 flex-col items-center gap-1.5 text-center"
+              >
+                <div
+                  className="h-16 w-16 overflow-hidden rounded-2xl bg-slate-900"
+                  style={{
+                    backgroundImage: mekan.logoUrl
+                      ? undefined
+                      : `linear-gradient(155deg, ${mekan.markaRengi ?? "#6366F1"} 0%, #0F172A 100%)`,
+                  }}
+                >
+                  {mekan.logoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={mekan.logoUrl} alt="" className="h-full w-full object-cover" />
+                  ) : null}
+                </div>
+                <span className="line-clamp-2 text-[11px] font-medium text-slate-200">
+                  {mekan.ad}
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div>
         <h2 className="text-base font-bold text-white">Rozet vitrini</h2>

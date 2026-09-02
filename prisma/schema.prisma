@@ -179,6 +179,24 @@ model Business {
   vardiyaGeceAktif  Boolean @default(true)
   vardiyaGeceSaat   String  @default("23:00")
 
+  /// Bölgesel push bildirim hakkı — ÖDEME ENTEGRASYONU YOK, superadmin
+  /// panelinden elle yükleniyor (bkz. AppUser.plusUyeMi'nin üstündeki aynı
+  /// gerekçe). Her "Flaş Bildirim Gönder" bir kredi düşürür.
+  pushKredisi Int @default(0)
+
+  /// Doluysa ve içinde bulunulan haftaya denk geliyorsa Keşfet'in Hero
+  /// Banner'ında bu işletme öne çıkar (bkz. lib/sponsorluk.ts). Herhangi
+  /// bir HAFTANIN pazartesisi yeterli — yalnızca "hangi hafta" bilgisini
+  /// taşıyor, dolayısıyla superadmin bunu ileri bir tarihe kurup
+  /// zamanlayabilir.
+  sponsorHaftasi DateTime?
+
+  /// Biyerlere Plus üyelerinin günde bir kez ücretsiz kahve talep
+  /// edebildiği anlaşmalı işletme mi. Kapalıyken Plus üyeler burada hak
+  /// kullanamaz — bu, Plus'ın "her yerde geçer" gibi yanlış bir vaat
+  /// vermesini önlüyor.
+  biyerlerePlusOrtagi Boolean @default(false)
+
   createdAt DateTime @default(now())
 
   account              Account               @relation(fields: [accountId], references: [id], onDelete: Cascade)
@@ -200,9 +218,33 @@ model Business {
   checklistCompletions ChecklistCompletion[]
   duyurular            Duyuru[]
   appVisits            AppVisit[]
+  favorileyenler       AppFavorite[]
+  rotaDuraklari        RotaDurak[]
+  etkilesimler         MekanEtkilesim[]
 
   @@index([accountId])
   @@map("businesses")
+}
+
+/// Biyerlere tarafında bir mekanla ilgili ölçülen etkileşim — panelin
+/// "Biyerlere bu hafta" istatistik kartının ham verisi.
+///
+/// Tek tablo, iki tür ("goruntuleme" | "yolTarifi"): ayrı tablolar açmak
+/// yalnızca WHERE tur = '...' farkı olan iki neredeyse özdeş tabloya
+/// bölünmek olurdu. SurveyView (panelin kendi görüntüleme sayacı) ile
+/// KARIŞTIRILMASIN — o anket ekranı için, bu Biyerlere keşfet/mekan
+/// ekranları için.
+model MekanEtkilesim {
+  id         String   @id @default(cuid())
+  businessId String
+  /// "goruntuleme" | "yolTarifi"
+  tur        String
+  createdAt  DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, tur, createdAt])
+  @@map("mekan_etkilesimleri")
 }
 
 /// Karşılama ekranında ayrı, tıklanması gereken bir kart olarak çıkan
@@ -1062,6 +1104,24 @@ model AppUser {
   /// kazanması için ayrıca bir "hoş geldin" ödülü var (bkz. lib/davet.ts).
   referredById String?
 
+  /// Bildirim izni verdiğinde SON bilinen konum — yalnızca bunun için:
+  /// "Bölgesel Push" bir işletmenin çevresindeki ABONE kullanıcılara
+  /// ulaşmalı, ama kimin nerede olduğunu sürekli izlemek KVKK'ya aykırı
+  /// aşırı bir toplama olurdu. Bu yüzden yalnızca push ABONESİ olan
+  /// kullanıcıda, yalnızca uygulama zaten konum izni istediğinde (Keşfet/
+  /// Harita) güncellenir — ayrı bir arka plan takibi YOK. Abonelik
+  /// kapatılırsa (bkz. AppPushSubscription.disabledAt) bu alanlar okunmaz.
+  sonBilinenEnlem    Float?
+  sonBilinenBoylam   Float?
+  sonKonumGuncelleme DateTime?
+
+  /// Biyerlere Plus üyeliği — ŞU AN İÇİN ödeme sağlayıcısı bağlı değil,
+  /// yalnızca superadmin panelinden elle işaretleniyor (bkz. panelin B2B
+  /// tarafındaki manuel havale/Payment akışıyla aynı prensip: gerçek
+  /// tahsilat entegre olana kadar durum elle yönetiliyor).
+  plusUyeMi Boolean   @default(false)
+  plusBitis DateTime?
+
   createdAt DateTime @default(now())
 
   referredBy AppUser?   @relation("Davetler", fields: [referredById], references: [id], onDelete: SetNull)
@@ -1070,8 +1130,103 @@ model AppUser {
   kuponlar   Coupon[]
   rozetler   AppBadge[]
   yorumlar   Feedback[]
+  favoriler  AppFavorite[]
+  rotaTamamlamalari RotaTamamlama[]
+  pushAbonelikleri  AppPushSubscription[]
 
   @@map("app_users")
+}
+
+/// Kullanıcının kaydettiği ("favorilediği") mekanlar.
+///
+/// Ayrı bir tablo — Business'a bir "favoriAppUserIds" dizisi eklemek de
+/// olurdu ama o zaman "bu kullanıcının favorileri" sorusu TÜM işletmeleri
+/// taramayı gerektirirdi. Junction tablo ikisini de indeksli tutuyor.
+model AppFavorite {
+  id         String   @id @default(cuid())
+  appUserId  String
+  businessId String
+  createdAt  DateTime @default(now())
+
+  appUser  AppUser  @relation(fields: [appUserId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  /// Aynı mekanı iki kez favorilemek "favorilikten çıkar" gibi
+  /// davranmalı, yeni bir kayıt açmamalı.
+  @@unique([appUserId, businessId])
+  @@index([businessId])
+  @@map("app_favorites")
+}
+
+/// Platform düzeyinde küratörlü tematik mekan koleksiyonu
+/// ("Kadıköy 5 Kafe Turu" gibi). Birden çok kiracının işletmesini
+/// kapsadığı için hesap bazlı değil, superadmin tarafından kuruluyor.
+model Rota {
+  id         String   @id @default(cuid())
+  slug       String   @unique
+  ad         String
+  aciklama   String?
+  gorselUrl  String?
+  aktif      Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  duraklar     RotaDurak[]
+  tamamlamalar RotaTamamlama[]
+
+  @@map("rotalar")
+}
+
+/// Bir rotanın durakları — sıralı, bir işletme birden çok rotada olabilir.
+model RotaDurak {
+  id         String @id @default(cuid())
+  rotaId     String
+  businessId String
+  sira       Int    @default(0)
+
+  rota     Rota     @relation(fields: [rotaId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([rotaId, businessId])
+  @@index([businessId])
+  @@map("rota_duraklari")
+}
+
+/// Bir kullanıcının bir rotadaki TÜM durakları doğrulanmış ziyaretle
+/// tamamladığı an. Ayrı bir tablo — ROZETLER (lib/rozet.ts) sabit, kapalı
+/// bir liste; rotalar ise superadmin istediği kadar açıp kapatabilen açık
+/// uçlu bir küme, o listeye karıştırılamaz.
+model RotaTamamlama {
+  id          String   @id @default(cuid())
+  rotaId      String
+  appUserId   String
+  completedAt DateTime @default(now())
+
+  rota    Rota    @relation(fields: [rotaId], references: [id], onDelete: Cascade)
+  appUser AppUser @relation(fields: [appUserId], references: [id], onDelete: Cascade)
+
+  @@unique([rotaId, appUserId])
+  @@map("rota_tamamlamalari")
+}
+
+/// Biyerlere tüketicisinin Web Push aboneliği.
+///
+/// Panelin PushSubscription'ı (bkz. yukarısı) `User`'a (personel) bağlı;
+/// bu ise `AppUser`a (tüketici) bağlı — iki dünya burada da birbirine
+/// karışmıyor (aynı ayrım Bearer/çerez oturumlarında da var).
+model AppPushSubscription {
+  id             String    @id @default(cuid())
+  appUserId      String
+  endpoint       String    @unique
+  p256dh         String
+  auth           String
+  disabledAt     DateTime?
+  disabledReason String?
+  createdAt      DateTime  @default(now())
+
+  appUser AppUser @relation(fields: [appUserId], references: [id], onDelete: Cascade)
+
+  @@index([appUserId])
+  @@map("app_push_subscriptions")
 }
 
 /// Doğrulanmış masa ziyareti.
