@@ -3,7 +3,9 @@ import Link from "next/link";
 import { requireTenant, visibleBusinesses } from "@/lib/auth";
 import { modulTonu } from "@/lib/modul-rengi";
 import { getBusinessStats, type BusinessStats } from "@/lib/stats";
+import { biyerlereIstatistikGetir } from "@/lib/biyerlere-istatistik";
 import { prisma } from "@/lib/db";
+import { BiyerlereIstatistikKarti } from "./BiyerlereIstatistikKarti";
 import {
   Card,
   CardHeader,
@@ -94,6 +96,10 @@ export default async function AdminHomePage({
       : businesses;
 
   const stats = await getBusinessStats(secili.map((b) => b.id));
+  const biyerlereGoster = user.moduller.includes("kesfet");
+  const biyerlereIstatistik = biyerlereGoster
+    ? await biyerlereIstatistikGetir(secili.map((b) => b.id))
+    : null;
   const kapsamAdi =
     secili.length === 1 ? secili[0].name : businesses.length === 0 ? "Henüz işletme yok" : "Tüm işletmeler";
 
@@ -331,6 +337,8 @@ export default async function AdminHomePage({
             </div>
           ) : null}
         </Card>
+
+        {biyerlereIstatistik ? <BiyerlereIstatistikKarti istatistik={biyerlereIstatistik} /> : null}
       </section>
 
       <Card padded={false}>
