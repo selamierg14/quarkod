@@ -25,8 +25,10 @@ export function QrIsareti({
         position: "absolute",
         width: kose,
         height: kose,
-        border: `${cizgi}px solid ${renk}`,
-        borderRadius: boyut * 0.06,
+        borderWidth: cizgi,
+        borderStyle: "solid",
+        borderColor: renk,
+        borderRadius: Math.max(1, boyut * 0.06),
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -37,8 +39,8 @@ export function QrIsareti({
         style={{
           width: kose * 0.22,
           height: kose * 0.22,
-          background: renk,
-          borderRadius: boyut * 0.02,
+          backgroundColor: renk,
+          borderRadius: Math.max(1, boyut * 0.02),
         }}
       />
     </div>
@@ -63,8 +65,8 @@ export function QrIsareti({
           bottom: boyut * 0.09,
           width: nokta,
           height: nokta,
-          background: renk,
-          borderRadius: boyut * 0.03,
+          backgroundColor: renk,
+          borderRadius: Math.max(1, boyut * 0.03),
           display: "flex",
         }}
       />
