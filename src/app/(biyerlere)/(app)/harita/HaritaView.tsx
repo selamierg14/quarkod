@@ -26,15 +26,32 @@ function pinRengi(mekan: MekanOzet): string {
   if (mekan.etkinlikler.length > 0) return "#10B981";
   if (mekan.tur === "yeme_icme") return "#F59E0B";
   if (mekan.tur === "balikci") return "#0EA5E9";
+  if (mekan.tur === "gece_kulubu") return "#8B5CF6";
   return "#6366F1";
 }
 
-function pinIkonu(renk: string): L.DivIcon {
+/**
+ * Pindeki emoji — türe bağlı, "bu şu an bir şey mi dönüyor" durumundan
+ * (pinRengi) BAĞIMSIZ. Düz bir renkli nokta "burada bir yer var" der ama
+ * "ne tür bir yer" sorusuna cevap vermez; emoji o boşluğu dolduruyor,
+ * renk halkası da hangi durumda olduğunu (canlı müzik / etkinlik) taşımaya
+ * devam ediyor — ikisi çakışmadan aynı pinde birlikte okunuyor.
+ */
+function pinEmoji(mekan: MekanOzet): string {
+  if (mekan.tur === "balikci") return "🐟";
+  if (mekan.tur === "gece_kulubu") return "🍸";
+  if (mekan.tur === "yeme_icme") return "☕";
+  return "📍";
+}
+
+function pinIkonu(mekan: MekanOzet): L.DivIcon {
+  const renk = pinRengi(mekan);
+  const emoji = pinEmoji(mekan);
   return L.divIcon({
-    html: `<div style="width:16px;height:16px;border-radius:9999px;background:${renk};box-shadow:0 0 0 3px rgba(24,25,30,0.9), 0 0 12px ${renk}99;"></div>`,
+    html: `<div style="width:32px;height:32px;border-radius:9999px;background:${renk};display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.45), 0 0 0 3px rgba(24,25,30,0.55);">${emoji}</div>`,
     className: "",
-    iconSize: [16, 16],
-    iconAnchor: [8, 8],
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
   });
 }
 
@@ -136,7 +153,7 @@ export function HaritaView() {
     for (const mekan of mekanlar) {
       if (mekan.konum.enlem === null || mekan.konum.boylam === null) continue;
       const marker = L.marker([mekan.konum.enlem, mekan.konum.boylam], {
-        icon: pinIkonu(pinRengi(mekan)),
+        icon: pinIkonu(mekan),
       })
         .addTo(harita)
         .on("click", () => setSecili(mekan));

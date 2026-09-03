@@ -117,10 +117,10 @@ export function ProfilIcerik() {
           {kullanici.name.charAt(0).toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">
-          <h1 className="flex items-center gap-1.5 truncate text-lg font-bold text-white">
-            {kullanici.name}
+          <h1 className="flex min-w-0 items-center gap-1.5 text-lg font-bold text-white">
+            <span className="min-w-0 truncate">{kullanici.name}</span>
             {oturum.durum === "girisli" && oturum.kullanici.plusUyeMi ? (
-              <span className="rounded-full bg-[#F59E0B]/15 px-2 py-0.5 text-[11px] font-semibold text-[#F59E0B]">
+              <span className="shrink-0 whitespace-nowrap rounded-full bg-[#F59E0B]/15 px-2 py-0.5 text-[11px] font-semibold text-[#F59E0B]">
                 👑 Plus
               </span>
             ) : null}
