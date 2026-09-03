@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "Biyerlere",
+    "slug": "biyerlere",
+    "scheme": "biyerlere",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#121214",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.quarkod.biyerlere",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Yakınındaki mekanları göstermek ve masadaki karekodu okuttuğunda ziyaretini doğrulamak için konumunu kullanıyoruz.",
+        "NSCameraUsageDescription": "Masadaki karekodu okutup ziyaretini doğrulamak için kamerayı kullanıyoruz."
+      }
+    },
+    "android": {
+      "package": "com.quarkod.biyerlere",
+      "adaptiveIcon": {
+        "backgroundColor": "#121214",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#121214",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180
+        }
+      ]
+    ]
+  }
+}
