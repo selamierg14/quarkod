@@ -293,6 +293,23 @@ export function panelMenusu(
         { href: "/admin/kullanicilar/ekle", label: "Ekle" },
       ],
     });
+  } else if (role === "bolge") {
+    // Bölge müdürü ne "yonetici" (owner/superadmin) ne tek işletmeli bir
+    // "manager" — birden fazla işletmeye bağlı olduğu için manager'daki
+    // gibi TEK bir ayar sayfasına kısayol veremeyiz. Önceden bu role için
+    // burada HİÇ link yoktu: sayfa (/admin/isletmeler) visibleBusinesses
+    // ile zaten doğru kısıtlanıyordu ama menüden bulunamıyordu — bölge
+    // müdürü kendi işletmelerine giden bir yolu keşfedemiyordu.
+    yonetim.push({ href: "/admin/isletmeler", label: "İşletmelerim", ikon: "bina" });
+    yonetim.push({
+      href: "/admin/kullanicilar",
+      label: "Kullanıcılar",
+      ikon: "kisi",
+      altLinkler: [
+        { href: "/admin/kullanicilar", label: "Listele", exact: true },
+        { href: "/admin/kullanicilar/ekle", label: "Ekle" },
+      ],
+    });
   }
 
   // Vardiya çizelgesi ve görev şablonu yalnızca planlayan tarafta (garson

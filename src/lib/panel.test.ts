@@ -3,8 +3,13 @@ import { acilabilirRoller, aktifMi, panelMenusu, panelModu } from "./panel";
 import { MODUL_ANAHTARLARI } from "./moduller";
 
 /** Menüdeki tüm bağlantı adreslerini düz listeye indirger. */
-function adresler(modu: Parameters<typeof panelMenusu>[0], role: Parameters<typeof panelMenusu>[1]) {
-  return panelMenusu(modu, role).flatMap((g) =>
+function adresler(
+  modu: Parameters<typeof panelMenusu>[0],
+  role: Parameters<typeof panelMenusu>[1],
+  moduller?: Parameters<typeof panelMenusu>[2],
+  tekIsletmeId?: Parameters<typeof panelMenusu>[3],
+) {
+  return panelMenusu(modu, role, moduller, tekIsletmeId).flatMap((g) =>
     g.linkler.flatMap((l) => [l.href, ...(l.altLinkler?.map((alt) => alt.href) ?? [])]),
   );
 }
@@ -78,6 +83,18 @@ describe("kiracı menüsü", () => {
     expect(manager).not.toContain("/admin/kullanicilar");
     expect(manager).not.toContain("/admin/izinler");
     expect(manager).not.toContain("/admin/kiyaslama");
+  });
+
+  it("bölge müdürü kendi işletmelerine giden bir bağlantı görür", () => {
+    // Önceden "yonetici" (owner/superadmin) da değil, tek işletmeli bir
+    // "manager" da değilse (bölge müdürü ikisi de değil) menüde HİÇ
+    // işletme bağlantısı yoktu — sayfa (visibleBusinesses ile) doğru
+    // çalışıyordu ama sidebar'dan keşfedilemiyordu.
+    const tekIsletmeli = adresler("kiraci", "bolge", undefined, "isletme-1");
+    expect(tekIsletmeli).toContain("/admin/isletmeler");
+
+    const cokIsletmeli = adresler("kiraci", "bolge");
+    expect(cokIsletmeli).toContain("/admin/isletmeler");
   });
 
   it("kapalı modülün menüde hiç bağlantısı olmaz", () => {
