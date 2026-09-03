@@ -7,7 +7,7 @@
  * gösterip "sayfa çalışıyor, veri geliyor" hissini anında veriyor.
  */
 export function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded-lg bg-slate-800/80 ${className}`} />;
+  return <div className={`animate-pulse rounded-lg bg-white/5 ${className}`} />;
 }
 
 /**

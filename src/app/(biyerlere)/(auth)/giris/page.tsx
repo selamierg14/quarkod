@@ -40,45 +40,45 @@ export default function GirisPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-white">Tekrar hoş geldin</h1>
-      <p className="mt-1 text-small text-slate-400">
+      <p className="mt-1 text-small text-gray-400">
         Şehrindeki mekanları keşfetmeye devam et.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
         <label className="flex flex-col gap-1.5">
-          <span className="text-caption font-medium text-slate-300">Kullanıcı adı</span>
+          <span className="text-caption font-medium text-gray-300">Kullanıcı adı</span>
           <input
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             autoComplete="username"
             required
-            className="rounded-control border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none focus:border-[#6366F1]"
+            className="rounded-control border border-white/15 bg-[#24262E] px-4 py-3 text-white outline-none focus:border-[#6366F1]"
           />
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="text-caption font-medium text-slate-300">Şifre</span>
+          <span className="text-caption font-medium text-gray-300">Şifre</span>
           <input
             type="password"
             value={sifre}
             onChange={(e) => setSifre(e.target.value)}
             autoComplete="current-password"
             required
-            className="rounded-control border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none focus:border-[#6366F1]"
+            className="rounded-control border border-white/15 bg-[#24262E] px-4 py-3 text-white outline-none focus:border-[#6366F1]"
           />
         </label>
 
-        {hata ? <p className="text-small text-[#FF5A36]">{hata}</p> : null}
+        {hata ? <p className="text-small text-[#FF6B4A]">{hata}</p> : null}
 
         <button
           type="submit"
           disabled={gonderiliyor}
-          className="mt-2 rounded-control bg-[#6366F1] px-5 py-3.5 text-base font-semibold text-white transition active:scale-[0.99] disabled:opacity-60"
+          className="mt-2 rounded-control bg-[#6366F1] px-5 py-3.5 text-base font-semibold text-white transition active:scale-[0.97] duration-150 ease-out disabled:opacity-60"
         >
           {gonderiliyor ? "Giriş yapılıyor…" : "Giriş yap"}
         </button>
       </form>
 
-      <p className="mt-6 text-center text-small text-slate-400">
+      <p className="mt-6 text-center text-small text-gray-400">
         Hesabın yok mu?{" "}
         <Link href="/kayit" className="font-semibold text-[#818CF8]">
           Ücretsiz kaydol

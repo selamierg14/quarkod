@@ -56,9 +56,9 @@ export function KuponKarti({ kupon }: { kupon: Kupon }) {
   const suresiDolmusMu = kalan <= 0;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/85">
-      <div className="flex items-center gap-2.5 border-b border-slate-800 px-4 py-3">
-        <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-slate-800">
+    <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#24262E]/85">
+      <div className="flex items-center gap-2.5 border-b border-white/10 px-4 py-3">
+        <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-white/5">
           {kupon.mekan.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={kupon.mekan.logoUrl} alt="" className="h-full w-full object-cover" />
@@ -84,7 +84,7 @@ export function KuponKarti({ kupon }: { kupon: Kupon }) {
 
         <p
           className={`text-caption font-medium ${
-            suresiDolmusMu ? "text-[#FF5A36]" : "text-slate-400"
+            suresiDolmusMu ? "text-[#FF6B4A]" : "text-gray-400"
           }`}
         >
           {suresiDolmusMu ? "Kod süresi doldu — sayfayı yenile" : `${sureYaz(kalan)} kaldı`}

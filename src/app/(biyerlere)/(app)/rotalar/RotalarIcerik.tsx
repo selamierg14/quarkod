@@ -24,13 +24,13 @@ export function RotaKarti({ rota }: { rota: RotaOzet }) {
   return (
     <a
       href={`/rotalar/${rota.slug}`}
-      className="block rounded-2xl border border-slate-800 bg-slate-900/85 p-4"
+      className="block rounded-2xl border border-white/10 bg-[#24262E]/85 p-4 transition active:scale-[0.97] duration-150 ease-out"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="font-bold text-white">{rota.ad}</h3>
           {rota.aciklama ? (
-            <p className="mt-0.5 line-clamp-2 text-small text-slate-400">{rota.aciklama}</p>
+            <p className="mt-0.5 line-clamp-2 text-small text-gray-400">{rota.aciklama}</p>
           ) : null}
         </div>
         {rota.tamamlandiMi ? (
@@ -44,8 +44,8 @@ export function RotaKarti({ rota }: { rota: RotaOzet }) {
         {rota.duraklar.slice(0, 6).map((d) => (
           <div
             key={d.id}
-            className={`h-8 w-8 overflow-hidden rounded-full border-2 bg-slate-800 ${
-              rota.ziyaretEdilenler.includes(d.businessId) ? "border-[#10B981]" : "border-slate-900"
+            className={`h-8 w-8 overflow-hidden rounded-full border-2 bg-white/5 ${
+              rota.ziyaretEdilenler.includes(d.businessId) ? "border-[#10B981]" : "border-white/10"
             }`}
           >
             {d.logoUrl ? (
@@ -57,13 +57,13 @@ export function RotaKarti({ rota }: { rota: RotaOzet }) {
       </div>
 
       <div className="mt-3">
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5">
           <div
             className="h-full rounded-full bg-[#818CF8] transition-[width]"
             style={{ width: `${yuzde}%` }}
           />
         </div>
-        <p className="mt-1.5 text-caption text-slate-500">
+        <p className="mt-1.5 text-caption text-gray-400">
           {ilerleme}/{toplam} durak gezildi
         </p>
       </div>
@@ -88,8 +88,8 @@ export function RotalarIcerik() {
 
   if (rotalar.length === 0) {
     return (
-      <p className="mt-3 rounded-2xl border border-dashed border-slate-800 p-6 text-center text-small text-slate-500">
-        <MapPinned className="mx-auto mb-2 h-6 w-6 text-slate-600" aria-hidden="true" />
+      <p className="mt-3 rounded-2xl border border-dashed border-white/10 p-6 text-center text-small text-gray-400">
+        <MapPinned className="mx-auto mb-2 h-6 w-6 text-gray-400" aria-hidden="true" />
         Henüz bir rota yok — yakında burada olacak!
       </p>
     );

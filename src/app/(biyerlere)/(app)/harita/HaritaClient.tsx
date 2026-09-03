@@ -13,7 +13,7 @@ import dynamic from "next/dynamic";
 const HaritaView = dynamic(() => import("./HaritaView").then((m) => m.HaritaView), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[calc(100dvh-8.5rem)] items-center justify-center text-small text-slate-500">
+    <div className="flex h-[calc(100dvh-8.5rem)] items-center justify-center text-small text-gray-400">
       Harita yükleniyor…
     </div>
   ),

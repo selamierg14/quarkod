@@ -27,12 +27,12 @@ export default async function EtkinliklerPage() {
   return (
     <div>
       <h1 className="text-xl font-bold text-white">Etkinlikler</h1>
-      <p className="mt-1 text-small text-slate-400">
+      <p className="mt-1 text-small text-gray-400">
         Şehirdeki mekanlardan bu haftaki canlı müzik, indirim ve özel geceler.
       </p>
 
       {etkinlikler.length === 0 ? (
-        <p className="mt-6 rounded-2xl border border-dashed border-slate-800 p-6 text-center text-small text-slate-500">
+        <p className="mt-6 rounded-2xl border border-dashed border-white/10 p-6 text-center text-small text-gray-400">
           Şu an planlanmış bir etkinlik yok — yakında burada olacak!
         </p>
       ) : (
@@ -41,14 +41,14 @@ export default async function EtkinliklerPage() {
             <li key={e.id}>
               <a
                 href={`/mekan/${e.mekan.slug}`}
-                className="flex gap-3 rounded-2xl border border-slate-800 bg-slate-900/85 p-3.5"
+                className="flex gap-3 rounded-2xl border border-white/10 bg-[#24262E]/85 p-3.5"
               >
                 <div
-                  className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-slate-800"
+                  className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-white/5"
                   style={
                     e.gorselUrl
                       ? undefined
-                      : { backgroundImage: `linear-gradient(155deg, ${e.mekan.markaRengi} 0%, #0F172A 100%)` }
+                      : { backgroundImage: `linear-gradient(155deg, ${e.mekan.markaRengi} 0%, #18191E 100%)` }
                   }
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -60,9 +60,9 @@ export default async function EtkinliklerPage() {
                     {tarihEtiketi(e.baslangic, e.bitis) ?? "Devam ediyor"}
                   </p>
                   <p className="mt-0.5 font-semibold text-white">{e.baslik}</p>
-                  <p className="truncate text-caption text-slate-400">{e.mekan.ad}</p>
+                  <p className="truncate text-caption text-gray-400">{e.mekan.ad}</p>
                   {e.aciklama ? (
-                    <p className="mt-1 line-clamp-2 text-small text-slate-300">{e.aciklama}</p>
+                    <p className="mt-1 line-clamp-2 text-small text-gray-300">{e.aciklama}</p>
                   ) : null}
                 </div>
               </a>

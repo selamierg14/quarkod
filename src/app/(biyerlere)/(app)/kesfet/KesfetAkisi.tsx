@@ -76,14 +76,14 @@ export function KesfetAkisi({ ilkVeri }: { ilkVeri: Liste }) {
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search
-            className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500"
+            className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400"
             aria-hidden="true"
           />
           <input
             value={arama}
             onChange={(e) => setArama(e.target.value)}
             placeholder="Mekan ara…"
-            className="w-full rounded-control border border-slate-800 bg-slate-900 py-2.5 pr-3 pl-9 text-small text-white outline-none placeholder:text-slate-500 focus:border-[#6366F1]"
+            className="w-full rounded-control border border-white/10 bg-[#24262E] py-2.5 pr-3 pl-9 text-small text-white outline-none placeholder:text-gray-400 focus:border-[#6366F1]"
           />
         </div>
         <button
@@ -92,7 +92,7 @@ export function KesfetAkisi({ ilkVeri }: { ilkVeri: Liste }) {
           className={`flex items-center gap-1.5 rounded-control border px-3 text-small font-medium transition ${
             filtreAktif
               ? "border-[#6366F1] bg-[#6366F1]/15 text-[#818CF8]"
-              : "border-slate-800 text-slate-300"
+              : "border-white/10 text-gray-300"
           }`}
         >
           <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
@@ -103,14 +103,14 @@ export function KesfetAkisi({ ilkVeri }: { ilkVeri: Liste }) {
       <div className="flex gap-2">
         <Link
           href="/etkinlikler"
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-control border border-slate-800 bg-slate-900/85 py-2.5 text-small font-medium text-slate-200"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-control border border-white/10 bg-[#24262E]/85 py-2.5 text-small font-medium text-gray-200"
         >
           <CalendarDays className="h-4 w-4 text-[#818CF8]" aria-hidden="true" />
           Etkinlikler
         </Link>
         <Link
           href="/rotalar"
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-control border border-slate-800 bg-slate-900/85 py-2.5 text-small font-medium text-slate-200"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-control border border-white/10 bg-[#24262E]/85 py-2.5 text-small font-medium text-gray-200"
         >
           <MapPinned className="h-4 w-4 text-[#EC4899]" aria-hidden="true" />
           Rotalar
@@ -121,7 +121,7 @@ export function KesfetAkisi({ ilkVeri }: { ilkVeri: Liste }) {
         <button
           type="button"
           onClick={konumIste}
-          className="rounded-control border border-dashed border-slate-700 px-4 py-3 text-start text-small text-slate-300"
+          className="rounded-control border border-dashed border-white/15 px-4 py-3 text-start text-small text-gray-300"
         >
           📍 Konumunu paylaş, sana en yakın mekanları görelim.
         </button>
@@ -136,7 +136,7 @@ export function KesfetAkisi({ ilkVeri }: { ilkVeri: Liste }) {
           <h2 className="text-base font-bold text-white">
             {konum ? "Yakınındaki mekanlar" : "Öne çıkan mekanlar"}
           </h2>
-          <span className="text-caption text-slate-500">{veri.adet} mekan</span>
+          <span className="text-caption text-gray-400">{veri.adet} mekan</span>
         </div>
 
         {yukleniyor ? (
@@ -146,7 +146,7 @@ export function KesfetAkisi({ ilkVeri }: { ilkVeri: Liste }) {
             ))}
           </div>
         ) : veri.mekanlar.length === 0 ? (
-          <p className="mt-4 text-center text-small text-slate-500">
+          <p className="mt-4 text-center text-small text-gray-400">
             Bu ölçütlere uyan mekan bulunamadı. Filtreleri genişletmeyi dene.
           </p>
         ) : (

@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 
 export default function BiyerlereLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-dvh bg-[#0F172A] text-slate-100">
+    <div className="min-h-dvh bg-[#18191E] text-white">
       <OturumSaglayici>{children}</OturumSaglayici>
     </div>
   );

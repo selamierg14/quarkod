@@ -26,7 +26,7 @@ export function YolTarifiButonu({ businessId, href }: { businessId: string; href
       target="_blank"
       rel="noopener noreferrer"
       onClick={say}
-      className="flex flex-col items-center gap-1.5 rounded-2xl border border-slate-800 bg-slate-900/85 py-3 text-[11px] font-medium text-slate-200"
+      className="flex flex-col items-center gap-1.5 rounded-2xl border border-white/10 bg-[#24262E]/85 py-3 text-[11px] font-medium text-gray-200"
     >
       <Navigation className="h-5 w-5 text-[#EC4899]" aria-hidden="true" />
       Yol tarifi

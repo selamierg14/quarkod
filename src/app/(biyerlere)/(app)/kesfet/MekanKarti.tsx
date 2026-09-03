@@ -23,14 +23,14 @@ export function MekanKarti({ mekan }: { mekan: MekanOzet }) {
   return (
     <Link
       href={`/mekan/${mekan.slug}`}
-      className="block overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/85 backdrop-blur-md transition active:scale-[0.99]"
+      className="block overflow-hidden rounded-2xl border border-white/10 bg-[#24262E]/85 backdrop-blur-md transition active:scale-[0.97] duration-150 ease-out"
     >
-      <div className="relative h-36 w-full bg-slate-800">
+      <div className="relative h-36 w-full bg-white/5">
         {mekan.kapakUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={mekan.kapakUrl} alt="" className="h-full w-full object-cover" />
         ) : null}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#18191E]/90 via-transparent to-transparent" />
 
         {oneCikanOzellik ? (
           <span
@@ -55,7 +55,7 @@ export function MekanKarti({ mekan }: { mekan: MekanOzet }) {
           <div className="min-w-0">
             <h3 className="truncate text-base font-bold text-white">{mekan.ad}</h3>
             {mekan.adres ? (
-              <p className="flex items-center gap-1 truncate text-[11px] text-slate-300">
+              <p className="flex items-center gap-1 truncate text-[11px] text-gray-300">
                 <MapPin className="h-3 w-3 shrink-0" aria-hidden="true" />
                 {mekan.adres}
               </p>
@@ -65,22 +65,22 @@ export function MekanKarti({ mekan }: { mekan: MekanOzet }) {
       </div>
 
       <div className="flex items-center justify-between px-3.5 py-2.5">
-        <div className="flex items-center gap-3 text-[13px] text-slate-300">
+        <div className="flex items-center gap-3 text-[13px] text-gray-300">
           {mekan.puan !== null ? (
             <span className="flex items-center gap-1 font-semibold text-white">
               <Star className="h-3.5 w-3.5 fill-[#F59E0B] text-[#F59E0B]" aria-hidden="true" />
               {mekan.puan.toFixed(1)}
             </span>
           ) : (
-            <span className="text-slate-500">Henüz puan yok</span>
+            <span className="text-gray-400">Henüz puan yok</span>
           )}
           {mekan.fiyatSegmenti ? (
-            <span className="text-slate-400">
+            <span className="text-gray-400">
               {mekan.fiyatSegmenti === "ucuz" ? "₺" : mekan.fiyatSegmenti === "orta" ? "₺₺" : "₺₺₺"}
             </span>
           ) : null}
         </div>
-        {mesafe ? <span className="text-[12px] font-medium text-slate-400">{mesafe}</span> : null}
+        {mesafe ? <span className="text-[12px] font-medium text-gray-400">{mesafe}</span> : null}
       </div>
     </Link>
   );
@@ -89,7 +89,7 @@ export function MekanKarti({ mekan }: { mekan: MekanOzet }) {
 /** `MekanKarti` ile aynı hatlar — liste henüz gelmemişken yerini tutuyor. */
 export function MekanKartiSkeleton() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/85">
+    <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#24262E]/85">
       <Skeleton className="h-36 w-full rounded-none" />
       <div className="flex items-center justify-between px-3.5 py-2.5">
         <Skeleton className="h-4 w-16" />

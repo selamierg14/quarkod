@@ -69,11 +69,11 @@ export function ProfilIcerik() {
   }
   if (oturum.durum === "cikisli") {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-800 p-6 text-center">
-        <p className="text-small text-slate-300">Profilini görmek için giriş yapmalısın.</p>
+      <div className="rounded-2xl border border-dashed border-white/10 p-6 text-center">
+        <p className="text-small text-gray-300">Profilini görmek için giriş yapmalısın.</p>
         <a
           href="/giris"
-          className="mt-3 inline-block rounded-control bg-[#6366F1] px-5 py-2.5 text-small font-semibold text-white"
+          className="mt-3 inline-block rounded-control bg-[#6366F1] px-5 py-2.5 text-small font-semibold text-white transition active:scale-[0.97] duration-150 ease-out"
         >
           Giriş yap
         </a>
@@ -133,38 +133,38 @@ export function ProfilIcerik() {
           type="button"
           onClick={cikisYap}
           aria-label="Çıkış yap"
-          className="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 hover:bg-white/5"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-gray-400 transition hover:bg-white/5 active:scale-[0.97] duration-150 ease-out"
         >
           <LogOut className="h-[18px] w-[18px]" aria-hidden="true" />
         </button>
       </div>
 
       <div className="grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/85 py-3">
+        <div className="rounded-2xl border border-white/10 bg-[#24262E]/85 py-3">
           <p className="text-lg font-bold text-white">{kullanici.puan}</p>
-          <p className="text-[11px] text-slate-400">Kaşif Puanı</p>
+          <p className="text-[11px] text-gray-400">Kaşif Puanı</p>
         </div>
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/85 py-3">
+        <div className="rounded-2xl border border-white/10 bg-[#24262E]/85 py-3">
           <p className="text-lg font-bold text-white">{kullanici.dogrulanmisZiyaret}</p>
-          <p className="text-[11px] text-slate-400">Doğrulanmış Ziyaret</p>
+          <p className="text-[11px] text-gray-400">Doğrulanmış Ziyaret</p>
         </div>
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/85 py-3">
+        <div className="rounded-2xl border border-white/10 bg-[#24262E]/85 py-3">
           <p className="text-lg font-bold text-white">{kullanici.cuzdandakiKupon}</p>
-          <p className="text-[11px] text-slate-400">Aktif Kupon</p>
+          <p className="text-[11px] text-gray-400">Aktif Kupon</p>
         </div>
       </div>
 
       {kullanici.sonrakiSeviyeyeKalan !== null ? (
-        <p className="text-center text-caption text-slate-500">
+        <p className="text-center text-caption text-gray-400">
           Sonraki seviyeye <span className="text-white">{kullanici.sonrakiSeviyeyeKalan}</span>{" "}
           puan kaldı
         </p>
       ) : null}
 
       {/* Viral davet kartı */}
-      <div className="rounded-2xl border border-slate-800 bg-gradient-to-br from-[#6366F1]/20 to-[#EC4899]/10 p-4">
+      <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#6366F1]/20 to-[#EC4899]/10 p-4">
         <p className="font-semibold text-white">Arkadaşını davet et, ikiniz de kazanın! 🎁</p>
-        <p className="mt-1 text-small text-slate-300">
+        <p className="mt-1 text-small text-gray-300">
           Davet kodunla kaydolan arkadaşın ve sen 100&apos;er puan kazanırsınız.
           {kullanici.davetEttigiKisiSayisi > 0
             ? ` Şimdiye kadar ${kullanici.davetEttigiKisiSayisi} kişi davet ettin.`
@@ -173,17 +173,17 @@ export function ProfilIcerik() {
         <button
           type="button"
           onClick={kopyala}
-          className="mt-3 flex w-full items-center justify-between rounded-control bg-black/20 px-3.5 py-2.5 text-small"
+          className="mt-3 flex w-full items-center justify-between rounded-control bg-white/10 px-3.5 py-2.5 text-small transition active:scale-[0.97] duration-150 ease-out"
         >
           <span className="font-mono font-semibold text-white">{kullanici.referralCode}</span>
-          <span className="text-caption text-slate-300">
+          <span className="text-caption text-gray-300">
             {davetKopyalandi ? "Kopyalandı ✓" : "Kodu kopyala"}
           </span>
         </button>
         <button
           type="button"
           onClick={davetPaylas}
-          className="mt-2 flex w-full items-center justify-center gap-2 rounded-control bg-[#6366F1] px-4 py-2.5 text-small font-semibold text-white"
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-control bg-[#6366F1] px-4 py-2.5 text-small font-semibold text-white transition active:scale-[0.97] duration-150 ease-out"
         >
           <Share2 className="h-4 w-4" aria-hidden="true" />
           WhatsApp&apos;ta davet et
@@ -193,7 +193,7 @@ export function ProfilIcerik() {
       {favoriler && favoriler.length > 0 ? (
         <div>
           <h2 className="flex items-center gap-1.5 text-base font-bold text-white">
-            <Heart className="h-4 w-4 fill-[#FF5A36] text-[#FF5A36]" aria-hidden="true" />
+            <Heart className="h-4 w-4 fill-[#FF6B4A] text-[#FF6B4A]" aria-hidden="true" />
             Favori mekanlarım
           </h2>
           <div className="-mx-4 mt-2.5 flex gap-3 overflow-x-auto px-4 pb-1">
@@ -201,14 +201,14 @@ export function ProfilIcerik() {
               <a
                 key={mekan.id}
                 href={`/mekan/${mekan.slug}`}
-                className="flex w-20 shrink-0 flex-col items-center gap-1.5 text-center"
+                className="flex w-20 shrink-0 flex-col items-center gap-1.5 text-center transition active:scale-[0.97] duration-150 ease-out"
               >
                 <div
-                  className="h-16 w-16 overflow-hidden rounded-2xl bg-slate-900"
+                  className="h-16 w-16 overflow-hidden rounded-2xl bg-[#24262E]"
                   style={{
                     backgroundImage: mekan.logoUrl
                       ? undefined
-                      : `linear-gradient(155deg, ${mekan.markaRengi ?? "#6366F1"} 0%, #0F172A 100%)`,
+                      : `linear-gradient(155deg, ${mekan.markaRengi ?? "#6366F1"} 0%, #18191E 100%)`,
                   }}
                 >
                   {mekan.logoUrl ? (
@@ -216,7 +216,7 @@ export function ProfilIcerik() {
                     <img src={mekan.logoUrl} alt="" className="h-full w-full object-cover" />
                   ) : null}
                 </div>
-                <span className="line-clamp-2 text-[11px] font-medium text-slate-200">
+                <span className="line-clamp-2 text-[11px] font-medium text-gray-200">
                   {mekan.ad}
                 </span>
               </a>
@@ -235,7 +235,7 @@ export function ProfilIcerik() {
               className={`flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-center ${
                 rozet.kazanildi
                   ? "border-[#F59E0B]/40 bg-[#F59E0B]/10"
-                  : "border-slate-800 bg-slate-900/50 opacity-40"
+                  : "border-white/10 bg-[#24262E]/50 opacity-40"
               }`}
             >
               <span className="text-2xl">🏅</span>

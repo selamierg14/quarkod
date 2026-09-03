@@ -65,11 +65,11 @@ export function BildirimlerIcerik() {
   }
   if (oturum.durum === "cikisli") {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-800 p-6 text-center">
-        <p className="text-small text-slate-300">Bildirimlerini görmek için giriş yapmalısın.</p>
+      <div className="rounded-2xl border border-dashed border-white/10 p-6 text-center">
+        <p className="text-small text-gray-300">Bildirimlerini görmek için giriş yapmalısın.</p>
         <a
           href="/giris"
-          className="mt-3 inline-block rounded-control bg-[#6366F1] px-5 py-2.5 text-small font-semibold text-white"
+          className="mt-3 inline-block rounded-control bg-[#6366F1] px-5 py-2.5 text-small font-semibold text-white transition active:scale-[0.97] duration-150 ease-out"
         >
           Giriş yap
         </a>
@@ -81,7 +81,7 @@ export function BildirimlerIcerik() {
   }
   if (ogeler.length === 0) {
     return (
-      <p className="mt-3 rounded-2xl border border-dashed border-slate-800 p-6 text-center text-small text-slate-500">
+      <p className="mt-3 rounded-2xl border border-dashed border-white/10 p-6 text-center text-small text-gray-400">
         Henüz bir bildirimin yok. Mekan keşfet, favori ekle, ziyaret et — buradan haberdar olursun.
       </p>
     );
@@ -95,17 +95,17 @@ export function BildirimlerIcerik() {
           <li key={oge.id}>
             <a
               href={oge.href}
-              className="flex items-start gap-3 rounded-2xl border border-slate-800 bg-slate-900/85 p-3.5"
+              className="flex items-start gap-3 rounded-2xl border border-white/10 bg-[#24262E]/85 p-3.5 transition active:scale-[0.97] duration-150 ease-out"
             >
-              <span className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/25 ${IKON_RENGI[oge.tur]}`}>
+              <span className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/5 ${IKON_RENGI[oge.tur]}`}>
                 <Ikon className="h-[18px] w-[18px]" aria-hidden="true" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-semibold text-white">{oge.baslik}</span>
                 {oge.aciklama ? (
-                  <span className="mt-0.5 block text-small text-slate-400">{oge.aciklama}</span>
+                  <span className="mt-0.5 block text-small text-gray-400">{oge.aciklama}</span>
                 ) : null}
-                <span className="mt-1 block text-[11px] text-slate-500">{goreliZaman(oge.tarih)}</span>
+                <span className="mt-1 block text-[11px] text-gray-400">{goreliZaman(oge.tarih)}</span>
               </span>
             </a>
           </li>

@@ -34,7 +34,7 @@ export function StoriesBar({ hikayeler }: { hikayeler: Hikaye[] }) {
             className="flex w-16 shrink-0 flex-col items-center gap-1.5"
           >
             <span className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-tr from-[#EC4899] via-[#6366F1] to-[#F59E0B] p-[2.5px]">
-              <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-[#0F172A] p-0.5">
+              <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-[#18191E] p-0.5">
                 {h.mekan.logoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -43,13 +43,13 @@ export function StoriesBar({ hikayeler }: { hikayeler: Hikaye[] }) {
                     className="h-full w-full rounded-full object-cover"
                   />
                 ) : (
-                  <span className="flex h-full w-full items-center justify-center rounded-full bg-slate-800 text-small font-bold text-white">
+                  <span className="flex h-full w-full items-center justify-center rounded-full bg-white/10 text-small font-bold text-white">
                     {h.mekan.ad.charAt(0)}
                   </span>
                 )}
               </span>
             </span>
-            <span className="w-full truncate text-center text-[11px] text-slate-300">
+            <span className="w-full truncate text-center text-[11px] text-gray-300">
               {h.mekan.ad}
             </span>
           </button>
@@ -58,11 +58,11 @@ export function StoriesBar({ hikayeler }: { hikayeler: Hikaye[] }) {
 
       {acik ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-6"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#18191E]/85 p-6"
           onClick={() => setAcikIndex(null)}
         >
           <div
-            className="w-full max-w-xs overflow-hidden rounded-2xl bg-slate-900 ring-1 ring-slate-700"
+            className="w-full max-w-xs overflow-hidden rounded-2xl bg-[#24262E] ring-1 ring-white/10"
             onClick={(e) => e.stopPropagation()}
           >
             {acik.duyuru.gorselUrl ? (
@@ -75,7 +75,7 @@ export function StoriesBar({ hikayeler }: { hikayeler: Hikaye[] }) {
               <p className="text-caption font-medium text-[#818CF8]">{acik.mekan.ad}</p>
               <h3 className="mt-1 text-base font-bold text-white">{acik.duyuru.baslik}</h3>
               {acik.duyuru.aciklama ? (
-                <p className="mt-1.5 text-small text-slate-300">{acik.duyuru.aciklama}</p>
+                <p className="mt-1.5 text-small text-gray-300">{acik.duyuru.aciklama}</p>
               ) : null}
               <a
                 href={`/mekan/${acik.mekan.slug}`}

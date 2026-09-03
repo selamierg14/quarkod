@@ -49,66 +49,66 @@ function KayitFormu() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-white">Biyerlere&apos;ye katıl</h1>
-      <p className="mt-1 text-small text-slate-400">
+      <p className="mt-1 text-small text-gray-400">
         Ücretsiz kaydol, puan biriktir, rozet ve kupon kazan.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
         <label className="flex flex-col gap-1.5">
-          <span className="text-caption font-medium text-slate-300">Adın</span>
+          <span className="text-caption font-medium text-gray-300">Adın</span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoComplete="name"
             required
-            className="rounded-control border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none focus:border-[#6366F1]"
+            className="rounded-control border border-white/15 bg-[#24262E] px-4 py-3 text-white outline-none focus:border-[#6366F1]"
           />
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="text-caption font-medium text-slate-300">Kullanıcı adı</span>
+          <span className="text-caption font-medium text-gray-300">Kullanıcı adı</span>
           <input
             value={username}
             onChange={(e) => setUsername(e.target.value.toLowerCase())}
             autoComplete="username"
             required
-            className="rounded-control border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none focus:border-[#6366F1]"
+            className="rounded-control border border-white/15 bg-[#24262E] px-4 py-3 text-white outline-none focus:border-[#6366F1]"
           />
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="text-caption font-medium text-slate-300">Şifre</span>
+          <span className="text-caption font-medium text-gray-300">Şifre</span>
           <input
             type="password"
             value={sifre}
             onChange={(e) => setSifre(e.target.value)}
             autoComplete="new-password"
             required
-            className="rounded-control border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none focus:border-[#6366F1]"
+            className="rounded-control border border-white/15 bg-[#24262E] px-4 py-3 text-white outline-none focus:border-[#6366F1]"
           />
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="text-caption font-medium text-slate-300">
-            Davet kodu <span className="text-slate-500">(isteğe bağlı)</span>
+          <span className="text-caption font-medium text-gray-300">
+            Davet kodu <span className="text-gray-400">(isteğe bağlı)</span>
           </span>
           <input
             value={davetKodu}
             onChange={(e) => setDavetKodu(e.target.value.toUpperCase())}
             placeholder="Bir arkadaşın davet etti mi?"
-            className="rounded-control border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none placeholder:text-slate-600 focus:border-[#6366F1]"
+            className="rounded-control border border-white/15 bg-[#24262E] px-4 py-3 text-white outline-none placeholder:text-gray-400 focus:border-[#6366F1]"
           />
         </label>
 
-        {hata ? <p className="text-small text-[#FF5A36]">{hata}</p> : null}
+        {hata ? <p className="text-small text-[#FF6B4A]">{hata}</p> : null}
 
         <button
           type="submit"
           disabled={gonderiliyor}
-          className="mt-2 rounded-control bg-[#6366F1] px-5 py-3.5 text-base font-semibold text-white transition active:scale-[0.99] disabled:opacity-60"
+          className="mt-2 rounded-control bg-[#6366F1] px-5 py-3.5 text-base font-semibold text-white transition active:scale-[0.97] duration-150 ease-out disabled:opacity-60"
         >
           {gonderiliyor ? "Kaydolunuyor…" : "Ücretsiz kaydol"}
         </button>
       </form>
 
-      <p className="mt-6 text-center text-small text-slate-400">
+      <p className="mt-6 text-center text-small text-gray-400">
         Zaten hesabın var mı?{" "}
         <Link href="/giris" className="font-semibold text-[#818CF8]">
           Giriş yap

@@ -51,11 +51,11 @@ export function FavoriButonu({ businessId }: { businessId: string }) {
       disabled={gonderiliyor}
       aria-label={gosterilenFavoriMi ? "Favorilerden çıkar" : "Favorile"}
       aria-pressed={gosterilenFavoriMi ?? false}
-      className="flex h-10 w-10 items-center justify-center rounded-full bg-black/40 backdrop-blur-sm transition active:scale-90 disabled:opacity-60"
+      className="flex h-11 w-11 items-center justify-center rounded-full bg-[#18191E]/50 backdrop-blur-sm transition active:scale-[0.97] duration-150 ease-out disabled:opacity-60"
     >
       <Heart
         className={`h-5 w-5 transition-colors ${
-          gosterilenFavoriMi ? "fill-[#FF5A36] text-[#FF5A36]" : "text-white"
+          gosterilenFavoriMi ? "fill-[#FF6B4A] text-[#FF6B4A]" : "text-white"
         }`}
         aria-hidden="true"
       />

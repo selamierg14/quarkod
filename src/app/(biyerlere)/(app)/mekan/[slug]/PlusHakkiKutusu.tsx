@@ -44,26 +44,26 @@ export function PlusHakkiKutusu({ businessId }: { businessId: string }) {
       </div>
 
       {durum === "alindi" ? (
-        <p className="mt-2 text-small text-slate-200">
+        <p className="mt-2 text-small text-gray-200">
           ✓ Bugünün ücretsiz kahve kuponun cüzdanına eklendi.
         </p>
       ) : plusUyesiMi ? (
         <>
-          <p className="mt-1 text-small text-slate-300">
+          <p className="mt-1 text-small text-gray-300">
             Plus üyesi olarak burada günde bir kez ücretsiz kahve alabilirsin.
           </p>
           <button
             type="button"
             onClick={talepEt}
             disabled={durum === "gonderiliyor"}
-            className="mt-3 w-full rounded-control bg-[#F59E0B] py-2.5 text-small font-semibold text-slate-950 disabled:opacity-60"
+            className="mt-3 w-full rounded-control bg-[#F59E0B] py-2.5 text-small font-semibold text-[#18191E] transition active:scale-[0.97] duration-150 ease-out disabled:opacity-60"
           >
             {durum === "gonderiliyor" ? "Kontrol ediliyor…" : "Bugünün kahvesini al"}
           </button>
           {hata ? <p className="mt-2 text-caption text-[#FCA5A5]">{hata}</p> : null}
         </>
       ) : (
-        <p className="mt-1 text-small text-slate-300">
+        <p className="mt-1 text-small text-gray-300">
           Biyerlere Plus üyeleri burada günde bir kez ücretsiz kahve alır.
         </p>
       )}

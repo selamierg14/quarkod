@@ -74,7 +74,7 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
       >
         <RefreshCw
           className={`h-5 w-5 ${
-            yenileniyor || cekmeMesafesi >= ESIK ? "animate-spin text-[#818CF8]" : "text-slate-500"
+            yenileniyor || cekmeMesafesi >= ESIK ? "animate-spin text-[#818CF8]" : "text-gray-400"
           }`}
           style={yenileniyor ? undefined : { transform: `rotate(${cekmeMesafesi * 3}deg)` }}
         />

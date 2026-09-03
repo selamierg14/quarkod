@@ -31,9 +31,9 @@ type CuzdanVerisi = {
 
 function DamgaKarti({ kart }: { kart: SadakatKarti }) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/85 p-4">
+    <div className="rounded-2xl border border-white/10 bg-[#24262E]/85 p-4">
       <div className="flex items-center gap-2.5">
-        <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-slate-800">
+        <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-white/5">
           {kart.mekan.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={kart.mekan.logoUrl} alt="" className="h-full w-full object-cover" />
@@ -41,7 +41,7 @@ function DamgaKarti({ kart }: { kart: SadakatKarti }) {
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-small font-semibold text-white">{kart.mekan.ad}</p>
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[11px] text-gray-400">
             {kart.kalanZiyaret} ziyaret sonra ücretsiz kahve!
           </p>
         </div>
@@ -51,7 +51,7 @@ function DamgaKarti({ kart }: { kart: SadakatKarti }) {
           <span
             key={i}
             className={`flex h-6 flex-1 items-center justify-center rounded-full text-[13px] ${
-              i < kart.damgaSayisi ? "bg-[#F59E0B]" : "bg-slate-800"
+              i < kart.damgaSayisi ? "bg-[#F59E0B]" : "bg-white/5"
             }`}
           >
             {i < kart.damgaSayisi ? "☕" : ""}
@@ -92,8 +92,8 @@ export function CuzdanIcerik() {
   }
   if (oturum.durum === "cikisli") {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-800 p-6 text-center">
-        <p className="text-small text-slate-300">Cüzdanını görmek için giriş yapmalısın.</p>
+      <div className="rounded-2xl border border-dashed border-white/10 p-6 text-center">
+        <p className="text-small text-gray-300">Cüzdanını görmek için giriş yapmalısın.</p>
         <a
           href="/giris"
           className="mt-3 inline-block rounded-control bg-[#6366F1] px-5 py-2.5 text-small font-semibold text-white"
@@ -112,7 +112,7 @@ export function CuzdanIcerik() {
       <section>
         <h2 className="text-base font-bold text-white">Aktif kuponlar</h2>
         {veri.kuponlar.length === 0 ? (
-          <p className="mt-2 text-small text-slate-500">
+          <p className="mt-2 text-small text-gray-400">
             Henüz kuponun yok. Mekanları keşfet, ziyaret et, kazan.
           </p>
         ) : (
@@ -149,12 +149,12 @@ export function CuzdanIcerik() {
               {veri.gecmisKuponlar.map((k) => (
                 <li
                   key={k.id}
-                  className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/50 px-3.5 py-2.5 text-small"
+                  className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#24262E]/50 px-3.5 py-2.5 text-small"
                 >
-                  <span className="text-slate-300">
+                  <span className="text-gray-300">
                     {k.mekan.ad} — {k.indirim}
                   </span>
-                  <span className="text-[11px] text-slate-500">
+                  <span className="text-[11px] text-gray-400">
                     {k.kullanildi ? "kullanıldı" : "süresi doldu"}
                   </span>
                 </li>

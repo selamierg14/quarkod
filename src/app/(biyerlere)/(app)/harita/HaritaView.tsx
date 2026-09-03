@@ -31,7 +31,7 @@ function pinRengi(mekan: MekanOzet): string {
 
 function pinIkonu(renk: string): L.DivIcon {
   return L.divIcon({
-    html: `<div style="width:16px;height:16px;border-radius:9999px;background:${renk};box-shadow:0 0 0 3px rgba(15,23,42,0.9), 0 0 12px ${renk}99;"></div>`,
+    html: `<div style="width:16px;height:16px;border-radius:9999px;background:${renk};box-shadow:0 0 0 3px rgba(24,25,30,0.9), 0 0 12px ${renk}99;"></div>`,
     className: "",
     iconSize: [16, 16],
     iconAnchor: [8, 8],
@@ -165,8 +165,8 @@ export function HaritaView() {
           className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mx-auto max-w-md px-4"
           role="dialog"
         >
-          <div className="flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/95 p-3 shadow-2xl backdrop-blur-md">
-            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-slate-800">
+          <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#24262E]/95 p-3 shadow-2xl backdrop-blur-md">
+            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-white/5">
               {secili.kapakUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={secili.kapakUrl} alt="" className="h-full w-full object-cover" />
@@ -174,7 +174,7 @@ export function HaritaView() {
             </div>
             <div className="min-w-0 flex-1">
               <h3 className="truncate text-small font-bold text-white">{secili.ad}</h3>
-              <p className="truncate text-[11px] text-slate-400">
+              <p className="truncate text-[11px] text-gray-400">
                 {secili.puan !== null ? `⭐ ${secili.puan.toFixed(1)}` : "Henüz puan yok"}
                 {secili.adres ? ` · ${secili.adres}` : ""}
               </p>
@@ -183,7 +183,7 @@ export function HaritaView() {
               href={`https://www.google.com/maps/dir/?api=1&destination=${secili.konum.enlem},${secili.konum.boylam}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="shrink-0 rounded-control border border-slate-700 px-3 py-2 text-caption font-semibold text-white"
+              className="shrink-0 rounded-control border border-white/15 px-3 py-2 text-caption font-semibold text-white"
             >
               Yol tarifi
             </a>

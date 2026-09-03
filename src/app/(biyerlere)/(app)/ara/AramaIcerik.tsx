@@ -57,25 +57,25 @@ export function AramaIcerik() {
     <div className="flex flex-col gap-5">
       <div className="relative">
         <Search
-          className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500"
+          className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400"
           aria-hidden="true"
         />
         <input
           value={arama}
           onChange={(e) => setArama(e.target.value)}
           placeholder="Mekan, mahalle ara…"
-          className="w-full rounded-control border border-slate-800 bg-slate-900 py-2.5 pr-3 pl-9 text-small text-white outline-none placeholder:text-slate-500 focus:border-[#6366F1]"
+          className="w-full rounded-control border border-white/10 bg-[#24262E] py-2.5 pr-3 pl-9 text-small text-white outline-none placeholder:text-gray-400 focus:border-[#6366F1]"
         />
       </div>
 
       <div>
-        <h2 className="text-caption font-semibold tracking-wide text-slate-400 uppercase">Kategori</h2>
+        <h2 className="text-caption font-semibold tracking-wide text-gray-400 uppercase">Kategori</h2>
         <div className="mt-2 flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setTur(null)}
             className={`rounded-full px-3.5 py-2 text-small font-medium transition ${
-              tur === null ? "bg-[#6366F1] text-white" : "bg-slate-800 text-slate-300"
+              tur === null ? "bg-[#6366F1] text-white" : "bg-white/5 text-gray-300"
             }`}
           >
             Tümü
@@ -86,7 +86,7 @@ export function AramaIcerik() {
               type="button"
               onClick={() => setTur(tur === deger ? null : deger)}
               className={`rounded-full px-3.5 py-2 text-small font-medium transition ${
-                tur === deger ? "bg-[#6366F1] text-white" : "bg-slate-800 text-slate-300"
+                tur === deger ? "bg-[#6366F1] text-white" : "bg-white/5 text-gray-300"
               }`}
             >
               {etiket}
@@ -96,7 +96,7 @@ export function AramaIcerik() {
       </div>
 
       <div>
-        <h2 className="text-caption font-semibold tracking-wide text-slate-400 uppercase">
+        <h2 className="text-caption font-semibold tracking-wide text-gray-400 uppercase">
           Mekan özellikleri
         </h2>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -108,7 +108,7 @@ export function AramaIcerik() {
                 type="button"
                 onClick={() => ozellikToggle(ozellik)}
                 className={`rounded-full px-3.5 py-2 text-small font-medium transition ${
-                  secili ? "bg-[#6366F1] text-white" : "bg-slate-800 text-slate-300"
+                  secili ? "bg-[#6366F1] text-white" : "bg-white/5 text-gray-300"
                 }`}
               >
                 {MEKAN_OZELLIKLERI[ozellik]}
@@ -120,7 +120,7 @@ export function AramaIcerik() {
 
       <div>
         {aramaBaslamadi ? (
-          <p className="mt-2 text-center text-small text-slate-500">
+          <p className="mt-2 text-center text-small text-gray-400">
             Bir kategori seç ya da mekan adı yaz, arayalım.
           </p>
         ) : yukleniyor ? (
@@ -130,12 +130,12 @@ export function AramaIcerik() {
             ))}
           </div>
         ) : !veri || veri.mekanlar.length === 0 ? (
-          <p className="mt-2 text-center text-small text-slate-500">
+          <p className="mt-2 text-center text-small text-gray-400">
             Bu ölçütlere uyan mekan bulunamadı.
           </p>
         ) : (
           <>
-            <p className="mb-2.5 text-caption text-slate-500">{veri.adet} mekan bulundu</p>
+            <p className="mb-2.5 text-caption text-gray-400">{veri.adet} mekan bulundu</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {veri.mekanlar.map((mekan) => (
                 <MekanKarti key={mekan.id} mekan={mekan} />

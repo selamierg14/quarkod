@@ -54,11 +54,14 @@ export function HeroBanner({
           <div
             className="h-full w-full"
             style={{
-              backgroundImage: `linear-gradient(155deg, ${mekan.markaRengi} 0%, #0F172A 100%)`,
+              backgroundImage: `linear-gradient(155deg, ${mekan.markaRengi} 0%, #18191E 100%)`,
             }}
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/10" />
+        {/* Mekanın kendi rengi/fotoğrafı canlı kalsın diye ağır bir siyah
+            karartma yerine zemin rengine dayalı, yalnızca metnin okunmasını
+            sağlayacak kadar ince bir gölge. */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#18191E]/95 via-[#18191E]/25 to-transparent" />
         {mekan.sponsorluMu ? (
           <span className="absolute top-3 right-3 rounded-full bg-[#F59E0B] px-2.5 py-1 text-[11px] font-semibold text-white">
             Sponsorlu
@@ -66,26 +69,26 @@ export function HeroBanner({
         ) : null}
         <div className="absolute inset-x-0 bottom-0 p-4">
           {tarihMetni ? (
-            <span className="rounded-full bg-[#FF5A36] px-2.5 py-1 text-[11px] font-semibold text-white">
+            <span className="rounded-full bg-[#FF6B4A] px-2.5 py-1 text-[11px] font-semibold text-white">
               {tarihMetni}
             </span>
           ) : null}
           <h2 className="mt-2 text-lg font-bold text-white">{baslik}</h2>
-          {duyuru ? <p className="text-small text-slate-300">{mekan.ad}</p> : null}
+          {duyuru ? <p className="text-small text-gray-300">{mekan.ad}</p> : null}
         </div>
       </div>
 
-      <div className="flex gap-2 bg-slate-900/85 p-3 backdrop-blur-md">
+      <div className="flex gap-2 bg-[#24262E]/85 p-3 backdrop-blur-md">
         <button
           type="button"
           onClick={paylas}
-          className="flex-1 rounded-control border border-slate-700 py-2.5 text-small font-semibold text-white active:scale-[0.99]"
+          className="flex-1 rounded-control border border-white/15 py-2.5 text-small font-semibold text-white transition active:scale-[0.97] duration-150 ease-out"
         >
           WhatsApp&apos;ta paylaş
         </button>
         <a
           href={`/mekan/${mekan.slug}`}
-          className="flex-1 rounded-control bg-[#6366F1] py-2.5 text-center text-small font-semibold text-white active:scale-[0.99]"
+          className="flex-1 rounded-control bg-[#6366F1] py-2.5 text-center text-small font-semibold text-white transition active:scale-[0.97] duration-150 ease-out"
         >
           Fırsatı gör
         </a>
