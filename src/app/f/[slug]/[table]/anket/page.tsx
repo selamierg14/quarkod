@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { SurveyForm } from "@/components/SurveyForm";
 import { ViewTracker } from "@/components/ViewTracker";
+import { ZiyaretDogrulayici } from "@/components/ZiyaretDogrulayici";
 import { MusteriKabuk } from "@/components/MusteriKabuk";
 import { isletmeSlugla, menuIcerigi, qrSayfaVerisi } from "@/lib/qr-sayfa";
 import { sorunSecenekleri } from "@/lib/anket-detay";
@@ -50,6 +51,7 @@ export default async function AnketPage({ params }: { params: Promise<Params> })
       kompakt
     >
       <ViewTracker slug={business.slug} tableNumber={table.tableNumber} />
+      <ZiyaretDogrulayici slug={business.slug} tableNumber={table.tableNumber} />
 
       <SurveyForm
         slug={business.slug}

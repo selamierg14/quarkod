@@ -123,6 +123,9 @@ const tr = {
     "Google'da da birkaç saniyenizi ayırıp yorum bırakır mısınız? Aşağıdaki adım tamamen isteğe bağlı.",
   "anket.rizaGerekli": "İletişim bilgisi bırakmak için aydınlatma metnini onaylayın.",
 
+  // --- doğrulanmış ziyaret bandı (bkz. ZiyaretDogrulayici)
+  "ziyaret.dogrulandi": "📍 Ziyaretin doğrulandı — +{puan} Kaşif Puanı!",
+
   // --- ürün puanlama adımı
   "urun.baslik": "Ne aldınız?",
   "urun.aciklama": "Seçtiklerinizi ayrı ayrı puanlayabilirsiniz. İsteğe bağlı.",
@@ -333,6 +336,8 @@ const en: Sozluk = {
     "Would you take a few seconds to leave a review on Google too? The step below is entirely optional.",
   "anket.rizaGerekli": "To leave contact details, please accept the privacy notice.",
 
+  "ziyaret.dogrulandi": "📍 Your visit is verified — +{puan} Explorer Points!",
+
   "urun.baslik": "What did you have?",
   "urun.aciklama": "You can rate each item separately. Optional.",
   "urun.menudenSec": "Pick from the menu",
@@ -531,6 +536,8 @@ const ar: Sozluk = {
     "هل يمكنك تخصيص بضع ثوانٍ لترك تقييم على جوجل أيضًا؟ قبل ذلك، يمكنك ترك معلومات التواصل الخاصة بك إذا أردت حتى نتمكن من الوصول إليك.",
   "anket.rizaGerekli": "لترك بيانات التواصل، يرجى الموافقة على إشعار الخصوصية.",
 
+  "ziyaret.dogrulandi": "📍 تم تأكيد زيارتك — +{puan} نقطة مستكشف!",
+
   "urun.baslik": "ماذا تناولت؟",
   "urun.aciklama": "يمكنك تقييم كل صنف على حدة. اختياري.",
   "urun.menudenSec": "اختر من القائمة",
@@ -728,6 +735,8 @@ const ru: Sozluk = {
     "Не могли бы вы уделить пару секунд, чтобы оставить отзыв и на Google? Перед этим вы можете по желанию оставить свои контактные данные, чтобы мы могли с вами связаться.",
   "anket.rizaGerekli":
     "Чтобы оставить контакты, примите уведомление о конфиденциальности.",
+
+  "ziyaret.dogrulandi": "📍 Ваш визит подтверждён — +{puan} очков исследователя!",
 
   "urun.baslik": "Что вы заказывали?",
   "urun.aciklama": "Можно оценить каждое блюдо отдельно. Необязательно.",

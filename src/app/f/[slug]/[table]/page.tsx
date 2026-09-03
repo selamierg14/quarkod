@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { MusteriKabuk } from "@/components/MusteriKabuk";
+import { ZiyaretDogrulayici } from "@/components/ZiyaretDogrulayici";
 import { isletmeSlugla, qrSayfaVerisi } from "@/lib/qr-sayfa";
 import { duyuruAktifMi } from "@/lib/duyuru";
 import { KarsilamaSecenekleri } from "./KarsilamaSecenekleri";
@@ -65,6 +66,8 @@ export default async function KarsilamaPage({ params }: { params: Promise<Params
       girisMi={table.isEntrance}
       altBaslik="ortak.hosGeldiniz"
     >
+      <ZiyaretDogrulayici slug={business.slug} tableNumber={table.tableNumber} />
+
       <KarsilamaSecenekleri
         taban={taban}
         siparis={{

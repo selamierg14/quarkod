@@ -684,7 +684,7 @@ function BiyerlereTesekkurKarti({
   t: (anahtar: MetinAnahtari, degiskenler?: Record<string, string | number>) => string;
 }) {
   return (
-    <div className="mt-6 rounded-control bg-[#0F172A] p-5 text-start ring-1 ring-black/10">
+    <div className="mt-6 rounded-control bg-[#18191E] p-5 text-start ring-1 ring-white/10">
       {appOdulPuani !== null ? (
         <>
           <p className="text-base font-semibold text-white">
@@ -692,7 +692,7 @@ function BiyerlereTesekkurKarti({
           </p>
           <a
             href="/kesfet"
-            className="mt-3 block w-full rounded-control bg-[#6366F1] px-4 py-3 text-center text-small font-semibold text-white active:scale-[0.99]"
+            className="mt-3 block w-full rounded-control bg-[#6366F1] px-4 py-3 text-center text-small font-semibold text-white transition active:scale-[0.97] duration-150 ease-out"
           >
             {t("tesekkur.biyerlereGit")}
           </a>
@@ -700,10 +700,10 @@ function BiyerlereTesekkurKarti({
       ) : (
         <>
           <p className="text-small font-semibold text-white">{t("tesekkur.biyerlereDavet")}</p>
-          <p className="mt-1 text-caption text-slate-300">{t("tesekkur.biyerlereDavetMetin")}</p>
+          <p className="mt-1 text-caption text-gray-300">{t("tesekkur.biyerlereDavetMetin")}</p>
           <a
             href="/kayit"
-            className="mt-3 block w-full rounded-control bg-[#6366F1] px-4 py-3 text-center text-small font-semibold text-white active:scale-[0.99]"
+            className="mt-3 block w-full rounded-control bg-[#6366F1] px-4 py-3 text-center text-small font-semibold text-white transition active:scale-[0.97] duration-150 ease-out"
           >
             {t("tesekkur.biyerlereKayitOl")}
           </a>
