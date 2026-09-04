@@ -15,6 +15,7 @@ import { SeviyeHalkasi, IlerlemeCubugu } from "../../src/bilesenler/SeviyeHalkas
 import { RozetVitrini } from "../../src/ozellikler/profil/RozetVitrini";
 import { IstatistikSeridi } from "../../src/ozellikler/profil/IstatistikSeridi";
 import { DavetKarti } from "../../src/ozellikler/profil/DavetKarti";
+import { BildirimAnahtari } from "../../src/ozellikler/profil/BildirimAnahtari";
 
 const SEVIYE_ADLARI: Record<number, string> = {
   1: "Meraklı",
@@ -93,6 +94,8 @@ export default function ProfilEkrani() {
             ziyaret={veri.kullanici.dogrulanmisZiyaret}
             kupon={veri.kullanici.cuzdandakiKupon}
           />
+
+          <BildirimAnahtari />
 
           <DavetKarti
             davetKodu={veri.kullanici.referralCode}

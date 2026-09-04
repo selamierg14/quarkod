@@ -1216,9 +1216,28 @@ model RotaTamamlama {
 model AppPushSubscription {
   id             String    @id @default(cuid())
   appUserId      String
-  endpoint       String    @unique
-  p256dh         String
-  auth           String
+
+  /// Native uygulamanın Expo push jetonu ("ExponentPushToken[...]").
+  ///
+  /// Model başta yalnızca Web Push'a göre kurulmuştu (endpoint + iki
+  /// anahtar) ama o yol hiç kullanılmadı; bildirimlerin asıl gideceği
+  /// yer native uygulama. Web alanları silinmedi çünkü tarayıcı
+  /// aboneliği ileride geri gelebilir — ikisinden HANGİSİ doluysa
+  /// bildirim o yoldan gidiyor.
+  expoToken      String?   @unique
+  /// "ios" | "android" — hangi cihazdan geldiği, teslim sorunlarını
+  /// ayıklarken tek ipucu.
+  platform       String?
+
+  /// Web Push aboneliği (tarayıcı). Native jetonla dolduruluyorsa boş.
+  endpoint       String?   @unique
+  p256dh         String?
+  auth           String?
+
+  /// Cihaz jetonu geçersizleştiğinde (uygulama silindi, izin kapatıldı)
+  /// kayıt SİLİNMİYOR, kapatılıyor: aynı kullanıcı yeniden izin
+  /// verdiğinde geçmişi bozmadan tekrar açılıyor ve "kaç kişi bildirimi
+  /// kapattı" sorusu cevaplanabiliyor.
   disabledAt     DateTime?
   disabledReason String?
   createdAt      DateTime  @default(now())

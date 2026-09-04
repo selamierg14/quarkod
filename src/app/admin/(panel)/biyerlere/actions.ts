@@ -5,6 +5,12 @@ import { canAccessBusiness, requireMenuErisim, requireYazma } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { denetimYaz } from "@/lib/denetim";
 import {
+  expoyaGonder,
+  pushHedefleriniSuz,
+  pushMesajiOlustur,
+  type PushHedefi,
+} from "@/lib/app-push";
+import {
   gecerliSegmentMi,
   googleLinkindenKoordinat,
   koordinatCoz,
@@ -93,14 +99,15 @@ export async function updateBiyerlereSettings(
 /**
  * Kısa süreli "flaş indirim" duyurusu — bir push kredisi harcıyor.
  *
- * ÖNEMLİ SINIR: superadmin panelinden tanımlanan push kredisi (bkz.
- * admin/sponsorlar) şu an yalnızca burada HARCANIYOR — yakındaki abone
- * kullanıcılara gerçek bir anlık bildirim GÖNDERİLMİYOR. Bunun için
- * tüketici tarafında bir push-abonelik akışı (AppPushSubscription, servis
- * çalışanı, gönderim ardışık düzeni) gerekiyor ve henüz kurulmadı. Kredi
- * harcamak dürüst olsun diye burada açıkça söyleniyor — sahibine "push
- * gönderildi" izlenimi vermeden, gerçekte ne olduğunu (kısa süreli, öne
- * çıkan bir duyuru) anlatıyoruz.
+ * İki iş birden yapıyor: süreli bir duyuru açıyor VE işletmenin
+ * çevresindeki (bkz. lib/push.ts, 3 km) bildirim abonelerine anlık
+ * bildirim gönderiyor. Uzun süre yalnızca ilkini yapıp kredi düşüyordu;
+ * artık kredinin karşılığı gerçekten veriliyor.
+ *
+ * Bildirim gönderimi duyuruyu BLOKLAMIYOR: Expo'ya ulaşılamazsa duyuru
+ * yine de yayında kalır (yoksa işletme hem kredisini hem kampanyasını
+ * kaybederdi). Kaç kişiye gittiği sahibe dönen mesajda yazıyor — sıfırsa
+ * sıfır olduğu söyleniyor, "gönderildi" izlenimi verilmiyor.
  */
 export async function flasIndirimBaslat(
   _prev: FlasIndirimFormState,
@@ -121,7 +128,7 @@ export async function flasIndirimBaslat(
 
   const business = await prisma.business.findUnique({
     where: { id: businessId },
-    select: { pushKredisi: true, name: true },
+    select: { pushKredisi: true, name: true, slug: true, latitude: true, longitude: true },
   });
   if (!business) return { error: "İşletme bulunamadı." };
   if (business.pushKredisi <= 0) {
@@ -150,13 +157,87 @@ export async function flasIndirimBaslat(
     }),
   ]);
 
+  const gonderilen = await yakindakilereBildir(business, baslik);
+
   await denetimYaz(actor, "business.flasIndirim", {
     entity: "business",
     entityId: businessId,
-    detail: `Flaş indirim başlatıldı: ${baslik} (${sureSaat} sa, kalan kredi: ${business.pushKredisi - 1})`,
+    detail: `Flaş indirim başlatıldı: ${baslik} (${sureSaat} sa, ${gonderilen} bildirim, kalan kredi: ${business.pushKredisi - 1})`,
   });
 
   revalidatePath("/admin/duyurular");
   revalidatePath(YOL);
-  return { saved: `Yayında! ${sureSaat} saat sonra otomatik biter.` };
+  return {
+    saved:
+      gonderilen > 0
+        ? `Yayında! ${gonderilen} kişiye bildirim gitti, ${sureSaat} saat sonra otomatik biter.`
+        : `Yayında! ${sureSaat} saat sonra otomatik biter. (Şu an çevrede bildirime açık kullanıcı yoktu.)`,
+  };
+}
+
+/**
+ * İşletmenin çevresindeki bildirim abonelerine anlık bildirim gönderir.
+ *
+ * Hedef listesi iki koşulla daraltılıyor: aboneliği kapatılmamış bir
+ * cihaz jetonu VE yeterince taze bir konum (bkz. lib/push.ts). Süzme
+ * mantığı orada saf fonksiyonda ve testli — buradaki iş yalnızca veriyi
+ * toplayıp sonucu yazmak.
+ */
+async function yakindakilereBildir(
+  business: { name: string; slug: string; latitude: number | null; longitude: number | null },
+  baslik: string,
+): Promise<number> {
+  const abonelikler = await prisma.appPushSubscription.findMany({
+    where: { disabledAt: null, expoToken: { not: null } },
+    select: {
+      expoToken: true,
+      appUser: {
+        select: {
+          id: true,
+          active: true,
+          sonBilinenEnlem: true,
+          sonBilinenBoylam: true,
+          sonKonumGuncelleme: true,
+        },
+      },
+    },
+  });
+
+  const hedefler: PushHedefi[] = abonelikler
+    .filter((a) => a.appUser.active)
+    .map((a) => ({
+      appUserId: a.appUser.id,
+      jeton: a.expoToken!,
+      konum:
+        a.appUser.sonBilinenEnlem !== null && a.appUser.sonBilinenBoylam !== null
+          ? { enlem: a.appUser.sonBilinenEnlem, boylam: a.appUser.sonBilinenBoylam }
+          : null,
+      konumGuncelleme: a.appUser.sonKonumGuncelleme,
+    }));
+
+  const mekanKonumu =
+    business.latitude !== null && business.longitude !== null
+      ? { enlem: business.latitude, boylam: business.longitude }
+      : null;
+
+  const secilenler = pushHedefleriniSuz(hedefler, mekanKonumu);
+  if (secilenler.length === 0) return 0;
+
+  const { gonderilen, gecersizJetonlar } = await expoyaGonder(
+    secilenler.map((h) =>
+      pushMesajiOlustur(h.jeton, `⚡ ${business.name}`, baslik, { slug: business.slug }),
+    ),
+  );
+
+  // Expo "bu cihaz artık kayıtlı değil" dediyse jeton çürümüştür; bir
+  // daha denenmemesi için kapatılıyor (silinmiyor — kullanıcı yeniden
+  // izin verirse aynı kayıt canlanıyor).
+  if (gecersizJetonlar.length > 0) {
+    await prisma.appPushSubscription.updateMany({
+      where: { expoToken: { in: gecersizJetonlar } },
+      data: { disabledAt: new Date(), disabledReason: "cihaz-kayitli-degil" },
+    });
+  }
+
+  return gonderilen;
 }

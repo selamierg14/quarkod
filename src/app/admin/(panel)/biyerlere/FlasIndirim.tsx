@@ -21,9 +21,10 @@ export function FlasIndirim({ businessId, pushKredisi }: { businessId: string; p
           Kalan kredin: <strong className="tabular">{pushKredisi}</strong>
         </p>
         <p className="mt-1 text-caption text-ink-faint">
-          Her başlatma 1 kredi harcar ve Keşfet&apos;te/mekan profilinde öne çıkan, süreli bir
-          duyuru açar. <strong>Not:</strong> yakındaki kullanıcılara anlık bildirim gönderme
-          henüz aktif değil — bu buton şimdilik yalnızca duyuruyu yayınlıyor.
+          Her başlatma 1 kredi harcar: Keşfet&apos;te/mekan profilinde öne çıkan süreli bir
+          duyuru açar <strong>ve</strong> 3 km çevrenizdeki, bildirime izin vermiş Biyerlere
+          kullanıcılarına anlık bildirim gönderir. Kaç kişiye ulaştığı gönderimden sonra
+          burada yazar.
         </p>
       </div>
 

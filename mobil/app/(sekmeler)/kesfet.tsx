@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { View, Text, ScrollView, StyleSheet, Image, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -16,6 +17,7 @@ import { API_TABAN } from "../../src/api/istemci";
 import { useVeri } from "../../src/api/useVeri";
 import type { MekanListesi, MekanOzet } from "../../src/api/tipler";
 import { useOturum } from "../../src/store/oturum";
+import { konumuBildir } from "../../src/push/konum";
 import { Iskelet } from "../../src/bilesenler/Iskelet";
 import { Basilabilir } from "../../src/bilesenler/Basilabilir";
 
@@ -23,6 +25,12 @@ export default function KesfetEkrani() {
   const guvenliAlan = useSafeAreaInsets();
   const kullanici = useOturum((s) => s.kullanici);
   const { veri, yenileniyor, yenile } = useVeri<MekanListesi>("/api/app/mekanlar");
+
+  // Bölgesel bildirim hedeflemesi için son bilinen konum. İzin YOKSA
+  // istemiyor, sessizce geçiyor (bkz. src/push/konum.ts).
+  useEffect(() => {
+    if (kullanici) void konumuBildir();
+  }, [kullanici]);
 
   const mekanlar = veri?.mekanlar ?? [];
   const sponsorlu = mekanlar.filter((m) => m.sponsorluMu);
