@@ -14,6 +14,11 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Prisma tarafından üretilen istemci — elle düzenlenmez.
     "src/generated/**",
+    // Native uygulama kendi ESLint yapılandırmasıyla (eslint-config-expo)
+    // denetleniyor. Next.js'in web kuralları React Native koduna
+    // uymuyor: Reanimated'ın `shared.value = ...` yazımını "değiştirilemez"
+    // sayıp hata veriyor, RN'in <Image> bileşeninde `alt` arıyor.
+    "mobil/**",
   ]),
 ]);
 

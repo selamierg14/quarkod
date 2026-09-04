@@ -7,7 +7,6 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  withTiming,
   interpolate,
 } from "react-native-reanimated";
 import Svg, { Path, Circle } from "react-native-svg";

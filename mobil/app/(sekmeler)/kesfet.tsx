@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useState } from "react";
 import { View, Text, ScrollView, StyleSheet, Image, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -13,7 +12,8 @@ import {
   turSimgeleri,
   SEKME_YUKSEKLIGI,
 } from "../../src/tasarim";
-import { api, API_TABAN } from "../../src/api/istemci";
+import { API_TABAN } from "../../src/api/istemci";
+import { useVeri } from "../../src/api/useVeri";
 import type { MekanListesi, MekanOzet } from "../../src/api/tipler";
 import { useOturum } from "../../src/store/oturum";
 import { Iskelet } from "../../src/bilesenler/Iskelet";
@@ -22,17 +22,7 @@ import { Basilabilir } from "../../src/bilesenler/Basilabilir";
 export default function KesfetEkrani() {
   const guvenliAlan = useSafeAreaInsets();
   const kullanici = useOturum((s) => s.kullanici);
-  const [veri, setVeri] = useState<MekanListesi | null>(null);
-  const [yenileniyor, setYenileniyor] = useState(false);
-
-  const getir = useCallback(async () => {
-    const sonuc = await api.acikGet<MekanListesi>("/api/app/mekanlar");
-    if (sonuc.ok) setVeri(sonuc.veri);
-  }, []);
-
-  useEffect(() => {
-    void getir();
-  }, [getir]);
+  const { veri, yenileniyor, yenile } = useVeri<MekanListesi>("/api/app/mekanlar");
 
   const mekanlar = veri?.mekanlar ?? [];
   const sponsorlu = mekanlar.filter((m) => m.sponsorluMu);
@@ -50,11 +40,7 @@ export default function KesfetEkrani() {
       refreshControl={
         <RefreshControl
           refreshing={yenileniyor}
-          onRefresh={async () => {
-            setYenileniyor(true);
-            await getir();
-            setYenileniyor(false);
-          }}
+          onRefresh={yenile}
           tintColor={renkler.vurguParlak}
         />
       }

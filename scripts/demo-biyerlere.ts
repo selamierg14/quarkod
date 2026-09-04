@@ -11,9 +11,11 @@ import { hakEdilenRozetler, type ZiyaretOzeti } from "../src/lib/rozet";
  *
  *   npm run demo:biyerlere
  *
- * Idempotent: her işletme/tüketici sabit bir username/slug'a `upsert`
- * edilir — script tekrar çalıştırılırsa yinelenmiş kayıt oluşmaz, yalnızca
- * güncellenir. Bu yüzden `db:reset` gerektiren diğer demo script'lerinden
+ * Idempotent: işletme/tüketici sabit bir username/slug'a `upsert` edilir,
+ * geçmişi (ziyaret/favori/yorum) zaten olan tüketici ise tamamen atlanır —
+ * script tekrar çalıştırılsa da ne yinelenmiş kayıt ne de bozuk bir
+ * puan/ziyaret dengesi oluşur. Bu yüzden `db:reset` gerektiren diğer
+ * demo script'lerinden
  * (demo-veri.ts, demo-kullanicilar.ts) farklı olarak burada bir "[DEMO]"
  * uyarısı YOK: bu veri kasıtlı olarak KALICI ve gerçek Keşfet/Harita'da
  * görünmesi isteniyor (bkz. ilgili konuşma).
@@ -306,6 +308,21 @@ async function main() {
     let toplamKupon = 0;
 
     for (const appUserId of appUserIdler) {
+      /*
+       * ZATEN GEÇMİŞİ OLAN KULLANICI ATLANIYOR.
+       *
+       * İlk sürüm yalnızca kullanıcı/işletme kayıtlarında `upsert`
+       * kullandığı için "idempotent" sayılmıştı; oysa ziyaret, favori ve
+       * yorum her çalıştırmada YENİDEN üretiliyordu. İkinci çalıştırmada
+       * ziyaretler üst üste birikiyor ama puan yalnızca O ÇALIŞTIRMADA
+       * üretilen sayıya göre yeniden yazıldığı için ortaya tutarsız bir
+       * profil çıkıyordu (15 ziyaret, 200 puan). Geçmişi olan kullanıcıya
+       * hiç dokunmamak hem bu tutarsızlığı hem de veri şişmesini
+       * bitiriyor.
+       */
+      const mevcutZiyaret = await prisma.appVisit.count({ where: { appUserId } });
+      if (mevcutZiyaret > 0) continue;
+
       // Ziyaret sayısı dağılımı: çoğu yeni/az aktif, birkaçı çok aktif.
       const ziyaretSayisi =
         Math.random() < 0.15 ? 0 : Math.random() < 0.7 ? aralikta(1, 4) : aralikta(5, 14);

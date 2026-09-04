@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { renkler, yazi, bosluk, yaricap, golge, isima, SEKME_YUKSEKLIGI } from "../../src/tasarim";
-import { api } from "../../src/api/istemci";
+import { useVeri } from "../../src/api/useVeri";
 import type { CuzdanYaniti } from "../../src/api/tipler";
 import { useOturum } from "../../src/store/oturum";
 import { Iskelet } from "../../src/bilesenler/Iskelet";
@@ -14,17 +13,10 @@ export default function CuzdanEkrani() {
   const guvenliAlan = useSafeAreaInsets();
   const router = useRouter();
   const durum = useOturum((s) => s.durum);
-  const [veri, setVeri] = useState<CuzdanYaniti | null>(null);
-  const [yenileniyor, setYenileniyor] = useState(false);
-
-  const getir = useCallback(async () => {
-    const sonuc = await api.get<CuzdanYaniti>("/api/app/cuzdan");
-    if (sonuc.ok) setVeri(sonuc.veri);
-  }, []);
-
-  useEffect(() => {
-    if (durum === "girisli") void getir();
-  }, [durum, getir]);
+  const { veri, yenileniyor, yenile } = useVeri<CuzdanYaniti>("/api/app/cuzdan", {
+    jetonlu: true,
+    etkin: durum === "girisli",
+  });
 
   const ustBosluk = guvenliAlan.top + bosluk.l;
 
@@ -59,11 +51,7 @@ export default function CuzdanEkrani() {
       refreshControl={
         <RefreshControl
           refreshing={yenileniyor}
-          onRefresh={async () => {
-            setYenileniyor(true);
-            await getir();
-            setYenileniyor(false);
-          }}
+          onRefresh={yenile}
           tintColor={renkler.vurguParlak}
         />
       }

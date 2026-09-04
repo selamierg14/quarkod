@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -6,7 +6,7 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { renkler, yazi, bosluk, yaricap, isima, SEKME_YUKSEKLIGI } from "../../src/tasarim";
-import { api } from "../../src/api/istemci";
+import { useVeri } from "../../src/api/useVeri";
 import type { ProfilYaniti } from "../../src/api/tipler";
 import { useOturum } from "../../src/store/oturum";
 import { ProfilIskeleti } from "../../src/bilesenler/Iskelet";
@@ -32,23 +32,20 @@ export default function ProfilEkrani() {
   const guvenliAlan = useSafeAreaInsets();
   const router = useRouter();
   const oturum = useOturum();
-  const [veri, setVeri] = useState<ProfilYaniti | null>(null);
-  const [yenileniyor, setYenileniyor] = useState(false);
+  const {
+    veri,
+    yenileniyor,
+    yenile: veriYenile,
+  } = useVeri<ProfilYaniti>("/api/app/profil", {
+    jetonlu: true,
+    etkin: oturum.durum === "girisli",
+  });
 
-  const getir = useCallback(async () => {
-    const sonuc = await api.get<ProfilYaniti>("/api/app/profil");
-    if (sonuc.ok) setVeri(sonuc.veri);
-  }, []);
-
-  useEffect(() => {
-    if (oturum.durum === "girisli") void getir();
-  }, [oturum.durum, getir]);
-
+  // Profil ekranı iki kaynağı birden tazeliyor: ekranın kendi verisi ve
+  // üstteki oturum (puan rozeti başka ekranlarda da okunuyor).
   const yenile = useCallback(async () => {
-    setYenileniyor(true);
-    await Promise.all([getir(), oturum.yenile()]);
-    setYenileniyor(false);
-  }, [getir, oturum]);
+    await Promise.all([veriYenile(), oturum.yenile()]);
+  }, [veriYenile, oturum]);
 
   if (oturum.durum === "cikisli") {
     return (
