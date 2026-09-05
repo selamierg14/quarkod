@@ -130,6 +130,8 @@ export function haritaHtmlUret(
 
   var seciliEl = null;
   var isaretler = [];
+  /** Son pin seçiminin zamanı — harita tıklamasıyla yarışı engelliyor. */
+  var sonSecim = 0;
 
   mekanlar.forEach(function (m) {
     var ikon = L.divIcon({
@@ -139,7 +141,18 @@ export function haritaHtmlUret(
       iconAnchor: [17, 17],
     });
     var isaret = L.marker([m.enlem, m.boylam], { icon: ikon, title: m.ad }).addTo(harita);
-    isaret.on("click", function () {
+    isaret.on("click", function (olay) {
+      /*
+       * Olayı BURADA durdurmak şart.
+       *
+       * Leaflet'te divIcon'lu bir işaretçiye dokunmak, olayı haritanın
+       * kendisine de taşıyabiliyor. O zaman sırayla "mekanSecildi" ve
+       * hemen ardından "secimTemizlendi" gidiyor; kart açılır açılmaz
+       * kapanıyor ve dışarıdan "bazen çalışmıyor" gibi görünüyor.
+       */
+      L.DomEvent.stopPropagation(olay);
+      sonSecim = Date.now();
+
       if (seciliEl) seciliEl.classList.remove("secili");
       var el = isaret.getElement() && isaret.getElement().querySelector(".pin");
       if (el) { el.classList.add("secili"); seciliEl = el; }
@@ -152,6 +165,14 @@ export function haritaHtmlUret(
   });
 
   harita.on("click", function () {
+    /*
+     * İkinci kalkan: stopPropagation'ın yakalayamadığı durumlar için
+     * (dokunmatikte Leaflet bazı sürümlerde ayrı bir sentetik tıklama
+     * üretiyor) seçimden hemen sonraki harita tıklaması yok sayılıyor.
+     * Kullanıcının gerçekten "boşluğa dokunup kapatma" niyeti bundan
+     * çok daha geç geliyor.
+     */
+    if (Date.now() - sonSecim < 400) return;
     if (seciliEl) { seciliEl.classList.remove("secili"); seciliEl = null; }
     nativeGonder({ tur: "secimTemizlendi" });
   });
