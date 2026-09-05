@@ -24,6 +24,12 @@ export type DenetimEylemi =
   | "business.table"
   | "business.duyuru"
   | "business.flasIndirim"
+  | "rezervasyon.bolgeEkle"
+  | "rezervasyon.bolgeSil"
+  | "rezervasyon.planKaydet"
+  | "rezervasyon.olustur"
+  | "rezervasyon.guncelle"
+  | "rezervasyon.durum"
   | "business.vardiya"
   | "business.izin"
   | "user.create"
@@ -53,6 +59,12 @@ export const EYLEM_METNI: Record<DenetimEylemi, string> = {
   "business.category": "Anket kategorisi",
   "business.table": "Masa",
   "business.duyuru": "Duyuru",
+  "rezervasyon.bolgeEkle": "Rezervasyon bölgesi eklendi",
+  "rezervasyon.bolgeSil": "Rezervasyon bölgesi silindi",
+  "rezervasyon.planKaydet": "Kat planı güncellendi",
+  "rezervasyon.olustur": "Rezervasyon oluşturuldu",
+  "rezervasyon.guncelle": "Rezervasyon güncellendi",
+  "rezervasyon.durum": "Rezervasyon durumu",
   "business.flasIndirim": "Flaş indirim",
   "business.vardiya": "Vardiya çizelgesi",
   "business.izin": "Personel izni",

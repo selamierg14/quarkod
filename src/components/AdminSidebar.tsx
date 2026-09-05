@@ -423,6 +423,14 @@ function Ikon({ ad }: { ad: IkonAdi }) {
           <path d="M11 8l7-3v14l-7-3M18 10v4" />
         </svg>
       );
+    case "rezervasyon":
+      // Masa + sandalye: rezervasyonun evrensel görseli.
+      return (
+        <svg viewBox="0 0 24 24" className={ortak} {...p}>
+          <path d="M3 10h18M5 10V7a2 2 0 012-2h10a2 2 0 012 2v3" />
+          <path d="M6 10v9M18 10v9M3 14h18" />
+        </svg>
+      );
     case "biyerlere":
       return (
         <svg viewBox="0 0 24 24" className={ortak} {...p}>

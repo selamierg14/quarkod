@@ -26,6 +26,7 @@ export function panelModu(role: Role, aktifHesapVar: boolean): PanelModu {
 }
 
 export type IkonAdi =
+  | "rezervasyon"
   | "pano"
   | "mesaj"
   | "grafik"
@@ -204,6 +205,20 @@ export function panelMenusu(
   // (bkz. app/admin/(panel)/biyerlere).
   if (moduller.includes("kesfet")) {
     yonetim.push({ href: "/admin/biyerlere", label: "Biyerlere", ikon: "biyerlere" });
+  }
+  // Rezervasyon: kat planı + saatli kayıt. "Günlük" grubunda değil
+  // yönetimde, çünkü kat planını kurmak bir kereye mahsus bir ayar işi;
+  // günlük kullanım (masa durumu) o sayfanın kendi sekmesinde.
+  if (moduller.includes("rezervasyon")) {
+    yonetim.push({
+      href: "/admin/rezervasyon",
+      label: "Rezervasyon",
+      ikon: "rezervasyon",
+      altLinkler: [
+        { href: "/admin/rezervasyon", label: "Masa durumu", exact: true },
+        { href: "/admin/rezervasyon/plan", label: "Kat planı" },
+      ],
+    });
   }
   if (yonetici(role)) {
     yonetim.push(

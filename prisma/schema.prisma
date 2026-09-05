@@ -202,6 +202,8 @@ model Business {
   account              Account               @relation(fields: [accountId], references: [id], onDelete: Cascade)
   categories           CategoryTemplate[]
   tables               Table[]
+  bolgeler             Zone[]
+  rezervasyonlar       Rezervasyon[]
   feedbacks            Feedback[]
   users                User[]
   coupons              Coupon[]
@@ -509,14 +511,119 @@ model Table {
   active      Boolean   @default(true)
   createdAt   DateTime  @default(now())
 
-  business    Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  feedbacks   Feedback[]
-  appVisits   AppVisit[]
-  surveyViews SurveyView[]
+  // --- Rezervasyon modülü alanları ------------------------------------
+  // Ayrı bir "rezervasyon masası" modeli AÇILMADI: bu satır zaten
+  // mekandaki fiziksel masayı temsil ediyor ve QR anketi de ona bağlı.
+  // İkinci bir masa tanımı, aynı masanın iki yerde ayrı ayrı
+  // güncellenmesi (ve er geç ayrışması) demekti.
+
+  /// Bulunduğu bölge — "Teras", "Bahçe". Boşsa bölgesiz (ana salon).
+  zoneId   String?
+  /// Kaç kişilik. Rezervasyonda kişi sayısı bunu aşarsa uyarılıyor.
+  kapasite Int     @default(2)
+  /// Kat planındaki konum, YÜZDE olarak (0-100).
+  ///
+  /// Piksel değil yüzde: kroki telefonda, tablette ve panelde farklı
+  /// genişliklerde çiziliyor; piksel saklamak masaları küçük ekranda
+  /// planın dışına taşırıyordu.
+  planX    Float?
+  planY    Float?
+  /// "kare" | "yuvarlak" — krokide masanın çizim biçimi.
+  sekil    String  @default("kare")
+
+  business        Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  zone            Zone?             @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  feedbacks       Feedback[]
+  appVisits       AppVisit[]
+  surveyViews     SurveyView[]
+  rezervasyonlari RezervasyonMasa[]
 
   @@unique([businessId, tableNumber])
   @@index([businessId])
+  @@index([zoneId])
   @@map("tables")
+}
+
+/// Mekanın bölümü — "Teras", "Bahçe", "Cam Kenarı".
+///
+/// Krokiyi tek bir dev tuvale sığdırmak yerine bölgelere ayırmak, hem
+/// çizimi hem de "bahçe kapalı bugün" gibi toplu kararları mümkün
+/// kılıyor.
+model Zone {
+  id         String   @id @default(cuid())
+  businessId String
+  ad         String
+  sira       Int      @default(0)
+  aktif      Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  masalar  Table[]
+
+  @@unique([businessId, ad])
+  @@index([businessId])
+  @@map("bolgeler")
+}
+
+/// Saat aralıklı masa rezervasyonu.
+model Rezervasyon {
+  id         String @id @default(cuid())
+  businessId String
+
+  /// Misafir bilgisi.
+  ///
+  /// KVKK: telefon kişisel veri. Anketteki iletişim bilgisiyle aynı
+  /// mantık (bkz. lib/kvkk.ts) — yalnızca rezervasyonun kendisi için
+  /// tutuluyor, pazarlama listesine akmıyor.
+  misafirAdi String
+  telefon    String?
+  kisiSayisi Int
+  not        String?
+
+  /// Rezervasyonun kapsadığı aralık. Bitiş DAHİL DEĞİL (yarı açık):
+  /// 19:00-21:00 ile 21:00-23:00 çakışmıyor, sırayla iki oturum.
+  baslangic DateTime
+  bitis     DateTime
+
+  /// "bekliyor" | "onaylandi" | "oturdu" | "tamamlandi" | "iptal" | "gelmedi"
+  ///
+  /// "iptal" ve "gelmedi" masayı SERBEST bırakıyor (çakışma sayılmıyor);
+  /// diğerleri masayı meşgul ediyor. Kayıt silinmiyor: "kaç kişi gelmedi"
+  /// sorusu ancak izi kalırsa cevaplanabiliyor.
+  durum String @default("onaylandi")
+
+  /// "panel" | "telefon" | "walkin" | "biyerlere" — nereden geldiği.
+  kanal String @default("panel")
+
+  /// Kaydı açan panel kullanıcısı (silinirse rezervasyon kalır).
+  olusturanId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  masalar  RezervasyonMasa[]
+
+  @@index([businessId, baslangic])
+  @@index([businessId, durum])
+  @@map("rezervasyonlar")
+}
+
+/// Bir rezervasyonun kapladığı masa(lar).
+///
+/// Çoklu olmasının tek sebebi MASA BİRLEŞTİRME: 8 kişilik bir grup için
+/// yan yana iki 4'lük masa tek rezervasyona bağlanabiliyor. Tek bir
+/// `tableId` alanı bunu temsil edemezdi.
+model RezervasyonMasa {
+  id            String @id @default(cuid())
+  rezervasyonId String
+  tableId       String
+
+  rezervasyon Rezervasyon @relation(fields: [rezervasyonId], references: [id], onDelete: Cascade)
+  masa        Table       @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  @@unique([rezervasyonId, tableId])
+  @@index([tableId])
+  @@map("rezervasyon_masalari")
 }
 
 model Feedback {

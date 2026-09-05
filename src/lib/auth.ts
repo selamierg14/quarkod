@@ -245,6 +245,11 @@ export async function requireKesfetErisim(): Promise<SessionUser> {
   return requireModul("kesfet");
 }
 
+/** Kat planı ve masa rezervasyonu — bkz. app/admin/(panel)/rezervasyon. */
+export async function requireRezervasyonErisim(): Promise<SessionUser> {
+  return requireModul("rezervasyon");
+}
+
 /**
  * Kullanıcı ekranları (listele/ekle/düzenle).
  *
