@@ -26,7 +26,8 @@
     "isler:gunluk": "tsx scripts/isler.ts",
     "demo:kullanicilar": "tsx scripts/demo-kullanicilar.ts",
     "version:info": "node -e \"console.log('Quarkod v' + require('./package.json').version)\"",
-    "puan:onar": "tsx scripts/puan-onar.ts"
+    "puan:onar": "tsx scripts/puan-onar.ts",
+    "demo:tamamla": "tsx scripts/demo-tamamla.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",
