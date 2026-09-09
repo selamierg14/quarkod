@@ -36,8 +36,21 @@ describe("jeton üretimi ve çözümü", () => {
 
   it("imzası kurcalanmış jetonu reddeder", async () => {
     const jeton = await appJetonUret(ORNEK);
-    // Son karakteri değiştirmek imzayı bozar.
-    const bozuk = jeton.slice(0, -1) + (jeton.endsWith("A") ? "B" : "A");
+
+    // İmzanın SON karakterine dokunulmuyor. HMAC-SHA256 imzası 256 bit ve
+    // base64url'de 43 karakter tutuyor; son karakterin yalnızca ilk 4 biti
+    // anlamlı, kalan 2 bit dolgu. Yani "A"→"B" gibi bir değişiklik aynı
+    // imzaya çözülüyor ve jeton GEÇERLİ kalıyor. Test bu yüzden yaklaşık
+    // yirmi koşudan birinde sebepsiz düşüyordu — güvenlik testinin
+    // kırılgan olması, gerçek bir gerilemeyi gürültüde saklar.
+    //
+    // İmzanın İLK karakteri değiştiriliyor: orada altı bitin hepsi anlamlı,
+    // dolayısıyla değişiklik imzayı her zaman bozuyor.
+    const [baslik, yuk, imza] = jeton.split(".");
+    const bozukImza = (imza[0] === "A" ? "B" : "A") + imza.slice(1);
+    const bozuk = `${baslik}.${yuk}.${bozukImza}`;
+
+    expect(bozuk).not.toBe(jeton);
     expect(await appJetonCoz(bozuk)).toBeNull();
   });
 });

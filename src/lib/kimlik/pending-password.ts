@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
+import { gizliAnahtar } from "../cekirdek/ortam";
 
 /**
  * Şifre değişiminin iki adımı arasında yeni şifreyi taşır.
@@ -17,11 +18,7 @@ const COOKIE = "mm_bekleyen_sifre";
 const TTL_SECONDS = 10 * 60;
 
 function secretKey(): Uint8Array {
-  const secret = process.env.AUTH_SECRET;
-  if (!secret || secret.length < 16) {
-    throw new Error("AUTH_SECRET tanımlı değil veya çok kısa.");
-  }
-  return new TextEncoder().encode(secret);
+  return new TextEncoder().encode(gizliAnahtar("AUTH_SECRET"));
 }
 
 export type PendingPassword = { userId: string; hash: string };

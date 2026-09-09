@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { gizliAnahtar } from "../cekirdek/ortam";
 
 /**
  * Kasada okutulan kuponun dönen doğrulama kodu.
@@ -35,15 +36,7 @@ export const PENCERE_SANIYE = 15 * 60;
  */
 const GERIYE_TOLERANS = 1;
 
-function gizliAnahtar(): string {
-  const secret = process.env.AUTH_SECRET;
-  if (!secret || secret.length < 16) {
-    throw new Error(
-      "AUTH_SECRET tanımlı değil veya çok kısa. .env dosyasına en az 32 karakterlik bir değer yazın.",
-    );
-  }
-  return secret;
-}
+
 
 export function pencereNumarasi(simdi: Date = new Date()): number {
   return Math.floor(simdi.getTime() / 1000 / PENCERE_SANIYE);
@@ -60,7 +53,7 @@ export function pencereNumarasi(simdi: Date = new Date()): number {
 const ALFABE = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 
 export function kuponKodu(kuponId: string, pencere: number): string {
-  const ozet = createHmac("sha256", gizliAnahtar())
+  const ozet = createHmac("sha256", gizliAnahtar("AUTH_SECRET"))
     .update(`${kuponId}|${pencere}`)
     .digest();
 

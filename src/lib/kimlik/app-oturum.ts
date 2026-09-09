@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
+import { gizliAnahtar } from "../cekirdek/ortam";
 
 /**
  * Biyerlere (tüketici) oturum jetonları.
@@ -33,13 +34,7 @@ const AUDIENCE = "biyerlere-app";
 export const APP_OTURUM_SURESI = 60 * 60 * 24 * 30;
 
 function secretKey(): Uint8Array {
-  const secret = process.env.AUTH_SECRET;
-  if (!secret || secret.length < 16) {
-    throw new Error(
-      "AUTH_SECRET tanımlı değil veya çok kısa. .env dosyasına en az 32 karakterlik bir değer yazın.",
-    );
-  }
-  return new TextEncoder().encode(secret);
+  return new TextEncoder().encode(gizliAnahtar("AUTH_SECRET"));
 }
 
 export type AppJeton = {

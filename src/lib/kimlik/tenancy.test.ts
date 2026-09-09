@@ -63,7 +63,12 @@ const bolgeA: TenantScope = {
 };
 
 beforeAll(async () => {
-  const base = process.env.DATABASE_URL;
+  // HAVUZSUZ bağlantı: bu testler kendi Postgres şemasını kurup `search_path`
+  // ile ona bağlanıyor. PgBouncer işlem (transaction) kipinde çalıştığı için
+  // oturum düzeyi ayarları isteklere taşımıyor — pooler üzerinden koşulduğunda
+  // tablolar "bulunamadı" hatası veriyordu. DIRECT_URL tanımlı değilse
+  // (yerel geliştirme, CI) DATABASE_URL zaten havuzsuzdur.
+  const base = process.env.DIRECT_URL || process.env.DATABASE_URL;
   if (!base) {
     throw new Error(
       "DATABASE_URL tanımlı değil. Testler de aynı Postgres'i kullanır " +

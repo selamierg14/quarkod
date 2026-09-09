@@ -18,7 +18,9 @@ const schemaName = `test_slug_${randomBytes(6).toString("hex")}`;
 const HESAP = "slug-testi-hesap";
 
 beforeAll(async () => {
-  const base = process.env.DATABASE_URL;
+  // HAVUZSUZ bağlantı — bu test kendi Postgres şemasını kurup `search_path`
+  // ile ona bağlanıyor; PgBouncer işlem kipinde oturum ayarını taşımıyor.
+  const base = process.env.DIRECT_URL || process.env.DATABASE_URL;
   if (!base) throw new Error("DATABASE_URL tanımlı değil.");
   const url = new URL(base);
   url.searchParams.set("schema", schemaName);
