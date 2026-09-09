@@ -7,6 +7,7 @@
  */
 
 import { sifreSorunu } from "../kimlik/sifre";
+import { alanDogrula } from "../cekirdek/desenler";
 
 export const DENEME_GUN = 7;
 
@@ -38,9 +39,22 @@ export type KayitGirdisi = {
  * burada yalnızca "eksik/biçimsiz" kontrolü var.
  */
 export function kayitSorunu(girdi: KayitGirdisi): string | null {
-  if (girdi.firma.trim().length < 2) return "İşletme adı gerekli.";
-  if (girdi.adSoyad.trim().length < 3) return "Ad soyad gerekli.";
-  if (!/^\S+@\S+\.\S+$/.test(girdi.eposta)) return "Geçerli bir e-posta girin.";
+  // Bu form KİMLİK DOĞRULAMASI İSTEMİYOR — internetteki herkes gönderebilir.
+  // Üç alanda da yalnızca ALT sınır vardı; üst sınır yoktu ve değerler
+  // doğrudan hesap/işletme/kullanıcı kaydına gidiyordu. Sınırlar artık
+  // desenler.ts'ten, yani panelin geri kalanıyla aynı yerden geliyor —
+  // e-posta deseni de öyle: önceden bu dosyada, kullanicilar/actions.ts'te,
+  // isletmeler/actions.ts'te ve hesaplar/actions.ts'te dört ayrı kopya vardı.
+  for (const [ham, tur, ad] of [
+    [girdi.firma, "isletmeAdi", "İşletme adı"],
+    [girdi.adSoyad, "kisiAdi", "Ad soyad"],
+    [girdi.eposta, "eposta", "E-posta"],
+    [girdi.telefon, "telefon", "Telefon"],
+  ] as const) {
+    const sonuc = alanDogrula(ham, tur, ad);
+    if (!sonuc.ok) return sonuc.hata;
+  }
+
   const sifreHatasi = sifreSorunu(girdi.sifre);
   if (sifreHatasi) return sifreHatasi;
   // Rıza olmadan iletişim bilgisi saklayamayız; kaydın kendisi de o bilgiye

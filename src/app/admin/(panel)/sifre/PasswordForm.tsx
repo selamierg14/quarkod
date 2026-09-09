@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { changeOwnPassword, type PasswordState } from "../kullanicilar/actions";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
 
 const INITIAL: PasswordState = { step: "form" };
 
@@ -31,9 +32,8 @@ export function PasswordForm() {
             <span className="text-caption text-ink-muted">Mevcut şifre</span>
             <input
               name="current"
-              type="password"
+              {...alanOzellikleri("girisSifresi")}
               autoComplete="current-password"
-              required
               className={INPUT}
             />
           </label>
@@ -44,10 +44,8 @@ export function PasswordForm() {
             </span>
             <input
               name="next"
-              type="password"
+              {...alanOzellikleri("sifre")}
               autoComplete="new-password"
-              required
-              minLength={8}
               className={INPUT}
             />
           </label>
@@ -56,10 +54,8 @@ export function PasswordForm() {
             <span className="text-caption text-ink-muted">Yeni şifre (tekrar)</span>
             <input
               name="repeat"
-              type="password"
+              {...alanOzellikleri("sifre")}
               autoComplete="new-password"
-              required
-              minLength={8}
               className={INPUT}
             />
           </label>
@@ -81,11 +77,7 @@ export function PasswordForm() {
           <input
             id="code"
             name="code"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            pattern="[0-9]{6}"
-            required
+            {...alanOzellikleri("dogrulamaKodu")}
             autoFocus
             placeholder="––––––"
             className={`${INPUT} text-center font-mono text-2xl tracking-[0.4em]`}

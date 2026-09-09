@@ -21,6 +21,8 @@ import { prisma } from "@/lib/cekirdek/db";
 import { istenenModulleriSuz, modulleriGuncelleMeli } from "@/lib/kimlik/moduller";
 import { normalizePhone, toUsername, usernameProblem } from "@/lib/kimlik/username";
 import { uniqueConstraintMessage } from "@/lib/cekirdek/unique-error";
+import { alanDogrula } from "@/lib/cekirdek/desenler";
+import { ilkHata, listeAlani } from "@/lib/cekirdek/girdi";
 import { issueOtp, verifyOtp } from "@/lib/kimlik/otp";
 import {
   clearPendingPassword,
@@ -45,6 +47,15 @@ async function hepsineYetkiliMi(
   return isletmeIdleri.every((id) => izinliler.has(id));
 }
 
+/**
+ * Bir bölge müdürüne atanabilecek en fazla işletme.
+ *
+ * Sınır iki iş görüyor: her eleman bir `userBusiness` satırına dönüşüyor,
+ * ve gerçek bir zincirin bölge sayısı bunun çok altında. Sınırsızken elle
+ * kurulmuş tek bir istek binlerce satır yazdırabiliyordu.
+ */
+const EN_COK_BOLGE_ISLETMESI = 200;
+
 export type UserFormState = { error?: string; saved?: string };
 
 export async function createUser(
@@ -65,15 +76,31 @@ export async function createUser(
   const rawPhone = String(formData.get("phone") ?? "").trim();
   const role = String(formData.get("role") ?? "");
   const businessId = String(formData.get("businessId") ?? "");
-  // Bölge müdürü birden çok işletmeye atanır; form aynı adla çoklu değer yollar.
-  const bolgeIsletmeleri = formData
-    .getAll("bolgeIsletmeleri")
-    .map((v) => String(v))
-    .filter(Boolean);
+  // Bölge müdürü birden çok işletmeye atanır; form aynı adla çoklu değer
+  // yollar. Liste SINIRLI: her eleman aşağıda bir `userBusiness` satırına
+  // dönüşüyor ve sınırsızken elle kurulmuş tek bir istek binlerce satır
+  // yazdırabiliyordu. Tekrarlar da ayıklanıyor (aynı işletmenin iki kez
+  // gönderilmesi tekillik hatasına düşürüyordu).
+  const bolgeSonuc = listeAlani(
+    formData.getAll("bolgeIsletmeleri"),
+    "Bölge işletmeleri",
+    { enCok: EN_COK_BOLGE_ISLETMESI },
+  );
+  if (!bolgeSonuc.ok) return { error: bolgeSonuc.hata };
+  const bolgeIsletmeleri = bolgeSonuc.deger;
   const password = String(formData.get("password") ?? "");
 
-  if (!name) return { error: "Ad soyad gerekli." };
-  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: "Geçerli bir e-posta girin." };
+  // Ad, e-posta ve şifre sınırsızdı; üçü de doğrudan veritabanına
+  // gidiyordu. Biçim kuralları artık desenler.ts'ten — aynı e-posta deseni
+  // önceden bu dosyada, isletmeler/actions.ts'te ve deneme/actions.ts'te
+  // ayrı ayrı yazılıydı.
+  const alanHatasi = ilkHata(
+    alanDogrula(name, "kisiAdi", "Ad soyad"),
+    alanDogrula(email, "eposta", "E-posta"),
+    alanDogrula(password, "sifre", "Şifre"),
+    alanDogrula(rawPhone, "telefon", "Telefon"),
+  );
+  if (alanHatasi) return { error: alanHatasi };
 
   const username = rawUsername || toUsername(email.split("@")[0]);
   const usernameSorun = usernameProblem(username);
@@ -222,10 +249,13 @@ export async function updateUser(
   const rawPhone = String(formData.get("phone") ?? "").trim();
   const role = String(formData.get("role") ?? "");
   const businessId = String(formData.get("businessId") ?? "");
-  const bolgeIsletmeleri = formData
-    .getAll("bolgeIsletmeleri")
-    .map((v) => String(v))
-    .filter(Boolean);
+  const bolgeSonuc = listeAlani(
+    formData.getAll("bolgeIsletmeleri"),
+    "Bölge işletmeleri",
+    { enCok: EN_COK_BOLGE_ISLETMESI },
+  );
+  if (!bolgeSonuc.ok) return { error: bolgeSonuc.hata };
+  const bolgeIsletmeleri = bolgeSonuc.deger;
   // Formdan gelen modüller iki süzgeçten geçiyor: tanınmayan anahtarlar
   // atılıyor ve actor'ın KENDİ sahip olmadıkları düşülüyor. İkincisi asıl
   // güvenlik kapısı — form alanı gizlense bile istek elle kurulabilir, ve
@@ -234,8 +264,12 @@ export async function updateUser(
   const istenenModuller = formData.getAll("moduller").map((v) => String(v));
   const modullerGonderildi = formData.get("modullerGonderildi") === "1";
 
-  if (!name) return { error: "Ad soyad gerekli." };
-  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: "Geçerli bir e-posta girin." };
+  const alanHatasi = ilkHata(
+    alanDogrula(name, "kisiAdi", "Ad soyad"),
+    alanDogrula(email, "eposta", "E-posta"),
+    alanDogrula(rawPhone, "telefon", "Telefon"),
+  );
+  if (alanHatasi) return { error: alanHatasi };
 
   const username = rawUsername || toUsername(email.split("@")[0]);
   const usernameSorun = usernameProblem(username);
@@ -439,7 +473,17 @@ export async function changeOwnPassword(
 
   // --- 2. adım: SMS kodu
   if (step === "kod") {
-    const code = String(formData.get("code") ?? "").trim();
+    // Kod altı rakam; biçimi tutmayan bir değerin OTP kaydına kadar
+    // gitmesine gerek yok.
+    const kodSonuc = alanDogrula(formData.get("code"), "dogrulamaKodu", "Kod");
+    if (!kodSonuc.ok) {
+      return {
+        step: "kod",
+        error: kodSonuc.hata,
+        maskedPhone: String(formData.get("maskedPhone") ?? "").slice(0, 40),
+      };
+    }
+    const code = kodSonuc.deger;
     const bekleyen = await readPendingPassword();
     if (!bekleyen) {
       return { step: "form", error: "İşlem zaman aşımına uğradı. Baştan başlayın." };
@@ -486,7 +530,16 @@ export async function changeOwnPassword(
   }
 
   // --- 1. adım: doğrulama + kod gönderimi
-  const current = String(formData.get("current") ?? "");
+  // `current` doğrudan bcrypt.compare'e gidiyor ve sınırsızdı: bcrypt'in
+  // maliyeti girdiyle artıyor, yani megabaytlık bir "mevcut şifre" tek
+  // istekte sunucuyu meşgul edebiliyordu. Oturum gerektiren bir uç
+  // olduğu için etkisi giriş formundakinden dar ama sınıf aynı.
+  // (`next` zaten sifreSorunu'ndan geçiyor, orada üst sınır var.)
+  const mevcutSonuc = alanDogrula(formData.get("current"), "girisSifresi", "Mevcut şifre", {
+    zorunlu: true,
+  });
+  if (!mevcutSonuc.ok) return { step: "form", error: "Mevcut şifre hatalı." };
+  const current = mevcutSonuc.deger;
   const next = String(formData.get("next") ?? "");
   const repeat = String(formData.get("repeat") ?? "");
 

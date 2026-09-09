@@ -17,6 +17,8 @@ import {
   ozellikleriYaz,
   type Koordinat,
 } from "@/lib/biyerlere/mekan";
+import { alanDogrula } from "@/lib/cekirdek/desenler";
+import { sayiAlani } from "@/lib/cekirdek/girdi";
 
 export type BiyerlereFormState = { error?: string; saved?: boolean };
 export type FlasIndirimFormState = { error?: string; saved?: string };
@@ -117,14 +119,20 @@ export async function flasIndirimBaslat(
   await requireYazma();
 
   const businessId = String(formData.get("businessId") ?? "");
-  const baslik = String(formData.get("baslik") ?? "").trim();
-  const sureSaat = Number(formData.get("sureSaat") ?? "2");
+  // Başlık sınırsızdı ve doğrudan bir PUSH BİLDİRİMİNİN gövdesine
+  // giriyordu — dışarıya çıkan bir metnin sınırsız olması istenmez.
+  const baslikSonuc = alanDogrula(formData.get("baslik"), "kisaBaslik", "Başlık");
+  const sureSonuc = sayiAlani(formData.get("sureSaat"), "Süre", {
+    enAz: 1,
+    enCok: 24,
+    varsayilan: 2,
+  });
 
   if (!(await canAccessBusiness(actor, businessId))) return { error: "Bu işletmeye yetkiniz yok." };
-  if (!baslik) return { error: "Başlık gerekli." };
-  if (!Number.isFinite(sureSaat) || sureSaat <= 0 || sureSaat > 24) {
-    return { error: "Süre 1-24 saat arasında olmalı." };
-  }
+  if (!baslikSonuc.ok) return { error: baslikSonuc.hata };
+  if (!sureSonuc.ok) return { error: sureSonuc.hata };
+  const baslik = baslikSonuc.deger;
+  const sureSaat = sureSonuc.deger;
 
   const business = await prisma.business.findUnique({
     where: { id: businessId },

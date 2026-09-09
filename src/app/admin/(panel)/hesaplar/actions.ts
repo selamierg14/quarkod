@@ -12,6 +12,8 @@ import { uniqueConstraintMessage } from "@/lib/cekirdek/unique-error";
 import { tarihGirdisi } from "@/lib/isletme/abonelik";
 import { sifreSorunu } from "@/lib/kimlik/sifre";
 import { parsePrice, formatPrice } from "@/lib/isletme/menu";
+import { alanDogrula } from "@/lib/cekirdek/desenler";
+import { ilkHata } from "@/lib/cekirdek/girdi";
 
 export type AccountFormState = { error?: string; saved?: string };
 
@@ -115,16 +117,25 @@ export async function createAccount(
   const ownerUsername = String(formData.get("ownerUsername") ?? "").trim().toLowerCase();
   const ownerPhone = String(formData.get("ownerPhone") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+
+  // Beş alanın hiçbirinde sınır yoktu; hepsi doğrudan veritabanına
+  // gidiyordu. Biçim kuralları desenler.ts'ten, tek yerden.
+  const alanHatasi = ilkHata(
+    alanDogrula(name, "isletmeAdi", "Hesap adı"),
+    alanDogrula(ownerName, "kisiAdi", "Sahip adı"),
+    alanDogrula(ownerEmail, "eposta", "Sahip e-postası"),
+    alanDogrula(ownerPhone, "telefon", "Sahip telefonu"),
+    alanDogrula(password, "sifre", "Şifre"),
+  );
+  if (alanHatasi) return { error: alanHatasi };
   // Hesabın geçerlilik tarihi açılışta veriliyor: "önce açalım sonra süre
   // koyarız" unutuluyor ve süresiz hesap kalıyordu.
   const expiresAt = tarihGirdisi(String(formData.get("expiresAt") ?? ""));
 
-  if (!name) return { error: "Hesap adı gerekli." };
-  if (!ownerName) return { error: "Hesap sahibinin adı gerekli." };
-  if (!/^\S+@\S+\.\S+$/.test(ownerEmail)) {
-    return { error: "Geçerli bir e-posta girin." };
-  }
-
+  // Ad, e-posta ve telefon kontrolleri yukarıdaki `alanHatasi` bloğunda
+  // toplandı; burada elle tekrarlanan üç kontrol kaldırıldı (ve o
+  // kontroldeki e-posta deseni bu dosyaya özgüydü — üç dosyada üç ayrı
+  // desen vardı).
   const username = ownerUsername || toUsername(ownerEmail.split("@")[0]);
   const usernameSorun = usernameProblem(username);
   if (usernameSorun) return { error: usernameSorun };
@@ -268,7 +279,11 @@ export async function updateSubscription(
     return { error: "Tarih geçersiz. Takvimden seçin ya da boş bırakın." };
   }
 
-  const iysCode = String(formData.get("iysCode") ?? "").trim();
+  const iysSonuc = alanDogrula(formData.get("iysCode"), "iysKodu", "İYS marka kodu", {
+    zorunlu: false,
+  });
+  if (!iysSonuc.ok) return { error: iysSonuc.hata };
+  const iysCode = iysSonuc.deger;
 
   // Platform yöneticisi kısıtsız dağıtabilir; süzgeç yine de geçiyor ki
   // tanınmayan bir anahtar veritabanına yazılmasın.

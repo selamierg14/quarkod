@@ -9,6 +9,7 @@ import {
   izinTalepEt,
   type IzinFormState,
 } from "../vardiya-planlama/izinler/actions";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
 
 const INPUT =
   "w-full rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
@@ -82,7 +83,12 @@ export function IzinTalebi({
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-caption text-ink-muted">Sebep (isteğe bağlı)</span>
-              <input name="aciklama" placeholder="Düğün, sağlık, okul…" className={INPUT} />
+              <input
+                name="aciklama"
+                {...alanOzellikleri("aciklama", { zorunlu: false })}
+                placeholder="Düğün, sağlık, okul…"
+                className={INPUT}
+              />
             </label>
           </div>
 

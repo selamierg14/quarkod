@@ -63,9 +63,20 @@ src/app/
   │     └─ Tüketici: appKullaniciGerekli (jeton imzası + kullanıcının güncel hâli)
   │
   ├─ 3. Hız sınırı               ← lib/kimlik/hiz-siniri.ts
-  ├─ 4. Girdi doğrulama          ← lib/cekirdek/girdi.ts (min/max zorunlu)
+  ├─ 4. Girdi doğrulama          ← lib/cekirdek/desenler.ts + girdi.ts
   └─ 5. İş kuralı (saf fonksiyon) → Prisma
 ```
+
+Bunun ÖNÜNDE bir kapı daha var ve sunucuda değil, tarayıcıda:
+
+```
+0. Tarayıcı doğrulaması  ← alanOzellikleri() → <input maxLength pattern required>
+```
+
+Geçersiz istek formdan hiç çıkmıyor. Ama bu bir güvenlik sınırı DEĞİL —
+nitelikler silinebilir, istek doğrudan da atılabilir. Kazanç, kullanıcının
+sayfa gidip gelmeden geri bildirim alması ve sunucunun boşuna
+çalışmaması.
 
 Middleware Edge'de koştuğu için veritabanına erişemez; oradaki kontrol
 **kaba ve ucuz** (jeton var mı), asıl doğrulama route içinde yapılır. İki
@@ -80,7 +91,7 @@ cevaplamak için açarım"** ölçütüyle gruplu (teknik tür değil, iş alan�
 
 | Klasör | Ne var | Örnek |
 |---|---|---|
-| `cekirdek/` | Her yerden kullanılan temel taşlar | `db`, `ortam`, `girdi`, `constants`, `gun`, `slug` |
+| `cekirdek/` | Her yerden kullanılan temel taşlar | `db`, `ortam`, `girdi`, `desenler`, `constants`, `gun`, `slug` |
 | `kimlik/` | Kim neye nasıl erişir | `auth`, `tenancy`, `session-token`, `app-oturum`, `moduller`, `panel`, `hiz-siniri`, `api-politika`, `yol-koruma` |
 | `isletme/` | Kiracının işletmesi ve müşteri deneyimi | `menu*`, `anket*`, `masa`, `qr*`, `rezervasyon`, `duyuru`, `iys`, `kvkk` |
 | `personel/` | Vardiya ve ekip | `vardiya`, `vardiya-degisim`, `vardiya-tablo` |
@@ -90,10 +101,36 @@ cevaplamak için açarım"** ölçütüyle gruplu (teknik tür değil, iş alan�
 
 **Kural:** bu dosyalar mümkün olduğunca **saf** — Next'ten ve veritabanından
 bağımsız, testlenebilir. Route'lar ve Server Action'lar bunları çağıran ince
-kabuklar. 664 testin büyük kısmı veritabanına hiç dokunmadan iş kurallarını
+kabuklar. 941 testin büyük kısmı veritabanına hiç dokunmadan iş kurallarını
 sınıyor.
 
 ---
+
+## Girdi doğrulama: alan biçimlerinin tek kaynağı
+
+[`src/lib/cekirdek/desenler.ts`](src/lib/cekirdek/desenler.ts) her alan
+türünün biçimini bir kez tanımlıyor; **iki taraf da oradan okuyor**:
+
+| | Çağrı | Ne yapıyor |
+|---|---|---|
+| Arayüz | `alanOzellikleri("eposta")` | `<input>` üzerine `maxLength`/`pattern`/`inputMode` serpiyor |
+| Sunucu | `alanDogrula(ham, "eposta", "E-posta")` | Aynı desenle doğruluyor |
+
+İkisi aynı kayıttan beslendiği için **ayrışamıyorlar** — önceki hâlde aynı
+e-posta deseni beş ayrı dosyada elle yazılıydı ve hiçbirinde uzunluk sınırı
+yoktu. `desenler.test.ts` ayrışmayı iki yönden de sınıyor ve elle yazılmış
+kopyaların geri gelmesini engelliyor.
+
+İki kural okurken şaşırtıyor, ikisi de bilinçli:
+
+- **`girisKimligi` / `girisSifresi`**, açılış kurallarından (`kullaniciAdi`,
+  `sifre`) daha gevşek. Giriş ekranı kaydedilmiş olabilecek her değeri kabul
+  etmeli; bugünün kuralını orada dayatmak dünün kuralıyla açılmış hesapları
+  kilitler. Girişte tek sınır uzunluk — o da bcrypt maliyeti yüzünden.
+- **`renk`** alanına arayüz tarafında desen KONMUYOR: `type="color"` girdisi
+  `pattern`'ı yok sayıyor ve geçersiz değeri sessizce `#000000` yapıyor.
+  İşlevsiz bir nitelik bırakmak, alanın korunduğu izlenimi verdiği için
+  olmamasından kötü.
 
 ## Kimlik: iki ayrı dünya
 

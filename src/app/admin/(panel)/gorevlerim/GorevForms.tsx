@@ -3,6 +3,7 @@
 import { useActionState, useState, useTransition } from "react";
 import { SHIFTS, type Shift } from "@/lib/cekirdek/constants";
 import { shiftNotuEkle, toggleGorev, type GorevFormState } from "./actions";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
 
 const INPUT =
   "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
@@ -110,6 +111,7 @@ export function ShiftNotuFormu({
         <span className="text-caption text-ink-muted">Not</span>
         <input
           name="text"
+          {...alanOzellikleri("not")}
           required
           placeholder="masa 5'te sorun oldu, dikkat..."
           className={`${INPUT} w-full`}

@@ -9,6 +9,7 @@ import {
   rotaSil,
   type RotaFormState,
 } from "./actions";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
 
 const INPUT =
   "w-full rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
@@ -21,12 +22,18 @@ export function NewRotaForm() {
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Rota adı</span>
-          <input name="ad" required placeholder="Kadıköy Kahve Rotası" className={INPUT} />
+          <input
+            name="ad"
+            {...alanOzellikleri("isletmeAdi")}
+            placeholder="Kadıköy Kahve Rotası"
+            className={INPUT}
+          />
         </label>
         <label className="flex flex-col gap-1 sm:col-span-2">
           <span className="text-caption text-ink-muted">Açıklama (isteğe bağlı)</span>
           <textarea
             name="aciklama"
+            {...alanOzellikleri("aciklama", { zorunlu: false })}
             rows={2}
             placeholder="Kadıköy'ün en sevilen 4 üçüncü nesil kahvecisi. Hepsini gez, rozeti kap!"
             className={INPUT}

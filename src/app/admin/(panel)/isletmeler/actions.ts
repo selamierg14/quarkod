@@ -30,6 +30,8 @@ import { slugIleOlustur, slugify } from "@/lib/cekirdek/slug";
 const EN_COK_MASA = 300;
 const EN_UZUN_MASA_ADI = 40;
 import { googleYorumLinkiGecerliMi } from "@/lib/isletme/google-yorum";
+import { alanDogrula } from "@/lib/cekirdek/desenler";
+import { ilkHata, metinAlani, sayiAlani } from "@/lib/cekirdek/girdi";
 
 export type FormState = { error?: string; saved?: boolean };
 
@@ -59,15 +61,19 @@ export async function createBusiness(
     };
   }
 
-  const name = String(formData.get("name") ?? "").trim();
-  const type = String(formData.get("type") ?? "");
-  const tableCount = Number(formData.get("tableCount") ?? 0);
+  const adSonuc = alanDogrula(formData.get("name"), "isletmeAdi", "İşletme adı");
+  const masaSayisi = sayiAlani(formData.get("tableCount"), "Masa sayısı", {
+    enAz: 0,
+    enCok: EN_COK_MASA,
+    varsayilan: 0,
+  });
+  const hataMesaji = ilkHata(adSonuc, masaSayisi);
+  if (hataMesaji) return { error: hataMesaji };
 
-  if (!name) return { error: "İşletme adı gerekli." };
+  const name = adSonuc.ok ? adSonuc.deger : "";
+  const tableCount = masaSayisi.ok ? masaSayisi.deger : 0;
+  const type = String(formData.get("type") ?? "");
   if (!(type in BUSINESS_TYPES)) return { error: "Geçerli bir işletme türü seçin." };
-  if (!Number.isInteger(tableCount) || tableCount < 0 || tableCount > 300) {
-    return { error: "Masa sayısı 0-300 arasında olmalı." };
-  }
 
   // Sorumlu hesabı isteğe bağlı; girilirse işletmeyle birlikte açılır ki
   // yeni işletmenin sorumlusu ilk günden panele girebilsin.
@@ -82,10 +88,16 @@ export async function createBusiness(
   let phone: string | null = null;
 
   if (wantsManager) {
-    if (!managerName) return { error: "Sorumlu için ad soyad girin." };
-    if (!/^\S+@\S+\.\S+$/.test(managerEmail)) {
-      return { error: "Sorumlu için geçerli bir e-posta girin." };
-    }
+    // Biçim kuralları desenler.ts'ten; aynı e-posta deseni önceden üç ayrı
+    // dosyada elle yazılmıştı ve üçü de birbirinden farklıydı.
+    const sorumluHata = ilkHata(
+      alanDogrula(managerName, "kisiAdi", "Sorumlu adı"),
+      alanDogrula(managerEmail, "eposta", "Sorumlu e-postası"),
+      alanDogrula(managerPassword, "sifre", "Sorumlu şifresi"),
+      alanDogrula(managerPhone, "telefon", "Sorumlu telefonu"),
+    );
+    if (sorumluHata) return { error: sorumluHata };
+
     const sifreHatasi = sifreSorunu(managerPassword);
     if (sifreHatasi) return { error: `Sorumlu şifresi: ${sifreHatasi}` };
 
@@ -106,6 +118,33 @@ export async function createBusiness(
     }
   }
 
+  // Görünüşte ikincil olan bu üç alan da veritabanına DOĞRULANMADAN
+  // gidiyordu. En kritiği `brandColor`: hiçbir kontrolü yoktu ve değeri
+  // karekod üreticisine ham olarak veriliyor (isletmeler/[id]/qr/page.tsx),
+  // yani geçersiz bir renk o işletmenin QR sayfasını tamamen çökertiyordu.
+  const adresSonuc = alanDogrula(formData.get("address"), "adres", "Adres", {
+    zorunlu: false,
+  });
+  const renkSonuc = alanDogrula(formData.get("brandColor"), "renk", "Marka rengi", {
+    zorunlu: false,
+  });
+  const linkSonuc = alanDogrula(formData.get("googleReviewUrl"), "webAdresi", "Google linki", {
+    zorunlu: false,
+  });
+  const esikSonuc = sayiAlani(formData.get("notifyThreshold"), "Bildirim eşiği", {
+    enAz: 1,
+    enCok: 5,
+    varsayilan: 3,
+  });
+  const ayarHatasi = ilkHata(adresSonuc, renkSonuc, linkSonuc, esikSonuc);
+  if (ayarHatasi) return { error: ayarHatasi };
+
+  const adres = (adresSonuc.ok && adresSonuc.deger) || null;
+  const googleLinki = linkSonuc.ok ? linkSonuc.deger : "";
+  // Boş bırakılırsa varsayılan marka rengi.
+  const markaRengi = (renkSonuc.ok && renkSonuc.deger) || "#111827";
+  const esik = esikSonuc.ok ? esikSonuc.deger : 3;
+
   if (!slugify(name)) {
     return { error: "İşletme adından geçerli bir adres üretilemedi." };
   }
@@ -120,10 +159,10 @@ export async function createBusiness(
         slug,
         name,
         type,
-        address: String(formData.get("address") ?? "").trim() || null,
-        googleReviewUrl: String(formData.get("googleReviewUrl") ?? "").trim() || null,
-        brandColor: String(formData.get("brandColor") ?? "#111827"),
-        notifyThreshold: Number(formData.get("notifyThreshold") ?? 3),
+        address: adres,
+        googleReviewUrl: googleLinki || null,
+        brandColor: markaRengi,
+        notifyThreshold: esik,
         categories: {
           create: DEFAULT_CATEGORIES[type as BusinessType].map(
             (categoryName, index) => ({ name: categoryName, sortOrder: index }),
@@ -175,13 +214,54 @@ export async function updateBusiness(
 
   if (!await canAccessBusiness(user, id)) return { error: "Yetkiniz yok." };
 
-  const name = String(formData.get("name") ?? "").trim();
-  if (!name) return { error: "İşletme adı gerekli." };
+  const adSonuc = alanDogrula(formData.get("name"), "isletmeAdi", "İşletme adı");
+  const esikSonuc = sayiAlani(formData.get("notifyThreshold"), "Bildirim eşiği", {
+    enAz: 1,
+    enCok: 5,
+    varsayilan: 3,
+  });
+  // brandColor'ın HİÇ doğrulaması yoktu ve değeri karekod üreticisine ham
+  // gidiyor — geçersiz bir renk QR sayfasını çökertiyordu.
+  const renkSonuc = alanDogrula(formData.get("brandColor"), "renk", "Marka rengi", {
+    zorunlu: false,
+  });
+  const adresSonuc = alanDogrula(formData.get("address"), "adres", "Adres", {
+    zorunlu: false,
+  });
+  // Wi-Fi sınırları uydurma değil: SSID standardı 32, WPA2 parolası 63
+  // karakter. Daha uzunu hiçbir cihazda çalışmıyor, yani kaydetmenin de
+  // anlamı yok.
+  const wifiAdiSonuc = alanDogrula(formData.get("wifiSsid"), "wifiAdi", "Wi-Fi adı", {
+    zorunlu: false,
+  });
+  const wifiSifreSonuc = alanDogrula(
+    formData.get("wifiPassword"),
+    "wifiSifresi",
+    "Wi-Fi şifresi",
+    { zorunlu: false },
+  );
+  const iysSonuc = alanDogrula(formData.get("iysBrandCode"), "iysKodu", "İYS marka kodu", {
+    zorunlu: false,
+  });
 
-  const threshold = Number(formData.get("notifyThreshold") ?? 3);
-  if (!Number.isInteger(threshold) || threshold < 1 || threshold > 5) {
-    return { error: "Bildirim eşiği 1-5 arasında olmalı." };
-  }
+  const temelHata = ilkHata(
+    adSonuc,
+    esikSonuc,
+    renkSonuc,
+    adresSonuc,
+    wifiAdiSonuc,
+    wifiSifreSonuc,
+    iysSonuc,
+  );
+  if (temelHata) return { error: temelHata };
+
+  const name = adSonuc.ok ? adSonuc.deger : "";
+  const threshold = esikSonuc.ok ? esikSonuc.deger : 3;
+  const brandColor = (renkSonuc.ok && renkSonuc.deger) || "#111827";
+  const address = (adresSonuc.ok && adresSonuc.deger) || null;
+  const wifiSsid = (wifiAdiSonuc.ok && wifiAdiSonuc.deger) || null;
+  const wifiPassword = (wifiSifreSonuc.ok && wifiSifreSonuc.deger) || null;
+  const iysBrandCode = (iysSonuc.ok && iysSonuc.deger) || null;
 
   const googleReviewUrl = String(formData.get("googleReviewUrl") ?? "").trim();
   if (googleReviewUrl && !googleYorumLinkiGecerliMi(googleReviewUrl)) {
@@ -192,28 +272,45 @@ export async function updateBusiness(
         "içinde DEGISTIRIN gibi bir yer tutucu kalmamalı.",
     };
   }
-  if (googleReviewUrl && !/^https?:\/\//i.test(googleReviewUrl)) {
-    return { error: "Google linki http:// veya https:// ile başlamalı." };
-  }
+  // Bağlantı alanlarının hepsi TEK kural: `webAdresi`. Önceden aynı
+  // `/^https?:\/\//i` kontrolü bu dosyada üç ayrı yerde tekrarlanıyordu ve
+  // hiçbirinde uzunluk sınırı yoktu. `https?` şartı yalnızca biçim değil
+  // güvenlik: şema serbest kalsaydı `javascript:` bir bağlantı olarak
+  // sayfaya basılabilirdi.
+  const linkAlanlari = [
+    ["googleReviewUrl", "Google linki"],
+    ["instagramUrl", "Instagram linki"],
+    ["yemeksepetiUrl", "Yemeksepeti linki"],
+    ["getirUrl", "Getir linki"],
+    ["trendyolUrl", "Trendyol linki"],
+    ["migrosUrl", "Migros linki"],
+  ] as const;
 
-  const instagramUrl = String(formData.get("instagramUrl") ?? "").trim();
-  if (instagramUrl && !/^https?:\/\//i.test(instagramUrl)) {
-    return { error: "Instagram linki http:// veya https:// ile başlamalı." };
+  const linkler: Record<string, string | null> = {};
+  for (const [alan, etiket] of linkAlanlari) {
+    const sonuc = alanDogrula(formData.get(alan), "webAdresi", etiket, { zorunlu: false });
+    if (!sonuc.ok) return { error: sonuc.hata };
+    linkler[alan] = sonuc.deger || null;
   }
+  const instagramUrl = linkler.instagramUrl;
 
-  const wifiSsid = String(formData.get("wifiSsid") ?? "").trim();
-  const wifiPassword = String(formData.get("wifiPassword") ?? "").trim();
-
-  // Sipariş platformu linkleri: her biri isteğe bağlı, doluysa http(s) olmalı.
-  const siparisAlanlari = ["yemeksepetiUrl", "getirUrl", "trendyolUrl", "migrosUrl"] as const;
-  const siparisLinkleri: Record<string, string | null> = {};
-  for (const alan of siparisAlanlari) {
-    const deger = String(formData.get(alan) ?? "").trim();
-    if (deger && !/^https?:\/\//i.test(deger)) {
-      return { error: "Sipariş linkleri http:// veya https:// ile başlamalı." };
-    }
-    siparisLinkleri[alan] = deger || null;
+  // Tür kümesi: enum'a bağlı. Boş gelirse "değiştirme" anlamına geliyor.
+  const turHam = String(formData.get("type") ?? "");
+  if (turHam && !(turHam in BUSINESS_TYPES)) {
+    return { error: "Geçerli bir işletme türü seçin." };
   }
+  const tur = turHam || null;
+
+  // Karekod kartı yazısı ve duyuru: sessizce kesmek yerine sınırlı kırpma
+  // (metinAlani varsayılanı) — bu iki alan serbest metin, yarım kalması
+  // reddedilmesinden iyi.
+  const qrYazi = metinAlani(formData.get("qrCardText"), "Karekod kartı yazısı", {
+    enCok: 80,
+  });
+  const duyuruSonuc = metinAlani(formData.get("announcement"), "Duyuru", { enCok: 120 });
+  const metinHatasi = ilkHata(qrYazi, duyuruSonuc);
+  if (metinHatasi) return { error: metinHatasi };
+  const duyuru = (duyuruSonuc.ok && duyuruSonuc.deger) || null;
 
   // Görseller data URI olarak gelir; boş dize "kaldır" demek. Sunucu boyut ve
   // biçimi yeniden doğrular — tarayıcının küçültmesine güvenmiyoruz.
@@ -237,33 +334,34 @@ export async function updateBusiness(
     data: {
       name,
       // Tür değişimi sadece patronun yetkisinde; sorumlu formu göndermez.
-      ...(user.role === "owner" && formData.get("type")
-        ? { type: String(formData.get("type")) }
-        : {}),
-      address: String(formData.get("address") ?? "").trim() || null,
-      googleReviewUrl: googleReviewUrl || null,
-      brandColor: String(formData.get("brandColor") ?? "#111827"),
+      //
+      // TÜR KÜMESİ BURADA DA DENETLENİYOR. Önceden yalnızca createBusiness'te
+      // bakılıyordu, güncellemede `String(formData.get("type"))` doğrudan
+      // yazılıyordu — yani formu elle kuran biri işletmeye tanınmayan bir
+      // tür verebiliyordu. Sonuç sessiz değil: DEFAULT_CATEGORIES[type]
+      // undefined dönüyor ve o tür üzerinden geçen kod patlıyor.
+      ...(user.role === "owner" && tur ? { type: tur } : {}),
+      address,
+      googleReviewUrl: linkler.googleReviewUrl,
+      brandColor,
       notifyThreshold: threshold,
       googleRedirect: formData.get("googleRedirect") === "on",
-      qrCardText: String(formData.get("qrCardText") ?? "").trim().slice(0, 80) || null,
+      qrCardText: (qrYazi.ok && qrYazi.deger) || null,
       // Menüde gizlemek yetmez: form alanı elle kurulabilir. Modül kapalı
       // bir hesapta bu alana ne gönderilirse gönderilsin dokunulmuyor —
       // var olan değer korunuyor, silinmiyor de.
-      ...(user.moduller.includes("iys")
-        ? { iysBrandCode: String(formData.get("iysBrandCode") ?? "").trim() || null }
-        : {}),
+      ...(user.moduller.includes("iys") ? { iysBrandCode } : {}),
       logoUrl,
       coverUrl,
-      instagramUrl: instagramUrl || null,
-      wifiSsid: wifiSsid || null,
-      wifiPassword: wifiPassword || null,
-      announcement:
-        String(formData.get("announcement") ?? "").trim().slice(0, 120) || null,
+      instagramUrl,
+      wifiSsid,
+      wifiPassword,
+      announcement: duyuru,
       announcementActive: formData.get("announcementActive") === "on",
-      yemeksepetiUrl: siparisLinkleri.yemeksepetiUrl,
-      getirUrl: siparisLinkleri.getirUrl,
-      trendyolUrl: siparisLinkleri.trendyolUrl,
-      migrosUrl: siparisLinkleri.migrosUrl,
+      yemeksepetiUrl: linkler.yemeksepetiUrl,
+      getirUrl: linkler.getirUrl,
+      trendyolUrl: linkler.trendyolUrl,
+      migrosUrl: linkler.migrosUrl,
     },
   });
 
@@ -284,10 +382,11 @@ export async function addCategory(
 ): Promise<FormState> {
   const user = await requireYazma();
   const businessId = String(formData.get("businessId") ?? "");
-  const name = String(formData.get("name") ?? "").trim();
+  const adSonuc = alanDogrula(formData.get("name"), "kisaBaslik", "Kategori adı");
 
   if (!await canAccessBusiness(user, businessId)) return { error: "Yetkiniz yok." };
-  if (!name) return { error: "Kategori adı gerekli." };
+  if (!adSonuc.ok) return { error: adSonuc.hata };
+  const name = adSonuc.deger;
 
   const existing = await prisma.categoryTemplate.findUnique({
     where: { businessId_name: { businessId, name } },
@@ -403,7 +502,17 @@ export async function addTables(
   const businessId = String(formData.get("businessId") ?? "");
   if (!await canAccessBusiness(user, businessId)) return { error: "Yetkiniz yok." };
 
-  const raw = String(formData.get("tableNumbers") ?? "").trim();
+  // Ham girdi BÖLÜNMEDEN önce sınırlanıyor. Aşağıdaki eleman sayısı
+  // kontrolü doğru ama geç: 50 MB'lık bir dizeyi düzenli ifadeyle bölmek,
+  // sonra "çok fazla eleman" demek işi zaten yapmış olmak demek.
+  // 300 masa × 40 karakter + ayraçlar için 16 KB fazlasıyla yeterli.
+  const hamSonuc = metinAlani(formData.get("tableNumbers"), "Masa numaraları", {
+    enAz: 1,
+    enCok: EN_COK_MASA * (EN_UZUN_MASA_ADI + 2),
+    kirp: false,
+  });
+  if (!hamSonuc.ok) return { error: hamSonuc.hata };
+  const raw = hamSonuc.deger;
   const isEntrance = formData.get("isEntrance") === "on";
 
   // Hem "1-20" aralığı hem "VIP-1, VIP-2" listesi kabul edilir.

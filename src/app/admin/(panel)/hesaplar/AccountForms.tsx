@@ -10,6 +10,7 @@ import {
   updateSubscription,
   type AccountFormState,
 } from "./actions";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
 
 const INPUT =
   "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
@@ -47,23 +48,24 @@ export function NewAccountForm() {
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Hesap adı (firma/zincir)</span>
-          <input name="name" required className={INPUT} />
+          <input name="name" {...alanOzellikleri("isletmeAdi")} className={INPUT} />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Sahibinin adı</span>
-          <input name="ownerName" required className={INPUT} />
+          <input name="ownerName" {...alanOzellikleri("kisiAdi")} className={INPUT} />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Sahibinin e-postası</span>
-          <input name="ownerEmail" type="email" required className={INPUT} />
+          <input name="ownerEmail" {...alanOzellikleri("eposta")} className={INPUT} />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Kullanıcı adı (giriş için)</span>
           <input
             name="ownerUsername"
+            {...alanOzellikleri("kullaniciAdi", { zorunlu: false })}
             autoCapitalize="none"
             spellCheck={false}
             placeholder="boş bırakılırsa e-postadan türetilir"
@@ -75,13 +77,19 @@ export function NewAccountForm() {
           <span className="text-caption text-ink-muted">
             Cep telefonu (doğrulama kodu)
           </span>
-          <input name="ownerPhone" type="tel" required placeholder="05XX XXX XX XX" className={INPUT} />
+          <input
+            name="ownerPhone"
+            {...alanOzellikleri("telefon")}
+            placeholder="05XX XXX XX XX"
+            className={INPUT}
+          />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Başlangıç şifresi</span>
           <input
             name="password"
+            {...alanOzellikleri("sifre")}
             type="text"
             required
             minLength={8}
@@ -242,6 +250,7 @@ export function SubscriptionForm({
         <span className="text-caption text-ink-muted">İYS hizmet sağlayıcı kodu</span>
         <input
           name="iysCode"
+          {...alanOzellikleri("iysKodu", { zorunlu: false })}
           defaultValue={iysCode}
           placeholder="ör. 123456"
           className={`${INPUT} w-36 py-1.5`}

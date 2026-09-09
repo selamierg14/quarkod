@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { canAccessBusiness, requirePersonelYonetimi, requireYazma } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
+import { alanDogrula } from "@/lib/cekirdek/desenler";
 
 export type SablonFormState = { error?: string; saved?: string };
 
@@ -14,13 +15,14 @@ export async function gorevEkle(
   await requireYazma();
 
   const businessId = String(formData.get("businessId") ?? "");
-  const label = String(formData.get("label") ?? "").trim();
+  const etiket = alanDogrula(formData.get("label"), "kisaBaslik", "Görev adı");
   const gorev = String(formData.get("gorev") ?? "");
 
   if (!(await canAccessBusiness(actor, businessId))) {
     return { error: "Bu işletmeye yetkiniz yok." };
   }
-  if (!label) return { error: "Görev adı gerekli." };
+  if (!etiket.ok) return { error: etiket.hata };
+  const label = etiket.deger;
   if (!["acilis", "kapanis"].includes(gorev)) return { error: "Açılış ya da kapanış seçin." };
 
   const sonuncu = await prisma.checklistItem.findFirst({

@@ -11,6 +11,10 @@ import {
   toSessionUser,
 } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
+import { gizliAnahtar } from "@/lib/cekirdek/ortam";
+import { alanDogrula } from "@/lib/cekirdek/desenler";
+import { secenekAlani } from "@/lib/cekirdek/girdi";
+import { ADIMLAR, KIPLER, type Step } from "@/lib/kimlik/giris-akisi";
 import { issueOtp, maskPhone, twoFactorEnabled, verifyOtp } from "@/lib/kimlik/otp";
 import { sifreSorunu } from "@/lib/kimlik/sifre";
 import {
@@ -31,7 +35,11 @@ import {
 const CHALLENGE_COOKIE = "mm_challenge";
 const CHALLENGE_TTL_SECONDS = 10 * 60;
 
-export type Step = "kimlik" | "kod" | "yeni-sifre";
+// Adım/kip sabitleri lib'de: `"use server"` dosyası yalnızca async
+// fonksiyon dışa aktarabiliyor (bkz. lib/kimlik/giris-akisi.ts).
+// Tip yeniden dışa aktarılıyor çünkü LoginForm onu buradan alıyor;
+// tipler derlemede siliniyor, kısıt tipleri kapsamıyor.
+export type { Step } from "@/lib/kimlik/giris-akisi";
 
 export type LoginState = {
   step: Step;
@@ -42,12 +50,15 @@ export type LoginState = {
   maskedPhone?: string;
 };
 
+/**
+ * Ara jetonun imza anahtarı.
+ *
+ * Doğrulama artık burada kopyalanmıyor: aynı üç satır beş dosyada duruyordu
+ * ve asgari uzunluk değişirse birinin unutulması kaçınılmazdı. Tek kapı
+ * lib/cekirdek/ortam.ts.
+ */
 function secretKey(): Uint8Array {
-  const secret = process.env.AUTH_SECRET;
-  if (!secret || secret.length < 16) {
-    throw new Error("AUTH_SECRET tanımlı değil veya çok kısa.");
-  }
-  return new TextEncoder().encode(secret);
+  return new TextEncoder().encode(gizliAnahtar("AUTH_SECRET"));
 }
 
 async function setChallenge(userId: string, purpose: "giris" | "sifre") {
@@ -96,15 +107,33 @@ export async function loginAction(
   _prev: LoginState,
   formData: FormData,
 ): Promise<LoginState> {
-  const step = String(formData.get("step") ?? "kimlik") as Step;
-  const mode = (String(formData.get("mode") ?? "giris") as "giris" | "sifre");
+  // Adım ve kip formdan geliyor, yani istemci bunları serbestçe yazabilir.
+  // Önceden doğrudan `as Step` ile tip iddiasına çevriliyordu — TypeScript
+  // ikna oluyor, çalışma zamanı ikna olmuyor: tanınmayan bir adım
+  // aşağıdaki koşulların hiçbirine uymayıp son bloğa (şifre belirleme)
+  // düşüyordu. Orası ayrıca challenge çerezi istediği için sömürülebilir
+  // değildi ama bu bir kaza; sabit kümeye bağlamak onu kurala çeviriyor.
+  const stepSonuc = secenekAlani(formData.get("step"), "Adım", ADIMLAR, "kimlik");
+  const modeSonuc = secenekAlani(formData.get("mode"), "Kip", KIPLER, "giris");
+  const step: Step = stepSonuc.ok ? stepSonuc.deger : "kimlik";
+  const mode: "giris" | "sifre" = modeSonuc.ok ? modeSonuc.deger : "giris";
 
   // --- 1. adım: kimlik doğrulama (giriş) ya da kullanıcı adı (şifre sıfırlama)
   if (step === "kimlik") {
-    const username = String(formData.get("username") ?? "").trim().toLowerCase();
-    if (!username) {
-      return { step: "kimlik", mode, error: "Kullanıcı adı gerekli." };
+    // Bu değer, doğrulanmadan önce İKİ kez veritabanına gidiyordu: hız
+    // sınırı tablosuna anahtar olarak yazılıyor, sonra user.findUnique ile
+    // aranıyordu. Sınırsızken 5 MB'lık bir "kullanıcı adı" tek istekte
+    // login_attempts tablosunu şişiriyor ve sorguyu pahalılaştırıyordu.
+    //
+    // Biçim DENETLENMİYOR, yalnızca uzunluk: giriş ekranı, kaydedilmiş
+    // olabilecek her adı kabul etmeli. Bugünün açılış kuralını burada
+    // dayatmak, dünün kuralıyla açılmış hesapları kilitlerdi (bkz.
+    // desenler.ts'teki `girisKimligi` gerekçesi).
+    const kimlik = alanDogrula(formData.get("username"), "girisKimligi", "Kullanıcı adı");
+    if (!kimlik.ok) {
+      return { step: "kimlik", mode, error: kimlik.hata };
     }
+    const username = kimlik.deger.toLowerCase();
 
     const guard = await checkLoginAllowed(username);
     if (!guard.allowed) {
@@ -137,10 +166,21 @@ export async function loginAction(
       };
     }
 
-    const password = String(formData.get("password") ?? "");
-    if (!password) {
-      return { step: "kimlik", mode, error: "Şifre gerekli." };
+    // Şifre uzunluğu bcrypt'e GİRMEDEN sınırlanıyor. bcrypt maliyeti
+    // girdiyle birlikte artıyor ve 1 MB'lık bir "şifre" tek istekte
+    // sunucuyu meşgul edebiliyordu — kimlik doğrulaması gerektirmeyen,
+    // yani herkese açık bir uçta. bcrypt zaten 72 baytın ötesini yok
+    // sayıyor; 128'lik sınır hiçbir gerçek parolayı kesmiyor.
+    // `girisSifresi`, açılış kuralındaki ASGARİ uzunluğu dayatmıyor: daha
+    // gevşek bir kuralla açılmış bir hesabı giriş ekranında reddetmek,
+    // kullanıcının şifresini düzeltme yolunu da kapatırdı.
+    const sifre = alanDogrula(formData.get("password"), "girisSifresi", "Şifre", {
+      zorunlu: true,
+    });
+    if (!sifre.ok) {
+      return { step: "kimlik", mode, error: "Kullanıcı adı veya şifre hatalı." };
     }
+    const password = sifre.deger;
 
     const user = await authenticate(username, password);
     await recordLoginAttempt(username, Boolean(user));
@@ -174,9 +214,19 @@ export async function loginAction(
       return { step: "kimlik", mode, error: "Oturum zaman aşımına uğradı. Baştan başlayın." };
     }
 
-    const code = String(formData.get("code") ?? "").trim();
+    // Kod altı rakam; biçimi tutmayan bir değerin veritabanındaki OTP
+    // kaydına kadar gitmesine gerek yok.
+    const kod = alanDogrula(formData.get("code"), "dogrulamaKodu", "Kod");
+    if (!kod.ok) {
+      return {
+        step: "kod",
+        mode,
+        error: kod.hata,
+        maskedPhone: String(formData.get("maskedPhone") ?? "").slice(0, 40),
+      };
+    }
     const purpose = challenge.purpose === "sifre" ? "sifre" : "giris";
-    const sonuc = await verifyOtp(challenge.userId, purpose, code);
+    const sonuc = await verifyOtp(challenge.userId, purpose, kod.deger);
     if (!sonuc.ok) {
       return {
         step: "kod",
@@ -221,7 +271,13 @@ export async function loginAction(
     return { step: "kimlik", mode: "giris", error: "Oturum zaman aşımına uğradı." };
   }
 
-  const yeni = String(formData.get("password") ?? "");
+  const yeniSifre = alanDogrula(formData.get("password"), "sifre", "Şifre", {
+    zorunlu: true,
+  });
+  if (!yeniSifre.ok) {
+    return { step: "yeni-sifre", mode: "sifre", error: yeniSifre.hata };
+  }
+  const yeni = yeniSifre.deger;
   const tekrar = String(formData.get("passwordRepeat") ?? "");
 
   if (yeni !== tekrar) {

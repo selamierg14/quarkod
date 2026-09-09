@@ -9,6 +9,7 @@ import {
   duyuruSil,
   type DuyuruFormState,
 } from "./actions";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
 
 const INPUT =
   "w-full rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
@@ -35,6 +36,7 @@ export function NewDuyuruForm({
           <span className="text-caption text-ink-muted">Başlık</span>
           <input
             name="baslik"
+            {...alanOzellikleri("kisaBaslik")}
             required
             placeholder="Bu hafta sonu: DJ Mehmet"
             className={INPUT}
@@ -45,6 +47,7 @@ export function NewDuyuruForm({
           <span className="text-caption text-ink-muted">Açıklama (isteğe bağlı)</span>
           <textarea
             name="aciklama"
+            {...alanOzellikleri("aciklama", { zorunlu: false })}
             rows={2}
             placeholder="Kapıda +18, rezervasyon için DM..."
             className={INPUT}
@@ -142,6 +145,8 @@ export function DuyuruSatiri({
               <span className="text-caption text-ink-muted">Başlık</span>
               <input
                 name="baslik"
+                {...alanOzellikleri("kisaBaslik")}
+            {...alanOzellikleri("kisaBaslik")}
                 required
                 defaultValue={baslik}
                 className={INPUT}
@@ -152,6 +157,8 @@ export function DuyuruSatiri({
               <span className="text-caption text-ink-muted">Açıklama (isteğe bağlı)</span>
               <textarea
                 name="aciklama"
+                {...alanOzellikleri("aciklama", { zorunlu: false })}
+            {...alanOzellikleri("aciklama", { zorunlu: false })}
                 rows={2}
                 defaultValue={aciklama ?? ""}
                 className={INPUT}

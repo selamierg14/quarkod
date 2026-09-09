@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { Button, Checkbox, Field, Input, Select } from "@/components/ui";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
 import { BUSINESS_TYPE_LIST } from "@/lib/cekirdek/constants";
 import { denemeBaslat, type DenemeState } from "./actions";
 
@@ -15,7 +16,12 @@ export function DenemeForm() {
     <form action={formAction} className="flex flex-col gap-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="İşletme adı" htmlFor="firma" required>
-          <Input id="firma" name="firma" required placeholder="Kırıntı Fırın & Kahve" />
+          <Input
+            id="firma"
+            name="firma"
+            {...alanOzellikleri("isletmeAdi")}
+            placeholder="Kırıntı Fırın & Kahve"
+          />
         </Field>
 
         {/* Tür kayıtta soruluyor ki panele ilk girişte anket kategorileri ve
@@ -37,11 +43,11 @@ export function DenemeForm() {
         </Field>
 
         <Field label="Ad soyad" htmlFor="adSoyad" required>
-          <Input id="adSoyad" name="adSoyad" required autoComplete="name" />
+          <Input id="adSoyad" name="adSoyad" {...alanOzellikleri("kisiAdi")} />
         </Field>
 
         <Field label="E-posta" htmlFor="eposta" required>
-          <Input id="eposta" name="eposta" type="email" required autoComplete="email" />
+          <Input id="eposta" name="eposta" {...alanOzellikleri("eposta")} />
         </Field>
 
         <Field
@@ -53,9 +59,7 @@ export function DenemeForm() {
           <Input
             id="telefon"
             name="telefon"
-            type="tel"
-            required
-            autoComplete="tel"
+            {...alanOzellikleri("telefon")}
             placeholder="05XX XXX XX XX"
           />
         </Field>
@@ -68,6 +72,7 @@ export function DenemeForm() {
           <Input
             id="kullaniciAdi"
             name="kullaniciAdi"
+            {...alanOzellikleri("kullaniciAdi", { zorunlu: false })}
             autoCapitalize="none"
             spellCheck={false}
           />
@@ -83,9 +88,7 @@ export function DenemeForm() {
           <Input
             id="sifre"
             name="sifre"
-            type="password"
-            required
-            minLength={8}
+            {...alanOzellikleri("sifre")}
             autoComplete="new-password"
           />
         </Field>

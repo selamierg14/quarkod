@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { createScriptClient } from "./prisma-client";
 import { davetKoduUret } from "../src/lib/biyerlere/davet";
 import { hakEdilenRozetler, type ZiyaretOzeti } from "../src/lib/biyerlere/rozet";
+import { toUsername } from "../src/lib/kimlik/username";
 
 /**
  * Biyerlere'yi (Keşfet/Harita/Cüzdan) "yüzlerce kullanıcısı olan canlı bir
@@ -211,12 +212,19 @@ async function main() {
       });
       bizIdler.push({ id: business.id, tur: isletme.tur, plusOrtagi });
 
+      // Kullanıcı adı panelin KENDİ kuralından geçmeli (en fazla 32
+      // karakter, bkz. lib/kimlik/username.ts). Ham `${slug}.demo`
+      // kullanılırken uzun adlı mekanlar 32'yi aşıyordu ve o hesaplar
+      // panelden DÜZENLENEMEZ hâle geliyordu: form açılıyor, kaydet
+      // deyince kendi kullanıcı adı "geçersiz" diye reddediliyordu.
+      const demoKullaniciAdi = toUsername(`${slug}.demo`);
+
       await prisma.user.upsert({
-        where: { username: `${slug}.demo` },
+        where: { username: demoKullaniciAdi },
         create: {
           accountId: hesap.id,
           name: `${isletme.ad} Sahibi`,
-          username: `${slug}.demo`,
+          username: demoKullaniciAdi,
           email: `${slug}.sahip@biyerlere-demo.local`,
           passwordHash: sifreHash,
           role: "owner",

@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { flasIndirimBaslat, type FlasIndirimFormState } from "./actions";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
 
 const INPUT =
   "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
@@ -39,6 +40,7 @@ export function FlasIndirim({ businessId, pushKredisi }: { businessId: string; p
             <span className="text-small font-medium text-ink-soft">Başlık</span>
             <input
               name="baslik"
+              {...alanOzellikleri("kisaBaslik")}
               required
               placeholder="2 saatliğine 2. kahve bizden!"
               maxLength={80}

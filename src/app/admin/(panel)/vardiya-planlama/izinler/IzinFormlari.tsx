@@ -5,6 +5,7 @@ import { CalendarPlus } from "lucide-react";
 import { SectionCard } from "@/components/ui";
 import { IZIN_TURLERI } from "@/lib/isletme/izin";
 import { izinEkle, type IzinFormState } from "./actions";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
 
 const INPUT =
   "w-full rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
@@ -70,7 +71,12 @@ export function IzinEkleForm({
 
           <label className="flex flex-col gap-1 sm:col-span-2">
             <span className="text-caption text-ink-muted">Açıklama (isteğe bağlı)</span>
-            <input name="aciklama" placeholder="Düğün, rapor no, okul günü…" className={INPUT} />
+            <input
+              name="aciklama"
+              {...alanOzellikleri("aciklama", { zorunlu: false })}
+              placeholder="Düğün, rapor no, okul günü…"
+              className={INPUT}
+            />
           </label>
         </div>
 

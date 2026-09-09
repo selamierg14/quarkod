@@ -15,6 +15,7 @@ import {
   MODUL_ACIKLAMALARI,
   type ModulAnahtari,
 } from "@/lib/kimlik/moduller";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
 
 const INPUT =
   "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
@@ -91,12 +92,12 @@ export function NewUserForm({
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Ad soyad</span>
-          <input name="name" required className={INPUT} />
+          <input name="name" {...alanOzellikleri("kisiAdi")} className={INPUT} />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">E-posta</span>
-          <input name="email" type="email" required className={INPUT} />
+          <input name="email" {...alanOzellikleri("eposta")} className={INPUT} />
         </label>
 
         <label className="flex flex-col gap-1">
@@ -105,6 +106,7 @@ export function NewUserForm({
           </span>
           <input
             name="username"
+            {...alanOzellikleri("kullaniciAdi", { zorunlu: false })}
             autoCapitalize="none"
             spellCheck={false}
             placeholder="boş bırakılırsa e-postadan türetilir"
@@ -116,7 +118,12 @@ export function NewUserForm({
           <span className="text-caption text-ink-muted">
             Cep telefonu (doğrulama kodu buraya gider)
           </span>
-          <input name="phone" type="tel" required placeholder="05XX XXX XX XX" className={INPUT} />
+          <input
+            name="phone"
+            {...alanOzellikleri("telefon")}
+            placeholder="05XX XXX XX XX"
+            className={INPUT}
+          />
         </label>
 
         <label className="flex flex-col gap-1">
@@ -177,9 +184,10 @@ export function NewUserForm({
           <span className="text-caption text-ink-muted">Başlangıç şifresi</span>
           <input
             name="password"
+            {...alanOzellikleri("sifre")}
+            // Başlangıç şifresi bilerek AÇIK: yöneticinin onu kullanıcıya
+            // iletmesi gerekiyor, noktalarla gösterip yazdırmak anlamsız.
             type="text"
-            required
-            minLength={8}
             placeholder="en az 8 karakter"
             className={INPUT}
           />
@@ -275,16 +283,20 @@ export function EditUserForm({
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Ad soyad</span>
-          <input name="name" defaultValue={user.name} required className={INPUT} />
+          <input
+            name="name"
+            {...alanOzellikleri("kisiAdi")}
+            defaultValue={user.name}
+            className={INPUT}
+          />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">E-posta</span>
           <input
             name="email"
-            type="email"
+            {...alanOzellikleri("eposta")}
             defaultValue={user.email}
-            required
             className={INPUT}
           />
         </label>
@@ -295,6 +307,7 @@ export function EditUserForm({
           </span>
           <input
             name="username"
+            {...alanOzellikleri("kullaniciAdi", { zorunlu: false })}
             defaultValue={user.username}
             autoCapitalize="none"
             spellCheck={false}
@@ -308,9 +321,8 @@ export function EditUserForm({
           </span>
           <input
             name="phone"
-            type="tel"
+            {...alanOzellikleri("telefon")}
             defaultValue={user.phone ?? ""}
-            required
             placeholder="05XX XXX XX XX"
             className={INPUT}
           />
@@ -478,9 +490,8 @@ export function ResetPasswordForm({ userId }: { userId: string }) {
       <div className="flex gap-1">
         <input
           name="password"
+          {...alanOzellikleri("sifre")}
           type="text"
-          required
-          minLength={8}
           placeholder="yeni şifre"
           className="w-36 rounded-chip border border-line px-2 py-1 text-caption outline-none focus:border-line-strong"
         />

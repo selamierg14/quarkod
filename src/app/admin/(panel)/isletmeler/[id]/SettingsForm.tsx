@@ -6,6 +6,7 @@ import { BUSINESS_TYPE_LIST, qrCardText } from "@/lib/cekirdek/constants";
 import { ImageUpload } from "@/components/ImageUpload";
 import { useToast } from "@/components/ui";
 import { updateBusiness, type FormState } from "../actions";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
 
 const INPUT =
   "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
@@ -133,7 +134,12 @@ export function SettingsForm({
       <div className="grid gap-3 rounded-control border border-line bg-surface p-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
           <span className={ETIKET}>İşletme adı</span>
-          <input name="name" defaultValue={business.name} required className={INPUT} />
+          <input
+            name="name"
+            {...alanOzellikleri("isletmeAdi")}
+            defaultValue={business.name}
+            className={INPUT}
+          />
         </label>
 
         {isOwner ? (
@@ -151,7 +157,12 @@ export function SettingsForm({
 
         <label className="flex flex-col gap-1 sm:col-span-2">
           <span className={ETIKET}>Adres</span>
-          <input name="address" defaultValue={business.address ?? ""} className={INPUT} />
+          <input
+            name="address"
+            {...alanOzellikleri("adres", { zorunlu: false })}
+            defaultValue={business.address ?? ""}
+            className={INPUT}
+          />
         </label>
       </div>
 
@@ -181,6 +192,7 @@ export function SettingsForm({
           <span className={ETIKET}>Marka rengi</span>
           <input
             name="brandColor"
+            {...alanOzellikleri("renk", { zorunlu: false })}
             type="color"
             defaultValue={business.brandColor}
             className="h-9 w-20 rounded-chip border border-line bg-surface p-1"
@@ -224,7 +236,7 @@ export function SettingsForm({
           <span className={ETIKET}>Google yorum linki</span>
           <input
             name="googleReviewUrl"
-            type="url"
+            {...alanOzellikleri("webAdresi", { zorunlu: false })}
             placeholder="https://search.google.com/local/writereview?placeid=..."
             defaultValue={business.googleReviewUrl ?? ""}
             className={INPUT}
@@ -279,6 +291,7 @@ export function SettingsForm({
             <span className={ETIKET}>İYS marka kodu</span>
             <input
               name="iysBrandCode"
+              {...alanOzellikleri("iysKodu", { zorunlu: false })}
               defaultValue={business.iysBrandCode ?? ""}
               placeholder="ör. 654321"
               className={`${INPUT} w-40`}
@@ -298,7 +311,7 @@ export function SettingsForm({
           <span className={ETIKET}>Instagram linki</span>
           <input
             name="instagramUrl"
-            type="url"
+            {...alanOzellikleri("webAdresi", { zorunlu: false })}
             placeholder="https://instagram.com/kafeniz"
             defaultValue={business.instagramUrl ?? ""}
             className={INPUT}
@@ -313,6 +326,7 @@ export function SettingsForm({
             <span className={ETIKET}>Wi-Fi ağ adı (SSID)</span>
             <input
               name="wifiSsid"
+              {...alanOzellikleri("wifiAdi", { zorunlu: false })}
               defaultValue={business.wifiSsid ?? ""}
               className={INPUT}
             />
@@ -322,6 +336,7 @@ export function SettingsForm({
             <span className={ETIKET}>Wi-Fi şifresi</span>
             <input
               name="wifiPassword"
+              {...alanOzellikleri("wifiSifresi", { zorunlu: false })}
               defaultValue={business.wifiPassword ?? ""}
               className={INPUT}
             />
@@ -337,28 +352,28 @@ export function SettingsForm({
           <div className="grid gap-2 sm:grid-cols-2">
             <input
               name="yemeksepetiUrl"
-              type="url"
+              {...alanOzellikleri("webAdresi", { zorunlu: false })}
               placeholder="Yemeksepeti sayfa linki"
               defaultValue={business.yemeksepetiUrl ?? ""}
               className={INPUT}
             />
             <input
               name="getirUrl"
-              type="url"
+              {...alanOzellikleri("webAdresi", { zorunlu: false })}
               placeholder="Getir sayfa linki"
               defaultValue={business.getirUrl ?? ""}
               className={INPUT}
             />
             <input
               name="trendyolUrl"
-              type="url"
+              {...alanOzellikleri("webAdresi", { zorunlu: false })}
               placeholder="Trendyol Yemek linki"
               defaultValue={business.trendyolUrl ?? ""}
               className={INPUT}
             />
             <input
               name="migrosUrl"
-              type="url"
+              {...alanOzellikleri("webAdresi", { zorunlu: false })}
               placeholder="Migros Yemek linki"
               defaultValue={business.migrosUrl ?? ""}
               className={INPUT}

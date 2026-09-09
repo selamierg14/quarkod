@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import type { Shift } from "@/lib/cekirdek/constants";
 import { degisimTalepEt, type DegisimFormState } from "./actions";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
 
 export function DegisimTalebi({
   assignmentId,
@@ -129,6 +130,7 @@ export function DegisimTalebi({
 
           <input
             name="note"
+            {...alanOzellikleri("aciklama", { zorunlu: false })}
             placeholder="sebep (isteğe bağlı)"
             className={`rounded-chip border px-2.5 py-1.5 text-caption outline-none ${girdiSinifi}`}
           />

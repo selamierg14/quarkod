@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { loginAction, type LoginState } from "./actions";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
 
 // "use server" dosyaları yalnızca async fonksiyon dışa aktarabilir; başlangıç
 // durumu bu yüzden istemci tarafında duruyor.
@@ -43,10 +44,9 @@ export function LoginForm() {
           <input
             id="username"
             name="username"
-            autoComplete="username"
+            {...alanOzellikleri("girisKimligi")}
             autoCapitalize="none"
             spellCheck={false}
-            required
             className={INPUT}
           />
 
@@ -58,9 +58,8 @@ export function LoginForm() {
               <input
                 id="password"
                 name="password"
-                type="password"
+                {...alanOzellikleri("girisSifresi")}
                 autoComplete="current-password"
-                required
                 className={INPUT}
               />
             </>
@@ -84,11 +83,7 @@ export function LoginForm() {
           <input
             id="code"
             name="code"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            pattern="[0-9]{6}"
-            required
+            {...alanOzellikleri("dogrulamaKodu")}
             autoFocus
             placeholder="––––––"
             className={`${INPUT} text-center font-mono text-2xl tracking-[0.4em]`}
@@ -107,10 +102,8 @@ export function LoginForm() {
           <input
             id="newPassword"
             name="password"
-            type="password"
+            {...alanOzellikleri("sifre")}
             autoComplete="new-password"
-            minLength={8}
-            required
             className={INPUT}
           />
           <label className="text-small text-ink-soft" htmlFor="newPasswordRepeat">
@@ -119,10 +112,8 @@ export function LoginForm() {
           <input
             id="newPasswordRepeat"
             name="passwordRepeat"
-            type="password"
+            {...alanOzellikleri("sifre")}
             autoComplete="new-password"
-            minLength={8}
-            required
             className={INPUT}
           />
         </>
