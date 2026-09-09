@@ -37,10 +37,22 @@ export function CamYuzey({
     <View style={[{ overflow: "hidden" }, stil]}>
       <BlurView intensity={yogunluk} tint="dark" style={StyleSheet.absoluteFill} />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: renkler.cam }]} />
-      {children}
+      {/* İçerik AÇIK BİR KATMANDA. Doğrudan `{children}` yazmak yetmiyor:
+          web'de (react-native-web) yukarıdaki iki mutlak konumlu katman,
+          akış içindeki çocukların ÜSTÜNE boyanıyor ve camın içine
+          konan her şey görünmez oluyor — buzlu cam bir düğmenin ikonu,
+          yapışkan başlığın yazısı. Native'de sıra zaten doğru; `zIndex`
+          orada da zararsız. */}
+      {children !== undefined ? (
+        <View style={stiller.icerik}>{children}</View>
+      ) : null}
     </View>
   );
 }
+
+const stiller = StyleSheet.create({
+  icerik: { flex: 1, zIndex: 1 },
+});
 
 /** Cam kart — yüzen detay panelleri için hazır sarmalayıcı. */
 export function CamKart({

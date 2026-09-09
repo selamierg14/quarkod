@@ -41,6 +41,15 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 180
         }
+      ],
+      "expo-image",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Masadaki karekodu okutup ziyaretini doğrulamak için kamerayı kullanıyoruz.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
       ]
     ]
   }
