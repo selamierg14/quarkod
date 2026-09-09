@@ -82,6 +82,14 @@ Middleware Edge'de koştuğu için veritabanına erişemez; oradaki kontrol
 **kaba ve ucuz** (jeton var mı), asıl doğrulama route içinde yapılır. İki
 katman birbirinin yerine geçmez, üst üste biner.
 
+> **Panelin kapı örtüsü test ediliyor.** `/admin/*` için middleware yalnızca
+> "imzalı çerez var mı" diye bakar — yani panele girebilen HERKES oradan
+> geçer. Rol, kiracı ve abonelik kararı route'un kendi kapısında verilir ve
+> kapısı unutulmuş tek bir eylem, panele girebilen herkese açık demektir.
+> [`panel-kapilari.test.ts`](src/lib/kimlik/panel-kapilari.test.ts) diskteki
+> HER Server Action'ın ve HER sayfanın bir kapıya ulaştığını doğruluyor;
+> muafiyet listesi iki satır (giriş ve çıkış), her biri gerekçeli.
+
 ---
 
 ## `src/lib` — iş mantığı, alanlara ayrılmış
