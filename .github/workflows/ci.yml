@@ -66,6 +66,13 @@ jobs:
           npx prisma generate
           npx prisma migrate deploy
 
+      # Next, route/layout tiplerini (LayoutProps, PageProps…) ÜRETİYOR ve
+      # bunlar .next/types altına yazılıyor. Temiz bir ortamda o klasör
+      # olmadığı için tsc "Cannot find name 'LayoutProps'" veriyordu.
+      # `typegen` bunu tam derleme yapmadan üretir.
+      - name: Next tip tanımlarını üret
+        run: npx next typegen
+
       - name: Tip kontrolü
         run: npx tsc --noEmit
 
