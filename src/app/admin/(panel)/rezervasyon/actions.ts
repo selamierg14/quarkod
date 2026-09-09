@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canAccessBusiness, requireRezervasyonErisim, requireYazma } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { denetimYaz } from "@/lib/denetim";
+import { canAccessBusiness, requireRezervasyonErisim, requireYazma } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { denetimYaz } from "@/lib/rapor/denetim";
 import {
   cakismaBul,
   gecerliDurumMu,
@@ -12,7 +12,7 @@ import {
   planKonumuKirp,
   rezervasyonDogrula,
   type MevcutRezervasyon,
-} from "@/lib/rezervasyon";
+} from "@/lib/isletme/rezervasyon";
 
 const YOL = "/admin/rezervasyon";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { SHIFTS, type Shift } from "@/lib/constants";
+import { SHIFTS, type Shift } from "@/lib/cekirdek/constants";
 import { shiftNotuEkle, toggleGorev, type GorevFormState } from "./actions";
 
 const INPUT =

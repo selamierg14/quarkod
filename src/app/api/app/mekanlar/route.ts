@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { sorguCoz } from "@/lib/kesfet";
-import { mekanlariGetir } from "@/lib/kesfet-veri";
+import { sorguCoz } from "@/lib/biyerlere/kesfet";
+import { mekanlariGetir } from "@/lib/biyerlere/kesfet-veri";
 
 export const dynamic = "force-dynamic";
 

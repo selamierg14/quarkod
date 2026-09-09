@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { gorselAdresi } from "@/lib/gorsel-adres";
+import { prisma } from "@/lib/cekirdek/db";
+import { gorselAdresi } from "@/lib/isletme/gorsel-adres";
 import {
   ROZETLER,
   ROZET_ANAHTARLARI,
   gecerliRozetMi,
   seviye,
   sonrakiSeviyeyeKalan,
-} from "@/lib/rozet";
-import { appKullaniciGerekli } from "@/lib/app-api";
+} from "@/lib/biyerlere/rozet";
+import { appKullaniciGerekli } from "@/lib/kimlik/app-api";
 
 export const dynamic = "force-dynamic";
 

@@ -2,16 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { hashPassword, requireSuperadmin } from "@/lib/auth";
-import { denetimYaz } from "@/lib/denetim";
-import { prisma } from "@/lib/db";
-import { istenenModulleriSuz } from "@/lib/moduller";
-import { clearActiveAccount, setActiveAccount } from "@/lib/impersonation";
-import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
-import { uniqueConstraintMessage } from "@/lib/unique-error";
-import { tarihGirdisi } from "@/lib/abonelik";
-import { sifreSorunu } from "@/lib/sifre";
-import { parsePrice, formatPrice } from "@/lib/menu";
+import { hashPassword, requireSuperadmin } from "@/lib/kimlik/auth";
+import { denetimYaz } from "@/lib/rapor/denetim";
+import { prisma } from "@/lib/cekirdek/db";
+import { istenenModulleriSuz } from "@/lib/kimlik/moduller";
+import { clearActiveAccount, setActiveAccount } from "@/lib/kimlik/impersonation";
+import { normalizePhone, toUsername, usernameProblem } from "@/lib/kimlik/username";
+import { uniqueConstraintMessage } from "@/lib/cekirdek/unique-error";
+import { tarihGirdisi } from "@/lib/isletme/abonelik";
+import { sifreSorunu } from "@/lib/kimlik/sifre";
+import { parsePrice, formatPrice } from "@/lib/isletme/menu";
 
 export type AccountFormState = { error?: string; saved?: string };
 

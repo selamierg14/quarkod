@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canAccessBusiness, requirePersonelYonetimi, requireYazma } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { canAccessBusiness, requirePersonelYonetimi, requireYazma } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
 
 export type SablonFormState = { error?: string; saved?: string };
 

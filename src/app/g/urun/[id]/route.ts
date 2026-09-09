@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/db";
-import { dataUrlCoz, gorselSurumu } from "@/lib/gorsel-adres";
+import { prisma } from "@/lib/cekirdek/db";
+import { dataUrlCoz, gorselSurumu } from "@/lib/isletme/gorsel-adres";
 
 /**
  * Menü ürünü fotoğrafı.

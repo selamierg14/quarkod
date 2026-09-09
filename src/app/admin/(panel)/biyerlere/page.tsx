@@ -1,8 +1,8 @@
 import { MapPin, Zap } from "lucide-react";
-import { requireKesfetErisim, visibleBusinesses } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { requireKesfetErisim, visibleBusinesses } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
 import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
-import { sponsorMu } from "@/lib/sponsorluk";
+import { sponsorMu } from "@/lib/biyerlere/sponsorluk";
 import { IsletmeSecici } from "../menu/MenuUst";
 import { BiyerlereForm } from "./BiyerlereForm";
 import { FlasIndirim } from "./FlasIndirim";

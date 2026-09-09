@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Phone, Sparkles } from "lucide-react";
-import { iletisimTelefonu, telefonHref } from "@/lib/site";
+import { iletisimTelefonu, telefonHref } from "@/lib/cekirdek/site";
 
 /**
  * Mobilde ekranın altına sabitlenen çağrı çubuğu.

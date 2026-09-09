@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { canAccessBusiness, getSession } from "@/lib/auth";
-import { kuponKoduGecerliMi } from "@/lib/kupon-kod";
+import { prisma } from "@/lib/cekirdek/db";
+import { canAccessBusiness, getSession } from "@/lib/kimlik/auth";
+import { kuponKoduGecerliMi } from "@/lib/biyerlere/kupon-kod";
 
 export const dynamic = "force-dynamic";
 

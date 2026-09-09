@@ -1,7 +1,7 @@
 "use server";
 
-import { requireUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { requireUser } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
 
 export type BildirimOzet = {
   id: string;

@@ -14,7 +14,7 @@ import {
   MODULLER,
   MODUL_ACIKLAMALARI,
   type ModulAnahtari,
-} from "@/lib/moduller";
+} from "@/lib/kimlik/moduller";
 
 const INPUT =
   "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";

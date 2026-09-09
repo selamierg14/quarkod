@@ -1,10 +1,10 @@
 import { Store } from "lucide-react";
 import Link from "next/link";
-import { actingAccountId, requireUser, visibleBusinesses } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { BUSINESS_TYPES, type BusinessType } from "@/lib/constants";
+import { actingAccountId, requireUser, visibleBusinesses } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { BUSINESS_TYPES, type BusinessType } from "@/lib/cekirdek/constants";
 import { EmptyState, PageHeader } from "@/components/ui";
-import { googleYorumLinkiSorunu } from "@/lib/google-yorum";
+import { googleYorumLinkiSorunu } from "@/lib/isletme/google-yorum";
 import { NewBusinessForm } from "./NewBusinessForm";
 
 export const dynamic = "force-dynamic";

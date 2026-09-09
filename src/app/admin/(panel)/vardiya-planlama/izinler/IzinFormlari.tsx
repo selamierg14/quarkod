@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { CalendarPlus } from "lucide-react";
 import { SectionCard } from "@/components/ui";
-import { IZIN_TURLERI } from "@/lib/izin";
+import { IZIN_TURLERI } from "@/lib/isletme/izin";
 import { izinEkle, type IzinFormState } from "./actions";
 
 const INPUT =

@@ -1,9 +1,9 @@
 import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { gunBaslangici } from "@/lib/gun";
-import { PLUS_HEDIYE_ACIKLAMASI, PLUS_KUPON_ONEKI } from "@/lib/biyerlere-plus";
-import { apiHata, appKullaniciGerekli, govdeOku } from "@/lib/app-api";
+import { prisma } from "@/lib/cekirdek/db";
+import { gunBaslangici } from "@/lib/cekirdek/gun";
+import { PLUS_HEDIYE_ACIKLAMASI, PLUS_KUPON_ONEKI } from "@/lib/biyerlere/biyerlere-plus";
+import { apiHata, appKullaniciGerekli, govdeOku } from "@/lib/kimlik/app-api";
 
 export const dynamic = "force-dynamic";
 

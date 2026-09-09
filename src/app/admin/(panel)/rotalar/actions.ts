@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireSuperadmin } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { denetimYaz } from "@/lib/denetim";
-import { slugIleOlustur } from "@/lib/slug";
+import { requireSuperadmin } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { denetimYaz } from "@/lib/rapor/denetim";
+import { slugIleOlustur } from "@/lib/cekirdek/slug";
 
 export type RotaFormState = { error?: string; saved?: string };
 

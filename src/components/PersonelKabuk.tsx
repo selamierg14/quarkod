@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { BildirimZili } from "./BildirimZili";
 import { ProfilAvatarButton } from "./ProfilAvatarButton";
 import { CikisButonu } from "./CikisButonu";
-import { APP_VERSION } from "@/lib/constants";
+import { APP_VERSION } from "@/lib/cekirdek/constants";
 import { logout } from "@/app/admin/giris/actions";
 
 type PersonelLink = { href: string; label: string; ikon: "takvim" | "gorev" };

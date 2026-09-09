@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { FEEDBACK_STATUSES, type FeedbackStatus } from "@/lib/constants";
+import { FEEDBACK_STATUSES, type FeedbackStatus } from "@/lib/cekirdek/constants";
 
 export type BadgeTone = "notr" | "basari" | "uyari" | "hata" | "bilgi" | "vurgu";
 

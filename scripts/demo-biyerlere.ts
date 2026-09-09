@@ -1,8 +1,8 @@
 import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { createScriptClient } from "./prisma-client";
-import { davetKoduUret } from "../src/lib/davet";
-import { hakEdilenRozetler, type ZiyaretOzeti } from "../src/lib/rozet";
+import { davetKoduUret } from "../src/lib/biyerlere/davet";
+import { hakEdilenRozetler, type ZiyaretOzeti } from "../src/lib/biyerlere/rozet";
 
 /**
  * Biyerlere'yi (Keşfet/Harita/Cüzdan) "yüzlerce kullanıcısı olan canlı bir

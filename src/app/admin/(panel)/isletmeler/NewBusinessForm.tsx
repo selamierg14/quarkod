@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { BUSINESS_TYPE_LIST, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/constants";
+import { BUSINESS_TYPE_LIST, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/cekirdek/constants";
 import { createBusiness, type FormState } from "./actions";
 
 const INPUT =

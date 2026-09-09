@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef } from "react";
 import { ChevronDown } from "lucide-react";
-import { BUSINESS_TYPE_LIST, qrCardText } from "@/lib/constants";
+import { BUSINESS_TYPE_LIST, qrCardText } from "@/lib/cekirdek/constants";
 import { ImageUpload } from "@/components/ImageUpload";
 import { useToast } from "@/components/ui";
 import { updateBusiness, type FormState } from "../actions";

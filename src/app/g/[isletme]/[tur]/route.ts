@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/db";
-import { dataUrlCoz, gorselSurumu, type GorselTuru } from "@/lib/gorsel-adres";
+import { prisma } from "@/lib/cekirdek/db";
+import { dataUrlCoz, gorselSurumu, type GorselTuru } from "@/lib/isletme/gorsel-adres";
 
 /**
  * İşletme logosu ve kapak görseli.

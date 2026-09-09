@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canAccessBusiness, requireUser, requireYazma } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { gunBaslangici } from "@/lib/gun";
-import { gecerliVardiyaMi } from "@/lib/vardiya";
+import { canAccessBusiness, requireUser, requireYazma } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { gunBaslangici } from "@/lib/cekirdek/gun";
+import { gecerliVardiyaMi } from "@/lib/personel/vardiya";
 
 export type GorevFormState = { error?: string; saved?: string };
 

@@ -1,7 +1,7 @@
-import { APP_VERSION } from "@/lib/constants";
-import { requireSuperadmin } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { DURUM_METNI, ZAMANLI_ISLER, isDurumu, type IsDurumu } from "@/lib/isler";
+import { APP_VERSION } from "@/lib/cekirdek/constants";
+import { requireSuperadmin } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { DURUM_METNI, ZAMANLI_ISLER, isDurumu, type IsDurumu } from "@/lib/altyapi/isler";
 import {
   Alert,
   Badge,

@@ -1,5 +1,5 @@
 import { Settings } from "lucide-react";
-import { visibleBusinesses } from "@/lib/auth";
+import { visibleBusinesses } from "@/lib/kimlik/auth";
 import { SectionCard } from "@/components/ui";
 import { AyarlariKopyala } from "./AyarlariKopyala";
 import { SettingsForm } from "./SettingsForm";

@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canAccessBusiness, requireMenuErisim, requireYazma, visibleBusinesses } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { validateImageDataUrl } from "@/lib/image";
-import { denetimYaz } from "@/lib/denetim";
+import { canAccessBusiness, requireMenuErisim, requireYazma, visibleBusinesses } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { validateImageDataUrl } from "@/lib/isletme/image";
+import { denetimYaz } from "@/lib/rapor/denetim";
 
 export type DuyuruFormState = { error?: string; saved?: string };
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import type { Shift } from "@/lib/constants";
+import type { Shift } from "@/lib/cekirdek/constants";
 import { degisimTalepEt, type DegisimFormState } from "./actions";
 
 export function DegisimTalebi({

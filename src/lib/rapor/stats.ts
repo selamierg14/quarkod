@@ -1,0 +1,635 @@
+import "server-only";
+import { prisma } from "../cekirdek/db";
+import { SHIFTS, type Shift } from "../cekirdek/constants";
+import { detaylariCoz } from "../isletme/anket-detay";
+import { etkinVardiyalar } from "../personel/vardiya";
+import { gunGirdisi } from "../cekirdek/gun";
+
+export type TrendPoint = {
+  /** Hafta başlangıcı (pazartesi). */
+  start: Date;
+  label: string;
+  count: number;
+  average: number | null;
+};
+
+export type BusinessStats = {
+  id: string;
+  name: string;
+  slug: string;
+  brandColor: string;
+  notifyThreshold: number;
+  total: number;
+  average: number | null;
+  openComplaints: number;
+  last7Days: number;
+  last30Average: number | null;
+  /** Önceki 30 günün ortalaması — değişim bundan hesaplanır. */
+  prev30Average: number | null;
+  /** Son 30 gün ile önceki 30 gün arasındaki fark (puan). */
+  delta: number | null;
+  /** 5 yıldız verip Google butonu gösterilen müşteri sayısı. */
+  googleShown: number;
+  /** O butona gerçekten tıklayan müşteri sayısı. */
+  googleClicked: number;
+  /** Son 90 günde en zayıf kategoriler (ortalaması düşükten yükseğe). */
+  weakCategories: { name: string; average: number; count: number }[];
+  /**
+   * Düşük puanlarda en çok işaretlenen sorun alanları, çoktan aza.
+   *
+   * "Temizlik 2.1/5" patrona nereye bakacağını söylemiyor; "Temizlik →
+   * Tuvaletler, 8 kez" söylüyor. Kategori ortalamasının bir kademe altı.
+   */
+  topProblems: { kategori: string; alan: string; count: number }[];
+  trend: TrendPoint[];
+  /** Anket ekranını açan tekil ziyaretçi sayısı. */
+  views: number;
+  /** Görüntüleme ölçümü başladıktan sonra gelen geri bildirim sayısı. */
+  feedbacksSinceTracking: number;
+  /** Açanların yüzde kaçı anketi gönderdi (0-100). */
+  completionRate: number | null;
+  /** Çözülen şikayetlerde ortalama çözüm süresi (saat). */
+  avgResolutionHours: number | null;
+};
+
+export type ShiftBreakdown = {
+  shift: string;
+  label: string;
+  count: number;
+  average: number | null;
+};
+
+export type TableBreakdown = {
+  tableId: string;
+  label: string;
+  count: number;
+  average: number | null;
+};
+
+const DAY = 24 * 60 * 60 * 1000;
+
+/** Kategori analizi penceresi: eski şikayetler bugünkü tabloyu bulandırmasın. */
+const CATEGORY_WINDOW_DAYS = 90;
+
+const TREND_WEEKS = 12;
+
+function round(value: number, digits = 1): number {
+  const factor = 10 ** digits;
+  return Math.round(value * factor) / factor;
+}
+
+function daysAgo(days: number): Date {
+  return new Date(Date.now() - days * DAY);
+}
+
+/** Verilen tarihin içinde bulunduğu pazartesi (00:00). */
+function weekStart(date: Date): Date {
+  const result = new Date(date);
+  result.setHours(0, 0, 0, 0);
+  const day = (result.getDay() + 6) % 7; // pazartesi = 0
+  result.setDate(result.getDate() - day);
+  return result;
+}
+
+async function averageBetween(
+  businessId: string,
+  from: Date,
+  to?: Date,
+): Promise<{ count: number; average: number | null }> {
+  const result = await prisma.feedback.aggregate({
+    where: { businessId, createdAt: to ? { gte: from, lt: to } : { gte: from } },
+    _avg: { overallRating: true },
+    _count: { _all: true },
+  });
+  return {
+    count: result._count._all,
+    average: result._avg.overallRating !== null ? round(result._avg.overallRating, 2) : null,
+  };
+}
+
+/**
+ * Ortalama "doldurma süresi": anketin açıldığı an (SurveyView) ile
+ * gönderildiği an (Feedback.createdAt) arasındaki fark. Gerçek masa devir
+ * hızı değil — müşterinin QR'ı okutup anketi tamamlamasının ne kadar
+ * sürdüğünün kaba bir göstergesi. Aynı ziyaretçi+masa eşleşmesi üzerinden
+ * hesaplanır; bir saatten uzun aralıklar (muhtemelen alakasız bir önceki
+ * ziyaret) elenir.
+ */
+export async function getDoldurmaSuresi(
+  businessIds: string[],
+  days = 30,
+): Promise<{ ortalamaSaniye: number; adet: number } | null> {
+  const since = daysAgo(days);
+
+  const [feedbacks, views] = await Promise.all([
+    prisma.feedback.findMany({
+      where: {
+        businessId: { in: businessIds },
+        createdAt: { gte: since },
+        visitorId: { not: null },
+        tableId: { not: null },
+      },
+      select: { tableId: true, visitorId: true, createdAt: true },
+    }),
+    prisma.surveyView.findMany({
+      where: {
+        businessId: { in: businessIds },
+        createdAt: { gte: since },
+        visitorId: { not: null },
+        tableId: { not: null },
+      },
+      select: { tableId: true, visitorId: true, createdAt: true },
+    }),
+  ]);
+
+  if (feedbacks.length === 0 || views.length === 0) return null;
+
+  const gorenler = new Map<string, Date[]>();
+  for (const v of views) {
+    const anahtar = `${v.visitorId}:${v.tableId}`;
+    const liste = gorenler.get(anahtar) ?? [];
+    liste.push(v.createdAt);
+    gorenler.set(anahtar, liste);
+  }
+  for (const liste of gorenler.values()) liste.sort((a, b) => a.getTime() - b.getTime());
+
+  let toplamSaniye = 0;
+  let adet = 0;
+  const BIR_SAAT = 60 * 60;
+
+  for (const f of feedbacks) {
+    const anahtar = `${f.visitorId}:${f.tableId}`;
+    const liste = gorenler.get(anahtar);
+    if (!liste) continue;
+
+    // O anketten önceki en yakın görüntüleme.
+    let enYakin: Date | null = null;
+    for (const t of liste) {
+      if (t.getTime() <= f.createdAt.getTime()) enYakin = t;
+      else break;
+    }
+    if (!enYakin) continue;
+
+    const fark = (f.createdAt.getTime() - enYakin.getTime()) / 1000;
+    if (fark > 0 && fark < BIR_SAAT) {
+      toplamSaniye += fark;
+      adet += 1;
+    }
+  }
+
+  if (adet === 0) return null;
+  return { ortalamaSaniye: toplamSaniye / adet, adet };
+}
+
+export type AnketHunisi = {
+  goruntuleme: number;
+  yildizVerdi: number;
+  gonderildi: number;
+};
+
+/**
+ * "Nerede bırakıyorlar" hunisi.
+ *
+ * Üç basamak, üç farklı sorunu ayırt eder: QR okutulmuyorsa (görüntüleme
+ * düşük) kart/masa yerleşimi sorunu; yıldız verilmiyorsa (görüntüleme var,
+ * yıldız yok) ilk ekran ilgi çekmiyor; yıldız verilip gönderilmiyorsa
+ * (yıldız var, gönderim yok) anketin geri kalanı çok uzun ya da rahatsız
+ * edici. Üçü de aynı sayıyla karışsaydı hangisini düzelteceğimizi
+ * bilemezdik.
+ *
+ * Görüntüleme ve yıldız aynı SurveyView satırından geliyor (bkz.
+ * recordSurveyStart) — iki ayrı sayaç değil, tek satırın iki durumu.
+ */
+export async function getAnketHunisi(
+  businessIds: string[],
+  days = 30,
+): Promise<AnketHunisi> {
+  const since = daysAgo(days);
+  const where = { businessId: { in: businessIds }, createdAt: { gte: since } };
+
+  const [goruntuleme, yildizVerdi, gonderildi] = await Promise.all([
+    prisma.surveyView.count({ where }),
+    prisma.surveyView.count({ where: { ...where, yildizVerildi: true } }),
+    prisma.feedback.count({ where }),
+  ]);
+
+  return { goruntuleme, yildizVerdi, gonderildi };
+}
+
+export type PersonelPerformans = {
+  userId: string;
+  name: string;
+  role: string;
+  /** Bu dönemde atandığı vardiya sayısı — hiç atanmadıysa ortalama zaten null. */
+  vardiyaSayisi: number;
+  /** Ortalamaya giren geri bildirim sayısı; az veriyle yanıltıcı ortalama gösterilmesin diye. */
+  kayitSayisi: number;
+  ortalama: number | null;
+  /** Önceki eşit uzunluktaki döneme göre değişim; ikisi de veri içermiyorsa null. */
+  delta: number | null;
+};
+
+/**
+ * Personel performans kartı — yalnızca sahip/yönetici görür, personelin
+ * kendisi görmez (bkz. vardiya-planlama/performans sayfası, requirePersonelYonetimi
+ * + garson zaten requireTenant'ta ayrı bir moda düşüyor).
+ *
+ * ÖNEMLİ SINIR: bu, "müşteri Ahmet'i puanladı" demek DEĞİL. Sistemde geri
+ * bildirim kime değil hangi vardiyaya bağlı; aynı vardiyada iki kişi
+ * çalışıyorsa o vardiyanın puanı ikisine de aynen yazılır. Sayı "Ahmet'in
+ * çalıştığı vardiyalar genel olarak nasıl geçmiş" sorusuna cevap verir,
+ * "Ahmet'in servisi nasılmış" sorusuna değil — panelde bu ayrım metinle
+ * de belirtiliyor, aksi halde tek kişilik bir vardiyada kötü geçen bir gün
+ * yanında biriyle çalışan birine haksız yere yazılabilir.
+ */
+export async function getPersonelPerformansi(
+  businessId: string,
+  days = 30,
+): Promise<PersonelPerformans[]> {
+  const simdi = new Date();
+  const buDonemBasi = daysAgo(days);
+  const oncekiDonemBasi = daysAgo(days * 2);
+
+  const [atamalar, geriBildirimler, personel] = await Promise.all([
+    prisma.shiftAssignment.findMany({
+      where: { businessId, date: { gte: oncekiDonemBasi } },
+      select: { userId: true, date: true, shift: true },
+    }),
+    prisma.feedback.findMany({
+      where: { businessId, createdAt: { gte: oncekiDonemBasi }, shift: { not: null } },
+      select: { createdAt: true, shift: true, overallRating: true },
+    }),
+    prisma.user.findMany({
+      where: { businessId, active: true, role: { in: ["manager", "garson"] } },
+      select: { id: true, name: true, role: true },
+    }),
+  ]);
+
+  // "gün:vardiya" -> o dilimde bırakılan puanlar. Kim çalışırsa çalışsın
+  // aynı havuzdan besleniyor; ayrım yalnızca kimin o gün+vardiyada
+  // atanmış olduğuna bakılarak yapılıyor.
+  const puanlarByGunVardiya = new Map<string, number[]>();
+  for (const f of geriBildirimler) {
+    if (!f.shift) continue;
+    const anahtar = `${gunGirdisi(f.createdAt)}:${f.shift}`;
+    const liste = puanlarByGunVardiya.get(anahtar) ?? [];
+    liste.push(f.overallRating);
+    puanlarByGunVardiya.set(anahtar, liste);
+  }
+
+  function donemOrtalamasi(userId: string, baslangic: Date, bitis: Date) {
+    let toplam = 0;
+    let kayit = 0;
+    let vardiya = 0;
+    for (const a of atamalar) {
+      if (a.userId !== userId) continue;
+      if (a.date < baslangic || a.date >= bitis) continue;
+      vardiya++;
+      const liste = puanlarByGunVardiya.get(`${gunGirdisi(a.date)}:${a.shift}`);
+      if (!liste) continue;
+      for (const puan of liste) {
+        toplam += puan;
+        kayit++;
+      }
+    }
+    return {
+      ortalama: kayit > 0 ? round(toplam / kayit, 2) : null,
+      kayit,
+      vardiya,
+    };
+  }
+
+  return personel
+    .map((p) => {
+      const guncel = donemOrtalamasi(p.id, buDonemBasi, simdi);
+      const onceki = donemOrtalamasi(p.id, oncekiDonemBasi, buDonemBasi);
+      const delta =
+        guncel.ortalama !== null && onceki.ortalama !== null
+          ? round(guncel.ortalama - onceki.ortalama, 1)
+          : null;
+      return {
+        userId: p.id,
+        name: p.name,
+        role: p.role,
+        vardiyaSayisi: guncel.vardiya,
+        kayitSayisi: guncel.kayit,
+        ortalama: guncel.ortalama,
+        delta,
+      };
+    })
+    .sort((a, b) => (b.ortalama ?? -1) - (a.ortalama ?? -1));
+}
+
+/**
+ * Vardiyaya göre kırılım. Vardiya etiketi her kayda otomatik yazılıyor;
+ * "gece vardiyasında puan düşüyor" gibi bir bulgu doğrudan personel kararına
+ * dönüştüğü için ayrı bir görünüm hak ediyor.
+ *
+ * `window`: ya kayan bir pencere (`{ from }`, "bugünden geriye N gün") ya da
+ * kapalı bir aralık (`{ from, to }`, "şu haftanın günleri"). Rapor sayfası
+ * ilkini, vardiya çizelgesi ikincisini kullanıyor — çizelgede "3 hafta önce"
+ * görünümüne gelen birine BUGÜNE göre kayan bir ortalama gösterilirse, o
+ * hafta hiç veri içermese bile başka haftaların puanı sanki oradaymış gibi
+ * görünür.
+ */
+export async function getShiftBreakdown(
+  businessIds: string[],
+  window: { from: Date; to?: Date } = { from: daysAgo(30) },
+): Promise<ShiftBreakdown[]> {
+  const [grouped, businesses] = await Promise.all([
+    prisma.feedback.groupBy({
+      by: ["shift"],
+      where: {
+        businessId: { in: businessIds },
+        createdAt: window.to
+          ? { gte: window.from, lt: window.to }
+          : { gte: window.from },
+        shift: { not: null },
+      },
+      _avg: { overallRating: true },
+      _count: { _all: true },
+    }),
+    prisma.business.findMany({ where: { id: { in: businessIds } } }),
+  ]);
+
+  const map = new Map(grouped.map((row) => [row.shift, row]));
+
+  // Birden fazla işletme seçiliyse birleşim gösterilir: hangi vardiyayı
+  // en az biri kullanıyorsa satırı vardır — aksi halde tek işletmenin
+  // kapattığı bir vardiya diğerlerinde veri varken gizlenirdi.
+  const kullanilanlar = new Set<Shift>();
+  for (const business of businesses) {
+    for (const shift of etkinVardiyalar(business)) kullanilanlar.add(shift);
+  }
+
+  return (Object.keys(SHIFTS) as Shift[])
+    .filter((shift) => kullanilanlar.has(shift))
+    .map((shift) => {
+      const row = map.get(shift);
+      return {
+        shift,
+        label: SHIFTS[shift],
+        count: row?._count._all ?? 0,
+        average:
+          row?._avg.overallRating != null ? round(row._avg.overallRating, 2) : null,
+      };
+    });
+}
+
+/** Masaya göre kırılım — hangi masa/bölge sürekli şikayet alıyor. */
+export async function getTableBreakdown(
+  businessIds: string[],
+  days = 30,
+): Promise<TableBreakdown[]> {
+  const grouped = await prisma.feedback.groupBy({
+    by: ["tableId"],
+    where: {
+      businessId: { in: businessIds },
+      createdAt: { gte: daysAgo(days) },
+      tableId: { not: null },
+    },
+    _avg: { overallRating: true },
+    _count: { _all: true },
+  });
+
+  const tables = await prisma.table.findMany({
+    where: { id: { in: grouped.map((row) => row.tableId as string) } },
+    select: { id: true, tableNumber: true, isEntrance: true },
+  });
+  const labels = new Map(
+    tables.map((table) => [
+      table.id,
+      table.isEntrance ? "Giriş" : `Masa ${table.tableNumber}`,
+    ]),
+  );
+
+  return grouped
+    .map((row) => ({
+      tableId: row.tableId as string,
+      label: labels.get(row.tableId as string) ?? "—",
+      count: row._count._all,
+      average:
+        row._avg.overallRating != null ? round(row._avg.overallRating, 2) : null,
+    }))
+    .sort((a, b) => (a.average ?? 5) - (b.average ?? 5));
+}
+
+/**
+ * Kapsam zorunlu: parametre isteğe bağlı olsaydı, çağrıyı unutan bir sayfa
+ * sessizce bütün kiracıların verisini gösterirdi.
+ */
+export async function getBusinessStats(businessIds: string[]): Promise<BusinessStats[]> {
+  const businesses = await prisma.business.findMany({
+    where: { id: { in: businessIds } },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const trendFrom = weekStart(daysAgo(TREND_WEEKS * 7));
+
+  return Promise.all(
+    businesses.map(async (business) => {
+      const [
+        overall,
+        last7,
+        last30,
+        prev30,
+        openComplaints,
+        googleShown,
+        googleClicked,
+        categoryRows,
+        trendRows,
+        views,
+        firstView,
+        resolvedRows,
+      ] = await Promise.all([
+        // Toplam ve ortalama veritabanında hesaplanır; satırlar belleğe çekilmez.
+        averageBetween(business.id, new Date(0)),
+        prisma.feedback.count({
+          where: { businessId: business.id, createdAt: { gte: daysAgo(7) } },
+        }),
+        averageBetween(business.id, daysAgo(30)),
+        averageBetween(business.id, daysAgo(60), daysAgo(30)),
+        // Açık şikayet, işletmenin kendi bildirim eşiğini kullanır.
+        prisma.feedback.count({
+          where: {
+            businessId: business.id,
+            status: { not: "cozuldu" },
+            overallRating: { lte: business.notifyThreshold },
+          },
+        }),
+        prisma.feedback.count({
+          where: { businessId: business.id, redirectedToGoogle: true },
+        }),
+        prisma.feedback.count({
+          where: { businessId: business.id, googleClickedAt: { not: null } },
+        }),
+        // Kategori kırılımı JSON'da olduğu için satır gerekiyor; yalnızca o
+        // sütunu ve yalnızca son 90 günü çekiyoruz.
+        prisma.feedback.findMany({
+          where: {
+            businessId: business.id,
+            categoryRatings: { not: null },
+            createdAt: { gte: daysAgo(CATEGORY_WINDOW_DAYS) },
+          },
+          // problemDetails aynı satırlarda duruyor; ayrı sorgu açmaya gerek yok.
+          select: { categoryRatings: true, problemDetails: true },
+        }),
+        prisma.feedback.findMany({
+          where: { businessId: business.id, createdAt: { gte: trendFrom } },
+          select: { overallRating: true, createdAt: true },
+        }),
+        prisma.surveyView.count({ where: { businessId: business.id } }),
+        // Ölçümün başladığı an: bundan önceki geri bildirimlerin görüntüleme
+        // karşılığı yok, oranı onlarla hesaplamak saçma sonuç verir.
+        prisma.surveyView.findFirst({
+          where: { businessId: business.id },
+          orderBy: { createdAt: "asc" },
+          select: { createdAt: true },
+        }),
+        // Çözüm süresi: yalnızca gerçekten çözülmüş kayıtlar.
+        prisma.feedback.findMany({
+          where: { businessId: business.id, resolvedAt: { not: null } },
+          select: { createdAt: true, resolvedAt: true },
+        }),
+      ]);
+
+      // --- Kategori ortalamaları
+      const buckets = new Map<string, { sum: number; count: number }>();
+      for (const row of categoryRows) {
+        let parsed: Record<string, number>;
+        try {
+          parsed = JSON.parse(row.categoryRatings ?? "{}") as Record<string, number>;
+        } catch {
+          continue;
+        }
+        for (const [name, value] of Object.entries(parsed)) {
+          const bucket = buckets.get(name) ?? { sum: 0, count: 0 };
+          bucket.sum += value;
+          bucket.count += 1;
+          buckets.set(name, bucket);
+        }
+      }
+      const weakCategories = [...buckets.entries()]
+        .map(([name, bucket]) => ({
+          name,
+          average: round(bucket.sum / bucket.count),
+          count: bucket.count,
+        }))
+        .sort((a, b) => a.average - b.average);
+
+      // --- En çok işaretlenen sorun alanları
+      const sorunSayaci = new Map<string, { kategori: string; alan: string; count: number }>();
+      for (const row of categoryRows) {
+        for (const [kategori, alanlar] of Object.entries(detaylariCoz(row.problemDetails))) {
+          for (const alan of alanlar) {
+            const anahtar = `${kategori}\u0000${alan}`;
+            const mevcut = sorunSayaci.get(anahtar) ?? { kategori, alan, count: 0 };
+            mevcut.count += 1;
+            sorunSayaci.set(anahtar, mevcut);
+          }
+        }
+      }
+      // Tek kez işaretlenen alan örüntü değil, gürültü: "en çok şikayet
+      // edilen" başlığı altında "1 kez" görmek patronu yanlış yere yönlendirir.
+      // En az iki kez tekrar edenler listeye giriyor.
+      const topProblems = [...sorunSayaci.values()]
+        .filter((s) => s.count >= 2)
+        .sort((a, b) => b.count - a.count || a.kategori.localeCompare(b.kategori, "tr"))
+        .slice(0, 5);
+
+      // --- Haftalık trend
+      const weekBuckets = new Map<number, { sum: number; count: number }>();
+      for (const row of trendRows) {
+        const key = weekStart(row.createdAt).getTime();
+        const bucket = weekBuckets.get(key) ?? { sum: 0, count: 0 };
+        bucket.sum += row.overallRating;
+        bucket.count += 1;
+        weekBuckets.set(key, bucket);
+      }
+
+      const trend: TrendPoint[] = [];
+      for (let i = TREND_WEEKS - 1; i >= 0; i -= 1) {
+        const start = new Date(trendFrom.getTime() + (TREND_WEEKS - 1 - i) * 7 * DAY);
+        const bucket = weekBuckets.get(start.getTime());
+        trend.push({
+          start,
+          label: start.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" }),
+          count: bucket?.count ?? 0,
+          average: bucket ? round(bucket.sum / bucket.count, 2) : null,
+        });
+      }
+
+      const delta =
+        last30.average !== null && prev30.average !== null
+          ? round(last30.average - prev30.average, 2)
+          : null;
+
+      // Tamamlama oranı yalnızca ölçüm başladıktan sonraki verilerle anlamlı:
+      // eski kayıtlar sayıya girerse oran %100'ün çok üstüne çıkar.
+      const feedbacksSinceTracking = firstView
+        ? await prisma.feedback.count({
+            where: { businessId: business.id, createdAt: { gte: firstView.createdAt } },
+          })
+        : 0;
+
+      const completionRate =
+        views > 0
+          ? Math.min(100, Math.round((feedbacksSinceTracking / views) * 100))
+          : null;
+
+      const resolutionHours = resolvedRows
+        .map((row) =>
+          row.resolvedAt
+            ? (row.resolvedAt.getTime() - row.createdAt.getTime()) / (60 * 60 * 1000)
+            : null,
+        )
+        .filter((value): value is number => value !== null && value >= 0);
+
+      const avgResolutionHours = resolutionHours.length
+        ? round(
+            resolutionHours.reduce((acc, value) => acc + value, 0) /
+              resolutionHours.length,
+          )
+        : null;
+
+      return {
+        id: business.id,
+        name: business.name,
+        slug: business.slug,
+        brandColor: business.brandColor,
+        notifyThreshold: business.notifyThreshold,
+        total: overall.count,
+        average: overall.average,
+        openComplaints,
+        last7Days: last7,
+        last30Average: last30.average,
+        prev30Average: prev30.average,
+        delta,
+        googleShown,
+        googleClicked,
+        weakCategories,
+        topProblems,
+        trend,
+        views,
+        feedbacksSinceTracking,
+        completionRate,
+        avgResolutionHours,
+      };
+    }),
+  );
+}
+
+/**
+ * Dönem içindeki ham ürün puanları.
+ *
+ * Toplama işi menu.ts'teki saf fonksiyonlarda yapılıyor; burası yalnızca
+ * veriyi çekiyor. Böylece "en iyi/en kötü" kuralları veritabanı olmadan
+ * testlenebiliyor.
+ */
+export async function getItemRatings(businessIds: string[], days = 30) {
+  if (businessIds.length === 0) return [];
+  return prisma.itemRating.findMany({
+    where: { businessId: { in: businessIds }, createdAt: { gte: daysAgo(days) } },
+    select: { menuItemId: true, itemName: true, rating: true },
+  });
+}

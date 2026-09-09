@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { hashPassword } from "@/lib/auth";
-import { sifreSorunu } from "@/lib/sifre";
-import { usernameProblem } from "@/lib/username";
-import { appJetonUret } from "@/lib/app-oturum";
-import { apiHata, govdeOku, metin } from "@/lib/app-api";
-import { DAVET_ODULU_PUAN, davetKoduBicimiGecerliMi, davetKoduUret } from "@/lib/davet";
+import { prisma } from "@/lib/cekirdek/db";
+import { hashPassword } from "@/lib/kimlik/auth";
+import { sifreSorunu } from "@/lib/kimlik/sifre";
+import { usernameProblem } from "@/lib/kimlik/username";
+import { appJetonUret } from "@/lib/kimlik/app-oturum";
+import { apiHata, govdeOku, metin } from "@/lib/kimlik/app-api";
+import { DAVET_ODULU_PUAN, davetKoduBicimiGecerliMi, davetKoduUret } from "@/lib/biyerlere/davet";
 
 export const dynamic = "force-dynamic";
 

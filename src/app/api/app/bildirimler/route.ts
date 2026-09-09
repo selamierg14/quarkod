@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { appKullaniciGerekli } from "@/lib/app-api";
-import { ROZETLER, gecerliRozetMi } from "@/lib/rozet";
+import { prisma } from "@/lib/cekirdek/db";
+import { appKullaniciGerekli } from "@/lib/kimlik/app-api";
+import { ROZETLER, gecerliRozetMi } from "@/lib/biyerlere/rozet";
 
 export const dynamic = "force-dynamic";
 

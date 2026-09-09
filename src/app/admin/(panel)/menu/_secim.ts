@@ -1,8 +1,8 @@
 import "server-only";
-import { visibleBusinesses } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { masaSirala } from "@/lib/masa";
-import type { SessionUser } from "@/lib/auth";
+import { visibleBusinesses } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { masaSirala } from "@/lib/isletme/masa";
+import type { SessionUser } from "@/lib/kimlik/auth";
 
 /**
  * Menü sekmelerinin ortak yükleyicisi: hangi işletme, modül açık mı ve

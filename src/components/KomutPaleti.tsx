@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
-import type { NavGrup } from "@/lib/panel";
+import type { NavGrup } from "@/lib/kimlik/panel";
 
 /**
  * Klavyeden sayfa arama — Ctrl/Cmd + K.

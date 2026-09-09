@@ -1,22 +1,22 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canAccessBusiness, requireMenuErisim, requireYazma } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { denetimYaz } from "@/lib/denetim";
+import { canAccessBusiness, requireMenuErisim, requireYazma } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { denetimYaz } from "@/lib/rapor/denetim";
 import {
   expoyaGonder,
   pushHedefleriniSuz,
   pushMesajiOlustur,
   type PushHedefi,
-} from "@/lib/app-push";
+} from "@/lib/biyerlere/app-push";
 import {
   gecerliSegmentMi,
   googleLinkindenKoordinat,
   koordinatCoz,
   ozellikleriYaz,
   type Koordinat,
-} from "@/lib/mekan";
+} from "@/lib/biyerlere/mekan";
 
 export type BiyerlereFormState = { error?: string; saved?: boolean };
 export type FlasIndirimFormState = { error?: string; saved?: string };

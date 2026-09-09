@@ -1,11 +1,11 @@
 import { Pencil, User } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/db";
-import { requireKullaniciYonetimi, userScope, visibleBusinesses } from "@/lib/auth";
-import { verilebilirModuller } from "@/lib/moduller";
+import { prisma } from "@/lib/cekirdek/db";
+import { requireKullaniciYonetimi, userScope, visibleBusinesses } from "@/lib/kimlik/auth";
+import { verilebilirModuller } from "@/lib/kimlik/moduller";
 import { EditUserForm } from "../../UserForms";
-import { acilabilirRoller } from "@/lib/panel";
+import { acilabilirRoller } from "@/lib/kimlik/panel";
 import { PageHeader, SectionCard } from "@/components/ui";
 
 export const dynamic = "force-dynamic";

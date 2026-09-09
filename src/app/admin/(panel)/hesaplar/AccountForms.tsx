@@ -1,6 +1,6 @@
 "use client";
 
-import { MODULLER, MODUL_ANAHTARLARI } from "@/lib/moduller";
+import { MODULLER, MODUL_ANAHTARLARI } from "@/lib/kimlik/moduller";
 import { useActionState, useState } from "react";
 import { TarihGirdisi } from "@/components/ui";
 import {

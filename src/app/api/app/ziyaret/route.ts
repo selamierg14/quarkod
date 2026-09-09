@@ -1,18 +1,18 @@
 import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { gecerliKoordinatMi } from "@/lib/mekan";
+import { prisma } from "@/lib/cekirdek/db";
+import { gecerliKoordinatMi } from "@/lib/biyerlere/mekan";
 import {
   ZIYARET_BEKLEME_SAATI,
   ZIYARET_PUANI,
   redMesaji,
   ziyaretKarari,
-} from "@/lib/ziyaret";
-import { rozetleriDegerlendir } from "@/lib/rozet-verme";
-import { seviye } from "@/lib/rozet";
-import { SADAKAT_ESIGI, sadakatDurumuHesapla } from "@/lib/sadakat";
-import { ROTA_TAMAMLAMA_PUANI, rotalariDegerlendir } from "@/lib/rota-tamamlama";
-import { apiHata, appKullaniciGerekli, govdeOku, metin } from "@/lib/app-api";
+} from "@/lib/biyerlere/ziyaret";
+import { rozetleriDegerlendir } from "@/lib/biyerlere/rozet-verme";
+import { seviye } from "@/lib/biyerlere/rozet";
+import { SADAKAT_ESIGI, sadakatDurumuHesapla } from "@/lib/biyerlere/sadakat";
+import { ROTA_TAMAMLAMA_PUANI, rotalariDegerlendir } from "@/lib/biyerlere/rota-tamamlama";
+import { apiHata, appKullaniciGerekli, govdeOku, metin } from "@/lib/kimlik/app-api";
 
 /** Sadakat hediyesi kuponunun geçerlilik süresi. */
 const SADAKAT_KUPON_GECERLILIK_GUN = 30;

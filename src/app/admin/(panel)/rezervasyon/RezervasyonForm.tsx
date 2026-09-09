@@ -5,7 +5,7 @@ import {
   REZERVASYON_KANALLARI,
   VARSAYILAN_SURE_DAKIKA,
   kapasiteYeterliMi,
-} from "@/lib/rezervasyon";
+} from "@/lib/isletme/rezervasyon";
 import { rezervasyonKaydet, type RezervasyonFormState } from "./actions";
 
 export type SecilebilirMasa = {

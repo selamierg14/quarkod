@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Star, MapPin } from "lucide-react";
-import type { MekanOzet } from "@/lib/kesfet-veri";
+import type { MekanOzet } from "@/lib/biyerlere/kesfet-veri";
 import { Skeleton } from "../../components/Skeleton";
 
 /** Kategori özelliklerinin rozet rengi — spec'teki sabit palet. */

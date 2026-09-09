@@ -1,9 +1,9 @@
 import { Check } from "lucide-react";
-import { requireOwner } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { ROL_ADLARI } from "@/lib/constants";
-import { effectiveAccountId } from "@/lib/impersonation";
-import { EYLEM_METNI, denetimKapsami, type DenetimEylemi } from "@/lib/denetim";
+import { requireOwner } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { ROL_ADLARI } from "@/lib/cekirdek/constants";
+import { effectiveAccountId } from "@/lib/kimlik/impersonation";
+import { EYLEM_METNI, denetimKapsami, type DenetimEylemi } from "@/lib/rapor/denetim";
 import {
   Badge,
   EmptyState,

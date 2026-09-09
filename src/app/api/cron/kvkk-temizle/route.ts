@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { CONTACT_RETENTION_DAYS } from "@/lib/kvkk";
-import { cronCalistir, cronYetkiliMi } from "@/lib/cron";
+import { prisma } from "@/lib/cekirdek/db";
+import { CONTACT_RETENTION_DAYS } from "@/lib/isletme/kvkk";
+import { cronCalistir, cronYetkiliMi } from "@/lib/altyapi/cron";
 
 export const dynamic = "force-dynamic";
 

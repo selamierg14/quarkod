@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef } from "react";
 import { useToast } from "@/components/ui";
-import { FIYAT_SEGMENTLERI, MEKAN_OZELLIKLERI, ozellikleriCoz } from "@/lib/mekan";
+import { FIYAT_SEGMENTLERI, MEKAN_OZELLIKLERI, ozellikleriCoz } from "@/lib/biyerlere/mekan";
 import { updateBiyerlereSettings, type BiyerlereFormState } from "./actions";
 
 const INPUT =

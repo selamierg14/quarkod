@@ -3,8 +3,8 @@
 import { useActionState, useState } from "react";
 import { CalendarOff } from "lucide-react";
 import { SectionCard } from "@/components/ui";
-import { IZIN_TURLERI } from "@/lib/izin";
-import { gunGirdisi } from "@/lib/gun";
+import { IZIN_TURLERI } from "@/lib/isletme/izin";
+import { gunGirdisi } from "@/lib/cekirdek/gun";
 import {
   izinTalepEt,
   type IzinFormState,

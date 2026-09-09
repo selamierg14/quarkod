@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Card, CardHeader } from "@/components/ui";
-import type { BiyerlereIstatistik } from "@/lib/biyerlere-istatistik";
+import type { BiyerlereIstatistik } from "@/lib/biyerlere/biyerlere-istatistik";
 
 const SATIRLAR = (i: BiyerlereIstatistik) => [
   { emoji: "👁️", etiket: "görüntülenme", deger: i.goruntuleme },

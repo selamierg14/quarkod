@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { appKullaniciGerekli } from "@/lib/app-api";
+import { prisma } from "@/lib/cekirdek/db";
+import { appKullaniciGerekli } from "@/lib/kimlik/app-api";
 
 export const dynamic = "force-dynamic";
 

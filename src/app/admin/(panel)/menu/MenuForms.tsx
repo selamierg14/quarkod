@@ -13,7 +13,7 @@ import {
   parseOzelBilesenler,
   parseTags,
   priceInputValue,
-} from "@/lib/menu";
+} from "@/lib/isletme/menu";
 import {
   addMenuCategory,
   addMenuItem,

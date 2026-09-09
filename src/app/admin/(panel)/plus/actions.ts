@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireSuperadmin } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { denetimYaz } from "@/lib/denetim";
+import { requireSuperadmin } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { denetimYaz } from "@/lib/rapor/denetim";
 
 const YOL = "/admin/plus";
 

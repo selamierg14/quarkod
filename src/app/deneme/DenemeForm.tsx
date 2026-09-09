@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { Button, Checkbox, Field, Input, Select } from "@/components/ui";
-import { BUSINESS_TYPE_LIST } from "@/lib/constants";
+import { BUSINESS_TYPE_LIST } from "@/lib/cekirdek/constants";
 import { denemeBaslat, type DenemeState } from "./actions";
 
 export function DenemeForm() {

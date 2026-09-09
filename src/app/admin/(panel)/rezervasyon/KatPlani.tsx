@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useCallback, useRef, useState } from "react";
-import { MASA_DURUM_ADLARI, MASA_DURUM_RENKLERI, type MasaDurumu } from "@/lib/rezervasyon";
+import { MASA_DURUM_ADLARI, MASA_DURUM_RENKLERI, type MasaDurumu } from "@/lib/isletme/rezervasyon";
 import { planKaydet, type RezervasyonFormState } from "./actions";
 
 export type PlanMasasi = {

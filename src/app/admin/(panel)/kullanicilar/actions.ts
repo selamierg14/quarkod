@@ -11,21 +11,21 @@ import {
   setSessionCookie,
   userScope,
   requireYazma,
-} from "@/lib/auth";
-import { denetimYaz } from "@/lib/denetim";
-import { acilabilirRoller } from "@/lib/panel";
-import { gecerliRolMu } from "@/lib/session-token";
-import { sifreSorunu } from "@/lib/sifre";
-import { prisma } from "@/lib/db";
-import { istenenModulleriSuz, modulDagitabilirMi } from "@/lib/moduller";
-import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
-import { uniqueConstraintMessage } from "@/lib/unique-error";
-import { issueOtp, verifyOtp } from "@/lib/otp";
+} from "@/lib/kimlik/auth";
+import { denetimYaz } from "@/lib/rapor/denetim";
+import { acilabilirRoller } from "@/lib/kimlik/panel";
+import { gecerliRolMu } from "@/lib/kimlik/session-token";
+import { sifreSorunu } from "@/lib/kimlik/sifre";
+import { prisma } from "@/lib/cekirdek/db";
+import { istenenModulleriSuz, modulDagitabilirMi } from "@/lib/kimlik/moduller";
+import { normalizePhone, toUsername, usernameProblem } from "@/lib/kimlik/username";
+import { uniqueConstraintMessage } from "@/lib/cekirdek/unique-error";
+import { issueOtp, verifyOtp } from "@/lib/kimlik/otp";
 import {
   clearPendingPassword,
   readPendingPassword,
   setPendingPassword,
-} from "@/lib/pending-password";
+} from "@/lib/kimlik/pending-password";
 
 export type UserFormState = { error?: string; saved?: string };
 

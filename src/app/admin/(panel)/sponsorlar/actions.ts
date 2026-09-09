@@ -1,11 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireSuperadmin } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { denetimYaz } from "@/lib/denetim";
-import { haftaBaslangici, gunGirdisi } from "@/lib/gun";
-import { sponsorMu } from "@/lib/sponsorluk";
+import { requireSuperadmin } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { denetimYaz } from "@/lib/rapor/denetim";
+import { haftaBaslangici, gunGirdisi } from "@/lib/cekirdek/gun";
+import { sponsorMu } from "@/lib/biyerlere/sponsorluk";
 
 const YOL = "/admin/sponsorlar";
 

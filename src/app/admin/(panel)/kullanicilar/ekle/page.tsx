@@ -1,10 +1,10 @@
 import { Plus, User } from "lucide-react";
 import Link from "next/link";
-import { prisma } from "@/lib/db";
-import { actingAccountId, requireKullaniciYonetimi, visibleBusinesses } from "@/lib/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { actingAccountId, requireKullaniciYonetimi, visibleBusinesses } from "@/lib/kimlik/auth";
 import { NewUserForm } from "../UserForms";
-import { acilabilirRoller } from "@/lib/panel";
-import { verilebilirModuller } from "@/lib/moduller";
+import { acilabilirRoller } from "@/lib/kimlik/panel";
+import { verilebilirModuller } from "@/lib/kimlik/moduller";
 import { PageHeader, SectionCard } from "@/components/ui";
 
 export const dynamic = "force-dynamic";

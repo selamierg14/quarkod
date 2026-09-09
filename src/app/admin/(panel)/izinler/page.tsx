@@ -1,8 +1,8 @@
 import { Mail } from "lucide-react";
-import { allowedBusinessIds, requireModul, requireTenantOwner } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { allowedBusinessIds, requireModul, requireTenantOwner } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
 import { EmptyState, PageHeader, formatDateTime } from "@/components/ui";
-import { IYS_CHANNELS, type IysChannel } from "@/lib/iys";
+import { IYS_CHANNELS, type IysChannel } from "@/lib/isletme/iys";
 import { MarkReportedForm } from "./MarkReportedForm";
 
 export const dynamic = "force-dynamic";

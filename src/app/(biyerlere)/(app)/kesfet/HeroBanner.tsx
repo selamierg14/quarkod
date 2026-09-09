@@ -1,6 +1,6 @@
 "use client";
 
-import type { MekanOzet } from "@/lib/kesfet-veri";
+import type { MekanOzet } from "@/lib/biyerlere/kesfet-veri";
 
 /**
  * Öne çıkan afiş.

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { FEEDBACK_STATUS_LIST } from "@/lib/constants";
+import { FEEDBACK_STATUS_LIST } from "@/lib/cekirdek/constants";
 import { updateFeedback, type UpdateState } from "./actions";
 
 export function StatusForm({

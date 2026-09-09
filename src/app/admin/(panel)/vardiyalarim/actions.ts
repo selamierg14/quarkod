@@ -1,12 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { bildirimGonder } from "@/lib/bildirim";
-import { gunAdi, gunBaslangici } from "@/lib/gun";
-import { SHIFTS, type Shift } from "@/lib/constants";
-import { gecerliVardiyaMi } from "@/lib/vardiya";
+import { requireUser } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { bildirimGonder } from "@/lib/altyapi/bildirim";
+import { gunAdi, gunBaslangici } from "@/lib/cekirdek/gun";
+import { SHIFTS, type Shift } from "@/lib/cekirdek/constants";
+import { gecerliVardiyaMi } from "@/lib/personel/vardiya";
 
 export type DegisimFormState = { error?: string; saved?: string };
 

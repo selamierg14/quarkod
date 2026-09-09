@@ -1,9 +1,9 @@
 import { ChevronDown, FolderOpen, Settings2 } from "lucide-react";
-import { requireSuperadmin } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { getActiveAccountId } from "@/lib/impersonation";
+import { requireSuperadmin } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { getActiveAccountId } from "@/lib/kimlik/impersonation";
 import { PageHeader, formatDateTime } from "@/components/ui";
-import { BUSINESS_TYPES, type BusinessType, ROL_ADLARI } from "@/lib/constants";
+import { BUSINESS_TYPES, type BusinessType, ROL_ADLARI } from "@/lib/cekirdek/constants";
 import {
   EnterAccountButton,
   NewAccountForm,
@@ -11,8 +11,8 @@ import {
   ToggleAccountButton,
 } from "./AccountForms";
 import { SorumluListesi } from "./SorumluListesi";
-import { MODUL_ANAHTARLARI } from "@/lib/moduller";
-import { hesapAktifMi, kalanGun } from "@/lib/abonelik";
+import { MODUL_ANAHTARLARI } from "@/lib/kimlik/moduller";
+import { hesapAktifMi, kalanGun } from "@/lib/isletme/abonelik";
 
 /** date input'unun beklediği yyyy-aa-gg; yerel saate göre. */
 function dateInputValue(tarih: Date | null): string {

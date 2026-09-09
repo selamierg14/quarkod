@@ -1,19 +1,19 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { allowedBusinessIds, canAccessBusiness, requireYazma } from "@/lib/auth";
-import { denetimYaz } from "@/lib/denetim";
-import { prisma } from "@/lib/db";
-import { validateImageDataUrl } from "@/lib/image";
+import { allowedBusinessIds, canAccessBusiness, requireYazma } from "@/lib/kimlik/auth";
+import { denetimYaz } from "@/lib/rapor/denetim";
+import { prisma } from "@/lib/cekirdek/db";
+import { validateImageDataUrl } from "@/lib/isletme/image";
 import {
   parseKalori,
   parsePrice,
   serializeAlerjenler,
   serializeOzelBilesenler,
   serializeTags,
-} from "@/lib/menu";
-import { uniqueConstraintMessage } from "@/lib/unique-error";
-import { menuAcikMi } from "@/lib/menu-erisim";
+} from "@/lib/isletme/menu";
+import { uniqueConstraintMessage } from "@/lib/cekirdek/unique-error";
+import { menuAcikMi } from "@/lib/isletme/menu-erisim";
 
 export type MenuFormState = { error?: string; saved?: string };
 
@@ -435,8 +435,8 @@ export async function sablonuUygula(
   const hata = await menuIzni(businessId);
   if (hata) return { error: hata };
 
-  const { MENU_SABLONLARI } = await import("@/lib/menu-sablonlari");
-  const { sablonUrunBilgisi } = await import("@/lib/menu-sablon-bilgileri");
+  const { MENU_SABLONLARI } = await import("@/lib/isletme/menu-sablonlari");
+  const { sablonUrunBilgisi } = await import("@/lib/isletme/menu-sablon-bilgileri");
   const sablon = MENU_SABLONLARI.find((s) => s.id === sablonId);
   if (!sablon) return { error: "Şablon bulunamadı." };
 

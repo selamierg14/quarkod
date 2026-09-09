@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { gorselAdresi } from "@/lib/gorsel-adres";
-import { guncelKupon } from "@/lib/kupon-kod";
-import { sadakatDurumuHesapla } from "@/lib/sadakat";
-import { appKullaniciGerekli } from "@/lib/app-api";
+import { prisma } from "@/lib/cekirdek/db";
+import { gorselAdresi } from "@/lib/isletme/gorsel-adres";
+import { guncelKupon } from "@/lib/biyerlere/kupon-kod";
+import { sadakatDurumuHesapla } from "@/lib/biyerlere/sadakat";
+import { appKullaniciGerekli } from "@/lib/kimlik/app-api";
 
 export const dynamic = "force-dynamic";
 

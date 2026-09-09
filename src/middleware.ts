@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { SESSION_COOKIE, verifySessionToken } from "@/lib/session-token";
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/kimlik/session-token";
 
 /**
  * /admin altındaki her şey oturum ister; giriş sayfası hariç.

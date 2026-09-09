@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { ChevronDown, CopyPlus, TriangleAlert } from "lucide-react";
 import { gecenHaftayiKopyala, type HaftaKopyaState } from "./actions";
-import { uyarilariGrupla, type VardiyaUyarisi } from "@/lib/vardiya-uyari";
+import { uyarilariGrupla, type VardiyaUyarisi } from "@/lib/personel/vardiya-uyari";
 
 /**
  * Hafta üstü araç şeridi: geçen haftayı kopyalama ve çizelge uyarıları.

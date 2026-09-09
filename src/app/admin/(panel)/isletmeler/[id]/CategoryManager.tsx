@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { sorunSecenekleri } from "@/lib/anket-detay";
+import { sorunSecenekleri } from "@/lib/isletme/anket-detay";
 import {
   addCategory,
   moveCategory,

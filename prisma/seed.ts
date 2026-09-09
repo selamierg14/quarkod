@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
-import { DEFAULT_CATEGORIES, type BusinessType } from "../src/lib/constants";
+import { DEFAULT_CATEGORIES, type BusinessType } from "../src/lib/cekirdek/constants";
 
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL tanımlı değil.");

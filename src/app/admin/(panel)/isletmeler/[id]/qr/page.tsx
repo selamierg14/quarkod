@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
-import { canAccessBusiness, requireUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { appUrl, qrCardText } from "@/lib/constants";
+import { canAccessBusiness, requireUser } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { appUrl, qrCardText } from "@/lib/cekirdek/constants";
 import { PrintButton } from "./PrintButton";
-import { masaSirala } from "@/lib/masa";
+import { masaSirala } from "@/lib/isletme/masa";
 import { IsletmeUst } from "../IsletmeUst";
 
 export const dynamic = "force-dynamic";

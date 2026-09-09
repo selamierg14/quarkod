@@ -1,16 +1,16 @@
 import bcrypt from "bcryptjs";
 import { KeyRound, Pencil, User as UserIcon, Users } from "lucide-react";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/cekirdek/db";
 import {
   actingAccountId,
   requireKullaniciYonetimi,
   userScope,
   visibleBusinesses,
-} from "@/lib/auth";
+} from "@/lib/kimlik/auth";
 import { ResetPasswordForm, ToggleUserButton } from "./UserForms";
 import { SEED_SIFRESI } from "./sabitler";
-import { ROL_ADLARI } from "@/lib/constants";
-import { acilabilirRoller } from "@/lib/panel";
+import { ROL_ADLARI } from "@/lib/cekirdek/constants";
+import { acilabilirRoller } from "@/lib/kimlik/panel";
 import { Alert, ButtonLink, EmptyState, PageHeader } from "@/components/ui";
 import { KullaniciFiltreleri } from "./KullaniciFiltreleri";
 

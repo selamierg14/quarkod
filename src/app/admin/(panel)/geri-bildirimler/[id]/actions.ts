@@ -1,13 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canAccessBusiness, requireYazma } from "@/lib/auth";
-import { denetimYaz } from "@/lib/denetim";
-import { prisma } from "@/lib/db";
-import { FEEDBACK_STATUSES } from "@/lib/constants";
-import { sendSms } from "@/lib/sms";
-import { sendMail } from "@/lib/mailer";
-import { yanitEngeli } from "@/lib/yanit";
+import { canAccessBusiness, requireYazma } from "@/lib/kimlik/auth";
+import { denetimYaz } from "@/lib/rapor/denetim";
+import { prisma } from "@/lib/cekirdek/db";
+import { FEEDBACK_STATUSES } from "@/lib/cekirdek/constants";
+import { sendSms } from "@/lib/altyapi/sms";
+import { sendMail } from "@/lib/altyapi/mailer";
+import { yanitEngeli } from "@/lib/cekirdek/yanit";
 
 export type UpdateState = { error?: string; saved?: boolean };
 

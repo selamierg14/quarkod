@@ -1,8 +1,8 @@
 import { Crown } from "lucide-react";
-import { requireSuperadmin } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { requireSuperadmin } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
 import { PageHeader, SectionCard } from "@/components/ui";
-import { plusGecerliMi } from "@/lib/biyerlere-plus";
+import { plusGecerliMi } from "@/lib/biyerlere/biyerlere-plus";
 import { PlusKaldirButonu, PlusYapForm } from "./PlusForms";
 
 export const dynamic = "force-dynamic";

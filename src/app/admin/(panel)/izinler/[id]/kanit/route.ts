@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { notFound } from "next/navigation";
-import { canAccessBusiness, requireModul, requireTenantOwner } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { canAccessBusiness, requireModul, requireTenantOwner } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
 import { formatDateTime } from "@/components/ui";
-import { IYS_CHANNELS, type IysChannel } from "@/lib/iys";
-import { kanitPdfUret } from "@/lib/kanit-pdf";
+import { IYS_CHANNELS, type IysChannel } from "@/lib/isletme/iys";
+import { kanitPdfUret } from "@/lib/rapor/kanit-pdf";
 
 /**
  * Bir İYS pazarlama izninin kanıt belgesi — "bu izni gerçekten aldık mı"

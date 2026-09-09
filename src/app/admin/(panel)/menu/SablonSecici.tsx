@@ -3,8 +3,8 @@
 import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { sablonuUygula, type MenuFormState } from "./actions";
-import { MENU_SABLONLARI, type SablonRenk } from "@/lib/menu-sablonlari";
-import type { BusinessType } from "@/lib/constants";
+import { MENU_SABLONLARI, type SablonRenk } from "@/lib/isletme/menu-sablonlari";
+import type { BusinessType } from "@/lib/cekirdek/constants";
 import { useToast } from "@/components/ui";
 
 /**

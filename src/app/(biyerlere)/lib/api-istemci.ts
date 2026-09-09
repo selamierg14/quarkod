@@ -1,6 +1,6 @@
 "use client";
 
-import { BIYERLERE_JETON_ANAHTARI } from "@/lib/biyerlere-jeton";
+import { BIYERLERE_JETON_ANAHTARI } from "@/lib/biyerlere/biyerlere-jeton";
 
 /**
  * Biyerlere'nin `/api/app/*` uçlarına istemciden istek atan tek nokta.

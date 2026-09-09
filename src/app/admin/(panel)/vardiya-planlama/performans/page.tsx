@@ -1,10 +1,10 @@
 import { BarChart3, Users2 } from "lucide-react";
-import { requirePersonelYonetimi, visibleBusinesses } from "@/lib/auth";
-import { getPersonelPerformansi } from "@/lib/stats";
+import { requirePersonelYonetimi, visibleBusinesses } from "@/lib/kimlik/auth";
+import { getPersonelPerformansi } from "@/lib/rapor/stats";
 import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
 import { IsletmeSecici } from "../../menu/MenuUst";
 import { PeriyotFiltre } from "@/components/PeriyotFiltre";
-import { ROL_ADLARI } from "@/lib/constants";
+import { ROL_ADLARI } from "@/lib/cekirdek/constants";
 import { VardiyaSekmeleri } from "../VardiyaSekmeleri";
 
 export const dynamic = "force-dynamic";

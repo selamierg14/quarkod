@@ -9,15 +9,15 @@ import {
   hashPassword,
   setSessionCookie,
   toSessionUser,
-} from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { issueOtp, maskPhone, twoFactorEnabled, verifyOtp } from "@/lib/otp";
-import { sifreSorunu } from "@/lib/sifre";
+} from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { issueOtp, maskPhone, twoFactorEnabled, verifyOtp } from "@/lib/kimlik/otp";
+import { sifreSorunu } from "@/lib/kimlik/sifre";
 import {
   checkLoginAllowed,
   pruneLoginAttempts,
   recordLoginAttempt,
-} from "@/lib/login-guard";
+} from "@/lib/kimlik/login-guard";
 
 /**
  * Giriş ve şifre sıfırlama tek ekranda, adım adım yürür.

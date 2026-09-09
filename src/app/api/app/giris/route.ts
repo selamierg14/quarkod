@@ -1,10 +1,10 @@
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { checkLoginAllowed, recordLoginAttempt } from "@/lib/login-guard";
-import { appJetonUret } from "@/lib/app-oturum";
-import { apiHata, govdeOku, metin } from "@/lib/app-api";
-import { plusGecerliMi } from "@/lib/biyerlere-plus";
+import { prisma } from "@/lib/cekirdek/db";
+import { checkLoginAllowed, recordLoginAttempt } from "@/lib/kimlik/login-guard";
+import { appJetonUret } from "@/lib/kimlik/app-oturum";
+import { apiHata, govdeOku, metin } from "@/lib/kimlik/app-api";
+import { plusGecerliMi } from "@/lib/biyerlere/biyerlere-plus";
 
 export const dynamic = "force-dynamic";
 

@@ -10,16 +10,16 @@ import {
   hashPassword,
   requireOwner,
   requireYazma,
-} from "@/lib/auth";
-import { denetimYaz } from "@/lib/denetim";
-import { secenekleriAyristir, secenekleriBirlestir } from "@/lib/anket-detay";
-import { sifreSorunu } from "@/lib/sifre";
-import { prisma } from "@/lib/db";
-import { BUSINESS_TYPES, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/constants";
-import { validateImageDataUrl } from "@/lib/image";
-import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
-import { slugIleOlustur, slugify } from "@/lib/slug";
-import { googleYorumLinkiGecerliMi } from "@/lib/google-yorum";
+} from "@/lib/kimlik/auth";
+import { denetimYaz } from "@/lib/rapor/denetim";
+import { secenekleriAyristir, secenekleriBirlestir } from "@/lib/isletme/anket-detay";
+import { sifreSorunu } from "@/lib/kimlik/sifre";
+import { prisma } from "@/lib/cekirdek/db";
+import { BUSINESS_TYPES, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/cekirdek/constants";
+import { validateImageDataUrl } from "@/lib/isletme/image";
+import { normalizePhone, toUsername, usernameProblem } from "@/lib/kimlik/username";
+import { slugIleOlustur, slugify } from "@/lib/cekirdek/slug";
+import { googleYorumLinkiGecerliMi } from "@/lib/isletme/google-yorum";
 
 export type FormState = { error?: string; saved?: boolean };
 
