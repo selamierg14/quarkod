@@ -9,7 +9,6 @@ export const ROL_ADLARI: Record<string, string> = {
   owner: "Hesap sahibi",
   bolge: "Bölge müdürü",
   manager: "İşletme sorumlusu",
-  viewer: "Salt okunur",
   garson: "Saha personeli",
 };
 

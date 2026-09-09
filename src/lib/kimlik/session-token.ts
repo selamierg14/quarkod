@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
+import { gizliAnahtar } from "../cekirdek/ortam";
 
 /**
  * Oturum jetonu üretimi/doğrulaması. Node'a özgü bağımlılık içermez ki
@@ -114,13 +115,10 @@ export function sessionRevokedReason(
 }
 
 function secretKey(): Uint8Array {
-  const secret = process.env.AUTH_SECRET;
-  if (!secret || secret.length < 16) {
-    throw new Error(
-      "AUTH_SECRET tanımlı değil veya çok kısa. .env dosyasına en az 32 karakterlik bir değer yazın.",
-    );
-  }
-  return new TextEncoder().encode(secret);
+  // Doğrulama tek yerde: lib/ortam.ts. Önceden bu blok beş dosyada
+  // kopyalanmıştı ve kopyalar birbirinden ayrışmıştı (biri 16 kontrol
+  // ederken mesajı 32 diyordu).
+  return new TextEncoder().encode(gizliAnahtar("AUTH_SECRET"));
 }
 
 export async function createSessionToken(user: SessionUser): Promise<string> {

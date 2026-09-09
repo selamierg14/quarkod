@@ -24,7 +24,6 @@ type Business = { id: string; name: string };
 const ROL_SECENEKLERI: Record<string, string> = {
   manager: "İşletme sorumlusu (tek işletme)",
   bolge: "Bölge müdürü (seçili işletmeler)",
-  viewer: "Salt okunur (rapor görür, değiştiremez)",
   owner: "Patron (hesabın tamamını yönetir)",
   garson: "Saha personeli (yalnızca kendi vardiyasını/görevlerini görür)",
 };
@@ -195,6 +194,10 @@ export function NewUserForm({
           <legend className="px-1 text-caption font-medium tracking-wide text-ink-muted uppercase">
             Modül izinleri
           </legend>
+          {/* İşaretsiz kutular gönderilmez, yani "hiç modül seçilmedi" ile
+              "bu blok hiç çizilmedi" sunucuda AYNI görünüyor. Bu gizli alan
+              ikisini ayırıyor: yoksa sunucu modüllere hiç dokunmuyor. */}
+          <input type="hidden" name="modullerGonderildi" value="1" />
           {verilebilirModuller.map((modul) => (
             <label key={modul} className="flex items-start gap-2 text-small text-ink-soft">
               <input
@@ -260,6 +263,9 @@ export function EditUserForm({
     updateUser,
     {},
   );
+  // Patronun ROLÜ değiştirilemez (sahiplik aboneliği taşır, platform
+  // tarafının işidir) — ama bu, MODÜLLERİNİN de değiştirilemeyeceği
+  // anlamına gelmiyor. İki ayrı konu; aynı bayrağa bağlanmışlardı.
   const rolSabit = user.role === "owner";
 
   return (
@@ -388,11 +394,28 @@ export function EditUserForm({
           Listede yalnızca dağıtan kişinin KENDİ sahip olduğu modüller var;
           sunucuda istenenModulleriSuz() aynı kesişimi tekrar alıyor, yani
           form alanı elle kurulsa bile fazlası geçmiyor. */}
-      {verilebilirModuller.length > 0 && !rolSabit && role !== "garson" ? (
+      {/* Modül bloğu patronda da GÖRÜNÜR.
+          Önceden koşulda `!rolSabit` vardı ve iki ayrı kural birbirine
+          karışmıştı: patronun rolü sabit diye modül izinleri de gizleniyordu.
+          Bunun iki sonucu vardı ve ikincisi sessiz bir veri kaybıydı:
+
+            1. Patrona hiçbir modül verilemiyordu — üstelik modül dağıtımı
+               kendi kümesinin alt kümesiyle sınırlı olduğu için (bkz.
+               verilebilirModuller) patronda olmayan bir modül ekibine de
+               hiç verilemiyordu. "Rezervasyon izinlerde görünmüyor"
+               şikayetinin kaynağı buydu.
+            2. Patronun telefonunu düzeltmek için formu kaydetmek, gönderilen
+               boş `moduller` listesi yüzünden TÜM modüllerini siliyordu
+               (updateUser, modulDagitabilirMi dalı). */}
+      {verilebilirModuller.length > 0 && role !== "garson" ? (
         <fieldset className="flex flex-col gap-2 rounded-chip border border-line bg-canvas p-3">
           <legend className="px-1 text-caption font-medium tracking-wide text-ink-muted uppercase">
             Modül izinleri
           </legend>
+          {/* İşaretsiz kutular gönderilmez, yani "hiç modül seçilmedi" ile
+              "bu blok hiç çizilmedi" sunucuda AYNI görünüyor. Bu gizli alan
+              ikisini ayırıyor: yoksa sunucu modüllere hiç dokunmuyor. */}
+          <input type="hidden" name="modullerGonderildi" value="1" />
           {verilebilirModuller.map((modul) => (
             <label key={modul} className="flex items-start gap-2 text-small text-ink-soft">
               <input

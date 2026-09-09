@@ -113,11 +113,28 @@ export async function canAccessBusinessFor(
  * kendi işletmesi için garson açarken hesaptaki DİĞER işletmelerin
  * kullanıcılarını da görür/düzenleyebilirdi — kendi mağazasına bakan biri
  * zincirin başka şubesinin ekibine karışmamalı.
+ *
+ * BÖLGE MÜDÜRÜ de aynı sınıra tabi ve bu bir GÜVENLİK DÜZELTMESİdir:
+ * önceden bu rol aşağıdaki genel `accountId` dalına düşüyor, yani hesabın
+ * TÜM kullanıcılarını kapsıyordu. Kullanıcı eylemleri (düzenle / şifre
+ * sıfırla / pasife al) yalnızca bu filtreye güvendiği için bölge müdürü
+ * patronun şifresini sıfırlayıp hesabı devralabiliyordu. Artık kapsam
+ * kendisine ATANMIŞ işletmelerin kullanıcılarıyla sınırlı; patron ve diğer
+ * bölge müdürleri hiçbir işletmeye bağlı olmadığı (businessId: null) için
+ * bu filtreye zaten hiç girmiyorlar.
+ *
+ * `atananIsletmeler` çağıran tarafından veriliyor: bu dosya bilerek
+ * veritabanına dokunmuyor, saf ve testlenebilir kalıyor.
  */
-export function userScopeFor(scope: TenantScope) {
+export function userScopeFor(scope: TenantScope, atananIsletmeler: string[] = []) {
   if (scope.role === "superadmin") return {};
   if (scope.role === "manager") {
     return { businessId: scope.businessId ?? IMPOSSIBLE_ID };
+  }
+  if (scope.role === "bolge") {
+    return {
+      businessId: { in: atananIsletmeler.length > 0 ? atananIsletmeler : [IMPOSSIBLE_ID] },
+    };
   }
   return { accountId: scope.accountId ?? IMPOSSIBLE_ID };
 }

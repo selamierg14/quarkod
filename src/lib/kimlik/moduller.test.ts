@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  MODULLER,
   MODUL_ANAHTARLARI,
   etkinModuller,
   istenenModulleriSuz,
   modulDagitabilirMi,
+  modulleriGuncelleMeli,
   verilebilirModuller,
 } from "./moduller";
 
@@ -70,5 +72,42 @@ describe("istenen modülleri süzme", () => {
     expect(istenenModulleriSuz("superadmin", [], [...MODUL_ANAHTARLARI]).sort()).toEqual(
       [...MODUL_ANAHTARLARI].sort(),
     );
+  });
+});
+
+describe("modulleriGuncelleMeli", () => {
+  it("yetkili rol + form gönderdi → günceller", () => {
+    expect(modulleriGuncelleMeli("superadmin", true)).toBe(true);
+    expect(modulleriGuncelleMeli("owner", true)).toBe(true);
+  });
+
+  it("form modül bloğunu GÖNDERMEDİYSE dokunmaz", () => {
+    // Asıl düzeltilen veri kaybı: blok arayüzde gizliyken formu kaydetmek
+    // hedefin tüm modüllerini siliyordu.
+    expect(modulleriGuncelleMeli("superadmin", false)).toBe(false);
+    expect(modulleriGuncelleMeli("owner", false)).toBe(false);
+  });
+
+  it("dağıtma yetkisi olmayan rol hiçbir durumda değiştiremez", () => {
+    for (const rol of ["manager", "bolge", "garson"] as const) {
+      expect(modulleriGuncelleMeli(rol, true), rol).toBe(false);
+      expect(modulleriGuncelleMeli(rol, false), rol).toBe(false);
+    }
+  });
+});
+
+describe("patron modül alabilir", () => {
+  it("superadmin patrona her modülü verebilir", () => {
+    // "Patrona modül izni veremiyorum" şikayetinin kök nedeni arayüzdeydi
+    // (modül bloğu owner hedefinde gizleniyordu); kural katmanı buna
+    // baştan izin veriyordu ve bu test onu sabitliyor.
+    const verilebilir = verilebilirModuller("superadmin", []);
+    expect(verilebilir).toContain("rezervasyon");
+    expect(verilebilir).toEqual(MODUL_ANAHTARLARI);
+  });
+
+  it("rezervasyon modülü listede", () => {
+    expect(MODUL_ANAHTARLARI).toContain("rezervasyon");
+    expect(MODULLER.rezervasyon).toBe("Rezervasyon");
   });
 });

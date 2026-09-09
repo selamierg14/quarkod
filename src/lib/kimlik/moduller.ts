@@ -103,3 +103,24 @@ export function istenenModulleriSuz(
   const izinli = new Set(verilebilirModuller(actorRole, actorModuller));
   return [...new Set(istenen.filter(gecerliModulMu))].filter((m) => izinli.has(m));
 }
+
+/**
+ * Kullanıcı güncellenirken `moduller` alanına DOKUNULMALI mı?
+ *
+ * İki koşul birden aranıyor ve ikisi ayrı soruları cevaplıyor:
+ *
+ *   1. `modulDagitabilirMi` — YETKİ. Dağıtma yetkisi olmayan bir rol
+ *      (işletme sorumlusu, bölge müdürü) kimsenin modülünü değiştiremez.
+ *   2. `formGonderdi` — NİYET. HTML formu işaretsiz kutuları göndermez,
+ *      dolayısıyla sunucuda "hepsini kaldırdım" ile "modül bloğu ekranda
+ *      hiç çizilmedi" AYNI görünüyor: ikisinde de boş liste geliyor.
+ *      Form, blok çizildiğinde gizli bir işaret alanı taşıyor ve ikisini
+ *      ayırıyor.
+ *
+ * İkinci koşul olmadan somut bir veri kaybı yaşanıyordu: patronun modül
+ * bloğu arayüzde gizliydi, dolayısıyla telefonunu düzeltmek için formu
+ * kaydeden yönetici patronun TÜM modüllerini sessizce siliyordu.
+ */
+export function modulleriGuncelleMeli(actorRole: Role, formGonderdi: boolean): boolean {
+  return modulDagitabilirMi(actorRole) && formGonderdi;
+}

@@ -1,4 +1,4 @@
-import type { Role } from "./session-token";
+import { gecerliRolMu, type Role } from "./session-token";
 import { MODUL_ANAHTARLARI } from "./moduller";
 
 /**
@@ -90,6 +90,31 @@ export function acilabilirRoller(actorRole: Role): Role[] {
   // bolge, owner) açamazlar.
   if (actorRole === "manager" || actorRole === "bolge") return ["garson"];
   return [];
+}
+
+/**
+ * Var olan bir kullanıcı üzerinde işlem yapılabilir mi?
+ *
+ * GÜVENLİK KAPISI. Kullanıcı düzenleme, şifre sıfırlama ve pasife alma
+ * eylemleri yalnızca `userScope` filtresine güveniyordu; o filtre ise bölge
+ * müdürünü TÜM HESABA açıyordu. Sonuç, hesabın tamamen devralınmasına
+ * kadar giden bir yetki yükseltmesiydi:
+ *
+ *   bölge müdürü → patronun şifresini sıfırla → patron olarak giriş yap
+ *
+ * "Açabildiğin rolü yönetebilirsin" kuralı bunu tek satırda kapatıyor:
+ * bölge müdürü ve işletme sorumlusu yalnızca `garson` açabildiği için
+ * yalnızca `garson` üzerinde işlem yapabilir. Patron kendi ekibini
+ * (bolge/manager/garson) yönetir ama ikinci bir patrona dokunamaz;
+ * sahiplik platform tarafının işi.
+ *
+ * Kapsam filtresi (userScope) yerine GEÇMİYOR, onunla birlikte çalışıyor:
+ * biri "hangi kiracının kullanıcısı", diğeri "hangi kıdemdeki kullanıcı"
+ * sorusunu cevaplıyor.
+ */
+export function yonetebilirMi(actorRole: Role, targetRole: string): boolean {
+  if (!gecerliRolMu(targetRole)) return false;
+  return acilabilirRoller(actorRole).includes(targetRole);
 }
 
 

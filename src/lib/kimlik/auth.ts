@@ -146,8 +146,23 @@ export async function requireOwner(): Promise<SessionUser> {
  */
 export async function requireYazma(): Promise<SessionUser> {
   const user = await requireUser();
+  const engel = await yazmaEngeli(user);
+  if (engel) throw new Error(engel);
+  return user;
+}
+
+/**
+ * Yazma engelinin SEBEBİ — engel yoksa null.
+ *
+ * requireYazma'dan ayrıldı çünkü o, oturum yoksa `redirect()` atıyor ve bu
+ * bir API rotasında (Server Action değil) yanıt yerine yönlendirme hatası
+ * üretir. Kupon yakma ucu (/api/kupon-dogrula) bu yüzden yazma kontrolünü
+ * hiç yapmıyordu: aboneliği bitmiş bir hesabın personeli kupon
+ * yakabiliyordu. Kural artık tek yerde, iki farklı sarmalayıcı ile.
+ */
+export async function yazmaEngeli(user: SessionUser): Promise<string | null> {
   if (!yazabilirMi(user.role)) {
-    throw new Error("Bu hesap salt okunur; değişiklik yapamaz.");
+    return "Bu hesap salt okunur; değişiklik yapamaz.";
   }
   // Süresi dolmuş hesap salt okunur: sahibi girip verisini görebilir ve dışa
   // aktarabilir ama menü/anket/kullanıcı üzerinde değişiklik yapamaz. Platform
@@ -160,12 +175,10 @@ export async function requireYazma(): Promise<SessionUser> {
     // active:false olan zaten giremez; buradaki tek durum "aktif ama süresi
     // dolmuş" hesap.
     if (hesap?.active && !hesapAktifMi(hesap)) {
-      throw new Error(
-        "Aboneliğinizin süresi doldu; yenilenene kadar değişiklik yapılamaz.",
-      );
+      return "Aboneliğinizin süresi doldu; yenilenene kadar değişiklik yapılamaz.";
     }
   }
-  return user;
+  return null;
 }
 
 /**
@@ -395,9 +408,16 @@ export async function canAccessBusiness(
   return canAccessBusinessFor(prisma, { ...user, userId: user.id }, businessId);
 }
 
-/** Kullanıcının yönetebileceği kullanıcılar için Prisma filtresi. */
+/**
+ * Kullanıcının yönetebileceği kullanıcılar için Prisma filtresi.
+ *
+ * Bölge müdürünün kapsamı ATANMIŞ işletmelerine daraldığı için (bkz.
+ * tenancy.ts, userScopeFor) o roldeyken atama listesi burada okunuyor —
+ * kural saf dosyada, veri erişimi burada.
+ */
 export async function userScope(user: SessionUser) {
   const aktif = await effectiveAccountId(user);
   if (user.role === "superadmin" && aktif) return { accountId: aktif };
-  return userScopeFor(user);
+  const atanan = user.role === "bolge" ? await allowedBusinessIds(user) : [];
+  return userScopeFor(user, atanan);
 }

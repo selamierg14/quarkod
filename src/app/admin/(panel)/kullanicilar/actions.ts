@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import {
   actingAccountId,
+  allowedBusinessIds,
   canAccessBusiness,
   hashPassword,
   requireKullaniciYonetimi,
@@ -13,11 +14,11 @@ import {
   requireYazma,
 } from "@/lib/kimlik/auth";
 import { denetimYaz } from "@/lib/rapor/denetim";
-import { acilabilirRoller } from "@/lib/kimlik/panel";
+import { acilabilirRoller, yonetebilirMi } from "@/lib/kimlik/panel";
 import { gecerliRolMu } from "@/lib/kimlik/session-token";
 import { sifreSorunu } from "@/lib/kimlik/sifre";
 import { prisma } from "@/lib/cekirdek/db";
-import { istenenModulleriSuz, modulDagitabilirMi } from "@/lib/kimlik/moduller";
+import { istenenModulleriSuz, modulleriGuncelleMeli } from "@/lib/kimlik/moduller";
 import { normalizePhone, toUsername, usernameProblem } from "@/lib/kimlik/username";
 import { uniqueConstraintMessage } from "@/lib/cekirdek/unique-error";
 import { issueOtp, verifyOtp } from "@/lib/kimlik/otp";
@@ -26,6 +27,23 @@ import {
   readPendingPassword,
   setPendingPassword,
 } from "@/lib/kimlik/pending-password";
+
+/**
+ * Bir listedeki İŞLETMELERİN HEPSİNE yetki var mı — tek sorguyla.
+ *
+ * `canAccessBusiness` tek işletme için doğru ama döngüde çağrılınca her
+ * eleman için yeniden hesap/atama sorgusu atıyor. Bölge müdürü ataması
+ * onlarca işletme taşıyabildiği için burada izinli kimlikler bir kez
+ * okunup kümede aranıyor; kural aynı, gidiş dönüş bir tane.
+ */
+async function hepsineYetkiliMi(
+  actor: Awaited<ReturnType<typeof requireKullaniciYonetimi>>,
+  isletmeIdleri: string[],
+): Promise<boolean> {
+  if (isletmeIdleri.length === 0) return true;
+  const izinliler = new Set(await allowedBusinessIds(actor));
+  return isletmeIdleri.every((id) => izinliler.has(id));
+}
 
 export type UserFormState = { error?: string; saved?: string };
 
@@ -107,12 +125,12 @@ export async function createUser(
   if (businessId && !(await canAccessBusiness(actor, businessId))) {
     return { error: "Bu işletmeye kullanıcı atama yetkiniz yok." };
   }
-  // Her işletme tek tek doğrulanıyor: form manipüle edilip başka kiracının
-  // işletmesi eklenemesin.
-  for (const id of bolgeIsletmeleri) {
-    if (!(await canAccessBusiness(actor, id))) {
-      return { error: "Seçilen işletmelerden birine yetkiniz yok." };
-    }
+  // Her işletme doğrulanıyor (form manipüle edilip başka kiracının
+  // işletmesi eklenemesin) ama DÖNGÜ İÇİNDE SORGU YOK: canAccessBusiness
+  // her çağrıda 2-3 sorgu atıyordu, on işletmeli bir bölge müdürü için
+  // otuz gidiş dönüş. İzinli kimlikler bir kez okunup kümede aranıyor.
+  if (!(await hepsineYetkiliMi(actor, bolgeIsletmeleri))) {
+    return { error: "Seçilen işletmelerden birine yetkiniz yok." };
   }
 
   const problem = sifreSorunu(password);
@@ -191,6 +209,12 @@ export async function updateUser(
 
   const target = await prisma.user.findFirst({ where: { id, ...await userScope(actor) } });
   if (!target) return { error: "Kullanıcı bulunamadı." };
+  // Kıdem kapısı: kapsam filtresi "hangi kiracının kullanıcısı" sorusunu
+  // cevaplıyor, bu satır "hangi kıdemdeki kullanıcı" sorusunu. İkisi
+  // ayrı — bkz. lib/panel.ts, yonetebilirMi.
+  if (!yonetebilirMi(actor.role, target.role)) {
+    return { error: "Bu kullanıcı üzerinde işlem yapma yetkiniz yok." };
+  }
 
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
@@ -208,6 +232,7 @@ export async function updateUser(
   // modül dağıtma yetkisi olmayan bir rol (bölge/sorumlu) için
   // verilebilirModuller boş döndüğü için sonuç da boş kalır.
   const istenenModuller = formData.getAll("moduller").map((v) => String(v));
+  const modullerGonderildi = formData.get("modullerGonderildi") === "1";
 
   if (!name) return { error: "Ad soyad gerekli." };
   if (!/^\S+@\S+\.\S+$/.test(email)) return { error: "Geçerli bir e-posta girin." };
@@ -237,10 +262,8 @@ export async function updateUser(
   if (businessId && !(await canAccessBusiness(actor, businessId))) {
     return { error: "Bu işletmeye kullanıcı atama yetkiniz yok." };
   }
-  for (const bid of bolgeIsletmeleri) {
-    if (!(await canAccessBusiness(actor, bid))) {
-      return { error: "Seçilen işletmelerden birine yetkiniz yok." };
-    }
+  if (!(await hepsineYetkiliMi(actor, bolgeIsletmeleri))) {
+    return { error: "Seçilen işletmelerden birine yetkiniz yok." };
   }
 
   try {
@@ -254,10 +277,18 @@ export async function updateUser(
           phone,
           role: etkinRol,
           businessId: etkinRol === "manager" || etkinRol === "garson" ? businessId : null,
-          // Modül dağıtamayan bir rol formu göndermişse bu alan hiç
-          // dokunulmamalı: aksi halde bir sorumlu, kullanıcıyı düzenlerken
-          // farkında olmadan modüllerini sıfırlardı.
-          ...(modulDagitabilirMi(actor.role)
+          // Modüllere YALNIZCA form gerçekten modül bloğunu gönderdiyse
+          // dokunuluyor. İki koşul birden aranıyor:
+          //
+          //   1. modulDagitabilirMi — dağıtma yetkisi olmayan bir rol
+          //      (sorumlu, bölge müdürü) kimsenin modülünü değiştiremez.
+          //   2. modullerGonderildi — blok ekranda çizilmişse form bu gizli
+          //      alanı taşır. İşaretsiz kutular gönderilmediği için, bu
+          //      işaret olmadan "hepsini kaldırdım" ile "blok hiç yoktu"
+          //      ayırt edilemiyordu; sonuç, ilgisiz bir alanı düzeltmek için
+          //      formu kaydeden yöneticinin hedefin TÜM modüllerini sessizce
+          //      silmesiydi.
+          ...(modulleriGuncelleMeli(actor.role, modullerGonderildi)
             ? {
                 moduller: istenenModulleriSuz(
                   actor.role,
@@ -324,6 +355,12 @@ export async function resetPassword(
     where: { id, ...await userScope(actor) },
   });
   if (!user) return { error: "Kullanıcı bulunamadı." };
+  // Şifre sıfırlama, hesabı devralmanın en kısa yolu: kıdem kapısı olmadan
+  // bir bölge müdürü patronun şifresini belirleyip onun yerine giriş
+  // yapabiliyordu.
+  if (!yonetebilirMi(actor.role, user.role)) {
+    return { error: "Bu kullanıcının şifresini sıfırlama yetkiniz yok." };
+  }
 
   // Sıfırlama, o kullanıcının açık oturumlarını da kapatır: şifresi
   // sıfırlanan kişinin panelde kalmaya devam etmesi anlamsız olurdu.
@@ -357,6 +394,9 @@ export async function toggleUser(formData: FormData) {
     where: { id, ...await userScope(owner) },
   });
   if (!user) return;
+  // Kıdem kapısı: aksi halde bir bölge müdürü patronu pasife alıp hesabı
+  // kilitleyebiliyordu.
+  if (!yonetebilirMi(owner.role, user.role)) return;
 
   await prisma.user.update({ where: { id }, data: { active: !user.active } });
   await denetimYaz(owner, "user.toggle", {
