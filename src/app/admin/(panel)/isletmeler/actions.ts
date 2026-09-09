@@ -19,6 +19,16 @@ import { BUSINESS_TYPES, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/cek
 import { validateImageDataUrl } from "@/lib/isletme/image";
 import { normalizePhone, toUsername, usernameProblem } from "@/lib/kimlik/username";
 import { slugIleOlustur, slugify } from "@/lib/cekirdek/slug";
+
+/**
+ * Tek istekte eklenebilecek en fazla masa ve masa adı uzunluğu.
+ *
+ * Sınır iki işi birden yapıyor: veriyi makul tutmak ve arkasındaki toplu
+ * yazmanın büyüklüğünü sınırlamak. Aralık dalında zaten vardı, virgüllü
+ * liste dalında yoktu.
+ */
+const EN_COK_MASA = 300;
+const EN_UZUN_MASA_ADI = 40;
 import { googleYorumLinkiGecerliMi } from "@/lib/isletme/google-yorum";
 
 export type FormState = { error?: string; saved?: boolean };
@@ -402,8 +412,8 @@ export async function addTables(
   if (range) {
     const start = Number(range[1]);
     const end = Number(range[2]);
-    if (end < start || end - start > 300) {
-      return { error: "Aralık geçersiz veya çok geniş (en fazla 300 masa)." };
+    if (end < start || end - start >= EN_COK_MASA) {
+      return { error: `Aralık geçersiz veya çok geniş (en fazla ${EN_COK_MASA} masa).` };
     }
     numbers = Array.from({ length: end - start + 1 }, (_, i) => String(start + i));
   } else {
@@ -416,23 +426,47 @@ export async function addTables(
   if (numbers.length === 0) {
     return { error: 'Masa numarası girin (örn. "1-20" veya "VIP-1, VIP-2").' };
   }
-
-  let added = 0;
-  for (const tableNumber of numbers) {
-    const existing = await prisma.table.findUnique({
-      where: { businessId_tableNumber: { businessId, tableNumber } },
-    });
-    if (existing) {
-      if (!existing.active) {
-        await prisma.table.update({ where: { id: existing.id }, data: { active: true } });
-      }
-      continue;
-    }
-    await prisma.table.create({
-      data: { businessId, tableNumber, isEntrance, qrToken: newQrToken() },
-    });
-    added += 1;
+  // Virgüllü liste dalında üst sınır YOKTU: on bin değer yapıştıran biri
+  // tek istekte yirmi bin sorgu tetikleyebiliyordu. Aralık dalındaki 300
+  // sınırı burada da geçerli.
+  if (numbers.length > EN_COK_MASA) {
+    return { error: `Tek seferde en fazla ${EN_COK_MASA} masa eklenebilir.` };
   }
+  const gecersizAd = numbers.find((n) => n.length > EN_UZUN_MASA_ADI);
+  if (gecersizAd) {
+    return { error: `Masa adı en fazla ${EN_UZUN_MASA_ADI} karakter olabilir.` };
+  }
+
+  // Döngü içinde sorgu YOK: numaralar tek `findMany` ile okunuyor, yeni
+  // olanlar tek `createMany` ile yazılıyor, kapalı olanlar tek
+  // `updateMany` ile açılıyor. Önceden 300 masalık bir aralık 600 gidiş
+  // dönüş demekti; uzak bir veritabanında (Neon) bu tek başına dakikalar
+  // sürüyordu.
+  const mevcutlar = await prisma.table.findMany({
+    where: { businessId, tableNumber: { in: numbers } },
+    select: { id: true, tableNumber: true, active: true },
+  });
+  const mevcutAdlar = new Set(mevcutlar.map((m) => m.tableNumber));
+  const yenidenAcilacaklar = mevcutlar.filter((m) => !m.active).map((m) => m.id);
+  const yeniler = numbers.filter((n) => !mevcutAdlar.has(n));
+
+  if (yenidenAcilacaklar.length > 0) {
+    await prisma.table.updateMany({
+      where: { id: { in: yenidenAcilacaklar } },
+      data: { active: true },
+    });
+  }
+  if (yeniler.length > 0) {
+    await prisma.table.createMany({
+      data: yeniler.map((tableNumber) => ({
+        businessId,
+        tableNumber,
+        isEntrance,
+        qrToken: newQrToken(),
+      })),
+    });
+  }
+  const added = yeniler.length;
 
   await denetimYaz(user, "business.table", {
     entity: "business",

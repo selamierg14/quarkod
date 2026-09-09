@@ -225,6 +225,22 @@ export type DogrulamaHatasi = { alan: string; mesaj: string };
  * Çakışma ve kapasite AYRI: onlar veritabanındaki başka kayıtlara
  * bakmayı gerektiriyor, buradakiler ise tek başına formdan anlaşılıyor.
  */
+/**
+ * Girdi üst sınırları.
+ *
+ * Alt sınırlar baştan vardı, üst sınırlar yoktu. Üst sınırı olmayan bir
+ * alan üç ayrı soruna açık: veritabanına saçma büyüklükte veri yazılması,
+ * arayüzün bozulması ve (liste alanlarında) arkasındaki döngünün sorgu
+ * sayısının kontrolden çıkması.
+ */
+export const EN_UZUN_MISAFIR_ADI = 80;
+export const EN_UZUN_TELEFON = 20;
+export const EN_UZUN_NOT = 500;
+/** Bir rezervasyonda birleştirilebilecek en fazla masa. */
+export const EN_COK_MASA_BIRLESTIRME = 12;
+/** Tek rezervasyondaki en fazla kişi. */
+export const EN_COK_KISI = 200;
+
 export function rezervasyonDogrula(girdi: {
   misafirAdi: string;
   kisiSayisi: number;
@@ -234,14 +250,34 @@ export function rezervasyonDogrula(girdi: {
 }): DogrulamaHatasi[] {
   const hatalar: DogrulamaHatasi[] = [];
 
-  if (!girdi.misafirAdi.trim()) {
+  const ad = girdi.misafirAdi.trim();
+  if (!ad) {
     hatalar.push({ alan: "misafirAdi", mesaj: "Misafir adı gerekli." });
+  } else if (ad.length > EN_UZUN_MISAFIR_ADI) {
+    // Üst sınır eksikti: alt sınırı yazıp üst sınırı atlamak, megabaytlık
+    // bir metnin doğrudan veritabanına yazılması demekti.
+    hatalar.push({
+      alan: "misafirAdi",
+      mesaj: `Misafir adı en fazla ${EN_UZUN_MISAFIR_ADI} karakter olabilir.`,
+    });
   }
-  if (!Number.isFinite(girdi.kisiSayisi) || girdi.kisiSayisi < 1) {
+  if (!Number.isInteger(girdi.kisiSayisi) || girdi.kisiSayisi < 1) {
     hatalar.push({ alan: "kisiSayisi", mesaj: "Kişi sayısı en az 1 olmalı." });
+  } else if (girdi.kisiSayisi > EN_COK_KISI) {
+    hatalar.push({
+      alan: "kisiSayisi",
+      mesaj: `Kişi sayısı en fazla ${EN_COK_KISI} olabilir.`,
+    });
   }
   if (girdi.masaIdleri.length === 0) {
     hatalar.push({ alan: "masalar", mesaj: "En az bir masa seçin." });
+  } else if (girdi.masaIdleri.length > EN_COK_MASA_BIRLESTIRME) {
+    // Liste uzunluğu sınırsızdı; her masa ayrıca doğrulanıp çakışma
+    // sorgusuna giriyor, yani sınırsız liste = sınırsız sorgu.
+    hatalar.push({
+      alan: "masalar",
+      mesaj: `En fazla ${EN_COK_MASA_BIRLESTIRME} masa birleştirilebilir.`,
+    });
   }
   if (!(girdi.baslangic instanceof Date) || Number.isNaN(girdi.baslangic.getTime())) {
     hatalar.push({ alan: "baslangic", mesaj: "Başlangıç saati geçersiz." });

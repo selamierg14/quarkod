@@ -11,6 +11,9 @@ import {
   kapasiteYeterliMi,
   planKonumuKirp,
   rezervasyonDogrula,
+  EN_COK_MASA_BIRLESTIRME,
+  EN_UZUN_NOT,
+  EN_UZUN_TELEFON,
   type MevcutRezervasyon,
 } from "@/lib/isletme/rezervasyon";
 
@@ -230,10 +233,23 @@ export async function rezervasyonKaydet(
 
   const duzenlenenId = metin(formData, "rezervasyonId") || null;
   const misafirAdi = metin(formData, "misafirAdi");
-  const telefon = metin(formData, "telefon") || null;
-  const notMetni = metin(formData, "not") || null;
+  // Uzunluklar burada KIRPILIYOR, reddedilmiyor: sınırı aşan bir telefon
+  // ya da not yüzünden rezervasyonu geri çevirmek, servisteki personeli
+  // formun başına döndürmek olurdu. Misafir adı ve kişi sayısı gibi anlam
+  // taşıyan alanlar ise rezervasyonDogrula'da reddediliyor.
+  const telefon = metin(formData, "telefon").slice(0, EN_UZUN_TELEFON) || null;
+  const notMetni = metin(formData, "not").slice(0, EN_UZUN_NOT) || null;
   const kisiSayisi = Number(formData.get("kisiSayisi") ?? 0);
-  const masaIdleri = formData.getAll("masaIdleri").map((m) => String(m)).filter(Boolean);
+  const masaIdleri = [
+    ...new Set(
+      formData
+        .getAll("masaIdleri")
+        .map((m) => String(m).trim())
+        .filter(Boolean),
+    ),
+    // Tekrarlar ayıklanıyor: aynı masa iki kez gönderilince hem gereksiz
+    // çakışma sorgusu atılıyor hem de "2 masa" sayılıyordu.
+  ].slice(0, EN_COK_MASA_BIRLESTIRME + 1);
 
   const baslangic = new Date(metin(formData, "baslangic"));
   const bitis = new Date(metin(formData, "bitis"));
