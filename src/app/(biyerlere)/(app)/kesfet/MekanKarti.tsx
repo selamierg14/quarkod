@@ -30,7 +30,7 @@ export function MekanKarti({ mekan }: { mekan: MekanOzet }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={mekan.kapakUrl} alt="" className="h-full w-full object-cover" />
         ) : null}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#18191E]/90 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#18191E]/95 via-[#18191E]/35 to-transparent" />
 
         {oneCikanOzellik ? (
           <span

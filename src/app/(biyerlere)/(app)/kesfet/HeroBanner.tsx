@@ -61,7 +61,11 @@ export function HeroBanner({
         {/* Mekanın kendi rengi/fotoğrafı canlı kalsın diye ağır bir siyah
             karartma yerine zemin rengine dayalı, yalnızca metnin okunmasını
             sağlayacak kadar ince bir gölge. */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#18191E]/95 via-[#18191E]/25 to-transparent" />
+        {/* Perde, başlığın oturduğu alt yarıyı belirgin biçimde karartıyor.
+            Önce üst kısım tamamen saydamdı; mekanların gerçek kapak
+            fotoğrafları eklendikten sonra açık renkli bir fotoğrafta
+            (kremalı balık, latte köpüğü) başlık okunmaz hâle geliyordu. */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#18191E]/97 via-[#18191E]/55 to-[#18191E]/20" />
         {mekan.sponsorluMu ? (
           <span className="absolute top-3 right-3 rounded-full bg-[#F59E0B] px-2.5 py-1 text-[11px] font-semibold text-white">
             Sponsorlu

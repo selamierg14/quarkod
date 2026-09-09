@@ -32,6 +32,14 @@ export function gorselSurumu(dataUrl: string): string {
  *
  * Görsel yoksa null. Zaten bir http(s) adresiyse dokunmuyoruz — ileride
  * görseller bir depolama servisine taşınırsa bu fonksiyon değişmeden çalışır.
+ *
+ * `/` ile başlayan değerler de olduğu gibi geçiyor: bunlar `public/`
+ * altındaki statik dosyalar (demo mekan fotoğrafları böyle duruyor).
+ * Elli iki mekanın kapağını data URI olarak saklamak, keşfet listesini
+ * her çeken isteğe birkaç megabaytlık bir veritabanı okuması ekliyordu —
+ * üstelik bu baytların tamamı yalnızca adres özeti hesaplanıp atılmak
+ * için okunuyordu. Panelden yüklenen görseller data URI olmaya devam
+ * ediyor; bu yol yalnızca dosya sisteminden gelenler için.
  */
 export function gorselAdresi(
   businessId: string,
@@ -40,6 +48,8 @@ export function gorselAdresi(
 ): string | null {
   if (!deger) return null;
   if (/^https?:\/\//i.test(deger)) return deger;
+  // `//host/...` protokolsüz bir dış adres olurdu; onu kabul etmiyoruz.
+  if (deger.startsWith("/") && !deger.startsWith("//")) return deger;
   if (!deger.startsWith("data:")) return null;
   return `/g/${businessId}/${tur}?s=${gorselSurumu(deger)}`;
 }
