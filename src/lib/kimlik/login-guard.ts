@@ -137,7 +137,10 @@ export async function recordLoginAttempt(email: string, success: boolean) {
 }
 
 /** Eski kayıtlar birikmesin — girişte ara sıra temizlenir. */
-export async function pruneLoginAttempts() {
+export async function pruneLoginAttempts(): Promise<number> {
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  await prisma.loginAttempt.deleteMany({ where: { createdAt: { lt: cutoff } } });
+  const { count } = await prisma.loginAttempt.deleteMany({
+    where: { createdAt: { lt: cutoff } },
+  });
+  return count;
 }

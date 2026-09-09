@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/cekirdek/db";
 import { CONTACT_RETENTION_DAYS } from "@/lib/isletme/kvkk";
 import { cronCalistir, cronYetkiliMi } from "@/lib/altyapi/cron";
+import { pruneLoginAttempts } from "@/lib/kimlik/login-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +46,13 @@ export async function GET(request: Request) {
       },
     });
 
-    return `${result.count} kayıt temizlendi.`;
+    // Sayaç tablosunun günlük budaması da buraya bağlı. Önceden yalnızca
+    // PANEL GİRİŞİNDE tetikleniyordu; oysa aynı tabloya artık hız sınırı da
+    // yazıyor (kayıt, ziyaret, metrik uçları — bkz. lib/kimlik/hiz-siniri.ts).
+    // Panele kimse girmediği bir haftada tablo sınırsız büyüyordu.
+    const budanan = await pruneLoginAttempts().catch(() => 0);
+
+    return `${result.count} kayıt temizlendi, ${budanan ?? 0} eski sayaç satırı budandı.`;
   });
 
   return NextResponse.json({ ok, detay }, { status: ok ? 200 : 500 });

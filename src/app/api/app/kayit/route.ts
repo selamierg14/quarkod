@@ -5,7 +5,13 @@ import { sifreSorunu } from "@/lib/kimlik/sifre";
 import { usernameProblem } from "@/lib/kimlik/username";
 import { appJetonUret } from "@/lib/kimlik/app-oturum";
 import { apiHata, govdeOku, metin } from "@/lib/kimlik/app-api";
-import { DAVET_ODULU_PUAN, davetKoduBicimiGecerliMi, davetKoduUret } from "@/lib/biyerlere/davet";
+import { SINIRLAR, hizSiniriMesaji, hizSiniriUygula } from "@/lib/kimlik/hiz-siniri";
+import {
+  DAVET_ODULU_PUAN,
+  davetKoduBicimiGecerliMi,
+  davetKoduUret,
+  davetOduluVerilirMi,
+} from "@/lib/biyerlere/davet";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +27,12 @@ export const dynamic = "force-dynamic";
  * şifre uygulamada reddediliyor" gibi açıklanamaz farklar üretirdi.
  */
 export async function POST(request: Request) {
+  // Hız sınırı EN BAŞTA: gövde ayrıştırmak ve şifre karması hesaplamak
+  // (bcrypt, bilerek yavaş) sunucuya yük bindiriyor — sınırı bu işlerden
+  // sonra uygulamak, saldırganın masrafı zaten yaptırmasına izin verirdi.
+  const kota = await hizSiniriUygula(SINIRLAR.kayit);
+  if (!kota.izin) return apiHata(hizSiniriMesaji(kota), 429);
+
   const govde = await govdeOku(request);
   if (!govde) return apiHata("Geçersiz istek gövdesi.", 400);
 
@@ -55,6 +67,16 @@ export async function POST(request: Request) {
       : null;
   const gecerliDavet = davetEden?.active ? davetEden : null;
 
+  // Ödül kotası: kayıt ucu herkese açık, kendi koduyla seri hesap açan
+  // biri sınırsız puan toplayabiliyordu (bkz. lib/davet.ts,
+  // EN_COK_DAVET_ODULU). Kota dolduysa kayıt yine açılıyor, yalnızca ödül
+  // verilmiyor.
+  const odulVerilecek = gecerliDavet
+    ? davetOduluVerilirMi(
+        await prisma.appUser.count({ where: { referredById: gecerliDavet.id } }),
+      )
+    : false;
+
   // Kod üretim + tekillik: çakışma pratikte hemen hemen imkansız (6 haneli,
   // 33^6 ≈ 1.29 milyar kombinasyon) ama küçük bir olasılık için birkaç
   // deneme hakkı bırakılıyor. Hangi alanın çakıştığını ayırt ediyoruz:
@@ -74,12 +96,12 @@ export async function POST(request: Request) {
             referralCode: davetKoduUret(),
             referredById: gecerliDavet?.id ?? null,
             // Davetle gelen kişi "hoş geldin" puanıyla başlar.
-            puan: gecerliDavet ? DAVET_ODULU_PUAN : 0,
+            puan: odulVerilecek ? DAVET_ODULU_PUAN : 0,
           },
           select: { id: true, username: true, name: true, puan: true, referralCode: true },
         });
 
-        if (gecerliDavet) {
+        if (gecerliDavet && odulVerilecek) {
           await tx.appUser.update({
             where: { id: gecerliDavet.id },
             data: { puan: { increment: DAVET_ODULU_PUAN } },

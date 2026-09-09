@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sadakatDurumuHesapla } from "./sadakat";
+import { sadakatDurumuHesapla , acilmasiGerekenKuponVarMi } from "./sadakat";
 
 describe("sadakatDurumuHesapla", () => {
   it("hiç ziyaret yoksa 0 damga, tam eşik kadar kalan", () => {
@@ -34,5 +34,38 @@ describe("sadakatDurumuHesapla", () => {
 
   it("negatif ya da bozuk girdiyi 0 gibi ele alır", () => {
     expect(sadakatDurumuHesapla(-5)).toMatchObject({ toplamZiyaret: 0, damgaSayisi: 0 });
+  });
+});
+
+describe("acilmasiGerekenKuponVarMi", () => {
+  it("eşiğe ulaşılmadan kupon açılmaz", () => {
+    expect(acilmasiGerekenKuponVarMi(9, 0)).toBe(false);
+  });
+
+  it("eşik dolduğunda kupon açılır", () => {
+    expect(acilmasiGerekenKuponVarMi(10, 0)).toBe(true);
+  });
+
+  it("aynı kart için ikinci kupon açılmaz (idempotent)", () => {
+    expect(acilmasiGerekenKuponVarMi(10, 1)).toBe(false);
+    expect(acilmasiGerekenKuponVarMi(15, 1)).toBe(false);
+  });
+
+  it("KAÇAN kuponu sonraki ziyarette telafi eder", () => {
+    // Asıl düzeltilen hata: 10. ziyarette kupon yazımı düşerse eski kod
+    // bir daha asla kupon açmıyordu (11 % 10 = 1, eşik koşulu sağlanmaz).
+    expect(acilmasiGerekenKuponVarMi(11, 0)).toBe(true);
+    expect(acilmasiGerekenKuponVarMi(19, 0)).toBe(true);
+  });
+
+  it("ikinci kart dolduğunda ikinci kupon açılır", () => {
+    expect(acilmasiGerekenKuponVarMi(20, 1)).toBe(true);
+    expect(acilmasiGerekenKuponVarMi(20, 2)).toBe(false);
+  });
+
+  it("bozuk sayılarda çökmez", () => {
+    expect(acilmasiGerekenKuponVarMi(-5, 0)).toBe(false);
+    expect(acilmasiGerekenKuponVarMi(10, -3)).toBe(true);
+    expect(acilmasiGerekenKuponVarMi(10.9, 0)).toBe(true);
   });
 });

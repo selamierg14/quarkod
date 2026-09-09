@@ -10,12 +10,25 @@ import {
 } from "@/lib/biyerlere/ziyaret";
 import { rozetleriDegerlendir } from "@/lib/biyerlere/rozet-verme";
 import { seviye } from "@/lib/biyerlere/rozet";
-import { SADAKAT_ESIGI, sadakatDurumuHesapla } from "@/lib/biyerlere/sadakat";
+import {
+  SADAKAT_ESIGI,
+  acilmasiGerekenKuponVarMi,
+  sadakatDurumuHesapla,
+} from "@/lib/biyerlere/sadakat";
 import { ROTA_TAMAMLAMA_PUANI, rotalariDegerlendir } from "@/lib/biyerlere/rota-tamamlama";
 import { apiHata, appKullaniciGerekli, govdeOku, metin } from "@/lib/kimlik/app-api";
+import { SINIRLAR, hizSiniriMesaji, hizSiniriUygula } from "@/lib/kimlik/hiz-siniri";
 
 /** Sadakat hediyesi kuponunun geçerlilik süresi. */
 const SADAKAT_KUPON_GECERLILIK_GUN = 30;
+
+/**
+ * Sadakat kuponlarının kod öneki.
+ *
+ * Hem üretimde hem "kaç kupon açılmış" sorgusunda kullanılıyor; iki yerde
+ * ayrı yazılsaydı biri değişince sayım sessizce sıfıra düşerdi.
+ */
+const SADAKAT_KUPON_ONEKI = "SADAKAT-";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +47,13 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   const oturum = await appKullaniciGerekli(request);
   if ("yanit" in oturum) return oturum.yanit;
+
+  // Başarılı ziyaret zaten mekan başına 4 saat kilitli; buradaki sınır
+  // BAŞARISIZ denemeler için: farklı slug'lar deneyerek koordinat/mekan
+  // eşleşmesi aramak ya da sunucuyu mesafe hesabıyla meşgul etmek
+  // ücretsiz olmasın.
+  const kota = await hizSiniriUygula(SINIRLAR.ziyaret, oturum.kullanici.id);
+  if (!kota.izin) return apiHata(hizSiniriMesaji(kota), 429);
 
   const govde = await govdeOku(request);
   if (!govde) return apiHata("Geçersiz istek gövdesi.", 400);
@@ -140,12 +160,35 @@ export async function POST(request: Request) {
   const sadakat = sadakatDurumuHesapla(buMekandakiZiyaretSayisi, SADAKAT_ESIGI);
   let sadakatKuponu: { id: string; indirim: string } | null = null;
 
-  if (sadakat.hediyeKazanildiMi) {
+  /**
+   * Kupon "eşiği tam bu ziyarette geçti mi" koşuluyla DEĞİL, "hak edilen
+   * kadar kupon açılmış mı" koşuluyla üretiliyor.
+   *
+   * Eski hâlde kupon yazımı ziyaret işleminin DIŞINDAydı ve tek bir anlık
+   * koşula bağlıydı: yazma herhangi bir sebeple düşerse (bağlantı kopması,
+   * zaman aşımı) kullanıcı on ziyareti tamamlamış ama kuponsuz kalıyordu —
+   * üstelik telafisi yoktu, çünkü bir sonraki ziyarette sayı 11 olup
+   * `11 % 10 = 1` veriyor ve eşik koşulu bir daha asla sağlanmıyordu.
+   *
+   * Şimdi "tamamlanan kart sayısı" ile "bu mekan için açılmış sadakat
+   * kuponu sayısı" karşılaştırılıyor: işlem hem tekrarlanabilir
+   * (idempotent) hem de kendini onarır — kaçan kupon bir sonraki
+   * ziyarette açılır.
+   */
+  const acilmisKupon = await prisma.coupon.count({
+    where: {
+      appUserId: oturum.kullanici.id,
+      businessId: mekan.id,
+      code: { startsWith: SADAKAT_KUPON_ONEKI },
+    },
+  });
+
+  if (acilmasiGerekenKuponVarMi(buMekandakiZiyaretSayisi, acilmisKupon, SADAKAT_ESIGI)) {
     const kupon = await prisma.coupon.create({
       data: {
         businessId: mekan.id,
         appUserId: oturum.kullanici.id,
-        code: `SADAKAT-${randomBytes(6).toString("hex")}`,
+        code: `${SADAKAT_KUPON_ONEKI}${randomBytes(6).toString("hex")}`,
         discount: "Ücretsiz kahve (sadakat ödülü)",
         expiresAt: new Date(Date.now() + SADAKAT_KUPON_GECERLILIK_GUN * 24 * 60 * 60 * 1000),
       },

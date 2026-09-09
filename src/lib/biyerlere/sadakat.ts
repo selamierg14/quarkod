@@ -45,3 +45,27 @@ export function sadakatDurumuHesapla(
     hediyeKazanildiMi: guvenliToplam > 0 && damgaSayisi === 0,
   };
 }
+
+/**
+ * Bu mekan için AÇILMASI GEREKEN ama henüz açılmamış sadakat kuponu var mı?
+ *
+ * Kupon üretimi eskiden "eşik tam bu ziyarette geçildi mi" anlık koşuluna
+ * bağlıydı ve yazma işlemi ziyaret işleminin dışındaydı. Kupon yazımı
+ * herhangi bir sebeple düşerse (bağlantı kopması, zaman aşımı) kullanıcı
+ * on ziyareti tamamlamış ama kuponsuz kalıyordu — üstelik TELAFİSİ YOKTU:
+ * bir sonraki ziyarette sayı 11 olup `11 % 10 = 1` veriyor ve eşik koşulu
+ * bir daha asla sağlanmıyordu.
+ *
+ * "Hak edilen kadar kupon açılmış mı" sorusu hem tekrarlanabilir
+ * (idempotent) hem de kendini onarır: kaçan kupon bir sonraki ziyarette
+ * açılır.
+ */
+export function acilmasiGerekenKuponVarMi(
+  toplamZiyaret: number,
+  acilmisKupon: number,
+  esik: number = SADAKAT_ESIGI,
+): boolean {
+  const guvenliToplam = Math.max(0, Math.trunc(toplamZiyaret));
+  const guvenliKupon = Math.max(0, Math.trunc(acilmisKupon));
+  return Math.floor(guvenliToplam / esik) > guvenliKupon;
+}

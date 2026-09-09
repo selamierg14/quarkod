@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { davetKoduBicimiGecerliMi, davetKoduUret } from "./davet";
+import { davetOduluVerilirMi, EN_COK_DAVET_ODULU } from "./davet";
 
 describe("davetKoduUret", () => {
   it("6 karakterlik bir kod üretir", () => {
@@ -41,3 +42,18 @@ describe("davetKoduBicimiGecerliMi", () => {
     expect(davetKoduBicimiGecerliMi("  AB2345  ".trim())).toBe(true);
   });
 });
+
+describe("davet ödülü kotası", () => {
+  it("kota dolmadan ödül verilir", () => {
+    expect(davetOduluVerilirMi(0)).toBe(true);
+    expect(davetOduluVerilirMi(EN_COK_DAVET_ODULU - 1)).toBe(true);
+  });
+
+  it("kota dolduğunda ödül kesilir", () => {
+    // Kayıt ucu herkese açık ve hız sınırı yok; bu sınır olmadan kendi
+    // koduyla seri hesap açan biri sınırsız puan topluyordu.
+    expect(davetOduluVerilirMi(EN_COK_DAVET_ODULU)).toBe(false);
+    expect(davetOduluVerilirMi(EN_COK_DAVET_ODULU + 500)).toBe(false);
+  });
+});
+

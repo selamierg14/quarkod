@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/cekirdek/db";
 import { apiHata, govdeOku } from "@/lib/kimlik/app-api";
+import { SINIRLAR, hizSiniriUygula } from "@/lib/kimlik/hiz-siniri";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,14 @@ export const dynamic = "force-dynamic";
  * toplamaktan daha az veri demek.
  */
 export async function POST(request: Request) {
+  // Kimlik istemeyen tek yazma ucu bu; sınırsız bırakmak bir işletmenin
+  // görüntülenme/yol tarifi sayaçlarını tek script'le şişirmek demekti.
+  // Sınır aşıldığında 429 DEĞİL sessiz "ok" dönüyoruz: bu uç `sendBeacon`
+  // ile çağrılıyor, yanıtı kimse okumuyor ve gerçek kullanıcıya hata
+  // göstermenin bir karşılığı yok.
+  const kota = await hizSiniriUygula(SINIRLAR.metrik);
+  if (!kota.izin) return NextResponse.json({ ok: true });
+
   const govde = await govdeOku(request);
   const businessId = typeof govde?.businessId === "string" ? govde.businessId : "";
   const tur = govde?.tur === "yolTarifi" ? "yolTarifi" : "goruntuleme";

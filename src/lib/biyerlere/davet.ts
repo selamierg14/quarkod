@@ -27,6 +27,30 @@ export function davetKoduUret(): string {
 export const DAVET_ODULU_PUAN = 100;
 
 /**
+ * Bir kullanıcının davetten kazanabileceği en fazla ödül sayısı.
+ *
+ * GÜVENLİK/SUİSTİMAL SINIRI. Kayıt ucu herkese açık ve hız sınırı yok;
+ * kendi davet koduyla peş peşe hesap açan biri sınırsız puan
+ * toplayabiliyordu. Puan seviyeyi, rozetleri ve sıralamayı besliyor —
+ * yani oyunlaştırmanın tamamını anlamsızlaştıran bir açıktı.
+ *
+ * Sınır kaydı ENGELLEMİYOR, yalnızca ödülü kesiyor: gerçekten yirmi
+ * arkadaşını getiren kullanıcıyı cezalandırmak yerine, yirmi biriden
+ * sonrasını ödülsüz bırakmak yeterli. Gerçek bir kullanıcının bu sınıra
+ * dayanması pratikte olağanüstü.
+ */
+export const EN_COK_DAVET_ODULU = 20;
+
+/**
+ * Bu davet için ödül verilmeli mi?
+ *
+ * Saf: "kaç kişiyi davet etmiş" bilgisini çağıran taraf sağlıyor.
+ */
+export function davetOduluVerilirMi(mevcutDavetSayisi: number): boolean {
+  return mevcutDavetSayisi < EN_COK_DAVET_ODULU;
+}
+
+/**
  * Girilen davet kodu biçimsel olarak geçerli mi (uzunluk + alfabe).
  *
  * Veritabanında var mı sorusuna bakmaz — o, kayıt ucunun işi. Burası
