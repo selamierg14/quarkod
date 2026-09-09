@@ -11,6 +11,7 @@ import Animated, {
 } from "react-native-reanimated";
 import Svg, { Path, Circle } from "react-native-svg";
 import { CamYuzey } from "../../src/bilesenler/CamYuzey";
+import { TaraDugmesi } from "../../src/bilesenler/TaraDugmesi";
 import { renkler, bosluk, yaricap, fontlar, SEKME_YUKSEKLIGI } from "../../src/tasarim";
 
 /**
@@ -26,7 +27,10 @@ export default function SekmeLayout() {
   const guvenliAlan = useSafeAreaInsets();
 
   return (
-    <Tabs
+    // Tara düğmesi sekme çubuğunun KARDEŞİ: `Tabs` içine konulduğunda
+    // çubuğun kendi kırpma alanına giriyor ve üst yarısı kesiliyordu.
+    <View style={{ flex: 1 }}>
+      <Tabs
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
@@ -84,7 +88,10 @@ export default function SekmeLayout() {
           tabBarIcon: ({ focused }) => <Sekme ad="Profil" aktif={focused} simge="kisi" />,
         }}
       />
-    </Tabs>
+      </Tabs>
+
+      <TaraDugmesi altBosluk={guvenliAlan.bottom} />
+    </View>
   );
 }
 
