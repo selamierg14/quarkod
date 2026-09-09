@@ -24,6 +24,25 @@ import type { NextConfig } from "next";
 const ORTAK_BASLIKLAR = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  // HSTS: tarayıcı bir kez HTTPS ile geldikten sonra bir daha düz HTTP
+  // denemiyor — yönlendirmeyi bekleyen ilk isteğin araya girilme (SSL
+  // stripping) penceresi böylece kapanıyor.
+  //
+  // YALNIZCA `HTTPS_ZORUNLU=1` iken gönderiliyor. Sertifika takılmadan bu
+  // başlığı yollamak, tarayıcıya "bu alan adına artık sadece HTTPS ile
+  // gel" demek olurdu ve site erişilemez hâle gelirdi — üstelik
+  // `max-age` boyunca geri alınamaz. Sertifika hazır olunca ortam
+  // değişkenini açmak yeterli; kod değişmiyor.
+  ...(process.env.HTTPS_ZORUNLU === "1"
+    ? [
+        {
+          key: "Strict-Transport-Security",
+          // Bir yıl + alt alan adları. `preload` bilerek YOK: listeye
+          // girmek kolay, çıkmak aylar sürüyor.
+          value: "max-age=31536000; includeSubDomains",
+        },
+      ]
+    : []),
   // Kamera/mikrofon/konum bu üründe hiç kullanılmıyor; açık bırakmanın
   // hiçbir faydası yok, kapatmanın maliyeti sıfır.
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
