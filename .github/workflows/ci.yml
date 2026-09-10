@@ -123,20 +123,21 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      # Üretime giden bağımlılıklar. `--omit=dev` olmadan Prisma CLI'nın
-      # derleme zamanı ağacı da sayılıyor ve gürültü gerçek bulguyu gizler.
+      # Artık BLOKLUYOR — ama yalnızca kabul listesi DIŞINDAKİ bulgularda.
       #
-      # BLOKLAMIYOR (`continue-on-error`) ve bunun somut bir gerekçesi var:
-      # şu an açık kalan dört uyarının tamamı Prisma 7'nin KENDİ derleme
-      # zamanı bağımlılıklarından geliyor (`@prisma/config` → `deepmerge-ts`,
-      # `mysql2`) ve npm'in önerdiği "düzeltme" Prisma'yı 6'ya DÜŞÜRMEK.
-      # İkisi de bu projede erişilebilir değil: `deepmerge-ts` yalnızca
-      # kendi yapılandırma dosyamızı birleştiriyor (saldırgan girdisi yok),
-      # `mysql2` ise hiç örneklenmiyor — proje Postgres kullanıyor.
+      # Önceden düz `npm audit` idi ve `continue-on-error: true` ile
+      # duruyordu. Gerekçesi o an geçerliydi: açık kalan dört uyarının
+      # tamamı Prisma'nın kendi derleme zamanı ağacındandı ve npm'in
+      # önerdiği "düzeltme" Prisma'yı bir ana sürüm düşürmekti. Bloklayan
+      # bir adım ilk günden kırmızı olur, kimse bakmaz hâle gelirdi.
       #
-      # Bloklasaydı CI ilk günden kırmızı olur ve kimse bakmaz hâle gelirdi.
-      # Prisma bağımlılıklarını güncellediğinde bu satır bloklayana
-      # çevrilmeli.
-      - name: npm audit (üretim bağımlılıkları)
-        continue-on-error: true
-        run: npm audit --omit=dev --audit-level=high
+      # Bloklamamanın bedeli de görüldü: araya Next.js'te KİMLİK
+      # DOĞRULAMASI GEREKTİRMEYEN bir uzaktan kod çalıştırma uyarısı düştü,
+      # CI yeşil kalmaya devam etti ve kimse fark etmedi. Düzeltmesi
+      # yalnızca bir yama sürümüydü.
+      #
+      # Betik ikisinin ortasını tutuyor: gerekçelendirilmiş uyarılar
+      # susuyor, geri kalan her şey CI'yı kırıyor. Kabul listesi ve her
+      # satırın gerekçesi scripts/bagimlilik-taramasi.mjs içinde.
+      - name: Bağımlılık taraması (kabul listesi dışı bulgular bloklar)
+        run: node scripts/bagimlilik-taramasi.mjs
