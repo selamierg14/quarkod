@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "../cekirdek/db";
 import { ZIYARET_PUANI, ANKET_KATILIM_PUANI } from "./ziyaret";
+import { KUPON_AKTIF } from "./kupon";
 
 export type BiyerlereIstatistik = {
   goruntuleme: number;
@@ -35,9 +36,17 @@ export async function biyerlereIstatistikGetir(businessIds: string[]): Promise<B
       where: { businessId: { in: businessIds }, createdAt: { gte: yediGunOnce } },
       _count: true,
     }),
-    prisma.coupon.count({
-      where: { businessId: { in: businessIds }, used: true, usedAt: { gte: yediGunOnce } },
-    }),
+    // Kupon kapalı: panelde "kupon kullanıldı" sayacı hep 0 kalıyor
+    // (bkz. lib/biyerlere/kupon.ts).
+    KUPON_AKTIF
+      ? prisma.coupon.count({
+          where: {
+            businessId: { in: businessIds },
+            used: true,
+            usedAt: { gte: yediGunOnce },
+          },
+        })
+      : Promise.resolve(0),
     prisma.appVisit.count({
       where: { businessId: { in: businessIds }, createdAt: { gte: yediGunOnce } },
     }),

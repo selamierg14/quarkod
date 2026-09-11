@@ -12,6 +12,7 @@ import {
   davetKoduUret,
   davetOduluVerilirMi,
 } from "@/lib/biyerlere/davet";
+import { KUPON_AKTIF } from "@/lib/biyerlere/kupon";
 
 export const dynamic = "force-dynamic";
 
@@ -132,7 +133,7 @@ export async function POST(request: Request) {
       jeton: await appJetonUret(kullanici),
       // Yeni açılan hesap hiçbir zaman Plus üyesi olarak başlamıyor —
       // sorgusuz false (bkz. giris/route.ts'teki gerçek hesaplama).
-      kullanici: { ...kullanici, cuzdandakiKupon: 0, plusUyeMi: false },
+      kullanici: { ...kullanici, ...(KUPON_AKTIF ? { cuzdandakiKupon: 0 } : {}), plusUyeMi: false },
     },
     { status: 201 },
   );

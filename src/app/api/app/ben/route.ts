@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/cekirdek/db";
 import { appKullaniciGerekli } from "@/lib/kimlik/app-api";
+import { KUPON_AKTIF } from "@/lib/biyerlere/kupon";
 
 export const dynamic = "force-dynamic";
 
@@ -21,15 +22,21 @@ export async function GET(request: Request) {
   const sonuc = await appKullaniciGerekli(request);
   if ("yanit" in sonuc) return sonuc.yanit;
 
-  const cuzdandakiKupon = await prisma.coupon.count({
-    where: {
-      appUserId: sonuc.kullanici.id,
-      used: false,
-      OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-    },
-  });
+  // Kupon kapalıyken sayaç her zaman 0 — sorgu da atlanıyor
+  // (bkz. lib/biyerlere/kupon.ts).
+  const cuzdandakiKupon = KUPON_AKTIF
+    ? await prisma.coupon.count({
+        where: {
+          appUserId: sonuc.kullanici.id,
+          used: false,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        },
+      })
+    : 0;
 
   return NextResponse.json({
-    kullanici: { ...sonuc.kullanici, cuzdandakiKupon },
+    // Kupon kapalıyken alan HİÇ gönderilmiyor: 0 göndermek, uygulamada
+    // "kupon kazanabilirsin ama hiç kazanmadın" diyen bir sayaç çizdirirdi.
+    kullanici: { ...sonuc.kullanici, ...(KUPON_AKTIF ? { cuzdandakiKupon } : {}) },
   });
 }

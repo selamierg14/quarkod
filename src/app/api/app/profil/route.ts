@@ -9,6 +9,7 @@ import {
   sonrakiSeviyeyeKalan,
 } from "@/lib/biyerlere/rozet";
 import { appKullaniciGerekli } from "@/lib/kimlik/app-api";
+import { KUPON_AKTIF } from "@/lib/biyerlere/kupon";
 
 export const dynamic = "force-dynamic";
 
@@ -41,9 +42,12 @@ export async function GET(request: Request) {
       },
     }),
     prisma.appVisit.count({ where: { appUserId: oturum.kullanici.id } }),
-    prisma.coupon.count({
-      where: { appUserId: oturum.kullanici.id, used: false },
-    }),
+    // Kupon kapalıyken sayaç 0; sorgu da atlanıyor (bkz. lib/biyerlere/kupon.ts).
+    KUPON_AKTIF
+      ? prisma.coupon.count({
+          where: { appUserId: oturum.kullanici.id, used: false },
+        })
+      : Promise.resolve(0),
     prisma.appUser.count({ where: { referredById: oturum.kullanici.id } }),
   ]);
 
@@ -59,7 +63,7 @@ export async function GET(request: Request) {
       seviye: seviye(oturum.kullanici.puan),
       sonrakiSeviyeyeKalan: sonrakiSeviyeyeKalan(oturum.kullanici.puan),
       dogrulanmisZiyaret: ziyaretSayisi,
-      cuzdandakiKupon: kuponSayisi,
+      ...(KUPON_AKTIF ? { cuzdandakiKupon: kuponSayisi } : {}),
       davetEttigiKisiSayisi: davetSayisi,
     },
     rozetler: ROZET_ANAHTARLARI.map((anahtar) => ({

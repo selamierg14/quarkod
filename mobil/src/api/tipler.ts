@@ -36,7 +36,8 @@ export type ProfilYaniti = {
     seviye: number;
     sonrakiSeviyeyeKalan: number | null;
     dogrulanmisZiyaret: number;
-    cuzdandakiKupon: number;
+    /** Kupon özelliği kapalıyken sunucu bu alanı HİÇ göndermiyor. */
+    cuzdandakiKupon?: number;
     davetEttigiKisiSayisi: number;
   };
   rozetler: Rozet[];
@@ -162,7 +163,14 @@ export type ZiyaretYaniti = {
   yeniRozetler: { anahtar: string; ad: string; aciklama: string; puan: number }[];
   toplamPuan: number;
   seviye: number;
-  sadakat: {
+  /**
+   * Sadakat damga kartı — sunucu bu özelliği kapatabiliyor ve o zaman alan
+   * HİÇ GELMİYOR (bkz. sunucuda lib/biyerlere/kupon.ts). İsteğe bağlı
+   * olması bilinçli: uygulamanın yayındaki sürümleri sunucu bayrağını
+   * bilmiyor, verinin varlığına bakıp çiziyor. Böylece özellik geri
+   * açıldığında yeni sürüm beklemeden yeniden görünüyor.
+   */
+  sadakat?: {
     damgaSayisi: number;
     esik: number;
     kalanZiyaret: number;

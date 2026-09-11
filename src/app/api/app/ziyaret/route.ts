@@ -18,6 +18,7 @@ import {
 import { ROTA_TAMAMLAMA_PUANI, rotalariDegerlendir } from "@/lib/biyerlere/rota-tamamlama";
 import { apiHata, appKullaniciGerekli, govdeOku, metin } from "@/lib/kimlik/app-api";
 import { SINIRLAR, hizSiniriMesaji, hizSiniriUygula } from "@/lib/kimlik/hiz-siniri";
+import { KUPON_AKTIF } from "@/lib/biyerlere/kupon";
 
 /** Sadakat hediyesi kuponunun geçerlilik süresi. */
 const SADAKAT_KUPON_GECERLILIK_GUN = 30;
@@ -175,15 +176,23 @@ export async function POST(request: Request) {
    * (idempotent) hem de kendini onarır — kaçan kupon bir sonraki
    * ziyarette açılır.
    */
-  const acilmisKupon = await prisma.coupon.count({
-    where: {
-      appUserId: oturum.kullanici.id,
-      businessId: mekan.id,
-      code: { startsWith: SADAKAT_KUPON_ONEKI },
-    },
-  });
+  // Kupon ve sadakat kapalıyken sayım sorgusu da atlanıyor — kapalı bir
+  // özellik için her ziyarette veritabanına gitmenin karşılığı yok
+  // (bkz. lib/biyerlere/kupon.ts).
+  const acilmisKupon = KUPON_AKTIF
+    ? await prisma.coupon.count({
+        where: {
+          appUserId: oturum.kullanici.id,
+          businessId: mekan.id,
+          code: { startsWith: SADAKAT_KUPON_ONEKI },
+        },
+      })
+    : 0;
 
-  if (acilmasiGerekenKuponVarMi(buMekandakiZiyaretSayisi, acilmisKupon, SADAKAT_ESIGI)) {
+  if (
+    KUPON_AKTIF &&
+    acilmasiGerekenKuponVarMi(buMekandakiZiyaretSayisi, acilmisKupon, SADAKAT_ESIGI)
+  ) {
     const kupon = await prisma.coupon.create({
       data: {
         businessId: mekan.id,
@@ -212,13 +221,21 @@ export async function POST(request: Request) {
       yeniRozetler: rozetSonucu.yeniRozetler,
       toplamPuan: rozetSonucu.toplamPuan,
       seviye: seviye(rozetSonucu.toplamPuan),
-      sadakat: {
-        damgaSayisi: sadakat.damgaSayisi,
-        esik: sadakat.esik,
-        kalanZiyaret: sadakat.kalanZiyaret,
-        // Doluysa cüzdanda hemen görünsün diye kuponun kendisi de dönüyor.
-        kazanilanKupon: sadakatKuponu,
-      },
+      // Kupon/sadakat kapalıyken alan HİÇ GÖNDERİLMİYOR (bkz.
+      // lib/biyerlere/kupon.ts). Sıfırlarla doldurulmuş bir nesne
+      // göndermek, uygulamada "0/10 damga" diye boş bir ilerleme çubuğu
+      // çizdirirdi; alanın yokluğu ise doğal olarak hiçbir şey çizmiyor.
+      ...(KUPON_AKTIF
+        ? {
+            sadakat: {
+              damgaSayisi: sadakat.damgaSayisi,
+              esik: sadakat.esik,
+              kalanZiyaret: sadakat.kalanZiyaret,
+              // Doluysa cüzdanda hemen görünsün diye kuponun kendisi de dönüyor.
+              kazanilanKupon: sadakatKuponu,
+            },
+          }
+        : {}),
       // Bu ziyaretle tamamlanan rota(lar) — genelde 0 ya da 1 eleman, iki
       // ayrı rotanın son durağı aynı ziyaret olması nadir ama imkansız
       // değil, o yüzden liste.

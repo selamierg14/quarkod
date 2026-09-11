@@ -39,7 +39,13 @@ export function OdulSayfasi({
   onCuzdan: () => void;
 }) {
   const rozet = sonuc.yeniRozetler[0] ?? null;
-  const kupon = sonuc.sadakat.kazanilanKupon;
+  // `sadakat` sunucudan HİÇ GELMEYEBİLİR: kupon/sadakat özelliği kapalıyken
+  // alan gönderilmiyor ve o zaman bu ekranda damga satırı da, kupon satırı
+  // da çizilmiyor. Bayrağa değil VERİNİN VARLIĞINA bakıyoruz; böylece
+  // özellik sunucudan geri açıldığında uygulamanın yeni bir sürümü
+  // gerekmeden yeniden görünüyor.
+  const sadakat = sonuc.sadakat ?? null;
+  const kupon = sadakat?.kazanilanKupon ?? null;
   const rota = sonuc.tamamlananRotalar[0] ?? null;
 
   const sicrama = useSharedValue(0);
@@ -100,14 +106,14 @@ export function OdulSayfasi({
               baslik="Sadakat kartın doldu!"
               aciklama={`${kupon.indirim} — kuponun cüzdanında.`}
             />
-          ) : (
+          ) : sadakat ? (
             <OdulSatiri
               gecikme={220}
               simge="☕"
-              baslik={`Sadakat kartı ${sonuc.sadakat.damgaSayisi}/${sonuc.sadakat.esik}`}
-              aciklama={`${sonuc.sadakat.kalanZiyaret} ziyaret sonra ücretsiz kahve.`}
+              baslik={`Sadakat kartı ${sadakat.damgaSayisi}/${sadakat.esik}`}
+              aciklama={`${sadakat.kalanZiyaret} ziyaret sonra ücretsiz kahve.`}
             />
-          )}
+          ) : null}
 
           {rota ? (
             <OdulSatiri

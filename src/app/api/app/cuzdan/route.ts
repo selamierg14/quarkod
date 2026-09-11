@@ -4,6 +4,7 @@ import { gorselAdresi } from "@/lib/isletme/gorsel-adres";
 import { guncelKupon } from "@/lib/biyerlere/kupon-kod";
 import { sadakatDurumuHesapla } from "@/lib/biyerlere/sadakat";
 import { appKullaniciGerekli } from "@/lib/kimlik/app-api";
+import { KUPON_AKTIF } from "@/lib/biyerlere/kupon";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,14 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const oturum = await appKullaniciGerekli(request);
   if ("yanit" in oturum) return oturum.yanit;
+
+  // Kupon ve sadakat kapalı (bkz. lib/biyerlere/kupon.ts). Uç kaldırılmadı,
+  // BOŞ dönüyor: mobil uygulamanın yayındaki sürümleri bu ucu çağırmaya
+  // devam ediyor ve 404 almak onlarda hata ekranı açardı. Boş liste ise
+  // "henüz bir şey yok" olarak zaten doğru çiziliyor.
+  if (!KUPON_AKTIF) {
+    return NextResponse.json({ kuponlar: [], gecmisKuponlar: [], sadakatKartlari: [] });
+  }
 
   const simdi = new Date();
 

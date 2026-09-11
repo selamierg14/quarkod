@@ -139,7 +139,9 @@ export function ProfilIcerik() {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 text-center">
+      {/* Kupon kapalıyken üçüncü kutu ("Aktif Kupon") çizilmiyor; ızgara da
+          iki sütuna iniyor, yoksa satırın sağında boş bir hücre kalıyordu. */}
+      <div className="grid grid-cols-2 gap-2 text-center">
         <div className="rounded-2xl border border-white/10 bg-[#24262E]/85 py-3">
           <p className="text-lg font-bold text-white">{kullanici.puan}</p>
           <p className="text-[11px] text-gray-400">Kaşif Puanı</p>
@@ -147,10 +149,6 @@ export function ProfilIcerik() {
         <div className="rounded-2xl border border-white/10 bg-[#24262E]/85 py-3">
           <p className="text-lg font-bold text-white">{kullanici.dogrulanmisZiyaret}</p>
           <p className="text-[11px] text-gray-400">Doğrulanmış Ziyaret</p>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-[#24262E]/85 py-3">
-          <p className="text-lg font-bold text-white">{kullanici.cuzdandakiKupon}</p>
-          <p className="text-[11px] text-gray-400">Aktif Kupon</p>
         </div>
       </div>
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/cekirdek/db";
 import { appKullaniciGerekli } from "@/lib/kimlik/app-api";
 import { ROZETLER, gecerliRozetMi } from "@/lib/biyerlere/rozet";
+import { KUPON_AKTIF } from "@/lib/biyerlere/kupon";
 
 export const dynamic = "force-dynamic";
 
@@ -34,18 +35,22 @@ export async function GET(request: Request) {
 
   const [rozetler, kuponlar, favoriIsletmeIdleri] = await Promise.all([
     prisma.appBadge.findMany({ where: { appUserId }, orderBy: { createdAt: "desc" }, take: 30 }),
-    prisma.coupon.findMany({
-      where: { appUserId },
-      orderBy: { createdAt: "desc" },
-      take: 30,
-      select: {
-        id: true,
-        code: true,
-        discount: true,
-        createdAt: true,
-        business: { select: { slug: true, name: true } },
-      },
-    }),
+    // Kupon kapalıyken bildirim akışında kupon satırı hiç oluşmuyor
+    // (bkz. lib/biyerlere/kupon.ts); rozet ve duyurular devam ediyor.
+    KUPON_AKTIF
+      ? prisma.coupon.findMany({
+          where: { appUserId },
+          orderBy: { createdAt: "desc" },
+          take: 30,
+          select: {
+            id: true,
+            code: true,
+            discount: true,
+            createdAt: true,
+            business: { select: { slug: true, name: true } },
+          },
+        })
+      : Promise.resolve([]),
     prisma.appFavorite.findMany({ where: { appUserId }, select: { businessId: true } }),
   ]);
 

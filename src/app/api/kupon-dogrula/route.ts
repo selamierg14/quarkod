@@ -3,6 +3,7 @@ import { prisma } from "@/lib/cekirdek/db";
 import { canAccessBusiness, getSession, yazmaEngeli } from "@/lib/kimlik/auth";
 import { kuponKoduGecerliMi } from "@/lib/biyerlere/kupon-kod";
 import { SINIRLAR, hizSiniriIsaretle, hizSiniriKontrol, hizSiniriMesaji } from "@/lib/kimlik/hiz-siniri";
+import { KUPON_AKTIF } from "@/lib/biyerlere/kupon";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,13 @@ export const dynamic = "force-dynamic";
  * ekran görüntüsü en fazla 15-30 dakika yaşıyor.
  */
 export async function POST(request: Request) {
+  // Özellik kapalıyken uç hiç yokmuş gibi davranıyor (bkz.
+  // lib/biyerlere/kupon.ts). 404 bilinçli: "kapalı" demek, var olan ama
+  // şu an çalışmayan bir uç olduğunu duyurmak olurdu.
+  if (!KUPON_AKTIF) {
+    return NextResponse.json({ hata: "Uç bulunamadı." }, { status: 404 });
+  }
+
   const user = await getSession();
   if (!user) {
     return NextResponse.json({ hata: "Oturum gerekli." }, { status: 401 });

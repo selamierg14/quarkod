@@ -5,6 +5,7 @@ import { checkLoginAllowed, recordLoginAttempt } from "@/lib/kimlik/login-guard"
 import { appJetonUret } from "@/lib/kimlik/app-oturum";
 import { apiHata, govdeOku, metin } from "@/lib/kimlik/app-api";
 import { plusGecerliMi } from "@/lib/biyerlere/biyerlere-plus";
+import { KUPON_AKTIF } from "@/lib/biyerlere/kupon";
 
 export const dynamic = "force-dynamic";
 
@@ -48,13 +49,17 @@ export async function POST(request: Request) {
 
   await recordLoginAttempt(username, true);
 
-  const cuzdandakiKupon = await prisma.coupon.count({
-    where: {
-      appUserId: kullanici.id,
-      used: false,
-      OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-    },
-  });
+  // Kupon kapalıyken sayaç her zaman 0 — sorgu da atlanıyor
+  // (bkz. lib/biyerlere/kupon.ts).
+  const cuzdandakiKupon = KUPON_AKTIF
+    ? await prisma.coupon.count({
+        where: {
+          appUserId: kullanici.id,
+          used: false,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        },
+      })
+    : 0;
 
   return NextResponse.json({
     jeton: await appJetonUret(kullanici),
@@ -64,7 +69,7 @@ export async function POST(request: Request) {
       name: kullanici.name,
       puan: kullanici.puan,
       referralCode: kullanici.referralCode,
-      cuzdandakiKupon,
+      ...(KUPON_AKTIF ? { cuzdandakiKupon } : {}),
       plusUyeMi: plusGecerliMi(kullanici),
     },
   });
