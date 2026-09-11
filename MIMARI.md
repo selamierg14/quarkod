@@ -159,6 +159,45 @@ ve şifresini değiştiren kişinin eski oturumu anında düşüyor.
 
 ---
 
+## İki aşamalı doğrulama (SMS OTP)
+
+Kod üretimi ve doğrulaması [`lib/kimlik/otp.ts`](src/lib/kimlik/otp.ts)'te,
+**karar mantığı** ise ayrı bir dosyada:
+[`lib/kimlik/iki-asamali.ts`](src/lib/kimlik/iki-asamali.ts). Ayrım bilinçli —
+`otp.ts` `server-only` taşıyor (bcrypt + Prisma), oysa kural saf ve hem bakım
+betiklerinin hem testlerin ona erişmesi gerekiyor.
+
+İki **isimli soru** var ve hangisinin sorulduğu akışa göre değişiyor:
+
+| Fonksiyon | Sorusu | Kim soruyor |
+|---|---|---|
+| `otpTelefonu(phone)` | "Bu numaraya kod gönderebilir miyiz?" | Şifre akışları |
+| `ikiAsamaliDurum(phone)` | "Girişte kod adımından geçmeli mi?" | Giriş |
+
+Fark bayrakta: `TWO_FACTOR_ENABLED`, **yalnızca girişi** etkiliyor. Şifre
+değiştirme ve sıfırlama bayraktan bağımsız olarak her zaman SMS istiyor —
+bayrak "her girişte kod sorulsun mu" sorusunun cevabı, "şifre değiştirmek
+kimlik kanıtı ister mi" sorusunun değil. İkincisinin cevabı her zaman evet:
+açık bırakılmış bir oturumu ele geçiren kişi hesabı tek tıkla devralmasın diye.
+
+**Kapı kapalı devre.** Önceki hâli `!twoFactorEnabled() || !user.phone` idi
+ve ikinci koşul sessiz bir kapıydı: bayrak açıkken bile telefonu olmayan
+kullanıcı SMS adımını görmeden giriyordu. Bu istisna değil kuraldı —
+kullanıcıların çoğunun telefonu kayıtlı değildi. Artık kod gönderilemeyen
+hiçbir hesap giriş yapamıyor; "telefon yok" ve "numara bozuk" ayrı mesajlar
+veriyor çünkü çözümleri ayrı.
+
+> **Bayrağı açmadan önce:** `npm run 2fa:hazirlik` — kimlerin giremeyeceğini
+> önceden söyler. `--onar` yalnızca demo hesaplarını düzeltir; gerçek bir
+> kullanıcıya betikle telefon yazmaz, çünkü o numara kimlik kanıtı olacak ve
+> doğru sahibine ait olduğunu ancak panelden giren bir yönetici teyit edebilir.
+
+Sağlayıcı ekomesaj; istek gövdesi
+[`lib/altyapi/sms.ts`](src/lib/altyapi/sms.ts)'te. İki tuzağı var:
+`SMS_SENDER` sağlayıcıda **kayıtlı gönderici başlığı**dır (API kullanıcı adı
+değil), ve `SMS_TEST_PHONE` doluyken **herkesin kodu tek numaraya gider** —
+üretimde boş olmalı, yoksa iki aşamalı doğrulama anlamını yitirir.
+
 ## Sırlar ve yapılandırma
 
 Tek kapı: [`src/lib/cekirdek/ortam.ts`](src/lib/cekirdek/ortam.ts).
