@@ -29,6 +29,27 @@ export function toSmsNumber(phone: string): number | null {
   return normal ? Number(normal.slice(1)) : null;
 }
 
+/**
+ * Sağlayıcı hata kodunu kullanıcının okuyabileceği bir cümleye çevirir.
+ *
+ * Ham kod (`ERR_EMPTY_SMS_PACKAGE`) giriş ekranında hiçbir şey anlatmıyor;
+ * ama tanınmayan kodu da gizlemiyoruz — parantez içinde kalıyor ki destek
+ * tarafında teşhis edilebilsin.
+ */
+function saglayiciHatasi(kod: string): string {
+  switch (kod) {
+    case "ERR_EMPTY_SMS_PACKAGE":
+      // Sağlayıcı geçersiz/ulaşılamaz alıcıları eleyince paket boş kalıyor.
+      return "Bu numaraya SMS gönderilemedi; numara geçerli bir hat olmayabilir.";
+    case "ERR_INSUFFICIENT_BALANCE":
+      return "SMS kredisi yetersiz. Sağlayıcı hesabınızı kontrol edin.";
+    case "ERR_INVALID_SENDER":
+      return "Gönderici başlığı sağlayıcıda tanımlı değil (SMS_SENDER).";
+    default:
+      return `SMS gönderilemedi (${kod}).`;
+  }
+}
+
 export async function sendSms(phone: string, text: string): Promise<SmsResult> {
   const url = process.env.SMS_API_URL;
   const user = process.env.SMS_API_USER;
@@ -82,12 +103,19 @@ export async function sendSms(phone: string, text: string): Promise<SmsResult> {
     }
 
     const data = (await response.json()) as {
-      err?: unknown;
+      err?: { code?: string; status?: number; message?: string } | null;
       data?: { pkgID?: number };
     };
 
     if (data.err) {
-      return { sent: false, error: `SMS sağlayıcısı hata verdi: ${String(data.err)}` };
+      // Sağlayıcı hatayı NESNE olarak döndürüyor:
+      //   {"err":{"code":"ERR_EMPTY_SMS_PACKAGE","status":417,...}}
+      // Önceki hâl `String(data.err)` yazıyordu ve ekrana "[object Object]"
+      // düşüyordu — yani gönderim neden başarısız olduğu hiç görünmüyordu
+      // ve tek teşhis yolu sağlayıcıya tek tek istek atmaktı.
+      const kod = data.err.code ?? data.err.message ?? "bilinmeyen";
+      console.error("[sms] sağlayıcı hatası:", JSON.stringify(data.err));
+      return { sent: false, error: saglayiciHatasi(kod) };
     }
 
     return { sent: true, packageId: data.data?.pkgID };

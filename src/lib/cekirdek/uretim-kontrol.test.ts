@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { uretimSorunlari, type Ayarlar } from "./uretim-kontrol";
+import { uretimSorunlari, uretimUyarilari, type Ayarlar } from "./uretim-kontrol";
 
 /**
  * Bu testlerin her biri, canlıda sessizce yanlış çalışan bir sistemi temsil
@@ -53,6 +53,29 @@ describe("uretimSorunlari", () => {
   });
 
   it("2FA kapalıyken SMS ayarı zorunlu değildir", () => {
+    expect(uretimSorunlari({ ...saglam, TWO_FACTOR_ENABLED: "false" })).toEqual([]);
+  });
+});
+
+describe("uretimUyarilari", () => {
+  /**
+   * Bunun hikâyesi somut: 2FA yerelde açılıp test edildi ama ayarlar
+   * `.env`'de yaşadığı ve o dosya git'e girmediği için üretime hiç
+   * ulaşmadı. Giriş üretimde tek faktörlü kaldı ve hiçbir yerde hata
+   * görünmedi — bayrağın yokluğu sessizce "kapalı" demek.
+   */
+  it("2FA kapalıyken uyarıyor", () => {
+    expect(uretimUyarilari({}).join(" ")).toContain("TEK FAKTÖRLÜ");
+    expect(uretimUyarilari({ TWO_FACTOR_ENABLED: "false" }).length).toBe(1);
+  });
+
+  it("2FA açıkken uyarmıyor", () => {
+    expect(uretimUyarilari({ TWO_FACTOR_ENABLED: "true" })).toEqual([]);
+  });
+
+  it("açılışı ENGELLEMİYOR — sorun listesinden ayrı", () => {
+    // İkisini karıştırmak, haklı gerekçesi olmayan bir dağıtım durdurması
+    // olurdu; 2FA'yı kapalı tutmak bilinçli bir tercih olabilir.
     expect(uretimSorunlari({ ...saglam, TWO_FACTOR_ENABLED: "false" })).toEqual([]);
   });
 });

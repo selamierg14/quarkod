@@ -65,3 +65,31 @@ export function uretimSorunlari(env: Ayarlar): string[] {
 
   return sorunlar;
 }
+
+/**
+ * Üretimde AÇILIŞI ENGELLEMEYEN ama görülmesi gereken durumlar.
+ *
+ * `uretimSorunlari` ile ayrılması bilinçli: oradakiler sistemi hiç
+ * açmamayı hak eden hatalar, buradakiler ise "bilinçli bir tercih de
+ * olabilir" durumlar. İkisini karıştırmak, dağıtımı haklı gerekçesi
+ * olmayan bir şekilde durdurmak olurdu.
+ *
+ * İlk maddenin somut bir hikâyesi var: iki aşamalı doğrulama yerelde
+ * açılıp test edildi, ama ayarlar `.env` dosyasında yaşadığı ve o dosya
+ * bilerek git'e girmediği için ÜRETİME HİÇ ULAŞMADI. Sonuç: kod yazıldı,
+ * test edildi, dağıtıldı — ve üretimde giriş hâlâ tek faktörlüydü. Hiçbir
+ * hata vermeden, çünkü bayrağın yokluğu "kapalı" demek.
+ */
+export function uretimUyarilari(env: Ayarlar): string[] {
+  const uyarilar: string[] = [];
+
+  if (env.TWO_FACTOR_ENABLED !== "true") {
+    uyarilar.push(
+      "TWO_FACTOR_ENABLED açık değil — panel girişi TEK FAKTÖRLÜ. " +
+        "Ayarlar .env dosyasında yaşıyor ve o dosya git'e girmiyor; " +
+        "üretim için değişkenleri dağıtım ortamına (Vercel) ayrıca eklemek gerekir.",
+    );
+  }
+
+  return uyarilar;
+}
