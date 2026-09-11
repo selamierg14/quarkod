@@ -10,7 +10,21 @@ if (!url) throw new Error("DATABASE_URL tanımlı değil.");
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
 
 /// Örnek hesapların 2FA kodlarının gideceği numara.
-const TEST_PHONE = "+905364901001";
+/**
+ * Tohumlanan yönetici hesabının cep numarası.
+ *
+ * ORTAM DEĞİŞKENİNDEN okunuyor ve varsayılanı bilerek KİMSEYE AİT OLMAYAN
+ * bir numara (555 ön eki Türkiye'de operatörlere tahsis edilmemiş). Burada
+ * sabit bir numara durması iki sorun demekti:
+ *
+ *   1. Numara sürüm kontrolüne giriyordu — depoyu gören herkes okuyor.
+ *   2. İki aşamalı doğrulama açıldığında kodlar o numaraya gidiyor; kurulum
+ *      yapan kişi kendi numarasını yazmazsa doğrulama kodu bir başkasına
+ *      düşüyor.
+ *
+ * Kurulumda kendi numaranızı vermek için: SEED_ADMIN_PHONE=+905XXXXXXXXX
+ */
+const TEST_PHONE = process.env.SEED_ADMIN_PHONE?.trim() || "+905550000001";
 
 type BusinessSeed = {
   slug: string;

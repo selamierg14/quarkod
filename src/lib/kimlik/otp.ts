@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "../cekirdek/db";
 import { sendSms } from "../altyapi/sms";
 import { deliveryPhone } from "./iki-asamali";
+import { normalizePhone } from "./username";
 
 // Saf karar mantığı `iki-asamali.ts`'te (server-only taşımıyor, betikler ve
 // testler oradan okuyor); çağıranların içe aktarımı değişmesin diye burada
@@ -66,15 +67,34 @@ export async function issueOtp(
   phone: string,
   purpose: OtpPurpose,
 ): Promise<IssueResult> {
+  const hedef = normalizePhone(phone);
+  if (!hedef) return { ok: false, error: "Telefon numarası geçersiz." };
+
+  // Bekleme süresi AYNI NUMARAYA yapılan art arda isteklere uygulanıyor.
+  //
+  // Başka bir numaraya kod istemek meşru bir eylem: kullanıcı birincil
+  // numarasına ulaşamadığı için yedeğine geçiyor ve tam da o an bir dakika
+  // beklemesi isteniyordu — yani yedek numara özelliği, ihtiyaç duyulduğu
+  // anda çalışmıyordu. Aynı numaraya art arda istek ise hâlâ SMS
+  // bombardımanı ve engelleniyor.
+  //
+  // `phone: null` olan eski kayıtlar "bilinmiyor" sayılıp bekletiyor —
+  // temkinli taraf.
   const since = new Date(Date.now() - RESEND_COOLDOWN_SECONDS * 1000);
   const recent = await prisma.otpCode.findFirst({
-    where: { userId, purpose, createdAt: { gte: since }, usedAt: null },
+    where: {
+      userId,
+      purpose,
+      createdAt: { gte: since },
+      usedAt: null,
+      OR: [{ phone: hedef }, { phone: null }],
+    },
     orderBy: { createdAt: "desc" },
   });
   if (recent) {
     return {
       ok: false,
-      error: `Az önce bir kod gönderildi. Yeni kod istemek için ${RESEND_COOLDOWN_SECONDS} saniye bekleyin.`,
+      error: `Bu numaraya az önce bir kod gönderildi. Yeni kod istemek için ${RESEND_COOLDOWN_SECONDS} saniye bekleyin.`,
     };
   }
 
@@ -90,6 +110,7 @@ export async function issueOtp(
       userId,
       purpose,
       codeHash: await bcrypt.hash(code, 10),
+      phone: hedef,
       expiresAt: new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000),
     },
   });
@@ -101,13 +122,13 @@ export async function issueOtp(
 
   // Test aşamasında yönlendirme yapılır; maskeleme yine kullanıcının kendi
   // numarasını gösterir ki ekranda tutarsızlık olmasın.
-  const sonuc = await sendSms(deliveryPhone(phone), metin);
+  const sonuc = await sendSms(deliveryPhone(hedef), metin);
   if (!sonuc.sent) {
     await prisma.otpCode.delete({ where: { id: record.id } });
     return { ok: false, error: sonuc.error ?? "Kod gönderilemedi." };
   }
 
-  return { ok: true, maskedPhone: maskPhone(phone) };
+  return { ok: true, maskedPhone: maskPhone(hedef) };
 }
 
 export type VerifyResult = { ok: true } | { ok: false; error: string };

@@ -2,6 +2,7 @@ import "dotenv/config";
 import { createScriptClient } from "./prisma-client";
 import { Prisma } from "../src/generated/prisma/client";
 import { otpTelefonu } from "../src/lib/kimlik/iki-asamali";
+import { telefonListesi } from "../src/lib/kimlik/telefonlar";
 
 /**
  * "İki aşamalı doğrulamayı açarsam kim giremez?"
@@ -49,12 +50,28 @@ async function main() {
   try {
     const kullanicilar = await prisma.user.findMany({
       where: { active: true },
-      select: { id: true, username: true, name: true, role: true, phone: true },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        role: true,
+        phone: true,
+        telefonlar: { orderBy: { sira: "asc" }, select: { phone: true } },
+      },
       orderBy: { username: "asc" },
     });
 
+    // Yedek numarası olan kullanıcı, birincili bozuk olsa bile kod
+    // alabiliyor — rapor bunu hesaba katmazsa var olmayan bir kilitlenme
+    // bildirip yanlış yönlendirir.
     const sorunlular = kullanicilar
-      .map((k) => ({ ...k, durum: otpTelefonu(k.phone).durum }))
+      .map((k) => {
+        const hepsi = telefonListesi(
+          k.phone,
+          k.telefonlar.map((t) => t.phone),
+        );
+        return { ...k, durum: otpTelefonu(hepsi[0] ?? null).durum };
+      })
       .filter((k) => k.durum !== "hazir");
 
     console.log(`Aktif panel kullanıcısı : ${kullanicilar.length}`);

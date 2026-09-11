@@ -88,6 +88,40 @@ export function LoginForm() {
             placeholder="––––––"
             className={`${INPUT} text-center font-mono text-2xl tracking-[0.4em]`}
           />
+
+          {/* Kodu şu an hangi numaranın tuttuğu istekler arasında burada
+              taşınıyor; sunucu her istekte durumu sıfırdan kuruyor. */}
+          <input type="hidden" name="aktifSira" value={state.aktifSira ?? 0} />
+
+          {/* Kod gelmediyse başka kayıtlı numaraya istemek — yedek
+              numaraların var oluş sebebi. Yalnızca SIRA gönderiliyor;
+              numaranın kendisi istemciye hiç inmiyor (bkz. actions.ts). */}
+          {state.secenekler && state.secenekler.length > 0 ? (
+            <div className="mt-1 flex flex-col gap-1.5">
+              <span className="text-caption text-ink-muted">
+                Kod gelmediyse başka numaranıza isteyin:
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {state.secenekler.map((secenek) => (
+                  <button
+                    key={secenek.sira}
+                    type="submit"
+                    name="yenidenGonder"
+                    value={secenek.sira}
+                    // Kod alanı `required`; bu düğme kodu GÖNDERMİYOR, yeni
+                    // kod İSTİYOR. Doğrulama atlanmazsa tarayıcı "bu alanı
+                    // doldurun" deyip gönderimi engelliyor ve düğme hiç
+                    // çalışmıyordu — üstelik sessizce, çünkü hata balonu
+                    // boş kod alanını işaret ediyor.
+                    formNoValidate
+                    className="rounded-chip border border-line bg-surface px-2.5 py-1 text-caption text-ink-soft transition hover:border-line-strong hover:text-ink"
+                  >
+                    {secenek.maskeli}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </>
       ) : null}
 

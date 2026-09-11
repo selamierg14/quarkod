@@ -23,7 +23,10 @@ export default async function EditUserPage({
   const [target, businesses] = await Promise.all([
     prisma.user.findFirst({
       where: { id, ...await userScope(owner) },
-      include: { businesses: { select: { businessId: true } } },
+      include: {
+        businesses: { select: { businessId: true } },
+        telefonlar: { orderBy: { sira: "asc" }, select: { phone: true } },
+      },
     }),
     visibleBusinesses(owner),
   ]);
@@ -67,6 +70,7 @@ export default async function EditUserPage({
               email: target.email,
               username: target.username,
               phone: target.phone,
+              ekTelefonlar: target.telefonlar.map((t) => t.phone),
               role: target.role,
               businessId: target.businessId,
               bolgeIsletmeleri: target.businesses.map((b) => b.businessId),

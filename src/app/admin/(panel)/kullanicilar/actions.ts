@@ -20,6 +20,7 @@ import { sifreSorunu } from "@/lib/kimlik/sifre";
 import { prisma } from "@/lib/cekirdek/db";
 import { istenenModulleriSuz, modulleriGuncelleMeli } from "@/lib/kimlik/moduller";
 import { normalizePhone, toUsername, usernameProblem } from "@/lib/kimlik/username";
+import { ekTelefonlariCoz } from "@/lib/kimlik/telefonlar";
 import { uniqueConstraintMessage } from "@/lib/cekirdek/unique-error";
 import { alanDogrula } from "@/lib/cekirdek/desenler";
 import { ilkHata, listeAlani } from "@/lib/cekirdek/girdi";
@@ -109,6 +110,16 @@ export async function createUser(
   // 2FA kodu buraya gideceği için telefon zorunlu.
   const phone = normalizePhone(rawPhone);
   if (!phone) return { error: "Geçerli bir cep telefonu girin (5XX...)." };
+
+  // Yedek numaralar. Rol kısıtı (garson ekleyemez) ve üst sınır
+  // lib/kimlik/telefonlar.ts'te; arayüz alanı gizlese de kural burada
+  // uygulanıyor çünkü form elle kurulabilir.
+  const yedekler = ekTelefonlariCoz(formData.getAll("ekTelefonlar"), {
+    role,
+    birincil: phone,
+  });
+  if (!yedekler.ok) return { error: yedekler.hata };
+
   if (!gecerliRolMu(role) || !acilabilirRoller(actor.role).includes(role)) {
     // Hesap sahibi kendine eş yetkide ikinci bir sahip açamaz: sahiplik
     // aboneliği ve faturayı taşıyan roldür, onu platform tarafı belirler.
@@ -194,6 +205,13 @@ export async function createUser(
           ? {
               businesses: {
                 create: bolgeIsletmeleri.map((id) => ({ businessId: id })),
+              },
+            }
+          : {}),
+        ...(yedekler.deger.length > 0
+          ? {
+              telefonlar: {
+                create: yedekler.deger.map((numara, sira) => ({ phone: numara, sira })),
               },
             }
           : {}),
@@ -300,6 +318,15 @@ export async function updateUser(
     return { error: "Seçilen işletmelerden birine yetkiniz yok." };
   }
 
+  // Yedek numaralar ETKİN role göre denetleniyor: sahipliği korunan bir
+  // kullanıcıda formdan gelen rol yok sayılıyor (etkinRol), kısıt da o
+  // role göre uygulanmalı.
+  const yedekler = ekTelefonlariCoz(formData.getAll("ekTelefonlar"), {
+    role: etkinRol,
+    birincil: phone,
+  });
+  if (!yedekler.ok) return { error: yedekler.hata };
+
   try {
     await prisma.$transaction([
       prisma.user.update({
@@ -333,6 +360,22 @@ export async function updateUser(
             : {}),
         },
       }),
+      // Yedek numaralar da bölge atamaları gibi tamamen yeniden yazılıyor:
+      // form o an ekranda ne gösteriyorsa veritabanı onu yansıtmalı.
+      // Kaldırılan bir numaranın kalması, hesaba erişebilecek bir kanalın
+      // açık unutulması demekti.
+      prisma.userPhone.deleteMany({ where: { userId: id } }),
+      ...(yedekler.deger.length > 0
+        ? [
+            prisma.userPhone.createMany({
+              data: yedekler.deger.map((numara, sira) => ({
+                userId: id,
+                phone: numara,
+                sira,
+              })),
+            }),
+          ]
+        : []),
       // Bölge atamaları tamamen yeniden yazılır: form o an ekranda ne
       // gösteriyorsa veritabanı da onu yansıtmalı.
       prisma.userBusiness.deleteMany({ where: { userId: id } }),

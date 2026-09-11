@@ -16,6 +16,10 @@ import {
   type ModulAnahtari,
 } from "@/lib/kimlik/moduller";
 import { alanOzellikleri } from "@/lib/cekirdek/desenler";
+import {
+  EN_COK_EK_TELEFON,
+  ekTelefonEklenebilirMi,
+} from "@/lib/kimlik/telefonlar";
 
 const INPUT =
   "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
@@ -28,6 +32,50 @@ const ROL_SECENEKLERI: Record<string, string> = {
   owner: "Patron (hesabın tamamını yönetir)",
   garson: "Saha personeli (yalnızca kendi vardiyasını/görevlerini görür)",
 };
+
+/**
+ * Yedek cep numaraları.
+ *
+ * Doğrulama kodu birincil numaraya gidiyor; buradakiler kullanıcı o
+ * numaraya ulaşamadığında (telefon kayıp, hat çekmiyor) giriş ekranından
+ * seçebileceği alternatifler. Tek numaraya bağlı kalmak, iki aşamalı
+ * doğrulama açıkken hesabı tamamen kilitleyebiliyordu.
+ *
+ * GARSON rolünde blok hiç ÇİZİLMİYOR — kural lib/kimlik/telefonlar.ts'te
+ * ve sunucu tarafı da aynı kaynaktan okuyor. Gizlemek tek başına koruma
+ * değil; asıl kontrol sunucuda.
+ */
+function YedekTelefonlar({ rol, mevcut = [] }: { rol: string; mevcut?: string[] }) {
+  if (!ekTelefonEklenebilirMi(rol)) return null;
+
+  // Var olanlar + bir boş satır: kullanıcı "ekle" düğmesi aramadan
+  // doğrudan yazabilsin.
+  const satirlar = [...mevcut, ""].slice(0, EN_COK_EK_TELEFON);
+
+  return (
+    <fieldset className="flex flex-col gap-1 sm:col-span-2">
+      <legend className="text-caption text-ink-muted">
+        Yedek cep numaraları (isteğe bağlı)
+      </legend>
+      <div className="mt-1 grid gap-2 sm:grid-cols-2">
+        {satirlar.map((numara, i) => (
+          <input
+            key={i}
+            name="ekTelefonlar"
+            {...alanOzellikleri("telefon", { zorunlu: false })}
+            defaultValue={numara}
+            placeholder="05XX XXX XX XX"
+            className={INPUT}
+          />
+        ))}
+      </div>
+      <span className="text-caption text-ink-faint">
+        Doğrulama kodu birincil numaraya gider; kullanıcı giriş ekranından
+        buradaki numaralardan birini de seçebilir. En fazla {EN_COK_EK_TELEFON}.
+      </span>
+    </fieldset>
+  );
+}
 
 /** İşletme seçimi gerektiren roller — tek işletmeye bağlanır. */
 function isletmeGerekir(rol: string): boolean {
@@ -180,6 +228,8 @@ export function NewUserForm({
           </fieldset>
         ) : null}
 
+        <YedekTelefonlar rol={role} />
+
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Başlangıç şifresi</span>
           <input
@@ -244,6 +294,8 @@ export type EditableUser = {
   email: string;
   username: string;
   phone: string | null;
+  /** Yedek cep numaraları — birincil `phone` alanında. */
+  ekTelefonlar: string[];
   role: string;
   businessId: string | null;
   bolgeIsletmeleri: string[];
@@ -327,6 +379,13 @@ export function EditUserForm({
             className={INPUT}
           />
         </label>
+
+        {/* Sahipliği korunan kullanıcıda formdan gelen rol yok sayılıyor
+            (sunucuda etkinRol), o yüzden blok da gerçek role göre. */}
+        <YedekTelefonlar
+          rol={rolSabit ? user.role : role}
+          mevcut={user.ekTelefonlar}
+        />
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Rol</span>

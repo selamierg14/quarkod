@@ -192,6 +192,32 @@ veriyor çünkü çözümleri ayrı.
 > kullanıcıya betikle telefon yazmaz, çünkü o numara kimlik kanıtı olacak ve
 > doğru sahibine ait olduğunu ancak panelden giren bir yönetici teyit edebilir.
 
+### Yedek numaralar
+
+Kod varsayılan olarak **birincil** numaraya (`User.phone`) gidiyor. Kullanıcı
+o numaraya ulaşamıyorsa giriş ekranındaki kod adımından kayıtlı başka bir
+numarasına isteyebiliyor — yedekler ayrı tabloda (`UserPhone`), kurallar
+[`lib/kimlik/telefonlar.ts`](src/lib/kimlik/telefonlar.ts)'te.
+
+| Kural | Değer |
+|---|---|
+| En fazla yedek | 4 |
+| Yedek ekleyemeyen rol | `garson` |
+
+`garson` dışarıda çünkü o hesap en dar yetkili ve en çok el değiştiren tür;
+her yedek numara hesaba erişecek bir kanal daha demek ve personel
+değiştiğinde geride kalan numara sessiz bir açık kapıya dönüşür.
+
+İki ayrıntı kolay gözden kaçıyor, ikisi de bilinçli:
+
+- **Ham numara istemciye hiç inmiyor.** Giriş ekranı yalnızca maskeli hâli ve
+  bir sıra numarası taşıyor; hedefi sunucu kendi listesinden çözüyor. Aksi
+  halde bu uç, şifresi bilinen bir hesabın tüm numaralarını sızdırırdı.
+- **Bekleme süresi numara BAŞINA.** Aynı numaraya art arda kod istemek SMS
+  bombardımanı, başka numaraya istemek ise yedeklerin var oluş sebebi. Tek
+  bir bekleme süresi ikisini ayıramadığı için özellik tam ihtiyaç anında
+  çalışmıyordu; `OtpCode.phone` bu ayrımı mümkün kılıyor.
+
 Sağlayıcı ekomesaj; istek gövdesi
 [`lib/altyapi/sms.ts`](src/lib/altyapi/sms.ts)'te. İki tuzağı var:
 `SMS_SENDER` sağlayıcıda **kayıtlı gönderici başlığı**dır (API kullanıcı adı

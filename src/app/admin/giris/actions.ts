@@ -13,8 +13,9 @@ import {
 import { prisma } from "@/lib/cekirdek/db";
 import { gizliAnahtar } from "@/lib/cekirdek/ortam";
 import { alanDogrula } from "@/lib/cekirdek/desenler";
-import { secenekAlani } from "@/lib/cekirdek/girdi";
+import { sayiAlani, secenekAlani } from "@/lib/cekirdek/girdi";
 import { ADIMLAR, KIPLER, type Step } from "@/lib/kimlik/giris-akisi";
+import { telefonListesi } from "@/lib/kimlik/telefonlar";
 import {
   ikiAsamaliDurum,
   issueOtp,
@@ -47,6 +48,9 @@ const CHALLENGE_TTL_SECONDS = 10 * 60;
 // tipler derlemede siliniyor, kısıt tipleri kapsamıyor.
 export type { Step } from "@/lib/kimlik/giris-akisi";
 
+/** Kod istenebilecek bir numara — ham değer İSTEMCİYE GİTMİYOR. */
+export type NumaraSecenegi = { sira: number; maskeli: string };
+
 export type LoginState = {
   step: Step;
   /** "giris" | "sifre" — hangi akıştayız. */
@@ -54,6 +58,23 @@ export type LoginState = {
   error?: string;
   info?: string;
   maskedPhone?: string;
+  /**
+   * Kullanıcının diğer kayıtlı numaraları — kod adımında "başka numaraya
+   * gönder" için. Yalnızca MASKELİ hâlleri ve sıraları taşınıyor; ham
+   * numara istemciye hiç çıkmıyor, sunucu sırayı kendi listesinden
+   * çözüyor. Aksi halde giriş ekranı, şifresi bilinen bir hesabın tüm
+   * telefon numaralarını sızdıran bir uca dönüşürdü.
+   */
+  secenekler?: NumaraSecenegi[];
+  /**
+   * Kodu ŞU AN tutan numaranın sırası.
+   *
+   * İstekler arasında gizli bir alanda taşınıyor çünkü sunucu her istekte
+   * durumu sıfırdan kuruyor: bu olmadan "kodu alan numara" bilgisi
+   * kayboluyor ve ekran, az önce kod gönderdiği numarayı "başka numaranıza
+   * isteyin" seçeneği olarak göstermeye devam ediyordu.
+   */
+  aktifSira?: number;
 };
 
 /**
@@ -107,6 +128,41 @@ function passwordProblem(password: string): string | null {
   if (sifreHatasi) return sifreHatasi;
   if (/^\d+$/.test(password)) return "Şifre sadece rakamlardan oluşmasın.";
   return null;
+}
+
+/**
+ * Kullanıcının kod gönderilebilir numaraları — birincil önce.
+ *
+ * Yedekler ayrı tabloda; birleştirme TEK yerde yapılıyor (telefonListesi)
+ * ki çağıranlar elle birleştirip birini unutmasın.
+ */
+async function kullaniciNumaralari(userId: string): Promise<string[]> {
+  const kayit = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      phone: true,
+      telefonlar: { orderBy: { sira: "asc" }, select: { phone: true } },
+    },
+  });
+  if (!kayit) return [];
+  return telefonListesi(
+    kayit.phone,
+    kayit.telefonlar.map((t) => t.phone),
+  );
+}
+
+/**
+ * Maskeli seçenek listesi — kodu AZ ÖNCE ALAN numara hariç.
+ *
+ * `haricSira` parametresi olmadan liste hep "ilki hariç" oluyordu ve yedek
+ * numaraya geçildikten sonra ekran, kodu az önce alan numarayı "başka
+ * numaranıza isteyin" seçeneği olarak göstermeye devam ediyordu — üstelik
+ * birincile geri dönüş yolu hiç sunulmuyordu.
+ */
+function digerSecenekler(numaralar: string[], haricSira = 0): NumaraSecenegi[] {
+  return numaralar
+    .map((numara, sira) => ({ sira, maskeli: maskPhone(numara) }))
+    .filter((s) => s.sira !== haricSira);
 }
 
 export async function loginAction(
@@ -247,13 +303,20 @@ export async function loginAction(
       };
     }
 
-    const sonuc = await issueOtp(user.id, ikiAsama.telefon, "giris");
+    const numaralar = await kullaniciNumaralari(user.id);
+    const sonuc = await issueOtp(user.id, numaralar[0] ?? ikiAsama.telefon, "giris");
     if (!sonuc.ok) {
       return { step: "kimlik", mode, error: sonuc.error };
     }
 
     await setChallenge(user.id, "giris");
-    return { step: "kod", mode, maskedPhone: sonuc.maskedPhone };
+    return {
+      step: "kod",
+      mode,
+      maskedPhone: sonuc.maskedPhone,
+      aktifSira: 0,
+      secenekler: digerSecenekler(numaralar),
+    };
   }
 
   // --- 2. adım: SMS kodu
@@ -263,6 +326,55 @@ export async function loginAction(
       return { step: "kimlik", mode, error: "Oturum zaman aşımına uğradı. Baştan başlayın." };
     }
 
+    const purpose0 = challenge.purpose === "sifre" ? "sifre" : "giris";
+    const numaralar = await kullaniciNumaralari(challenge.userId);
+    const aktifOkuma = sayiAlani(formData.get("aktifSira"), "Numara", {
+      enAz: 0,
+      enCok: Math.max(0, numaralar.length - 1),
+      varsayilan: 0,
+    });
+    const aktifSira = aktifOkuma.ok ? aktifOkuma.deger : 0;
+    const secenekler = digerSecenekler(numaralar, aktifSira);
+
+    // "Başka numaraya gönder": istemci yalnızca SIRA gönderiyor, numarayı
+    // değil. Numara sunucuda kendi listesinden çözülüyor — aksi halde bu
+    // uç, şifresi bilinen bir hesaba istenen numaraya SMS attırmanın yolu
+    // olurdu.
+    const yenidenGonder = formData.get("yenidenGonder");
+    if (yenidenGonder !== null) {
+      const secim = sayiAlani(yenidenGonder, "Numara", {
+        enAz: 0,
+        enCok: Math.max(0, numaralar.length - 1),
+      });
+      // Sıra geçersizse hedef de yok; ikisini tek dalda eleyip aşağıda
+      // daraltılmış tiple devam ediyoruz.
+      if (!secim.ok || !numaralar[secim.deger]) {
+        return { step: "kod", mode, secenekler, aktifSira, error: "Numara seçilemedi." };
+      }
+      const hedef = numaralar[secim.deger];
+
+      const gonderim = await issueOtp(challenge.userId, hedef, purpose0);
+      return gonderim.ok
+        ? {
+            step: "kod",
+            mode,
+            // Kodu yeni alan numara listeden düşüyor, birincil geri geliyor.
+            secenekler: digerSecenekler(numaralar, secim.deger),
+            aktifSira: secim.deger,
+            maskedPhone: gonderim.maskedPhone,
+            info: "Yeni kod gönderildi.",
+          }
+        : {
+            // Gönderim başarısız: aktif numara DEĞİŞMEDİ, liste de öyle.
+            step: "kod",
+            mode,
+            secenekler,
+            aktifSira,
+            error: gonderim.error,
+            maskedPhone: String(formData.get("maskedPhone") ?? "").slice(0, 40),
+          };
+    }
+
     // Kod altı rakam; biçimi tutmayan bir değerin veritabanındaki OTP
     // kaydına kadar gitmesine gerek yok.
     const kod = alanDogrula(formData.get("code"), "dogrulamaKodu", "Kod");
@@ -270,16 +382,20 @@ export async function loginAction(
       return {
         step: "kod",
         mode,
+        secenekler,
+        aktifSira,
         error: kod.hata,
         maskedPhone: String(formData.get("maskedPhone") ?? "").slice(0, 40),
       };
     }
-    const purpose = challenge.purpose === "sifre" ? "sifre" : "giris";
+    const purpose = purpose0;
     const sonuc = await verifyOtp(challenge.userId, purpose, kod.deger);
     if (!sonuc.ok) {
       return {
         step: "kod",
         mode,
+        secenekler,
+        aktifSira,
         error: sonuc.error,
         maskedPhone: String(formData.get("maskedPhone") ?? ""),
       };
