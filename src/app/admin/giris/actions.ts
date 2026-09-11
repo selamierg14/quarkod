@@ -15,7 +15,13 @@ import { gizliAnahtar } from "@/lib/cekirdek/ortam";
 import { alanDogrula } from "@/lib/cekirdek/desenler";
 import { secenekAlani } from "@/lib/cekirdek/girdi";
 import { ADIMLAR, KIPLER, type Step } from "@/lib/kimlik/giris-akisi";
-import { issueOtp, maskPhone, twoFactorEnabled, verifyOtp } from "@/lib/kimlik/otp";
+import {
+  ikiAsamaliDurum,
+  issueOtp,
+  maskPhone,
+  otpTelefonu,
+  verifyOtp,
+} from "@/lib/kimlik/otp";
 import { sifreSorunu } from "@/lib/kimlik/sifre";
 import {
   checkLoginAllowed,
@@ -148,8 +154,22 @@ export async function loginAction(
       // Şifre sıfırlamada kullanıcının var olup olmadığını sızdırmıyoruz:
       // her durumda aynı ekrana geçiyoruz. Kod yalnızca gerçek kullanıcıya gider.
       const user = await prisma.user.findUnique({ where: { username } });
-      if (user?.active && user.phone) {
-        const sonuc = await issueOtp(user.id, user.phone, "sifre");
+      // Numara burada normalleştiriliyor: kayıtlı ama bozuk bir numara
+      // (`+90555011900` gibi, bir hane eksik) sağlayıcıya kadar gidip orada
+      // reddedilmesin. Bozuk numarada aşağıdaki genel ekrana düşülüyor —
+      // AYRI bir hata mesajı vermek, o kullanıcı adının kayıtlı olduğunu
+      // söylerdi ve bu akışın tüm amacı bunu söylememek.
+      //
+      // Şifre sıfırlama, giriş 2FA bayrağından BAĞIMSIZ olarak hep SMS
+      // istiyor: bayrak "her girişte kod sorulsun mu" sorusunun cevabı,
+      // "şifre sıfırlamak kimlik kanıtı ister mi" sorusunun değil.
+      const sifirlamaTelefonu =
+        user?.active && user.phone
+          ? otpTelefonu(user.phone)
+          : ({ durum: "telefonYok" } as const);
+
+      if (user && sifirlamaTelefonu.durum === "hazir") {
+        const sonuc = await issueOtp(user.id, sifirlamaTelefonu.telefon, "sifre");
         if (sonuc.ok) {
           await setChallenge(user.id, "sifre");
           return { step: "kod", mode, maskedPhone: sonuc.maskedPhone };
@@ -191,14 +211,43 @@ export async function loginAction(
 
     void pruneLoginAttempts().catch(() => {});
 
-    // 2FA kapalıysa (test aşaması) ya da kullanıcının telefonu yoksa SMS adımı
-    // atlanır ve doğrudan panele girilir. Bayrak .env'den açılır.
-    if (!twoFactorEnabled() || !user.phone) {
+    // İki aşamalı doğrulamanın durumu TEK YERDE karara bağlanıyor
+    // (lib/kimlik/otp.ts). Önceki hâli `!twoFactorEnabled() || !user.phone`
+    // idi ve ikinci koşul sessiz bir kapıydı: bayrak açıkken bile telefonu
+    // olmayan kullanıcı SMS adımını hiç görmeden giriyordu. Bu istisna
+    // değil kuraldı — aktif kullanıcıların çoğunun telefonu kayıtlı değil.
+    const ikiAsama = ikiAsamaliDurum(user.phone);
+
+    if (ikiAsama.durum === "kapali") {
       await setSessionCookie(toSessionUser(user));
       redirect("/admin");
     }
 
-    const sonuc = await issueOtp(user.id, user.phone, "giris");
+    // Buradan sonrası KAPALI DEVRE: 2FA açıkken kod gönderilemeyen hiçbir
+    // hesap giriş yapamıyor. Alternatifi "telefonu yoksa geç" demekti ve o,
+    // güvenlik kontrolünü açık göründüğü hâlde çalışmayan bir süse
+    // çevirirdi. Mesajlar ayrı çünkü çözümleri ayrı: biri numara eklemeyi,
+    // diğeri düzeltmeyi gerektiriyor.
+    if (ikiAsama.durum === "telefonYok") {
+      return {
+        step: "kimlik",
+        mode,
+        error:
+          "Hesabınızda kayıtlı cep telefonu yok; doğrulama kodu gönderilemiyor. " +
+          "Yöneticinizden numaranızı tanımlamasını isteyin.",
+      };
+    }
+    if (ikiAsama.durum === "telefonGecersiz") {
+      return {
+        step: "kimlik",
+        mode,
+        error:
+          "Hesabınızdaki cep telefonu geçerli bir numara değil; doğrulama kodu " +
+          "gönderilemiyor. Yöneticinizden numarayı düzeltmesini isteyin.",
+      };
+    }
+
+    const sonuc = await issueOtp(user.id, ikiAsama.telefon, "giris");
     if (!sonuc.ok) {
       return { step: "kimlik", mode, error: sonuc.error };
     }

@@ -23,7 +23,7 @@ import { normalizePhone, toUsername, usernameProblem } from "@/lib/kimlik/userna
 import { uniqueConstraintMessage } from "@/lib/cekirdek/unique-error";
 import { alanDogrula } from "@/lib/cekirdek/desenler";
 import { ilkHata, listeAlani } from "@/lib/cekirdek/girdi";
-import { issueOtp, verifyOtp } from "@/lib/kimlik/otp";
+import { issueOtp, otpTelefonu, verifyOtp } from "@/lib/kimlik/otp";
 import {
   clearPendingPassword,
   readPendingPassword,
@@ -557,7 +557,13 @@ export async function changeOwnPassword(
     return { step: "form", error: "Yeni şifre eskisiyle aynı olamaz." };
   }
 
-  if (!user.phone) {
+  // Şifre değişimi HER ZAMAN SMS doğrulaması istiyor — giriş 2FA bayrağından
+  // bağımsız. Bu yüzden `ikiAsamaliDurum` ikinci argümanla açık çağrılıyor:
+  // bayrak kapalıyken de şifre değiştirmek kimlik kanıtı gerektirmeli, yoksa
+  // açık bırakılmış bir oturumu ele geçiren kişi hesabı tek tıkla devralır.
+  const telefon = otpTelefonu(user.phone);
+
+  if (telefon.durum === "telefonYok") {
     return {
       step: "form",
       error:
@@ -565,8 +571,16 @@ export async function changeOwnPassword(
         "Patronunuzdan numaranızı tanımlamasını isteyin.",
     };
   }
+  if (telefon.durum === "telefonGecersiz") {
+    return {
+      step: "form",
+      error:
+        "Hesabınızdaki cep telefonu geçerli bir numara değil; doğrulama kodu " +
+        "gönderilemiyor. Patronunuzdan numarayı düzeltmesini isteyin.",
+    };
+  }
 
-  const kod = await issueOtp(user.id, user.phone, "sifre");
+  const kod = await issueOtp(user.id, telefon.telefon, "sifre");
   if (!kod.ok) return { step: "form", error: kod.error };
 
   // Yeni şifre hash'lenmiş hâlde çerezde bekler; düz metin hiçbir yerde durmaz.

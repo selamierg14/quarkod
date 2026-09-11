@@ -3,6 +3,19 @@ import { randomInt } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { prisma } from "../cekirdek/db";
 import { sendSms } from "../altyapi/sms";
+import { deliveryPhone } from "./iki-asamali";
+
+// Saf karar mantığı `iki-asamali.ts`'te (server-only taşımıyor, betikler ve
+// testler oradan okuyor); çağıranların içe aktarımı değişmesin diye burada
+// yeniden dışa aktarılıyor.
+export {
+  twoFactorEnabled,
+  deliveryPhone,
+  otpTelefonu,
+  ikiAsamaliDurum,
+  type OtpTelefonDurumu,
+  type IkiAsamaliDurum,
+} from "./iki-asamali";
 
 /**
  * Tek kullanımlık SMS kodları.
@@ -11,32 +24,18 @@ import { sendSms } from "../altyapi/sms";
  * gören biri aktif kodları okuyup başkasının hesabına giremesin diye.
  */
 
-/**
- * Girişte iki adımlı doğrulama açık mı.
- *
- * Test aşamasında kapalı tutuluyor: her girişte gerçek SMS gitmesi hem
- * maliyet hem de tek bir test telefonuna bağımlılık demek. Kod silinmedi,
- * yalnızca devre dışı — .env'de "true" yapınca aynen çalışır.
- */
-export function twoFactorEnabled(): boolean {
-  return process.env.TWO_FACTOR_ENABLED === "true";
-}
-
-/**
- * Kodun gerçekten gideceği numara.
- *
- * Test aşamasında SMS_TEST_PHONE doluysa herkesin kodu oraya gider; böylece
- * gerçek müşteri numaralarına test SMS'i gitmez. Canlıda bu değişken boş
- * bırakılır ve kod kullanıcının kendi telefonuna gider.
- */
-export function deliveryPhone(userPhone: string): string {
-  return process.env.SMS_TEST_PHONE?.trim() || userPhone;
-}
-
+/** Kodun hangi akış için üretildiği — aynı anda ikisi ayrı yaşayabilir. */
 export type OtpPurpose = "giris" | "sifre";
 
 const CODE_LENGTH = 6;
-export const OTP_TTL_MINUTES = 5;
+
+/**
+ * Kodun geçerlilik süresi.
+ *
+ * SMS gövdesindeki "X dakika geçerlidir" cümlesi de buradan besleniyor —
+ * süre değişip metin sabit kalırsa kullanıcıya yalan söylemiş oluruz.
+ */
+export const OTP_TTL_MINUTES = 3;
 const MAX_ATTEMPTS = 5;
 /** Aynı kullanıcıya bu süre içinde yeni kod üretilmez (SMS bombardımanı olmasın). */
 const RESEND_COOLDOWN_SECONDS = 60;

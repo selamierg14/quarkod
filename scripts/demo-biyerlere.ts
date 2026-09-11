@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { createScriptClient } from "./prisma-client";
 import { davetKoduUret } from "../src/lib/biyerlere/davet";
 import { hakEdilenRozetler, type ZiyaretOzeti } from "../src/lib/biyerlere/rozet";
-import { toUsername } from "../src/lib/kimlik/username";
+import { USERNAME_MAX, toUsername } from "../src/lib/kimlik/username";
 
 /**
  * Biyerlere'yi (Keşfet/Harita/Cüzdan) "yüzlerce kullanıcısı olan canlı bir
@@ -217,7 +217,15 @@ async function main() {
       // kullanılırken uzun adlı mekanlar 32'yi aşıyordu ve o hesaplar
       // panelden DÜZENLENEMEZ hâle geliyordu: form açılıyor, kaydet
       // deyince kendi kullanıcı adı "geçersiz" diye reddediliyordu.
-      const demoKullaniciAdi = toUsername(`${slug}.demo`);
+      //
+      // KISALTMA SLUG'A UYGULANIYOR, birleşime değil. `toUsername` sağdan
+      // kestiği için `toUsername(`${slug}.demo`)` uzun adlarda tam da
+      // ayırt edici olan eki yiyordu: "anadolu-kavagi-balik-lokantasi.demo"
+      // → "anadolu-kavagi-balik-lokantasi.d". Bu hesap artık demo olarak
+      // tanınmıyor ve demo hesaplarına toplu işlem yapan araçların
+      // (bkz. scripts/iki-asamali-hazirlik.ts) dışında kalıyordu.
+      const EK = ".demo";
+      const demoKullaniciAdi = `${toUsername(slug).slice(0, USERNAME_MAX - EK.length)}${EK}`;
 
       await prisma.user.upsert({
         where: { username: demoKullaniciAdi },

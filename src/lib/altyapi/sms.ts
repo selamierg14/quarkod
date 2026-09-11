@@ -1,4 +1,5 @@
 import "server-only";
+import { normalizePhone } from "../kimlik/username";
 
 /**
  * SMS gönderimi (ekomesaj).
@@ -12,17 +13,20 @@ import "server-only";
 
 export type SmsResult = { sent: boolean; error?: string; packageId?: number };
 
-/** Numarayı sağlayıcının beklediği biçime çevirir: 905XXXXXXXXX (sayı). */
+/**
+ * Numarayı sağlayıcının beklediği biçime çevirir: 905XXXXXXXXX (sayı).
+ *
+ * Kurallar burada TEKRARLANMIYOR. Aynı normalleştirme (hangi uzunluklar
+ * kabul, "5" ile başlama şartı) `lib/kimlik/username.ts` içinde zaten
+ * vardı ve buradaki kopya birebir aynı mantığı ikinci kez yazıyordu.
+ * İkisinden biri değişip diğeri kalsaydı ortaya en sinsi hata çıkardı:
+ * panelin "geçerli" saydığı bir numara sağlayıcıya gönderilemez olurdu ve
+ * bu ancak SMS gitmediğinde fark edilirdi.
+ */
 export function toSmsNumber(phone: string): number | null {
-  const digits = phone.replace(/\D/g, "");
-
-  let local: string | null = null;
-  if (digits.length === 12 && digits.startsWith("90")) local = digits.slice(2);
-  else if (digits.length === 11 && digits.startsWith("0")) local = digits.slice(1);
-  else if (digits.length === 10) local = digits;
-
-  if (!local || !local.startsWith("5")) return null;
-  return Number(`90${local}`);
+  const normal = normalizePhone(phone);
+  // `+905321234567` → `905321234567`
+  return normal ? Number(normal.slice(1)) : null;
 }
 
 export async function sendSms(phone: string, text: string): Promise<SmsResult> {
@@ -52,14 +56,21 @@ export async function sendSms(phone: string, text: string): Promise<SmsResult> {
       body: JSON.stringify({
         type: 1,
         sendingType: 0,
-        title: "Doğrulama kodu",
+        // `title` sağlayıcı panelinde görünen paket etiketi (örnek istekte
+        // "X tarihli tekil test" yazıyordu) — gönderici başlığı DEĞİL.
+        // Gönderici başlığı `sender` ve o, .env'deki SMS_SENDER'dan geliyor.
+        title: "Dogrulama kodu",
         content: text,
         number,
         encoding: 0,
         sender,
         periodicSettings: null,
         sendingDate: null,
-        // Kod kısa ömürlü; sağlayıcıda da uzun süre beklemesin.
+        // Sağlayıcının teslimat deneme penceresi (dakika). Örnek istekteki
+        // değer korundu: kodun kendi ömrü 3 dakika ama bunu 3'e çekmek,
+        // operatör kaynaklı kısa bir gecikmede mesajın hiç teslim
+        // edilmemesine yol açardı. Geç gelen bir kod en azından "süresi
+        // doldu, yenisini iste" diyebiliyor; hiç gelmeyen kod sessiz.
         validity: 60,
         pushSettings: null,
       }),

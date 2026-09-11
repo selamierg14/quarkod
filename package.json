@@ -24,6 +24,7 @@
     "demo:menu": "tsx scripts/demo-menu.ts",
     "demo:biyerlere": "tsx scripts/demo-biyerlere.ts",
     "sifre:sifirla": "tsx scripts/sifre-sifirla.ts",
+    "2fa:hazirlik": "tsx scripts/iki-asamali-hazirlik.ts",
     "isler:gunluk": "tsx scripts/isler.ts",
     "demo:kullanicilar": "tsx scripts/demo-kullanicilar.ts",
     "version:info": "node -e \"console.log('Quarkod v' + require('./package.json').version)\"",
