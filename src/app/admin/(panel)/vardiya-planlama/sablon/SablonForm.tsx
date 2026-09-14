@@ -44,9 +44,9 @@ export function SablonForm({ businessId }: { businessId: string }) {
         {pending ? "Ekleniyor..." : "Ekle"}
       </button>
 
-      {state.error ? <p className="w-full text-caption text-danger">{state.error}</p> : null}
+      {state.error ? <p className="w-full text-caption text-danger" role="alert">{state.error}</p> : null}
       {state.saved ? (
-        <p className="w-full text-caption text-success-ink">{state.saved}</p>
+        <p className="w-full text-caption text-success-ink" role="status">{state.saved}</p>
       ) : null}
     </form>
   );

@@ -65,12 +65,12 @@ export function FlasIndirim({ businessId, pushKredisi }: { businessId: string; p
             {pending ? "Başlatılıyor..." : "Flaş indirimi başlat"}
           </button>
           {state.error ? (
-            <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
+            <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
               {state.error}
             </p>
           ) : null}
           {state.saved ? (
-            <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink">
+            <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink" role="status">
               {state.saved}
             </p>
           ) : null}

@@ -10,6 +10,7 @@ import {
   type DuyuruFormState,
 } from "./actions";
 import { alanOzellikleri } from "@/lib/cekirdek/desenler";
+import { GonderDugmesi, SilDugmesi } from "@/components/ui";
 
 const INPUT =
   "w-full rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
@@ -90,12 +91,12 @@ export function NewDuyuruForm({
       </button>
 
       {state.error ? (
-        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
+        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
           {state.error}
         </p>
       ) : null}
       {state.saved ? (
-        <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink">
+        <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink" role="status">
           {state.saved}
         </p>
       ) : null}
@@ -211,7 +212,7 @@ export function DuyuruSatiri({
               Vazgeç
             </button>
             {state.error ? (
-              <p className="text-caption text-danger">{state.error}</p>
+              <p className="text-caption text-danger" role="alert">{state.error}</p>
             ) : null}
           </div>
         </form>
@@ -243,25 +244,25 @@ export function DuyuruSatiri({
         </button>
         <form action={duyuruAktifDegistir}>
           <input type="hidden" name="id" value={id} />
-          <button
-            type="submit"
+          <GonderDugmesi
             className={`rounded-chip px-2.5 py-1 text-caption font-medium ${
               aktif
                 ? "bg-success-soft text-success-ink"
                 : "border border-line text-ink-faint"
             }`}
-          >
+      >
             {aktif ? "Yayında" : "Pasif"}
-          </button>
+          </GonderDugmesi>
         </form>
         <form action={duyuruSil}>
           <input type="hidden" name="id" value={id} />
-          <button
-            type="submit"
+          <SilDugmesi
             className="rounded-chip px-2 py-1 text-caption text-ink-faint hover:text-danger"
-          >
+      
+            onayMetni="Duyuru silinsin mi?"
+            onayClassName="bg-danger-soft text-danger-ink font-medium">
             Sil
-          </button>
+          </SilDugmesi>
         </form>
       </div>
     </li>

@@ -175,7 +175,7 @@ export function NewBusinessForm() {
       </fieldset>
 
       {state.error ? (
-        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
+        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
           {state.error}
         </p>
       ) : null}

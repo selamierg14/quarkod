@@ -91,7 +91,7 @@ export function PasswordForm() {
         </p>
       ) : null}
       {state.saved ? (
-        <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink">
+        <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink" role="status">
           {state.saved}
         </p>
       ) : null}

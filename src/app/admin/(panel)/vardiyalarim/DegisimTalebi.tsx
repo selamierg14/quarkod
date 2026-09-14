@@ -151,7 +151,7 @@ export function DegisimTalebi({
             </button>
           </div>
           {state.error ? (
-            <p className={`text-caption ${koyu ? "text-white" : "text-danger"}`}>{state.error}</p>
+            <p className={`text-caption ${koyu ? "text-white" : "text-danger"}`} role="alert">{state.error}</p>
           ) : null}
         </form>
       ) : null}

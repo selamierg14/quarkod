@@ -76,12 +76,12 @@ export function RezervasyonForm({
       <input type="hidden" name="businessId" value={businessId} />
 
       {durum.error ? (
-        <p className="rounded-control bg-danger-soft px-3 py-2 text-small text-danger-ink">
+        <p className="rounded-control bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
           {durum.error}
         </p>
       ) : null}
       {durum.saved ? (
-        <p className="rounded-control bg-success-soft px-3 py-2 text-small text-success-ink">
+        <p className="rounded-control bg-success-soft px-3 py-2 text-small text-success-ink" role="status">
           {durum.saved}
         </p>
       ) : null}

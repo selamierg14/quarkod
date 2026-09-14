@@ -55,7 +55,7 @@ export function RespondForm({
         className="rounded-control border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong"
       />
       {state.error ? (
-        <p className="text-caption text-danger-ink">{state.error}</p>
+        <p className="text-caption text-danger-ink" role="alert">{state.error}</p>
       ) : null}
       <div className="flex items-center justify-between gap-2">
         <span className="text-caption text-ink-faint">

@@ -51,7 +51,7 @@ export function HaftaAraclari({
           Var olan atamalara dokunmaz; izinli günleri atlar.
         </span>
         {state.error ? (
-          <span className="rounded-chip bg-danger-soft px-3 py-1.5 text-caption text-danger-ink">
+          <span className="rounded-chip bg-danger-soft px-3 py-1.5 text-caption text-danger-ink" role="alert">
             {state.error}
           </span>
         ) : null}

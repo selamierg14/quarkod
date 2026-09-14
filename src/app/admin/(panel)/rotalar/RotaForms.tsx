@@ -10,6 +10,7 @@ import {
   type RotaFormState,
 } from "./actions";
 import { alanOzellikleri } from "@/lib/cekirdek/desenler";
+import { GonderDugmesi, SilDugmesi } from "@/components/ui";
 
 const INPUT =
   "w-full rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
@@ -48,12 +49,12 @@ export function NewRotaForm() {
         {pending ? "Oluşturuluyor..." : "Rota oluştur"}
       </button>
       {state.error ? (
-        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
+        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
           {state.error}
         </p>
       ) : null}
       {state.saved ? (
-        <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink">
+        <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink" role="status">
           {state.saved}
         </p>
       ) : null}
@@ -65,14 +66,13 @@ export function AktifButonu({ id, aktif }: { id: string; aktif: boolean }) {
   return (
     <form action={rotaAktifDegistir}>
       <input type="hidden" name="id" value={id} />
-      <button
-        type="submit"
+      <GonderDugmesi
         className={`rounded-chip px-2.5 py-1 text-caption font-medium ${
           aktif ? "bg-success-soft text-success-ink" : "border border-line text-ink-faint"
         }`}
       >
         {aktif ? "Yayında" : "Pasif"}
-      </button>
+      </GonderDugmesi>
     </form>
   );
 }
@@ -81,12 +81,13 @@ export function RotaSilButonu({ id }: { id: string }) {
   return (
     <form action={rotaSil}>
       <input type="hidden" name="id" value={id} />
-      <button
-        type="submit"
+      <SilDugmesi
         className="rounded-chip px-2 py-1 text-caption text-ink-faint hover:text-danger"
-      >
+      
+            onayMetni="Rota silinsin mi?"
+            onayClassName="bg-danger-soft text-danger-ink font-medium">
         Rotayı sil
-      </button>
+      </SilDugmesi>
     </form>
   );
 }
@@ -120,7 +121,7 @@ export function DurakEkleForm({
       >
         {pending ? "Ekleniyor..." : "Durak ekle"}
       </button>
-      {state.error ? <span className="text-caption text-danger">{state.error}</span> : null}
+      {state.error ? <span className="text-caption text-danger" role="alert">{state.error}</span> : null}
     </form>
   );
 }
@@ -129,12 +130,13 @@ export function DurakSilButonu({ id }: { id: string }) {
   return (
     <form action={durakSil}>
       <input type="hidden" name="id" value={id} />
-      <button
-        type="submit"
+      <SilDugmesi
         className="rounded-chip px-2 py-0.5 text-caption text-ink-faint hover:text-danger"
-      >
+      
+            onayMetni="Durak çıkarılsın mı?"
+            onayClassName="bg-danger-soft text-danger-ink font-medium">
         Çıkar
-      </button>
+      </SilDugmesi>
     </form>
   );
 }

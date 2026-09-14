@@ -101,7 +101,7 @@ export function AyarlariKopyala({
       )}
 
       {state.error ? (
-        <p className="mt-3 rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
+        <p className="mt-3 rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
           {state.error}
         </p>
       ) : null}

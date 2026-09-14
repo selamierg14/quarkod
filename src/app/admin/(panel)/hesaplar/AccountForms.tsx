@@ -2,7 +2,7 @@
 
 import { MODULLER, MODUL_ANAHTARLARI } from "@/lib/kimlik/moduller";
 import { useActionState, useState } from "react";
-import { TarihGirdisi } from "@/components/ui";
+import { TarihGirdisi, GonderDugmesi } from "@/components/ui";
 import {
   createAccount,
   enterAccount,
@@ -111,12 +111,12 @@ export function NewAccountForm() {
       </div>
 
       {state.error ? (
-        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
+        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
           {state.error}
         </p>
       ) : null}
       {state.saved ? (
-        <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink">
+        <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink" role="status">
           {state.saved}
         </p>
       ) : null}
@@ -174,8 +174,7 @@ export function ToggleAccountButton({
   return (
     <form action={toggleAccount}>
       <input type="hidden" name="accountId" value={accountId} />
-      <button
-        type="submit"
+      <GonderDugmesi
         title={
           active
             ? "Askıya alınınca kullanıcılar giremez ve QR'lar çalışmaz; veri silinmez."
@@ -184,7 +183,7 @@ export function ToggleAccountButton({
         className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas"
       >
         {active ? "Askıya al" : "Aktifleştir"}
-      </button>
+      </GonderDugmesi>
     </form>
   );
 }
@@ -265,9 +264,9 @@ export function SubscriptionForm({
         {pending ? "Kaydediliyor…" : "Kaydet"}
       </button>
 
-      <span className="pb-2 text-caption">
-        {state.error ? <span className="text-danger">{state.error}</span> : null}
-        {state.saved ? <span className="text-success-ink">{state.saved}</span> : null}
+      <span className="pb-2 text-caption" role="alert">
+        {state.error ? <span className="text-danger" role="alert">{state.error}</span> : null}
+        {state.saved ? <span className="text-success-ink" role="status">{state.saved}</span> : null}
         {!state.error && !state.saved ? (
           <span className="text-ink-faint">
             Boş bırakılırsa süresiz. Tarih geçince QR kodları çalışmaz.

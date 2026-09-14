@@ -118,7 +118,7 @@ export function SablonSecici({
   });
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4" role="status">
       {state.saved ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-control bg-success-soft p-4 ring-1 ring-success/25">
           <p className="flex items-center gap-2 text-small font-medium text-success-ink">
@@ -253,7 +253,7 @@ export function SablonSecici({
       </div>
 
       {state.error ? (
-        <p className="rounded-control bg-danger-soft px-4 py-3 text-small font-medium text-danger-ink ring-1 ring-danger/20">
+        <p className="rounded-control bg-danger-soft px-4 py-3 text-small font-medium text-danger-ink ring-1 ring-danger/20" role="alert">
           {state.error}
         </p>
       ) : null}

@@ -570,10 +570,10 @@ export function ResetPasswordForm({ userId }: { userId: string }) {
         </button>
       </div>
       {state.error ? (
-        <span className="text-caption text-danger">{state.error}</span>
+        <span className="text-caption text-danger" role="alert">{state.error}</span>
       ) : null}
       {state.saved ? (
-        <span className="text-caption text-success">{state.saved}</span>
+        <span className="text-caption text-success" role="status">{state.saved}</span>
       ) : null}
     </form>
   );
@@ -622,14 +622,14 @@ export function ToggleUserButton({
 function Feedback({ state }: { state: UserFormState }) {
   if (state.error) {
     return (
-      <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
+      <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
         {state.error}
       </p>
     );
   }
   if (state.saved) {
     return (
-      <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink">
+      <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink" role="status">
         {state.saved}
       </p>
     );

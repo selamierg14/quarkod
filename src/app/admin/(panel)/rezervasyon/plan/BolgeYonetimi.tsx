@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { bolgeEkle, bolgeSil, type RezervasyonFormState } from "../actions";
+import { GonderDugmesi } from "@/components/ui";
 
 /**
  * Bölge ekleme/silme.
@@ -48,13 +49,12 @@ export function BolgeYonetimi({
               <form action={silEylem}>
                 <input type="hidden" name="businessId" value={businessId} />
                 <input type="hidden" name="zoneId" value={bolge.id} />
-                <button
-                  type="submit"
+                <GonderDugmesi
                   aria-label={`${bolge.ad} bölgesini sil`}
                   className="text-ink-faint hover:text-danger-ink"
-                >
+      >
                   ✕
-                </button>
+                </GonderDugmesi>
               </form>
             </li>
           ))}

@@ -121,7 +121,7 @@ function Satir({ businessId, kayit }: { businessId: string; kayit: ListeKaydi })
         </form>
       </div>
 
-      {durum.error ? <p className="text-caption text-danger-ink">{durum.error}</p> : null}
+      {durum.error ? <p className="text-caption text-danger-ink" role="alert">{durum.error}</p> : null}
     </div>
   );
 }

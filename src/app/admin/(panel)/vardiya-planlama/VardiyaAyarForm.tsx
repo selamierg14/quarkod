@@ -90,8 +90,8 @@ export function VardiyaAyarForm({
             >
               {pending ? "Kaydediliyor..." : "Kaydet"}
             </button>
-            {state.error ? <p className="text-caption text-danger">{state.error}</p> : null}
-            {state.saved ? <p className="text-caption text-success-ink">{state.saved}</p> : null}
+            {state.error ? <p className="text-caption text-danger" role="alert">{state.error}</p> : null}
+            {state.saved ? <p className="text-caption text-success-ink" role="status">{state.saved}</p> : null}
           </div>
         </form>
       ) : null}
