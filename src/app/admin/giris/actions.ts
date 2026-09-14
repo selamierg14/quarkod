@@ -29,6 +29,7 @@ import {
   pruneLoginAttempts,
   recordLoginAttempt,
 } from "@/lib/kimlik/login-guard";
+import { SINIRLAR, hizSiniriMesaji, hizSiniriUygula } from "@/lib/kimlik/hiz-siniri";
 
 /**
  * Giriş ve şifre sıfırlama tek ekranda, adım adım yürür.
@@ -324,6 +325,19 @@ export async function loginAction(
     const challenge = await readChallenge();
     if (!challenge) {
       return { step: "kimlik", mode, error: "Oturum zaman aşımına uğradı. Baştan başlayın." };
+    }
+
+    /**
+     * Kod adımının hız sınırı — kimlik adımında olan koruma burada YOKTU.
+     *
+     * Şifre sıfırlama akışı bu adıma yalnızca kullanıcı adıyla ulaşıyor;
+     * yani kodu kırabilen biri hesabı devralıyor. Kodun kendi deneme
+     * sayacı artık atomik ama o KOD BAŞINA — yeni kod isteyip baştan hak
+     * kazanmak mümkün. Bu sınır kullanıcı başına ve kodlar arası taşıyor.
+     */
+    const otpSinir = await hizSiniriUygula(SINIRLAR.otpDeneme, challenge.userId);
+    if (!otpSinir.izin) {
+      return { step: "kod", mode, error: hizSiniriMesaji(otpSinir) };
     }
 
     const purpose0 = challenge.purpose === "sifre" ? "sifre" : "giris";

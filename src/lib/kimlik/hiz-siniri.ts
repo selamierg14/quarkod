@@ -58,6 +58,19 @@ export const SINIRLAR = {
   metrik: { kanal: "metrik", adet: 60, dakika: 10 },
   /** Kasada hatalı kupon kodu denemesi. */
   kuponKodu: { kanal: "kupon", adet: 10, dakika: 10 },
+  /**
+   * SMS doğrulama kodu denemesi — kaba kuvvete karşı İKİNCİ katman.
+   *
+   * Birincisi kodun kendi deneme sayacı (MAX_ATTEMPTS, bkz. lib/kimlik/otp.ts)
+   * ve o artık atomik. Ama tek katman yetmiyor: sayaç KOD BAŞINA, yani
+   * saldırgan kod yakıldıktan sonra yeni kod isteyip baştan beş hak daha
+   * alabiliyor. Bu sınır KULLANICI BAŞINA ve kodlar arası taşıyor.
+   *
+   * 20/10dk cömert görünüyor ama altı haneli bir kodu denemek için
+   * milyonlarca istek gerekiyor; buradaki amaç meşru kullanıcıyı
+   * engellememek, saldırıyı imkânsız kılmak.
+   */
+  otpDeneme: { kanal: "otp", adet: 20, dakika: 10 },
 } as const satisfies Record<string, HizSiniri>;
 
 function anahtarla(kanal: string, deger: string): string {

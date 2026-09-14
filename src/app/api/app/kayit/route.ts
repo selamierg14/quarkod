@@ -72,11 +72,14 @@ export async function POST(request: Request) {
   // biri sınırsız puan toplayabiliyordu (bkz. lib/davet.ts,
   // EN_COK_DAVET_ODULU). Kota dolduysa kayıt yine açılıyor, yalnızca ödül
   // verilmiyor.
-  const odulVerilecek = gecerliDavet
-    ? davetOduluVerilirMi(
-        await prisma.appUser.count({ where: { referredById: gecerliDavet.id } }),
-      )
-    : false;
+  // KOTA SAYIMI İŞLEMİN İÇİNDE (aşağıda). Burada okunsaydı, aynı davet
+  // koduyla eşzamanlı açılan kayıtların hepsi aynı sayıyı görüp hepsi
+  // ödül alırdı — yani kotayı aşmanın yolu, tam da kotanın engellemeye
+  // çalıştığı şeyi (seri hesap açma) paralel yapmak olurdu.
+  //
+  // Hız sınırındaki benzer gevşeklik bilinçli olarak bırakıldı (bkz.
+  // lib/kimlik/hiz-siniri.ts): orada küçük bir aşım kabul edilebilir,
+  // burada ödül tavanı sert bir kural.
 
   // Kod üretim + tekillik: çakışma pratikte hemen hemen imkansız (6 haneli,
   // 33^6 ≈ 1.29 milyar kombinasyon) ama küçük bir olasılık için birkaç
@@ -87,32 +90,46 @@ export async function POST(request: Request) {
   let kullanici;
   for (let deneme = 0; deneme < 5; deneme++) {
     try {
-      kullanici = await prisma.$transaction(async (tx) => {
-        const yeni = await tx.appUser.create({
-          data: {
-            username,
-            name,
-            passwordHash: await hashPassword(sifre),
-            passwordChangedAt: new Date(),
-            referralCode: davetKoduUret(),
-            referredById: gecerliDavet?.id ?? null,
-            // Davetle gelen kişi "hoş geldin" puanıyla başlar.
-            puan: odulVerilecek ? DAVET_ODULU_PUAN : 0,
-          },
-          select: { id: true, username: true, name: true, puan: true, referralCode: true },
-        });
+      kullanici = await prisma.$transaction(
+        async (tx) => {
+          const odulVerilecek = gecerliDavet
+            ? davetOduluVerilirMi(
+                await tx.appUser.count({ where: { referredById: gecerliDavet.id } }),
+              )
+            : false;
 
-        if (gecerliDavet && odulVerilecek) {
-          await tx.appUser.update({
-            where: { id: gecerliDavet.id },
-            data: { puan: { increment: DAVET_ODULU_PUAN } },
+          const yeni = await tx.appUser.create({
+            data: {
+              username,
+              name,
+              passwordHash: await hashPassword(sifre),
+              passwordChangedAt: new Date(),
+              referralCode: davetKoduUret(),
+              referredById: gecerliDavet?.id ?? null,
+              // Davetle gelen kişi "hoş geldin" puanıyla başlar.
+              puan: odulVerilecek ? DAVET_ODULU_PUAN : 0,
+            },
+            select: { id: true, username: true, name: true, puan: true, referralCode: true },
           });
-        }
 
-        return yeni;
-      });
+          if (gecerliDavet && odulVerilecek) {
+            await tx.appUser.update({
+              where: { id: gecerliDavet.id },
+              data: { puan: { increment: DAVET_ODULU_PUAN } },
+            });
+          }
+
+          return yeni;
+        },
+        { isolationLevel: "Serializable" },
+      );
       break;
     } catch (error) {
+      // P2034: serileştirme çakışması — aynı davet koduyla eşzamanlı bir
+      // kayıt araya girdi. Döngü zaten yeniden deniyor; ikinci turda kota
+      // sayımı güncel değeri görüyor.
+      if ((error as { code?: string }).code === "P2034") continue;
+
       const alan = (error as { meta?: { target?: string[] } })?.meta?.target;
       if (alan?.includes("username")) {
         // Ön kontrol ile INSERT arasında başka bir istek aynı adı almış.

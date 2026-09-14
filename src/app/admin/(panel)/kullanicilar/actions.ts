@@ -25,6 +25,7 @@ import { uniqueConstraintMessage } from "@/lib/cekirdek/unique-error";
 import { alanDogrula } from "@/lib/cekirdek/desenler";
 import { ilkHata, listeAlani } from "@/lib/cekirdek/girdi";
 import { issueOtp, otpTelefonu, verifyOtp } from "@/lib/kimlik/otp";
+import { SINIRLAR, hizSiniriMesaji, hizSiniriUygula } from "@/lib/kimlik/hiz-siniri";
 import {
   clearPendingPassword,
   readPendingPassword,
@@ -518,6 +519,12 @@ export async function changeOwnPassword(
   if (step === "kod") {
     // Kod altı rakam; biçimi tutmayan bir değerin OTP kaydına kadar
     // gitmesine gerek yok.
+    // Giriş akışındakiyle aynı ikinci katman (bkz. giris/actions.ts).
+    const otpSinir = await hizSiniriUygula(SINIRLAR.otpDeneme, user.id);
+    if (!otpSinir.izin) {
+      return { step: "kod", error: hizSiniriMesaji(otpSinir) };
+    }
+
     const kodSonuc = alanDogrula(formData.get("code"), "dogrulamaKodu", "Kod");
     if (!kodSonuc.ok) {
       return {

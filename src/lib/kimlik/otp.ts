@@ -150,7 +150,37 @@ export async function verifyOtp(
   if (record.expiresAt < new Date()) {
     return { ok: false, error: "Kodun süresi doldu. Yeniden kod isteyin." };
   }
-  if (record.attempts >= MAX_ATTEMPTS) {
+  /**
+   * SAYAÇ ÖNCE ARTIRILIYOR, SONRA KONTROL EDİLİYOR — ve bu sıra kritik.
+   *
+   * Önceki hâl "oku → karşılaştır → artır" idi ve deneme sınırını
+   * tamamen işlevsiz bırakıyordu: eşzamanlı istekler aynı `attempts`
+   * değerini okuyup hepsi kontrolü geçiyordu. Araya giren
+   * `bcrypt.compare` (~100 ms) pencereyi iyice açıyordu.
+   *
+   * ÖLÇÜLDÜ: 40 eşzamanlı yanlış tahminin 40'ı da denendi, kilit HİÇ
+   * devreye girmedi. Altı haneli kodu güvenli kılan tek şey beş deneme
+   * sınırıydı ve o sınır yoktu. Şifre sıfırlama akışı kod adımına
+   * yalnızca KULLANICI ADIYLA ulaştığı için bu, hesap devralmaya açık bir
+   * yoldu.
+   *
+   * `increment` tek bir atomik UPDATE: her eşzamanlı istek FARKLI bir
+   * değer alıyor ve yalnızca ilk MAX_ATTEMPTS tanesi karşılaştırmaya
+   * geçebiliyor. Başarılı denemenin de sayacı artırması zararsız — kod
+   * zaten o an yakılıyor.
+   */
+  const guncel = await prisma.otpCode.update({
+    where: { id: record.id },
+    data: { attempts: { increment: 1 } },
+    select: { attempts: true, usedAt: true },
+  });
+
+  // Artırma ile okuma arasında başka bir istek kodu yakmış olabilir.
+  if (guncel.usedAt) {
+    return { ok: false, error: "Geçerli bir kod bulunamadı. Yeniden kod isteyin." };
+  }
+
+  if (guncel.attempts > MAX_ATTEMPTS) {
     await prisma.otpCode.update({
       where: { id: record.id },
       data: { usedAt: new Date() },
@@ -160,11 +190,7 @@ export async function verifyOtp(
 
   const dogru = await bcrypt.compare(code.trim(), record.codeHash);
   if (!dogru) {
-    await prisma.otpCode.update({
-      where: { id: record.id },
-      data: { attempts: { increment: 1 } },
-    });
-    const kalan = MAX_ATTEMPTS - (record.attempts + 1);
+    const kalan = MAX_ATTEMPTS - guncel.attempts;
     return {
       ok: false,
       error:
