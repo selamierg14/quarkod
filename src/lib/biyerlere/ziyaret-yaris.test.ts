@@ -4,6 +4,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 import { ZIYARET_BEKLEME_SAATI } from "./ziyaret";
+import { ROZETLER } from "./rozet";
 
 /**
  * Ziyaret yazımının EŞZAMANLI isteklere karşı sınavı.
@@ -204,5 +205,71 @@ describe("eşzamanlı ziyaret yazımı", () => {
     expect(await ziyaretYaz()).toBe(true);
     expect(await ziyaretYaz()).toBe(false);
     expect(await prisma.appVisit.count({ where: { appUserId } })).toBe(1);
+  }, 60_000);
+});
+
+describe("rozet puanı eşzamanlı isteklerde iki kez verilmiyor", () => {
+  /**
+   * Zafiyet: `createMany` + `skipDuplicates` rozet SATIRINI koruyordu ama
+   * puan artışını korumuyordu. İki istek aynı rozeti hak edilmiş görüp
+   * ikisi de puanı ekliyor, rozetlerden biri sessizce atlanıyordu —
+   * sonuç 1 rozet, çift puan.
+   *
+   * Koddaki yorum "tekillik kısıtı bunu zaten engelliyor" diyordu;
+   * engellediği rozetti, puan değil. Test tam olarak bu ayrımı koruyor.
+   */
+  const ROZET = "ilkAdim" as const;
+
+  /** Üretimdeki yol: mevcut rozetler işlemin İÇİNDE okunuyor. */
+  async function rozetVer(): Promise<boolean> {
+    try {
+      return await prisma.$transaction(
+        async (tx) => {
+          const simdikiler = new Set(
+            (await tx.appBadge.findMany({ where: { appUserId }, select: { rozet: true } }))
+              .map((r) => r.rozet),
+          );
+          if (simdikiler.has(ROZET)) return false;
+          await tx.appBadge.createMany({ data: [{ appUserId, rozet: ROZET }] });
+          await tx.appUser.update({
+            where: { id: appUserId },
+            data: { puan: { increment: ROZETLER[ROZET].puan } },
+          });
+          return true;
+        },
+        { isolationLevel: "Serializable", timeout: 20_000 },
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  beforeEach(async () => {
+    await prisma.appBadge.deleteMany({});
+    await prisma.appUser.update({ where: { id: appUserId }, data: { puan: 0 } });
+  });
+
+  it("iki ardışık çağrıda puan BİR KEZ ekleniyor", async () => {
+    expect(await rozetVer()).toBe(true);
+    expect(await rozetVer()).toBe(false);
+
+    expect(await prisma.appBadge.count({ where: { appUserId } })).toBe(1);
+    const kullanici = await prisma.appUser.findUniqueOrThrow({
+      where: { id: appUserId },
+      select: { puan: true },
+    });
+    // Düzeltme öncesi burası ROZETLER[ROZET].puan * 2 geliyordu.
+    expect(kullanici.puan).toBe(ROZETLER[ROZET].puan);
+  }, 60_000);
+
+  it("dört eşzamanlı çağrıda da puan bir kez ekleniyor", async () => {
+    await Promise.all(Array.from({ length: 4 }, () => rozetVer()));
+
+    expect(await prisma.appBadge.count({ where: { appUserId } })).toBe(1);
+    const kullanici = await prisma.appUser.findUniqueOrThrow({
+      where: { id: appUserId },
+      select: { puan: true },
+    });
+    expect(kullanici.puan).toBe(ROZETLER[ROZET].puan);
   }, 60_000);
 });
