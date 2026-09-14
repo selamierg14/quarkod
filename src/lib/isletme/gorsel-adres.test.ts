@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { gorselAdresi } from "./gorsel-adres";
+import { gorselAdresi, mekanOzeti, MEKAN_OZETI_SECIMI } from "./gorsel-adres";
 
 describe("gorselAdresi", () => {
   it("değer yoksa null verir", () => {
@@ -42,5 +42,48 @@ describe("gorselAdresi", () => {
   it("tanımadığı biçimi reddeder", () => {
     expect(gorselAdresi("biz1", "kapak", "kafe-1.jpg")).toBeNull();
     expect(gorselAdresi("biz1", "kapak", "javascript:alert(1)")).toBeNull();
+  });
+});
+
+describe("mekanOzeti", () => {
+  /**
+   * Bu eşleme yedi ayrı uçta elle yazılıydı. Testin koruduğu şey tek tek
+   * alanlar değil, ÇIKTI SÖZLEŞMESİ: mobil uygulama bu alan adlarını
+   * okuyor ve biri değişirse sessizce boş bir logo ya da isimsiz bir
+   * mekan çiziyor.
+   */
+  const kaynak = {
+    id: "biz_1",
+    slug: "ada-kahvesi",
+    name: "Ada Kahvesi",
+    logoUrl: "data:image/webp;base64,AAAA",
+  };
+
+  it("Prisma satırını API şekline çeviriyor", () => {
+    const sonuc = mekanOzeti(kaynak);
+    expect(Object.keys(sonuc)).toEqual(["id", "slug", "ad", "logoUrl"]);
+    expect(sonuc.id).toBe("biz_1");
+    expect(sonuc.slug).toBe("ada-kahvesi");
+    // `name` → `ad`: mobil taraf Türkçe alan adı bekliyor.
+    expect(sonuc.ad).toBe("Ada Kahvesi");
+  });
+
+  it("logo adresini gorselAdresi üzerinden üretiyor", () => {
+    // Ham data URI doğrudan yanıta konmuyor; adrese çevriliyor.
+    expect(mekanOzeti(kaynak).logoUrl).toBe(
+      gorselAdresi(kaynak.id, "logo", kaynak.logoUrl),
+    );
+  });
+
+  it("logosuz mekanda null dönüyor", () => {
+    expect(mekanOzeti({ ...kaynak, logoUrl: null }).logoUrl).toBeNull();
+  });
+
+  it("select sabiti eşleyicinin okuduğu alanları kapsıyor", () => {
+    // Select ile eşleyici ayrışırsa sorgu alanı çekmez, eşleyici de
+    // undefined yazar — ve bu ancak ekranda fark edilir.
+    expect(Object.keys(MEKAN_OZETI_SECIMI).sort()).toEqual(
+      ["id", "logoUrl", "name", "slug"].sort(),
+    );
   });
 });

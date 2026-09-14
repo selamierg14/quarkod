@@ -1,5 +1,5 @@
-import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
+import { baglantiAdaptoru } from "./baglanti";
 
 /**
  * DATABASE_URL doğrudan Postgres bağlantı dizesidir (postgres://kullanici:sifre@host:port/db).
@@ -15,24 +15,9 @@ function createClient() {
         "(bkz. .env.example) ya da `docker compose up -d` ile yerel Postgres'i başlatın.",
     );
   }
-  const adapter = new PrismaPg({
-    connectionString: url,
-    /**
-     * Örnek başına havuz boyutu KÜÇÜK.
-     *
-     * `pg`'nin varsayılanı 10; serverless'te bu "her fonksiyon örneği 10
-     * bağlantı" demek ve birkaç eşzamanlı örnek Neon'un limitini doldurmaya
-     * yetiyor. Asıl çoğullama artık PgBouncer'da (DATABASE_URL pooler'a
-     * bakıyor), uygulama tarafında geniş bir havuz tutmanın karşılığı yok.
-     *
-     * Uzun süre boşta kalan bağlantı da kapatılıyor: Neon boştaki hesabı
-     * uykuya alıyor ve elde tutulan ölü bağlantı ilk istekte hataya
-     * dönüşüyordu.
-     */
-    max: Number(process.env.DB_HAVUZ_BOYUTU ?? 5),
-    idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 10_000,
-  });
+  // Adaptör ayarları lib/cekirdek/baglanti.ts'te — betiklerle ORTAK.
+  // İkisi ayrı yerlerde kurulduğunda ayarları da ayrışmıştı.
+  const adapter = baglantiAdaptoru(url);
   return new PrismaClient({ adapter });
 }
 

@@ -103,3 +103,54 @@ export function urunGorselAdresi(
   if (!deger.startsWith("data:")) return null;
   return `/g/urun/${urunId}?s=${gorselSurumu(deger)}`;
 }
+
+/**
+ * Biyerlere API'sinin döndürdüğü MEKAN ÖZETİ — tek kaynak.
+ *
+ * Aynı üç satır yedi ayrı uçta elle yazılıydı:
+ *
+ *     { id: x.business.id,
+ *       slug: x.business.slug,
+ *       ad: x.business.name,
+ *       logoUrl: gorselAdresi(x.business.id, "logo", x.business.logoUrl) }
+ *
+ * (cüzdan üç kez, profil, favoriler, rota-veri iki kez.) Kopyaların zararı
+ * sayı değil AYRIŞMA riski: `ad` alanının adı ya da logo adresinin
+ * üretilme biçimi değiştiğinde yedi yerin yedisinin birlikte değişmesi
+ * gerekiyordu ve biri unutulursa mobil taraf o uçta bozuk logo gösterip
+ * sebebi anlaşılmıyordu.
+ *
+ * `MEKAN_OZETI_SECIMI` Prisma select'i de burada: veriyi çeken sorgu ile
+ * onu dönüştüren fonksiyon yan yana durunca, alan eklerken birini
+ * güncelleyip diğerini unutmak mümkün olmuyor.
+ */
+export const MEKAN_OZETI_SECIMI = {
+  id: true,
+  slug: true,
+  name: true,
+  logoUrl: true,
+} as const;
+
+/** `MEKAN_OZETI_SECIMI` ile çekilmiş bir işletme satırı. */
+export type MekanOzetiKaynagi = {
+  id: string;
+  slug: string;
+  name: string;
+  logoUrl: string | null;
+};
+
+export type MekanOzeti = {
+  id: string;
+  slug: string;
+  ad: string;
+  logoUrl: string | null;
+};
+
+export function mekanOzeti(business: MekanOzetiKaynagi): MekanOzeti {
+  return {
+    id: business.id,
+    slug: business.slug,
+    ad: business.name,
+    logoUrl: gorselAdresi(business.id, "logo", business.logoUrl),
+  };
+}

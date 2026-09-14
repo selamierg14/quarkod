@@ -44,6 +44,10 @@ export async function rotalariGetir(): Promise<RotaOzet[]> {
     aciklama: r.aciklama,
     duraklar: r.duraklar.map((d) => ({
       id: d.id,
+      // NOT: burada `mekanOzeti` KULLANILMIYOR ve bu bilinçli. Durağın
+      // kendi kimliği var (`id: d.id`) — ortak eşleyici `id` alanını
+      // mekanınkiyle doldurup durağın kimliğini ezerdi. Şekiller benzer
+      // görünüyor ama aynı şey değiller; TypeScript de bunu yakaladı.
       businessId: d.businessId,
       slug: d.business.slug,
       ad: d.business.name,

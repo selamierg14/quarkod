@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/cekirdek/db";
-import { gorselAdresi } from "@/lib/isletme/gorsel-adres";
+import { MEKAN_OZETI_SECIMI, mekanOzeti } from "@/lib/isletme/gorsel-adres";
 import {
   ROZETLER,
   ROZET_ANAHTARLARI,
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
       select: {
         id: true,
         createdAt: true,
-        business: { select: { id: true, slug: true, name: true, logoUrl: true } },
+        business: { select: MEKAN_OZETI_SECIMI },
       },
     }),
     prisma.appVisit.count({ where: { appUserId: oturum.kullanici.id } }),
@@ -78,10 +78,7 @@ export async function GET(request: Request) {
       id: z.id,
       tarih: z.createdAt,
       mekan: {
-        id: z.business.id,
-        slug: z.business.slug,
-        ad: z.business.name,
-        logoUrl: gorselAdresi(z.business.id, "logo", z.business.logoUrl),
+        ...mekanOzeti(z.business),
       },
     })),
   });
