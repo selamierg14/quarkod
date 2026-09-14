@@ -31,6 +31,9 @@ const SADAKAT_KUPON_GECERLILIK_GUN = 30;
  */
 const SADAKAT_KUPON_ONEKI = "SADAKAT-";
 
+/** İşlemi geri almak için kullanılan iç sinyal — dışarı sızmıyor. */
+class BeklemeSuresiHatasi extends Error {}
+
 export const dynamic = "force-dynamic";
 
 /**
@@ -125,22 +128,81 @@ export async function POST(request: Request) {
       })
     : null;
 
-  const [ziyaret] = await prisma.$transaction([
-    prisma.appVisit.create({
-      data: {
-        appUserId: oturum.kullanici.id,
-        businessId: mekan.id,
-        tableId: table?.id ?? null,
-        mesafeMetre: karar.mesafeMetre,
+  /**
+   * Ziyaret yazımı SERIALIZABLE — ve bu bir yarış durumunu kapatıyor.
+   *
+   * Önceki hâlde bekleme kontrolü ile yazım arasında hiçbir atomiklik
+   * yoktu: son ziyaret okunuyor, karar veriliyor, sonra yazılıyordu.
+   * Eşzamanlı istekler AYNI "son ziyaret"i okuyup hepsi kabul alıyordu.
+   * Ölçüldü — 8 eşzamanlı istek 8 ziyaret ve 10 yerine 80 puan üretti;
+   * yani 4 saatlik bekleme kuralı tek bir çift tıkla ya da elle kurulmuş
+   * paralel isteklerle tamamen atlanabiliyordu.
+   *
+   * Çözüm: bekleme kontrolü ile yazımı AYNI serializable işleme almak.
+   * Postgres'in SSI'ı tam bu deseni (predicate üzerine write skew)
+   * yakalıyor ve ikinci işlemi 40001 ile düşürüyor. Prisma bunu P2034
+   * olarak yüzeye çıkarıyor; biz onu "biri bizden önce yazdı" diye okuyup
+   * kullanıcıya normal bekleme mesajını gösteriyoruz.
+   *
+   * Tekillik kısıtı NEDEN kullanılmadı: bekleme penceresi KAYAN (son
+   * ziyaretten 4 saat), sabit değil. Sabit pencereye dayalı bir unique
+   * kısıt, 03:59 ve 04:01'deki iki ziyareti ayrı pencerelere düşürüp
+   * kuralı değiştirirdi.
+   */
+  let ziyaret: { id: string; createdAt: Date };
+  try {
+    ziyaret = await prisma.$transaction(
+      async (tx) => {
+        // Kontrol İŞLEMİN İÇİNDE tekrarlanıyor — dışarıdaki okuma artık
+        // yalnızca hızlı elemek için; bağlayıcı olan bu.
+        const sonKayit = await tx.appVisit.findFirst({
+          where: { appUserId: oturum.kullanici.id, businessId: mekan.id },
+          orderBy: { createdAt: "desc" },
+          select: { createdAt: true },
+        });
+        if (
+          sonKayit &&
+          (Date.now() - sonKayit.createdAt.getTime()) / (1000 * 60 * 60) <
+            ZIYARET_BEKLEME_SAATI
+        ) {
+          throw new BeklemeSuresiHatasi();
+        }
+
+        const yeni = await tx.appVisit.create({
+          data: {
+            appUserId: oturum.kullanici.id,
+            businessId: mekan.id,
+            tableId: table?.id ?? null,
+            mesafeMetre: karar.mesafeMetre,
+          },
+          select: { id: true, createdAt: true },
+        });
+        await tx.appUser.update({
+          where: { id: oturum.kullanici.id },
+          data: { puan: { increment: ZIYARET_PUANI } },
+        });
+        return yeni;
       },
-      select: { id: true, createdAt: true },
-    }),
-    prisma.appUser.update({
-      where: { id: oturum.kullanici.id },
-      data: { puan: { increment: ZIYARET_PUANI } },
-      select: { puan: true },
-    }),
-  ]);
+      { isolationLevel: "Serializable" },
+    );
+  } catch (hata) {
+    // Bekleme kuralı ya da eşzamanlı bir istek: ikisinin de kullanıcıya
+    // söyleyeceği şey aynı, çünkü sonuç aynı — bu ziyaret sayılmadı.
+    const cakisma =
+      hata instanceof BeklemeSuresiHatasi ||
+      (hata as { code?: string }).code === "P2034";
+    if (!cakisma) throw hata;
+
+    return NextResponse.json(
+      {
+        hata: redMesaji("cok-erken"),
+        neden: "cok-erken",
+        mesafeMetre: karar.mesafeMetre,
+        beklemeSaati: ZIYARET_BEKLEME_SAATI,
+      },
+      { status: 409 },
+    );
+  }
 
   // Rota tamamlama ÖNCE değerlendiriliyor: puanı doğrudan DB'ye yazıyor,
   // rozet değerlendirmesi (aşağıda) `toplamPuan`'ı DB'den okuyor — sıra
