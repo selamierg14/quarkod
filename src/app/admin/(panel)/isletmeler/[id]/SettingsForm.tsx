@@ -7,6 +7,7 @@ import { ImageUpload } from "@/components/ImageUpload";
 import { useToast } from "@/components/ui";
 import { updateBusiness, type FormState } from "../actions";
 import { alanOzellikleri } from "@/lib/cekirdek/desenler";
+import { CalismaSaatleri } from "./CalismaSaatleri";
 
 const INPUT =
   "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
@@ -33,6 +34,7 @@ type Business = {
   coverUrl: string | null;
   instagramUrl: string | null;
   wifiSsid: string | null;
+  calismaSaatleri: string | null;
   wifiPassword: string | null;
   announcement: string | null;
   announcementActive: boolean;
@@ -261,6 +263,17 @@ export function SettingsForm({
             </span>
           </span>
         </label>
+      </Bolum>
+
+      <Bolum
+        baslik="Çalışma saatleri"
+        ozet={business.calismaSaatleri ? "tanımlı" : "girilmedi"}
+      >
+        <p className={YARDIM}>
+          Biyerlere uygulamasında “şu an açık mı” bilgisi buradan geliyor.
+          Girilmezse mekan “kapalı” değil “saati bilinmiyor” olarak görünür.
+        </p>
+        <CalismaSaatleri baslangic={business.calismaSaatleri} />
       </Bolum>
 
       <Bolum baslik="QR kartındaki çağrı metni">

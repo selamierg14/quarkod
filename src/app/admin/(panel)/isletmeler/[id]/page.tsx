@@ -39,6 +39,7 @@ export default async function BusinessSettingsPage({
             address: business.address,
             googleReviewUrl: business.googleReviewUrl,
             brandColor: business.brandColor,
+            calismaSaatleri: business.calismaSaatleri,
             notifyThreshold: business.notifyThreshold,
             googleRedirect: business.googleRedirect,
             qrCardText: business.qrCardText,

@@ -165,6 +165,17 @@ model Business {
   /// alanıyla karıştırılmamalı — o ÜRÜNÜN, bu MEKANIN özelliği.
   mekanOzellikleri String?
 
+  /// Haftalık çalışma saatleri: "pazartesi:09:00-23:00,cumartesi:20:00-02:00".
+  /// Listede olmayan gün KAPALI sayılır (bkz. lib/isletme/calisma-saati.ts).
+  ///
+  /// Boş olması "kapalı" DEĞİL "bilinmiyor" demek — arayüz bu ikisini
+  /// ayırıyor, çünkü "kapalı" yazıp yanılmak kullanıcıyı mekandan
+  /// vazgeçirir.
+  ///
+  /// Gece yarısını geçen kapanış destekleniyor (kapanış < açılış ise
+  /// ertesi gün): bir bar için "20:00-02:00" istisna değil kural.
+  calismaSaatleri String?
+
   /// Vardiya planlaması ve otomatik etiketleme için: hangi vardiyalar
   /// kullanılıyor ve saat kaçta başlıyor. Sabit üçlü (sabah/akşam/gece) her
   /// işletmeye uymuyor — gece çalışmayan bir kafe ya da öğle vardiyası olan

@@ -8,6 +8,7 @@ import { prisma } from "@/lib/cekirdek/db";
 import { FavoriButonu } from "./FavoriButonu";
 import { YolTarifiButonu } from "./YolTarifiButonu";
 import { PlusHakkiKutusu } from "./PlusHakkiKutusu";
+import { AcikRozeti } from "../../../components/AcikRozeti";
 
 export const dynamic = "force-dynamic";
 
@@ -107,6 +108,25 @@ export default async function MekanDetayPage({
             <span className="text-gray-400">Henüz değerlendirme yok</span>
           )}
         </div>
+
+        {/* Bugünün durumu + haftanın tamamı. Saati girilmemiş mekanda
+            hiçbir şey çizilmiyor (bkz. AcikRozeti). */}
+        {mekan.acik !== "bilinmiyor" ? (
+          <details className="rounded-2xl border border-white/10 bg-[#24262E]/85 px-3.5 py-2.5">
+            <summary className="flex cursor-pointer items-center gap-2 text-small text-gray-200">
+              <AcikRozeti durum={mekan.acik} sonrakiAcilis={mekan.sonrakiAcilis} />
+              <span className="text-gray-400">Çalışma saatleri</span>
+            </summary>
+            <ul className="mt-2.5 flex flex-col gap-1 border-t border-white/5 pt-2.5">
+              {mekan.haftalikSaatler.map((g) => (
+                <li key={g.gun} className="flex justify-between text-caption">
+                  <span className="text-gray-400">{g.ad}</span>
+                  <span className="text-gray-200">{g.metin}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
 
         {mekan.adres ? (
           <p className="flex items-start gap-2 text-small text-gray-300">

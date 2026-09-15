@@ -31,6 +31,7 @@ const EN_COK_MASA = 300;
 const EN_UZUN_MASA_ADI = 40;
 import { googleYorumLinkiGecerliMi } from "@/lib/isletme/google-yorum";
 import { alanDogrula } from "@/lib/cekirdek/desenler";
+import { saatleriCoz, saatleriYaz } from "@/lib/isletme/calisma-saati";
 import { ilkHata, metinAlani, sayiAlani } from "@/lib/cekirdek/girdi";
 
 export type FormState = { error?: string; saved?: boolean };
@@ -294,6 +295,17 @@ export async function updateBusiness(
   }
   const instagramUrl = linkler.instagramUrl;
 
+  /**
+   * Çalışma saatleri tek bir metin alanında geliyor (bkz.
+   * CalismaSaatleri.tsx). Doğrulama ÇÖZÜP YENİDEN YAZMAK: çözücü bozuk
+   * parçaları zaten atıyor, yazıcı da kanonik biçimi üretiyor. Böylece
+   * veritabanına elle kurulmuş bir istekten gelen çöp giremiyor ve
+   * biçim tek yerden (lib/isletme/calisma-saati.ts) belirleniyor.
+   */
+  const calismaSaatleri = saatleriYaz(
+    saatleriCoz(String(formData.get("calismaSaatleri") ?? "")),
+  );
+
   // Tür kümesi: enum'a bağlı. Boş gelirse "değiştirme" anlamına geliyor.
   const turHam = String(formData.get("type") ?? "");
   if (turHam && !(turHam in BUSINESS_TYPES)) {
@@ -356,6 +368,7 @@ export async function updateBusiness(
       instagramUrl,
       wifiSsid,
       wifiPassword,
+      calismaSaatleri,
       announcement: duyuru,
       announcementActive: formData.get("announcementActive") === "on",
       yemeksepetiUrl: linkler.yemeksepetiUrl,

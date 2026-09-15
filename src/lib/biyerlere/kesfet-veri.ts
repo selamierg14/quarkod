@@ -6,6 +6,13 @@ import { ozellikleriCoz } from "./mekan";
 import { duyuruGorselAdresi, gorselAdresi, urunGorselAdresi } from "../isletme/gorsel-adres";
 import { parseAlerjenler, parseOzelBilesenler, parseTags } from "../isletme/menu";
 import { mekanlariSuz, sinirKutusu, type KesfetSorgusu } from "./kesfet";
+import {
+  GUNLER,
+  GUN_ADLARI,
+  acikMi,
+  gunMetni,
+  saatleriCoz,
+} from "../isletme/calisma-saati";
 
 /**
  * Keşfet listesi ve mekan detayının veri katmanı.
@@ -45,6 +52,15 @@ export type MekanOzet = {
   mesafeMetre: number | null;
   fiyatSegmenti: string | null;
   ozellikler: string[];
+  /**
+   * "şu an açık mı" — keşfet ve haritadaki en görünür bilgi.
+   *
+   * `bilinmiyor` ile `kapali` AYRI: saati girilmemiş bir mekana "kapalı"
+   * demek yalan söylemek ve kullanıcıyı o mekandan vazgeçirmek olur.
+   */
+  acik: "acik" | "kapali" | "bilinmiyor";
+  /** Kapalıysa "yarın 09:00" gibi bir ipucu; yoksa null. */
+  sonrakiAcilis: string | null;
   puan: number | null;
   degerlendirmeSayisi: number;
   /** Bu hafta satın alınmış hero banner sponsorluğu (bkz. admin/sponsorlar). */
@@ -181,6 +197,7 @@ export async function mekanlariGetir(
       longitude: true,
       priceSegment: true,
       mekanOzellikleri: true,
+      calismaSaatleri: true,
       sponsorHaftasi: true,
       duyurular: {
         where: { aktif: true },
@@ -225,6 +242,7 @@ export async function mekanlariGetir(
       mesafeMetre: m.mesafeMetre,
       fiyatSegmenti: m.priceSegment,
       ozellikler: ozellikleriCoz(m.mekanOzellikleri),
+      ...acikOzeti(m.calismaSaatleri, simdi),
       puan: puanHaritasi.get(m.id) ?? null,
       degerlendirmeSayisi: m._count.feedbacks,
       sponsorluMu: sponsorMu(m.sponsorHaftasi, simdi),
@@ -281,6 +299,9 @@ export type MekanDetay = MekanOzet & {
    * anketler burada hiç görünmez — "doğrulanmış" iddiası ancak kimliği
    * bilinen biri için anlamlı.
    */
+  acik: "acik" | "kapali" | "bilinmiyor";
+  sonrakiAcilis: string | null;
+  haftalikSaatler: { gun: string; ad: string; metin: string }[];
   dogrulanmisYorumlar: {
     id: string;
     isim: string;
@@ -290,6 +311,29 @@ export type MekanDetay = MekanOzet & {
     rozetler: string[];
   }[];
 };
+
+/**
+ * "Şu an açık mı" özeti — hem liste hem detay aynı yerden besleniyor.
+ *
+ * Kural lib/isletme/calisma-saati.ts'te ve saf; burası yalnızca sunuma
+ * çeviriyor. İkisinin ayrı olmasının sebebi, aynı kuralın rezervasyon ve
+ * etkinlik tarafından da kullanılacak olması — orada "metin" değil
+ * "izin ver / verme" cevabı gerekiyor.
+ */
+function acikOzeti(
+  ham: string | null,
+  simdi: Date,
+): { acik: "acik" | "kapali" | "bilinmiyor"; sonrakiAcilis: string | null } {
+  const durum = acikMi(saatleriCoz(ham), simdi);
+  if (durum.durum === "acik") return { acik: "acik", sonrakiAcilis: null };
+  if (durum.durum === "bilinmiyor") return { acik: "bilinmiyor", sonrakiAcilis: null };
+  return {
+    acik: "kapali",
+    sonrakiAcilis: durum.sonrakiAcilis
+      ? `${GUN_ADLARI[durum.sonrakiAcilis.gun]} ${durum.sonrakiAcilis.saat}`
+      : null,
+  };
+}
 
 /** Tek mekanın canlı profili — Adım 4'ün ham verisi. */
 export async function mekanDetayGetir(slug: string): Promise<MekanDetay | null> {
@@ -317,6 +361,7 @@ export async function mekanDetayGetir(slug: string): Promise<MekanDetay | null> 
       longitude: true,
       priceSegment: true,
       mekanOzellikleri: true,
+      calismaSaatleri: true,
       sponsorHaftasi: true,
       biyerlerePlusOrtagi: true,
       menuPriceUpdatedAt: true,
@@ -403,6 +448,14 @@ export async function mekanDetayGetir(slug: string): Promise<MekanDetay | null> 
     mesafeMetre: null,
     fiyatSegmenti: mekan.priceSegment,
     ozellikler: ozellikleriCoz(mekan.mekanOzellikleri),
+    ...acikOzeti(mekan.calismaSaatleri, simdi),
+    // Haftanın tamamı: mekan sayfasında "bugün 09:00-23:00" satırının
+    // altındaki açılır liste için.
+    haftalikSaatler: GUNLER.map((gun) => ({
+      gun,
+      ad: GUN_ADLARI[gun],
+      metin: gunMetni(saatleriCoz(mekan.calismaSaatleri)[gun]),
+    })),
     puan: puan._avg.overallRating,
     degerlendirmeSayisi: mekan._count.feedbacks,
     sponsorluMu: sponsorMu(mekan.sponsorHaftasi, simdi),
