@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Heart, LogOut, Share2 } from "lucide-react";
+import Link from "next/link";
+import { ChevronRight, Heart, KeyRound, LogOut, Share2 } from "lucide-react";
 import { appAuthGet } from "../../lib/api-istemci";
 import { useOturum } from "../../lib/OturumSaglayici";
 import { KartListesiIskeleti } from "../../components/Skeleton";
@@ -222,6 +223,20 @@ export function ProfilIcerik() {
           </div>
         </div>
       ) : null}
+
+      {/**
+       * Hesap güvenliği. Tek satır, listenin sonunda: sık gidilen bir yer
+       * değil ama ARANDIĞINDA bulunabilir olması gerekiyor — şifresini
+       * değiştirmek isteyen kişinin profil dışında bakacağı bir yer yok.
+       */}
+      <Link
+        href="/profil/sifre"
+        className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#24262E]/85 px-4 py-3.5 transition active:scale-[0.99] duration-150 ease-out"
+      >
+        <KeyRound className="h-[18px] w-[18px] shrink-0 text-gray-400" aria-hidden="true" />
+        <span className="flex-1 text-small font-medium text-white">Şifre değiştir</span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />
+      </Link>
 
       <div>
         <h2 className="text-base font-bold text-white">Rozet vitrini</h2>

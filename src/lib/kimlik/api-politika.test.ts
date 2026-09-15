@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { API_POLITIKALARI, apiKarari, politikaBul } from "./api-politika";
 
@@ -44,6 +44,39 @@ describe("politika tablosu diskle uyumlu", () => {
     const diskte = new Set(diskteEkiUclar(API_KOKU).map((y) => y.replace(/\/\[[^\]]+\]$/, "/")));
     for (const yol of Object.keys(API_POLITIKALARI)) {
       expect(diskte.has(yol), `${yol} tabloda var ama route.ts yok`).toBe(true);
+    }
+  });
+});
+
+describe("tablodaki metotlar route'un gerçekten yazdıklarıyla aynı", () => {
+  /**
+   * İki yön de sorunlu, ama farklı şekilde:
+   *
+   *   - Tabloda olup route'ta OLMAYAN metot: middleware isteği geçiriyor,
+   *     Next 405 döndürüyor. Zararsız ama tablo yalan söylüyor — okuyan
+   *     kişi olmayan bir ucun var olduğuna inanıyor.
+   *   - Route'ta olup tabloda OLMAYAN metot: handler yazılmış ama ona hiç
+   *     istek ulaşmıyor. Sessizce ölü kod; "neden çalışmıyor" diye
+   *     saatler harcanan tür.
+   *
+   * İkisi de ancak elle fark edilebiliyordu. Artık edilmiyor.
+   */
+  const METOTLAR = ["GET", "POST", "PUT", "DELETE"] as const;
+
+  function dosyadakiMetotlar(yol: string): string[] {
+    const klasor = yol === "/" ? API_KOKU : join(API_KOKU, yol.slice(1));
+    const kaynak = readFileSync(join(klasor, "route.ts"), "utf8");
+    return METOTLAR.filter((m) =>
+      new RegExp(`export\\s+async\\s+function\\s+${m}\\b`).test(kaynak),
+    );
+  }
+
+  it("her uçta iki liste örtüşüyor", () => {
+    for (const ham of diskteEkiUclar(API_KOKU)) {
+      const anahtar = ham.replace(/\/\[[^\]]+\]$/, "/");
+      const politika = API_POLITIKALARI[anahtar];
+      if (!politika) continue; // Üstteki test zaten kırmızıya döner.
+      expect([...politika.metotlar].sort(), anahtar).toEqual(dosyadakiMetotlar(ham).sort());
     }
   });
 });

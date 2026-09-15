@@ -25,6 +25,35 @@ export const dynamic = "force-dynamic";
  * arasında hiç boşluk yok.
  */
 
+/**
+ * Hesapta doğrulanmış bir numara var mı?
+ *
+ * Arayüz bunu şifre değiştirme ekranını çizmeden önce soruyor: numara
+ * yoksa aynı ekranda numara alanı da gösteriliyor. Bu sorulmasaydı,
+ * kullanıcı mevcut şifresini yazıp gönderdikten SONRA "numaran yok"
+ * hatasını alır ve baştan başlardı.
+ *
+ * Yanıt MASKELİ — tam numara geri verilmiyor. Jetonu ele geçiren birine
+ * kullanıcının telefon numarasını hediye etmenin bir gereği yok; ekranda
+ * yapılacak iş ("kod şu numaraya gidecek") maskeliyle de yapılıyor.
+ */
+export async function GET(request: Request) {
+  const oturum = await appKullaniciGerekli(request);
+  if ("yanit" in oturum) return oturum.yanit;
+
+  const kullanici = await prisma.appUser.findUnique({
+    where: { id: oturum.kullanici.id },
+    select: { telefon: true, telefonDogrulandi: true },
+  });
+
+  const numara =
+    kullanici?.telefon && kullanici.telefonDogrulandi
+      ? normalizePhone(kullanici.telefon)
+      : null;
+
+  return NextResponse.json({ maskeli: numara ? maskPhone(numara) : null });
+}
+
 /** Adım 1 — numarayı al, doğrulama kodu gönder. */
 export async function POST(request: Request) {
   const oturum = await appKullaniciGerekli(request);

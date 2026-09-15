@@ -75,7 +75,13 @@ export const API_POLITIKALARI: Record<string, ApiPolitikasi> = {
   "/ziyaret": { erisim: "jetonlu", metotlar: ["POST"] },
   "/plus-talep": { erisim: "jetonlu", metotlar: ["POST"] },
   /** Kurtarma numarası ekleme/doğrulama/kaldırma — oturum şart. */
-  "/telefon": { erisim: "jetonlu", metotlar: ["POST", "PUT", "DELETE"] },
+  "/telefon": { erisim: "jetonlu", metotlar: ["GET", "POST", "PUT", "DELETE"] },
+  /**
+   * Oturum İÇİNDE şifre değiştirme. Jetonu olan biri bile mevcut şifresini
+   * ve SMS kodunu vermeden değiştiremiyor: açık bırakılmış bir telefon,
+   * tek dokunuşla hesabın devralınmasına yetmemeli.
+   */
+  "/sifre-degistir": { erisim: "jetonlu", metotlar: ["POST", "PUT"] },
 };
 
 const ONEK = "/api/app";
