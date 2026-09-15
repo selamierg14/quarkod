@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { MAX_SIFRE_UZUNLUK, MIN_SIFRE_UZUNLUK, sifreSorunu } from "./sifre";
+import {
+  MAX_SIFRE_UZUNLUK,
+  MIN_SIFRE_UZUNLUK,
+  sifreSorunu,
+  yeniSifreSorunu,
+} from "./sifre";
 import { alanKurali } from "../cekirdek/desenler";
 
 /**
@@ -53,5 +58,34 @@ describe("azami uzunluk", () => {
     // Karakter kısıtı koysaydık bu tür diziler reddedilir ve kullanıcı
     // daha zayıf bir parolaya yönlendirilmiş olurdu.
     expect(sifreSorunu("Xq7#mZ!2vL@9pR$4tK&8nW*1jH%6bF^3")).toBeNull();
+  });
+});
+
+describe("yeniSifreSorunu — iki kutu birlikte", () => {
+  /**
+   * Yeni şifre dört ayrı yerde belirleniyor ve dördü de aynı iki kontrolü
+   * yapmak zorunda. Kural burada tek yerde; testi de burada.
+   */
+  it("kutular uyuşmuyorsa ÖNCE bunu söylüyor", () => {
+    // Sıra önemli: "en az 8 karakter" deyip düzelttirmek, sonra "uyuşmuyor"
+    // deyip bir tur daha attırmak iki turluk bir akış demekti.
+    expect(yeniSifreSorunu("kisa", "bambaskasi")).toBe("Şifreler birbiriyle uyuşmuyor.");
+  });
+
+  it("uyuşuyorsa biçim kuralı işliyor", () => {
+    expect(yeniSifreSorunu("kisa", "kisa")).toBe("Şifre en az 8 karakter olmalı.");
+    expect(yeniSifreSorunu("12345678", "12345678")).toBe("Şifre sadece rakamlardan oluşmasın.");
+  });
+
+  it("ikisi de doğruysa sorun yok", () => {
+    expect(yeniSifreSorunu("guclu-bir-sifre", "guclu-bir-sifre")).toBeNull();
+  });
+
+  it("boşluk farkı bile uyuşmazlık — kırpma YAPILMIYOR", () => {
+    // Şifrenin sonundaki boşluk şifrenin parçası; kırpmak kullanıcının
+    // gerçekten belirlediği şifreyi sessizce değiştirmek olurdu.
+    expect(yeniSifreSorunu("sifre123a", "sifre123a ")).toBe(
+      "Şifreler birbiriyle uyuşmuyor.",
+    );
   });
 });

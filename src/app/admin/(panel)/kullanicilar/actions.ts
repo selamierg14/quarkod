@@ -16,7 +16,7 @@ import {
 import { denetimYaz } from "@/lib/rapor/denetim";
 import { acilabilirRoller, yonetebilirMi } from "@/lib/kimlik/panel";
 import { gecerliRolMu } from "@/lib/kimlik/session-token";
-import { sifreSorunu } from "@/lib/kimlik/sifre";
+import { sifreSorunu, yeniSifreSorunu } from "@/lib/kimlik/sifre";
 import { prisma } from "@/lib/cekirdek/db";
 import { istenenModulleriSuz, modulleriGuncelleMeli } from "@/lib/kimlik/moduller";
 import { normalizePhone, toUsername, usernameProblem } from "@/lib/kimlik/username";
@@ -24,13 +24,7 @@ import { ekTelefonlariCoz } from "@/lib/kimlik/telefonlar";
 import { uniqueConstraintMessage } from "@/lib/cekirdek/unique-error";
 import { alanDogrula } from "@/lib/cekirdek/desenler";
 import { ilkHata, listeAlani } from "@/lib/cekirdek/girdi";
-import { issueOtp, otpTelefonu, verifyOtp } from "@/lib/kimlik/otp";
 import { SINIRLAR, hizSiniriMesaji, hizSiniriUygula } from "@/lib/kimlik/hiz-siniri";
-import {
-  clearPendingPassword,
-  readPendingPassword,
-  setPendingPassword,
-} from "@/lib/kimlik/pending-password";
 
 /**
  * Bir listedeki İŞLETMELERİN HEPSİNE yetki var mı — tek sorguyla.
@@ -486,155 +480,82 @@ export async function toggleUser(formData: FormData) {
 }
 
 export type PasswordState = {
-  step: "form" | "kod";
   error?: string;
   saved?: string;
-  maskedPhone?: string;
 };
 
 /**
- * Kendi şifresini değiştirme — iki adım.
+ * Kendi şifresini değiştirme — TEK ADIM: mevcut şifre + yeni şifre (iki kez).
  *
- * 1. Mevcut şifre + yeni şifre doğrulanır, kayıtlı GSM'e kod gider.
- * 2. Kod doğrulanınca şifre değişir.
+ * Kimlik kanıtı mevcut şifrenin kendisi. Bu akış bir süre SMS kodu da
+ * istiyordu; kaldırıldı çünkü bedeli faydasından büyüktü: numarası
+ * tanımlanmamış bir kullanıcı şifresini HİÇ değiştiremiyordu ve
+ * "patronunuzdan numaranızı tanımlamasını isteyin" mesajıyla kalıyordu.
+ * Şifre değiştirmek, kilitlenmiş bir kullanıcının kendi başına yapabilmesi
+ * gereken ilk şey.
  *
- * Tek adımda değiştirmek, açık bırakılmış bir oturumu ele geçiren kişinin
- * şifreyi değiştirip hesabı tamamen devralmasına yetiyordu. Kod adımı bunu
- * telefona sahip olma şartına bağlıyor.
+ * Kod hâlâ ŞİFRESİNİ UNUTAN akışında duruyor (admin/giris/actions.ts) ve
+ * orada vazgeçilmez: mevcut şifre bilinmediğinde elde tek kanıt telefona
+ * ulaşabilmek. Buradaki ile oradaki akışın farkı tam olarak bu.
  *
- * Yeni şifre 2. adıma kadar bir yerde tutulmalı; oturum çerezinde imzalı ve
- * kısa ömürlü olarak taşınıyor — istemcide düz metin dolaşmıyor.
+ * İki kutu SUNUCUDA karşılaştırılıyor (`yeniSifreSorunu`) — tarayıcı
+ * kontrolü bir kolaylık, istek elle de kurulabilir.
  */
 export async function changeOwnPassword(
   _prev: PasswordState,
   formData: FormData,
 ): Promise<PasswordState> {
   const session = await requireUser();
-  const step = String(formData.get("step") ?? "form");
 
   const user = await prisma.user.findUnique({ where: { id: session.id } });
-  if (!user) return { step: "form", error: "Kullanıcı bulunamadı." };
+  if (!user) return { error: "Kullanıcı bulunamadı." };
 
-  // --- 2. adım: SMS kodu
-  if (step === "kod") {
-    // Kod altı rakam; biçimi tutmayan bir değerin OTP kaydına kadar
-    // gitmesine gerek yok.
-    // Giriş akışındakiyle aynı ikinci katman (bkz. giris/actions.ts).
-    const otpSinir = await hizSiniriUygula(SINIRLAR.otpDeneme, user.id);
-    if (!otpSinir.izin) {
-      return { step: "kod", error: hizSiniriMesaji(otpSinir) };
-    }
-
-    const kodSonuc = alanDogrula(formData.get("code"), "dogrulamaKodu", "Kod");
-    if (!kodSonuc.ok) {
-      return {
-        step: "kod",
-        error: kodSonuc.hata,
-        maskedPhone: String(formData.get("maskedPhone") ?? "").slice(0, 40),
-      };
-    }
-    const code = kodSonuc.deger;
-    const bekleyen = await readPendingPassword();
-    if (!bekleyen) {
-      return { step: "form", error: "İşlem zaman aşımına uğradı. Baştan başlayın." };
-    }
-
-    // Çerez o anki kullanıcıya bağlı: ortak kullanılan bir tarayıcıda
-    // yarım kalmış bir işlemin, sonradan giren başkasının şifresini
-    // belirlemesi mümkün olmasın.
-    if (bekleyen.userId !== user.id) {
-      await clearPendingPassword();
-      return { step: "form", error: "İşlem geçersiz. Baştan başlayın." };
-    }
-
-    const sonuc = await verifyOtp(user.id, "sifre", code);
-    if (!sonuc.ok) {
-      return {
-        step: "kod",
-        error: sonuc.error,
-        maskedPhone: String(formData.get("maskedPhone") ?? ""),
-      };
-    }
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { passwordHash: bekleyen.hash, passwordChangedAt: new Date() },
-    });
-    await clearPendingPassword();
-
-    // Şifre değişimi eski oturumları geçersizleştirdiği için kendi
-    // oturumumuzu tazeliyoruz; yoksa kullanıcı kendi işleminden sonra
-    // giriş ekranına düşerdi.
-    await setSessionCookie({
-      // Jeton modül taşımaz; etkin küme her istekte DB'den okunuyor.
-      moduller: [],
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role as "superadmin" | "owner" | "manager",
-      accountId: user.accountId,
-      businessId: user.businessId,
-    });
-
-    return { step: "form", saved: "Şifreniz değiştirildi." };
-  }
-
-  // --- 1. adım: doğrulama + kod gönderimi
-  // `current` doğrudan bcrypt.compare'e gidiyor ve sınırsızdı: bcrypt'in
-  // maliyeti girdiyle artıyor, yani megabaytlık bir "mevcut şifre" tek
-  // istekte sunucuyu meşgul edebiliyordu. Oturum gerektiren bir uç
-  // olduğu için etkisi giriş formundakinden dar ama sınıf aynı.
-  // (`next` zaten sifreSorunu'ndan geçiyor, orada üst sınır var.)
+  /**
+   * `current` doğrudan bcrypt.compare'e gidiyor ve sınırsızdı: bcrypt'in
+   * maliyeti girdiyle artıyor, yani megabaytlık bir "mevcut şifre" tek
+   * istekte sunucuyu meşgul edebiliyordu. Oturum gerektiren bir uç olduğu
+   * için etkisi giriş formundakinden dar ama sınıf aynı.
+   */
   const mevcutSonuc = alanDogrula(formData.get("current"), "girisSifresi", "Mevcut şifre", {
     zorunlu: true,
   });
-  if (!mevcutSonuc.ok) return { step: "form", error: "Mevcut şifre hatalı." };
-  const current = mevcutSonuc.deger;
+  if (!mevcutSonuc.ok) return { error: "Mevcut şifre hatalı." };
+
+  // Şifre deneme hızı sınırlı: açık bırakılmış bir oturumu bulan kişi
+  // mevcut şifreyi buradan deneyerek aramasın.
+  const sinir = await hizSiniriUygula(SINIRLAR.otpDeneme, user.id);
+  if (!sinir.izin) return { error: hizSiniriMesaji(sinir) };
+
+  if (!(await bcrypt.compare(mevcutSonuc.deger, user.passwordHash))) {
+    return { error: "Mevcut şifre hatalı." };
+  }
+
   const next = String(formData.get("next") ?? "");
-  const repeat = String(formData.get("repeat") ?? "");
-
-  if (!(await bcrypt.compare(current, user.passwordHash))) {
-    return { step: "form", error: "Mevcut şifre hatalı." };
-  }
-  if (next !== repeat) {
-    return { step: "form", error: "Yeni şifreler birbiriyle uyuşmuyor." };
-  }
-
-  const problem = sifreSorunu(next);
-  if (problem) return { step: "form", error: problem };
+  const sorun = yeniSifreSorunu(next, String(formData.get("repeat") ?? ""));
+  if (sorun) return { error: sorun };
 
   if (await bcrypt.compare(next, user.passwordHash)) {
-    return { step: "form", error: "Yeni şifre eskisiyle aynı olamaz." };
+    return { error: "Yeni şifre eskisiyle aynı olamaz." };
   }
 
-  // Şifre değişimi HER ZAMAN SMS doğrulaması istiyor — giriş 2FA bayrağından
-  // bağımsız. Bu yüzden `ikiAsamaliDurum` ikinci argümanla açık çağrılıyor:
-  // bayrak kapalıyken de şifre değiştirmek kimlik kanıtı gerektirmeli, yoksa
-  // açık bırakılmış bir oturumu ele geçiren kişi hesabı tek tıkla devralır.
-  const telefon = otpTelefonu(user.phone);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash: await hashPassword(next), passwordChangedAt: new Date() },
+  });
 
-  if (telefon.durum === "telefonYok") {
-    return {
-      step: "form",
-      error:
-        "Hesabınızda kayıtlı telefon yok; doğrulama kodu gönderilemiyor. " +
-        "Patronunuzdan numaranızı tanımlamasını isteyin.",
-    };
-  }
-  if (telefon.durum === "telefonGecersiz") {
-    return {
-      step: "form",
-      error:
-        "Hesabınızdaki cep telefonu geçerli bir numara değil; doğrulama kodu " +
-        "gönderilemiyor. Patronunuzdan numarayı düzeltmesini isteyin.",
-    };
-  }
+  // Şifre değişimi eski oturumları geçersizleştirdiği için kendi
+  // oturumumuzu tazeliyoruz; yoksa kullanıcı kendi işleminden sonra
+  // giriş ekranına düşerdi.
+  await setSessionCookie({
+    // Jeton modül taşımaz; etkin küme her istekte DB'den okunuyor.
+    moduller: [],
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role as "superadmin" | "owner" | "manager",
+    accountId: user.accountId,
+    businessId: user.businessId,
+  });
 
-  const kod = await issueOtp(user.id, telefon.telefon, "sifre");
-  if (!kod.ok) return { step: "form", error: kod.error };
-
-  // Yeni şifre hash'lenmiş hâlde çerezde bekler; düz metin hiçbir yerde durmaz.
-  await setPendingPassword(user.id, await hashPassword(next));
-
-  return { step: "kod", maskedPhone: kod.maskedPhone };
+  return { saved: "Şifreniz değiştirildi." };
 }

@@ -72,7 +72,7 @@ export async function appAuthPost<T>(
    * adım PUT: aynı kaynağı GÜNCELLEMEK, yeni bir şey yaratmak değil.
    * Varsayılan POST — mevcut çağıranların hiçbiri değişmiyor.
    */
-  metot: "POST" | "PUT" | "DELETE" = "POST",
+  metot: "POST" | "PUT" | "PATCH" | "DELETE" = "POST",
 ): Promise<ApiSonuc<T>> {
   const jeton = jetonOku();
   try {

@@ -61,7 +61,7 @@ describe("tablodaki metotlar route'un gerçekten yazdıklarıyla aynı", () => {
    *
    * İkisi de ancak elle fark edilebiliyordu. Artık edilmiyor.
    */
-  const METOTLAR = ["GET", "POST", "PUT", "DELETE"] as const;
+  const METOTLAR = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
 
   function dosyadakiMetotlar(yol: string): string[] {
     const klasor = yol === "/" ? API_KOKU : join(API_KOKU, yol.slice(1));

@@ -3,7 +3,7 @@
  *
  * Sorun neydi: `process.env.AUTH_SECRET` sekiz ayrı yerde okunuyordu ve
  * "tanımlı mı, yeterince uzun mu" doğrulaması BEŞ dosyada birebir
- * kopyalanmıştı (session-token, app-oturum, kupon-kod, pending-password,
+ * kopyalanmıştı (session-token, app-oturum, kupon-kod, sifre-bileti,
  * giris/actions). Aynı kuralın beş kopyası üç şey demek:
  *
  *   - biri güncellenip diğerleri unutulur (ör. asgari uzunluk değişirse),

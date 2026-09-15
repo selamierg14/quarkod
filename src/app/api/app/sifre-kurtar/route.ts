@@ -2,7 +2,8 @@ import { NextResponse, after } from "next/server";
 import { prisma } from "@/lib/cekirdek/db";
 import { apiHata, govdeOku, metin } from "@/lib/kimlik/app-api";
 import { alanDogrula } from "@/lib/cekirdek/desenler";
-import { sifreSorunu } from "@/lib/kimlik/sifre";
+import { yeniSifreSorunu } from "@/lib/kimlik/sifre";
+import { BILET_SURESI_SN, sifreBiletiCoz, sifreBiletiUret } from "@/lib/kimlik/sifre-bileti";
 import { hashPassword } from "@/lib/kimlik/auth";
 import { SINIRLAR, hizSiniriMesaji, hizSiniriUygula } from "@/lib/kimlik/hiz-siniri";
 import { appKodDogrula, appKodGonder, kurtarmaHedefi } from "@/lib/biyerlere/app-otp";
@@ -19,8 +20,19 @@ export const dynamic = "force-dynamic";
  * favoriler o hesapla birlikte gidiyordu; kullanıcının uygulamayı bırakma
  * ihtimali en yüksek an tam da orasıydı.
  *
- * İki adım: `POST` kod gönderiyor, `PUT` kodu doğrulayıp şifreyi
- * değiştiriyor.
+ * ÜÇ ADIM, üç ekran:
+ *
+ *   1. `POST`  — kullanıcı adı alınır, kayıtlı numaraya kod gönderilir.
+ *   2. `PUT`   — kod doğrulanır; karşılığında kısa ömürlü bir BİLET döner.
+ *   3. `PATCH` — bilet + yeni şifre (iki kez) ile şifre yazılır.
+ *
+ * Kod ile yeni şifre neden aynı ekranda değil: kullanıcı altı haneyi
+ * yazarken kodun doğru olup olmadığını öğrenemiyordu — yanlış kodu ancak
+ * yeni şifresini de yazıp gönderdikten sonra fark ediyor ve her şeyi
+ * baştan giriyordu. Ayrıldığında kod adımı kendi geri bildirimini veriyor.
+ *
+ * Adımlar arasını `sifre-bileti.ts` taşıyor: kod tek kullanımlık olduğu
+ * için ikinci adımda yanıyor ve üçüncü adıma taşınacak bir kanıt kalmıyor.
  *
  * KULLANICI VARLIĞI SIZDIRILMIYOR. Hem "kullanıcı yok", hem "numarası
  * yok", hem "numarası doğrulanmamış" durumları AYNI yanıtı veriyor ve
@@ -117,7 +129,12 @@ export async function POST(request: Request) {
   });
 }
 
-/** Adım 2 — kodu doğrula, yeni şifreyi yaz. */
+/**
+ * Adım 2 — kodu doğrula, karşılığında bilet ver.
+ *
+ * Burada şifre YAZILMIYOR. Tek iş, "bu kişi koda ulaşabiliyor" olgusunu
+ * bir sonraki ekrana taşınabilir hâle getirmek.
+ */
 export async function PUT(request: Request) {
   const govde = await govdeOku(request);
   if (!govde) return apiHata("İstek gövdesi okunamadı.", 400);
@@ -127,25 +144,65 @@ export async function PUT(request: Request) {
   if (!kimlik.ok) return apiHata(kimlik.hata, 400);
   if (!kod.ok) return apiHata(kod.hata, 400);
 
-  const yeniSifre = metin(govde, "yeniSifre");
-  const sifreHatasi = sifreSorunu(yeniSifre);
-  if (sifreHatasi) return apiHata(sifreHatasi, 400);
-
   const sinir = await hizSiniriUygula(SINIRLAR.otpDeneme, kimlik.deger.toLowerCase());
   if (!sinir.izin) return apiHata(hizSiniriMesaji(sinir), 429);
 
   const hedef = await kurtarmaHedefi(kimlik.deger);
   if (hedef.durum !== "hazir") {
     // Burada da ayrım yapılmıyor: geçersiz kod ile "böyle bir kurtarma
-    // yok" aynı mesajı veriyor.
+    // yok" aynı mesajı veriyor. Kullanıcı adı yanlış yazılmış olabilir ama
+    // bunu söylemek, doğru yazılanı da söylemek demek.
     return apiHata("Kod geçersiz ya da süresi dolmuş.", 400);
   }
 
   const dogrulama = await appKodDogrula(hedef.appUserId, "sifre", kod.deger);
   if (!dogrulama.ok) return apiHata(dogrulama.error, 400);
 
+  return NextResponse.json({
+    bilet: await sifreBiletiUret(hedef.appUserId),
+    // İstemci geri sayımı gösterebilsin: bilet dolduğunda kullanıcı
+    // "kaydet"e bastığında değil, ekranda uyarıyla öğrensin.
+    gecerlilikSaniye: BILET_SURESI_SN,
+  });
+}
+
+/**
+ * Adım 3 — bileti doğrula, yeni şifreyi (iki kutu) yaz.
+ *
+ * KULLANICI ADI BURADA SORULMUYOR ve sorulmamalı: kimin şifresini
+ * değiştirdiğimizi bilet söylüyor. İstemciden gelen bir kullanıcı adına
+ * güvenilseydi, bir hesabın bileti başka bir hesabın şifresini yazmakta
+ * kullanılabilirdi.
+ */
+export async function PATCH(request: Request) {
+  const govde = await govdeOku(request);
+  if (!govde) return apiHata("İstek gövdesi okunamadı.", 400);
+
+  const bilet = await sifreBiletiCoz(metin(govde, "bilet"));
+  if (!bilet) {
+    return apiHata(
+      "Doğrulama süresi doldu. Kurtarmayı baştan başlatıp yeni bir kod isteyin.",
+      400,
+    );
+  }
+
+  const yeniSifre = metin(govde, "yeniSifre");
+  const sorun = yeniSifreSorunu(yeniSifre, metin(govde, "yeniSifreTekrar"));
+  if (sorun) return apiHata(sorun, 400);
+
+  /**
+   * Hesabın hâlâ kurtarılabilir olduğu YENİDEN kontrol ediliyor. Bilet
+   * kesildikten sonraki üç dakikada hesap askıya alınmış olabilir; biletin
+   * kendisi bunu bilemez, çünkü imzalandığı andaki durumu taşıyor.
+   */
+  const kullanici = await prisma.appUser.findUnique({
+    where: { id: bilet.appUserId },
+    select: { active: true },
+  });
+  if (!kullanici?.active) return apiHata("Hesap bulunamadı.", 404);
+
   await prisma.appUser.update({
-    where: { id: hedef.appUserId },
+    where: { id: bilet.appUserId },
     data: {
       passwordHash: await hashPassword(yeniSifre),
       // Bu andan önce üretilmiş jetonlar düşüyor: şifresini unuttuğunu

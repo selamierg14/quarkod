@@ -9,11 +9,6 @@ import {
 } from "../kimlik/otp";
 import { normalizePhone } from "../kimlik/username";
 
-// Saf kural ayrı dosyada (testte server-only içe aktarılamıyor); buradan
-// yeniden dışa veriliyor ki çağıranlar tek yere baksın.
-export { degistirmeHedefi } from "./kurtarma-numarasi";
-export type { DegistirmeHedefi, NumaraDurumu } from "./kurtarma-numarasi";
-
 /**
  * Tüketici (Biyerlere) tarafının SMS kodları.
  *

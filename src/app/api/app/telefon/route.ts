@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/cekirdek/db";
 import { apiHata, appKullaniciGerekli, govdeOku, metin } from "@/lib/kimlik/app-api";
 import { normalizePhone } from "@/lib/kimlik/username";
@@ -23,15 +24,27 @@ export const dynamic = "force-dynamic";
  *
  * Bu yüzden `telefon` ve `telefonDogrulandi` AYNI ANDA yazılıyor; ikisi
  * arasında hiç boşluk yok.
+ *
+ * MEVCUT ŞİFRE İSTENİYOR ve bu, ucun en önemli koruması. Yalnızca oturum
+ * şartı konsaydı şöyle bir devralma yolu açık kalırdı:
+ *
+ *   çalınmış jeton → kurtarma numarasını saldırganın numarasıyla değiştir
+ *   → "şifremi unuttum" → kod saldırgana gider → hesap kalıcı olarak elden
+ *   çıkar.
+ *
+ * Yani kurtarma numarasını değiştirebilmek, şifreyi değiştirebilmekle aynı
+ * güçte bir yetki; aynı kanıtı istemesi gerekiyor. Şifre değiştirme akışı
+ * mevcut şifreyi soruyor (bkz. sifre-degistir/route.ts), burası da soruyor.
  */
 
 /**
  * Hesapta doğrulanmış bir numara var mı?
  *
- * Arayüz bunu şifre değiştirme ekranını çizmeden önce soruyor: numara
- * yoksa aynı ekranda numara alanı da gösteriliyor. Bu sorulmasaydı,
- * kullanıcı mevcut şifresini yazıp gönderdikten SONRA "numaran yok"
- * hatasını alır ve baştan başlardı.
+ * Hesap güvenliği ekranı bunu açılışta soruyor: numara varsa maskeli hâli
+ * gösteriliyor ("şifreni unutursan şu numarayla geri alabilirsin"), yoksa
+ * ekleme formu çiziliyor. Sorulmasaydı arayüz hangi metni yazacağını
+ * bilemez, kullanıcı da kurtarma kanalının açık olup olmadığını ancak
+ * şifresini unuttuğunda — yani iş işten geçtikten sonra — öğrenirdi.
  *
  * Yanıt MASKELİ — tam numara geri verilmiyor. Jetonu ele geçiren birine
  * kullanıcının telefon numarasını hediye etmenin bir gereği yok; ekranda
@@ -68,6 +81,22 @@ export async function POST(request: Request) {
   const numara = normalizePhone(dogrulama.deger);
   if (!numara) {
     return apiHata("Geçerli bir cep telefonu girin (5XX...).", 400);
+  }
+
+  // Mevcut şifre bcrypt'e GİRMEDEN uzunluk sınırına takılıyor: bcrypt'in
+  // maliyeti girdiyle artıyor.
+  const mevcut = alanDogrula(metin(govde, "mevcutSifre"), "girisSifresi", "Mevcut şifre", {
+    zorunlu: true,
+  });
+  if (!mevcut.ok) return apiHata("Mevcut şifre hatalı.", 400);
+
+  const hesap = await prisma.appUser.findUnique({
+    where: { id: oturum.kullanici.id },
+    select: { passwordHash: true },
+  });
+  if (!hesap) return apiHata("Hesap bulunamadı.", 404);
+  if (!(await bcrypt.compare(mevcut.deger, hesap.passwordHash))) {
+    return apiHata("Mevcut şifre hatalı.", 400);
   }
 
   /**
@@ -128,10 +157,32 @@ export async function PUT(request: Request) {
   return NextResponse.json({ telefon: maskPhone(numara), dogrulandi: true });
 }
 
-/** Numarayı kaldırır — kurtarma kanalı da kapanıyor. */
+/**
+ * Numarayı kaldırır — kurtarma kanalı da kapanıyor.
+ *
+ * Burada da mevcut şifre isteniyor: kurtarma kanalını KAPATMAK, kullanıcıyı
+ * şifresini unuttuğunda çaresiz bırakan geri alınamaz bir işlem.
+ */
 export async function DELETE(request: Request) {
   const oturum = await appKullaniciGerekli(request);
   if ("yanit" in oturum) return oturum.yanit;
+
+  const govde = await govdeOku(request);
+  if (!govde) return apiHata("İstek gövdesi okunamadı.", 400);
+
+  const mevcut = alanDogrula(metin(govde, "mevcutSifre"), "girisSifresi", "Mevcut şifre", {
+    zorunlu: true,
+  });
+  if (!mevcut.ok) return apiHata("Mevcut şifre hatalı.", 400);
+
+  const hesap = await prisma.appUser.findUnique({
+    where: { id: oturum.kullanici.id },
+    select: { passwordHash: true },
+  });
+  if (!hesap) return apiHata("Hesap bulunamadı.", 404);
+  if (!(await bcrypt.compare(mevcut.deger, hesap.passwordHash))) {
+    return apiHata("Mevcut şifre hatalı.", 400);
+  }
 
   await prisma.appUser.update({
     where: { id: oturum.kullanici.id },

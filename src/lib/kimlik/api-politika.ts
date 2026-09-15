@@ -34,7 +34,7 @@ export type Erisim =
 export type ApiPolitikasi = {
   erisim: Erisim;
   /** İzin verilen HTTP metotları; listede olmayan 405 alır. */
-  metotlar: readonly ("GET" | "POST" | "PUT" | "DELETE")[];
+  metotlar: readonly ("GET" | "POST" | "PUT" | "PATCH" | "DELETE")[];
   /** Yol sonunda dinamik bir parça var mı (`/mekanlar/<slug>`). */
   dinamik?: boolean;
 };
@@ -57,7 +57,7 @@ export const API_POLITIKALARI: Record<string, ApiPolitikasi> = {
    * kullanıcı varlığını sızdırmaması (bkz. route.ts). Kod da istemcinin
    * verdiği numaraya değil veritabanındaki DOĞRULANMIŞ numaraya gidiyor.
    */
-  "/sifre-kurtar": { erisim: "acik", metotlar: ["POST", "PUT"] },
+  "/sifre-kurtar": { erisim: "acik", metotlar: ["POST", "PUT", "PATCH"] },
   "/mekanlar": { erisim: "acik", metotlar: ["GET"] },
   "/mekanlar/": { erisim: "acik", metotlar: ["GET"], dinamik: true },
   // Anonim ölçüm: kim olduğunu bilmek gerekmiyor, yalnızca "kaç kez".
@@ -78,10 +78,10 @@ export const API_POLITIKALARI: Record<string, ApiPolitikasi> = {
   "/telefon": { erisim: "jetonlu", metotlar: ["GET", "POST", "PUT", "DELETE"] },
   /**
    * Oturum İÇİNDE şifre değiştirme. Jetonu olan biri bile mevcut şifresini
-   * ve SMS kodunu vermeden değiştiremiyor: açık bırakılmış bir telefon,
-   * tek dokunuşla hesabın devralınmasına yetmemeli.
+   * vermeden değiştiremiyor: açık bırakılmış bir telefon, tek dokunuşla
+   * hesabın devralınmasına yetmemeli.
    */
-  "/sifre-degistir": { erisim: "jetonlu", metotlar: ["POST", "PUT"] },
+  "/sifre-degistir": { erisim: "jetonlu", metotlar: ["POST"] },
 };
 
 const ONEK = "/api/app";

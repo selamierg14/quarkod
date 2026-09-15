@@ -49,3 +49,29 @@ export function sifreSorunu(sifre: string): string | null {
   }
   return null;
 }
+
+/**
+ * YENİ şifre belirlenirken uygulanan kuralın tamamı: iki kutunun
+ * eşleşmesi + biçim.
+ *
+ * Şifre dört ayrı yerde belirleniyor (panel içi değiştirme, panel şifre
+ * sıfırlama, tüketici içi değiştirme, tüketici şifre kurtarma) ve dördü de
+ * aynı iki kontrolü yapmak zorunda. Ayrı ayrı yazıldığında sıraları bile
+ * tutmuyordu: biri önce eşleşmeye, biri önce uzunluğa bakıyordu — aynı
+ * hatalı girdi ekrana farklı mesaj döndürüyordu.
+ *
+ * SIRA ÖNEMLİ ve burada sabit: önce EŞLEŞME. "Şifre en az 8 karakter
+ * olmalı" deyip kullanıcının düzelttiği, sonra "şifreler uyuşmuyor"
+ * deyip bir kez daha geri gönderdiği akış iki tur sürüyordu. Eşleşme
+ * hatası kullanıcının gözüyle daha bariz; onu önce söylemek daha az tur
+ * demek.
+ *
+ * Tekrar kutusu SUNUCUDA da kontrol ediliyor, yalnızca tarayıcıda değil:
+ * tarayıcı kontrolü bir kolaylık, istek elle de kurulabilir. Buradaki
+ * kontrol kullanıcıyı yazım hatasından koruyor — güvenlik sınırı değil,
+ * ama sunucuda olmadığında hiçbir şey değil.
+ */
+export function yeniSifreSorunu(sifre: string, tekrar: string): string | null {
+  if (sifre !== tekrar) return "Şifreler birbiriyle uyuşmuyor.";
+  return sifreSorunu(sifre);
+}
