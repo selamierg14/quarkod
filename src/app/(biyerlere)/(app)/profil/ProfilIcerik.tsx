@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Heart, LogOut, Share2 } from "lucide-react";
+import Link from "next/link";
+import { ChevronRight, Heart, KeyRound, LogOut, Share2 } from "lucide-react";
 import { appAuthGet } from "../../lib/api-istemci";
 import { useOturum } from "../../lib/OturumSaglayici";
 import { KartListesiIskeleti } from "../../components/Skeleton";
@@ -139,7 +140,9 @@ export function ProfilIcerik() {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 text-center">
+      {/* Kupon kapalıyken üçüncü kutu ("Aktif Kupon") çizilmiyor; ızgara da
+          iki sütuna iniyor, yoksa satırın sağında boş bir hücre kalıyordu. */}
+      <div className="grid grid-cols-2 gap-2 text-center">
         <div className="rounded-2xl border border-white/10 bg-[#24262E]/85 py-3">
           <p className="text-lg font-bold text-white">{kullanici.puan}</p>
           <p className="text-[11px] text-gray-400">Kaşif Puanı</p>
@@ -147,10 +150,6 @@ export function ProfilIcerik() {
         <div className="rounded-2xl border border-white/10 bg-[#24262E]/85 py-3">
           <p className="text-lg font-bold text-white">{kullanici.dogrulanmisZiyaret}</p>
           <p className="text-[11px] text-gray-400">Doğrulanmış Ziyaret</p>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-[#24262E]/85 py-3">
-          <p className="text-lg font-bold text-white">{kullanici.cuzdandakiKupon}</p>
-          <p className="text-[11px] text-gray-400">Aktif Kupon</p>
         </div>
       </div>
 
@@ -224,6 +223,21 @@ export function ProfilIcerik() {
           </div>
         </div>
       ) : null}
+
+      {/**
+       * Hesap güvenliği — şifre değiştirme ve kurtarma numarası. Tek satır,
+       * listenin sonunda: sık gidilen bir yer değil ama ARANDIĞINDA
+       * bulunabilir olması gerekiyor; kullanıcının profil dışında bakacağı
+       * bir yer yok.
+       */}
+      <Link
+        href="/profil/sifre"
+        className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#24262E]/85 px-4 py-3.5 transition active:scale-[0.99] duration-150 ease-out"
+      >
+        <KeyRound className="h-[18px] w-[18px] shrink-0 text-gray-400" aria-hidden="true" />
+        <span className="flex-1 text-small font-medium text-white">Şifre ve güvenlik</span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />
+      </Link>
 
       <div>
         <h2 className="text-base font-bold text-white">Rozet vitrini</h2>

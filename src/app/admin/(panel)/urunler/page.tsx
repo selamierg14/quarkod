@@ -1,10 +1,10 @@
 import { ThumbsDown, ThumbsUp } from "lucide-react";
-import { requireAnketErisim, visibleBusinesses } from "@/lib/auth";
+import { requireAnketErisim, visibleBusinesses } from "@/lib/kimlik/auth";
 import { EmptyState, SectionCard } from "@/components/ui";
 import { RaporSekmeleri } from "@/components/RaporSekmeleri";
 import { PeriyotFiltre } from "@/components/PeriyotFiltre";
-import { GUVENILIR_OY_SINIRI, enIyiEnKotu, urunPuanlari } from "@/lib/menu";
-import { getItemRatings } from "@/lib/stats";
+import { GUVENILIR_OY_SINIRI, enIyiEnKotu, urunPuanlari } from "@/lib/isletme/menu";
+import { getItemRatings } from "@/lib/rapor/stats";
 
 export const dynamic = "force-dynamic";
 

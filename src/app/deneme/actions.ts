@@ -3,20 +3,20 @@
 import { createHash, randomBytes } from "node:crypto";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { hashPassword, setSessionCookie } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { denetimYaz } from "@/lib/denetim";
+import { hashPassword, setSessionCookie } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { denetimYaz } from "@/lib/rapor/denetim";
 import {
   DENEME_GUN,
   IP_BASINA_GUNLUK_SINIR,
   denemeBitisi,
   kayitSorunu,
-} from "@/lib/deneme";
-import { BUSINESS_TYPES, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/constants";
-import { KVKK_VERSION } from "@/lib/kvkk";
-import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
-import { uniqueConstraintMessage } from "@/lib/unique-error";
-import { slugIleOlustur } from "@/lib/slug";
+} from "@/lib/isletme/deneme";
+import { BUSINESS_TYPES, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/cekirdek/constants";
+import { KVKK_VERSION } from "@/lib/isletme/kvkk";
+import { normalizePhone, toUsername, usernameProblem } from "@/lib/kimlik/username";
+import { uniqueConstraintMessage } from "@/lib/cekirdek/unique-error";
+import { slugIleOlustur } from "@/lib/cekirdek/slug";
 
 export type DenemeState = { error?: string };
 

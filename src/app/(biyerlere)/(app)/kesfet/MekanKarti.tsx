@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Star, MapPin } from "lucide-react";
-import type { MekanOzet } from "@/lib/kesfet-veri";
+import type { MekanOzet } from "@/lib/biyerlere/kesfet-veri";
 import { Skeleton } from "../../components/Skeleton";
+import { AcikRozeti } from "../../components/AcikRozeti";
 
 /** Kategori özelliklerinin rozet rengi — spec'teki sabit palet. */
 const OZELLIK_RENGI: Record<string, string> = {
@@ -30,7 +31,7 @@ export function MekanKarti({ mekan }: { mekan: MekanOzet }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={mekan.kapakUrl} alt="" className="h-full w-full object-cover" />
         ) : null}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#18191E]/90 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#18191E]/95 via-[#18191E]/35 to-transparent" />
 
         {oneCikanOzellik ? (
           <span
@@ -74,6 +75,7 @@ export function MekanKarti({ mekan }: { mekan: MekanOzet }) {
           ) : (
             <span className="text-gray-400">Henüz puan yok</span>
           )}
+          <AcikRozeti durum={mekan.acik} boyut="kucuk" />
           {mekan.fiyatSegmenti ? (
             <span className="text-gray-400">
               {mekan.fiyatSegmenti === "ucuz" ? "₺" : mekan.fiyatSegmenti === "orta" ? "₺₺" : "₺₺₺"}

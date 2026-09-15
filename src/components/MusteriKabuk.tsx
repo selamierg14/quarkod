@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { markaStili } from "@/lib/marka";
-import type { MetinAnahtari } from "@/lib/ceviriler";
+import { markaStili } from "@/lib/isletme/marka";
+import type { MetinAnahtari } from "@/lib/cekirdek/ceviriler";
 import { IletisimBar } from "@/components/IletisimBar";
 import { DilSaglayici } from "@/components/DilSaglayici";
 import { DilSecici } from "@/components/DilSecici";

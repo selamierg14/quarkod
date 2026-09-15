@@ -14,7 +14,12 @@ import {
   MODULLER,
   MODUL_ACIKLAMALARI,
   type ModulAnahtari,
-} from "@/lib/moduller";
+} from "@/lib/kimlik/moduller";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
+import {
+  EN_COK_EK_TELEFON,
+  ekTelefonEklenebilirMi,
+} from "@/lib/kimlik/telefonlar";
 
 const INPUT =
   "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
@@ -24,10 +29,53 @@ type Business = { id: string; name: string };
 const ROL_SECENEKLERI: Record<string, string> = {
   manager: "İşletme sorumlusu (tek işletme)",
   bolge: "Bölge müdürü (seçili işletmeler)",
-  viewer: "Salt okunur (rapor görür, değiştiremez)",
   owner: "Patron (hesabın tamamını yönetir)",
   garson: "Saha personeli (yalnızca kendi vardiyasını/görevlerini görür)",
 };
+
+/**
+ * Yedek cep numaraları.
+ *
+ * Doğrulama kodu birincil numaraya gidiyor; buradakiler kullanıcı o
+ * numaraya ulaşamadığında (telefon kayıp, hat çekmiyor) giriş ekranından
+ * seçebileceği alternatifler. Tek numaraya bağlı kalmak, iki aşamalı
+ * doğrulama açıkken hesabı tamamen kilitleyebiliyordu.
+ *
+ * GARSON rolünde blok hiç ÇİZİLMİYOR — kural lib/kimlik/telefonlar.ts'te
+ * ve sunucu tarafı da aynı kaynaktan okuyor. Gizlemek tek başına koruma
+ * değil; asıl kontrol sunucuda.
+ */
+function YedekTelefonlar({ rol, mevcut = [] }: { rol: string; mevcut?: string[] }) {
+  if (!ekTelefonEklenebilirMi(rol)) return null;
+
+  // Var olanlar + bir boş satır: kullanıcı "ekle" düğmesi aramadan
+  // doğrudan yazabilsin.
+  const satirlar = [...mevcut, ""].slice(0, EN_COK_EK_TELEFON);
+
+  return (
+    <fieldset className="flex flex-col gap-1 sm:col-span-2">
+      <legend className="text-caption text-ink-muted">
+        Yedek cep numaraları (isteğe bağlı)
+      </legend>
+      <div className="mt-1 grid gap-2 sm:grid-cols-2">
+        {satirlar.map((numara, i) => (
+          <input
+            key={i}
+            name="ekTelefonlar"
+            {...alanOzellikleri("telefon", { zorunlu: false })}
+            defaultValue={numara}
+            placeholder="05XX XXX XX XX"
+            className={INPUT}
+          />
+        ))}
+      </div>
+      <span className="text-caption text-ink-faint">
+        Doğrulama kodu birincil numaraya gider; kullanıcı giriş ekranından
+        buradaki numaralardan birini de seçebilir. En fazla {EN_COK_EK_TELEFON}.
+      </span>
+    </fieldset>
+  );
+}
 
 /** İşletme seçimi gerektiren roller — tek işletmeye bağlanır. */
 function isletmeGerekir(rol: string): boolean {
@@ -92,12 +140,12 @@ export function NewUserForm({
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Ad soyad</span>
-          <input name="name" required className={INPUT} />
+          <input name="name" {...alanOzellikleri("kisiAdi")} className={INPUT} />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">E-posta</span>
-          <input name="email" type="email" required className={INPUT} />
+          <input name="email" {...alanOzellikleri("eposta")} className={INPUT} />
         </label>
 
         <label className="flex flex-col gap-1">
@@ -106,6 +154,7 @@ export function NewUserForm({
           </span>
           <input
             name="username"
+            {...alanOzellikleri("kullaniciAdi", { zorunlu: false })}
             autoCapitalize="none"
             spellCheck={false}
             placeholder="boş bırakılırsa e-postadan türetilir"
@@ -117,7 +166,12 @@ export function NewUserForm({
           <span className="text-caption text-ink-muted">
             Cep telefonu (doğrulama kodu buraya gider)
           </span>
-          <input name="phone" type="tel" required placeholder="05XX XXX XX XX" className={INPUT} />
+          <input
+            name="phone"
+            {...alanOzellikleri("telefon")}
+            placeholder="05XX XXX XX XX"
+            className={INPUT}
+          />
         </label>
 
         <label className="flex flex-col gap-1">
@@ -174,13 +228,16 @@ export function NewUserForm({
           </fieldset>
         ) : null}
 
+        <YedekTelefonlar rol={role} />
+
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Başlangıç şifresi</span>
           <input
             name="password"
+            {...alanOzellikleri("sifre")}
+            // Başlangıç şifresi bilerek AÇIK: yöneticinin onu kullanıcıya
+            // iletmesi gerekiyor, noktalarla gösterip yazdırmak anlamsız.
             type="text"
-            required
-            minLength={8}
             placeholder="en az 8 karakter"
             className={INPUT}
           />
@@ -195,6 +252,10 @@ export function NewUserForm({
           <legend className="px-1 text-caption font-medium tracking-wide text-ink-muted uppercase">
             Modül izinleri
           </legend>
+          {/* İşaretsiz kutular gönderilmez, yani "hiç modül seçilmedi" ile
+              "bu blok hiç çizilmedi" sunucuda AYNI görünüyor. Bu gizli alan
+              ikisini ayırıyor: yoksa sunucu modüllere hiç dokunmuyor. */}
+          <input type="hidden" name="modullerGonderildi" value="1" />
           {verilebilirModuller.map((modul) => (
             <label key={modul} className="flex items-start gap-2 text-small text-ink-soft">
               <input
@@ -233,6 +294,8 @@ export type EditableUser = {
   email: string;
   username: string;
   phone: string | null;
+  /** Yedek cep numaraları — birincil `phone` alanında. */
+  ekTelefonlar: string[];
   role: string;
   businessId: string | null;
   bolgeIsletmeleri: string[];
@@ -260,6 +323,9 @@ export function EditUserForm({
     updateUser,
     {},
   );
+  // Patronun ROLÜ değiştirilemez (sahiplik aboneliği taşır, platform
+  // tarafının işidir) — ama bu, MODÜLLERİNİN de değiştirilemeyeceği
+  // anlamına gelmiyor. İki ayrı konu; aynı bayrağa bağlanmışlardı.
   const rolSabit = user.role === "owner";
 
   return (
@@ -269,16 +335,20 @@ export function EditUserForm({
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Ad soyad</span>
-          <input name="name" defaultValue={user.name} required className={INPUT} />
+          <input
+            name="name"
+            {...alanOzellikleri("kisiAdi")}
+            defaultValue={user.name}
+            className={INPUT}
+          />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">E-posta</span>
           <input
             name="email"
-            type="email"
+            {...alanOzellikleri("eposta")}
             defaultValue={user.email}
-            required
             className={INPUT}
           />
         </label>
@@ -289,6 +359,7 @@ export function EditUserForm({
           </span>
           <input
             name="username"
+            {...alanOzellikleri("kullaniciAdi", { zorunlu: false })}
             defaultValue={user.username}
             autoCapitalize="none"
             spellCheck={false}
@@ -302,13 +373,19 @@ export function EditUserForm({
           </span>
           <input
             name="phone"
-            type="tel"
+            {...alanOzellikleri("telefon")}
             defaultValue={user.phone ?? ""}
-            required
             placeholder="05XX XXX XX XX"
             className={INPUT}
           />
         </label>
+
+        {/* Sahipliği korunan kullanıcıda formdan gelen rol yok sayılıyor
+            (sunucuda etkinRol), o yüzden blok da gerçek role göre. */}
+        <YedekTelefonlar
+          rol={rolSabit ? user.role : role}
+          mevcut={user.ekTelefonlar}
+        />
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Rol</span>
@@ -388,11 +465,28 @@ export function EditUserForm({
           Listede yalnızca dağıtan kişinin KENDİ sahip olduğu modüller var;
           sunucuda istenenModulleriSuz() aynı kesişimi tekrar alıyor, yani
           form alanı elle kurulsa bile fazlası geçmiyor. */}
-      {verilebilirModuller.length > 0 && !rolSabit && role !== "garson" ? (
+      {/* Modül bloğu patronda da GÖRÜNÜR.
+          Önceden koşulda `!rolSabit` vardı ve iki ayrı kural birbirine
+          karışmıştı: patronun rolü sabit diye modül izinleri de gizleniyordu.
+          Bunun iki sonucu vardı ve ikincisi sessiz bir veri kaybıydı:
+
+            1. Patrona hiçbir modül verilemiyordu — üstelik modül dağıtımı
+               kendi kümesinin alt kümesiyle sınırlı olduğu için (bkz.
+               verilebilirModuller) patronda olmayan bir modül ekibine de
+               hiç verilemiyordu. "Rezervasyon izinlerde görünmüyor"
+               şikayetinin kaynağı buydu.
+            2. Patronun telefonunu düzeltmek için formu kaydetmek, gönderilen
+               boş `moduller` listesi yüzünden TÜM modüllerini siliyordu
+               (updateUser, modulDagitabilirMi dalı). */}
+      {verilebilirModuller.length > 0 && role !== "garson" ? (
         <fieldset className="flex flex-col gap-2 rounded-chip border border-line bg-canvas p-3">
           <legend className="px-1 text-caption font-medium tracking-wide text-ink-muted uppercase">
             Modül izinleri
           </legend>
+          {/* İşaretsiz kutular gönderilmez, yani "hiç modül seçilmedi" ile
+              "bu blok hiç çizilmedi" sunucuda AYNI görünüyor. Bu gizli alan
+              ikisini ayırıyor: yoksa sunucu modüllere hiç dokunmuyor. */}
+          <input type="hidden" name="modullerGonderildi" value="1" />
           {verilebilirModuller.map((modul) => (
             <label key={modul} className="flex items-start gap-2 text-small text-ink-soft">
               <input
@@ -455,9 +549,8 @@ export function ResetPasswordForm({ userId }: { userId: string }) {
       <div className="flex gap-1">
         <input
           name="password"
+          {...alanOzellikleri("sifre")}
           type="text"
-          required
-          minLength={8}
           placeholder="yeni şifre"
           className="w-36 rounded-chip border border-line px-2 py-1 text-caption outline-none focus:border-line-strong"
         />
@@ -477,10 +570,10 @@ export function ResetPasswordForm({ userId }: { userId: string }) {
         </button>
       </div>
       {state.error ? (
-        <span className="text-caption text-danger">{state.error}</span>
+        <span className="text-caption text-danger" role="alert">{state.error}</span>
       ) : null}
       {state.saved ? (
-        <span className="text-caption text-success">{state.saved}</span>
+        <span className="text-caption text-success" role="status">{state.saved}</span>
       ) : null}
     </form>
   );
@@ -529,14 +622,14 @@ export function ToggleUserButton({
 function Feedback({ state }: { state: UserFormState }) {
   if (state.error) {
     return (
-      <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
+      <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
         {state.error}
       </p>
     );
   }
   if (state.saved) {
     return (
-      <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink">
+      <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink" role="status">
         {state.saved}
       </p>
     );

@@ -64,10 +64,10 @@ export function PaymentForm({ accountId }: { accountId: string }) {
       </button>
 
       {state.error ? (
-        <span className="w-full text-caption text-danger-ink">{state.error}</span>
+        <span className="w-full text-caption text-danger-ink" role="alert">{state.error}</span>
       ) : null}
       {state.saved ? (
-        <span className="w-full text-caption text-success-ink">{state.saved}</span>
+        <span className="w-full text-caption text-success-ink" role="status">{state.saved}</span>
       ) : null}
     </form>
   );

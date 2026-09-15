@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { modulTonu, type ModulRengi } from "@/lib/modul-rengi";
+import { modulTonu, type ModulRengi } from "@/lib/kimlik/modul-rengi";
 import { BilgiIpucu } from "./BilgiIpucu";
 
 /**

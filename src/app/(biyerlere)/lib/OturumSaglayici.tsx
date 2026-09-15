@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { BIYERLERE_JETON_ANAHTARI } from "@/lib/biyerlere-jeton";
+import { BIYERLERE_JETON_ANAHTARI } from "@/lib/biyerlere/biyerlere-jeton";
 import { appAuthGet } from "./api-istemci";
 
 /**

@@ -112,7 +112,7 @@ function Satir({
         {bekliyor ? "…" : "Kaydet"}
       </button>
 
-      {durum.error ? <span className="text-caption text-danger-ink">{durum.error}</span> : null}
+      {durum.error ? <span className="text-caption text-danger-ink" role="alert">{durum.error}</span> : null}
       {durum.saved ? <span className="text-caption text-success-ink">✓</span> : null}
     </form>
   );

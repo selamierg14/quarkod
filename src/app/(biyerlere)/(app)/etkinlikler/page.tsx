@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { CalendarDays } from "lucide-react";
-import { etkinlikleriGetir } from "@/lib/kesfet-veri";
+import { etkinlikleriGetir } from "@/lib/biyerlere/kesfet-veri";
 
 export const dynamic = "force-dynamic";
 

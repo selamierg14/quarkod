@@ -1,5 +1,5 @@
-import { requireUser, visibleBusinesses } from "@/lib/auth";
-import { getActiveAccount } from "@/lib/impersonation";
+import { requireUser, visibleBusinesses } from "@/lib/kimlik/auth";
+import { getActiveAccount } from "@/lib/kimlik/impersonation";
 import { exitAccount } from "./hesaplar/actions";
 import { logout } from "../giris/actions";
 import { AdminSidebar } from "@/components/AdminSidebar";
@@ -7,11 +7,11 @@ import { BildirimZili } from "@/components/BildirimZili";
 import { KomutPaleti } from "@/components/KomutPaleti";
 import { PersonelKabuk } from "@/components/PersonelKabuk";
 import { ProfilAvatarButton } from "@/components/ProfilAvatarButton";
-import { prisma } from "@/lib/db";
-import { ROL_ADLARI } from "@/lib/constants";
-import { abonelikUyarisi } from "@/lib/abonelik";
+import { prisma } from "@/lib/cekirdek/db";
+import { ROL_ADLARI } from "@/lib/cekirdek/constants";
+import { abonelikUyarisi } from "@/lib/isletme/abonelik";
 import { ToastProvider } from "@/components/ui";
-import { panelMenusu, panelModu } from "@/lib/panel";
+import { panelMenusu, panelModu } from "@/lib/kimlik/panel";
 
 export const dynamic = "force-dynamic";
 

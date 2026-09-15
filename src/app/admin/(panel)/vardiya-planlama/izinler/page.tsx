@@ -1,9 +1,9 @@
 import { CalendarOff } from "lucide-react";
-import { requirePersonelYonetimi, visibleBusinesses } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { requirePersonelYonetimi, visibleBusinesses } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
 import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
-import { IZIN_TURLERI, gecerliIzinTuru } from "@/lib/izin";
-import { gunBaslangici, gunEkle } from "@/lib/gun";
+import { IZIN_TURLERI, gecerliIzinTuru } from "@/lib/isletme/izin";
+import { gunBaslangici, gunEkle } from "@/lib/cekirdek/gun";
 import { IsletmeSecici } from "../../menu/MenuUst";
 import { izinKararVer, izniGeriAl } from "./actions";
 import { IzinEkleForm } from "./IzinFormlari";

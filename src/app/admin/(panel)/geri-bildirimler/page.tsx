@@ -1,10 +1,10 @@
 import { MessageSquare } from "lucide-react";
 import Link from "next/link";
-import { requireAnketErisim, visibleBusinesses } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { requireAnketErisim, visibleBusinesses } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
 import { EmptyState, StatusBadge, Stars, formatDateTime } from "@/components/ui";
 import { RaporSekmeleri } from "@/components/RaporSekmeleri";
-import { buildFeedbackWhere, type FeedbackQuery } from "@/lib/feedback-filters";
+import { buildFeedbackWhere, type FeedbackQuery } from "@/lib/isletme/feedback-filters";
 import { FilterBar } from "./FilterBar";
 
 export const dynamic = "force-dynamic";

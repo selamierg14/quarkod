@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { QrIsareti } from "@/lib/og-isaret";
+import { QrIsareti } from "@/lib/rapor/og-isaret";
 
 /** iOS "ana ekrana ekle" ikonu. */
 export const size = { width: 180, height: 180 };

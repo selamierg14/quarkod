@@ -6,6 +6,7 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { renkler, yazi, bosluk, yaricap, isima, SEKME_YUKSEKLIGI } from "../../src/tasarim";
+import { TARA_DUGMESI_PAYI } from "../../src/bilesenler/TaraDugmesi";
 import { useVeri } from "../../src/api/useVeri";
 import type { ProfilYaniti } from "../../src/api/tipler";
 import { useOturum } from "../../src/store/oturum";
@@ -71,7 +72,7 @@ export default function ProfilEkrani() {
       contentContainerStyle={{
         paddingTop: guvenliAlan.top + bosluk.l,
         paddingHorizontal: bosluk.xl,
-        paddingBottom: SEKME_YUKSEKLIGI + guvenliAlan.bottom + bosluk.xxl,
+        paddingBottom: SEKME_YUKSEKLIGI + guvenliAlan.bottom + TARA_DUGMESI_PAYI,
         gap: bosluk.xl,
       }}
       showsVerticalScrollIndicator={false}

@@ -1,8 +1,8 @@
 "use client";
 
-import { MODULLER, MODUL_ANAHTARLARI } from "@/lib/moduller";
+import { MODULLER, MODUL_ANAHTARLARI } from "@/lib/kimlik/moduller";
 import { useActionState, useState } from "react";
-import { TarihGirdisi } from "@/components/ui";
+import { TarihGirdisi, GonderDugmesi } from "@/components/ui";
 import {
   createAccount,
   enterAccount,
@@ -10,6 +10,7 @@ import {
   updateSubscription,
   type AccountFormState,
 } from "./actions";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
 
 const INPUT =
   "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
@@ -47,23 +48,24 @@ export function NewAccountForm() {
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Hesap adı (firma/zincir)</span>
-          <input name="name" required className={INPUT} />
+          <input name="name" {...alanOzellikleri("isletmeAdi")} className={INPUT} />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Sahibinin adı</span>
-          <input name="ownerName" required className={INPUT} />
+          <input name="ownerName" {...alanOzellikleri("kisiAdi")} className={INPUT} />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Sahibinin e-postası</span>
-          <input name="ownerEmail" type="email" required className={INPUT} />
+          <input name="ownerEmail" {...alanOzellikleri("eposta")} className={INPUT} />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Kullanıcı adı (giriş için)</span>
           <input
             name="ownerUsername"
+            {...alanOzellikleri("kullaniciAdi", { zorunlu: false })}
             autoCapitalize="none"
             spellCheck={false}
             placeholder="boş bırakılırsa e-postadan türetilir"
@@ -75,13 +77,19 @@ export function NewAccountForm() {
           <span className="text-caption text-ink-muted">
             Cep telefonu (doğrulama kodu)
           </span>
-          <input name="ownerPhone" type="tel" required placeholder="05XX XXX XX XX" className={INPUT} />
+          <input
+            name="ownerPhone"
+            {...alanOzellikleri("telefon")}
+            placeholder="05XX XXX XX XX"
+            className={INPUT}
+          />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Başlangıç şifresi</span>
           <input
             name="password"
+            {...alanOzellikleri("sifre")}
             type="text"
             required
             minLength={8}
@@ -103,12 +111,12 @@ export function NewAccountForm() {
       </div>
 
       {state.error ? (
-        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
+        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
           {state.error}
         </p>
       ) : null}
       {state.saved ? (
-        <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink">
+        <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink" role="status">
           {state.saved}
         </p>
       ) : null}
@@ -166,8 +174,7 @@ export function ToggleAccountButton({
   return (
     <form action={toggleAccount}>
       <input type="hidden" name="accountId" value={accountId} />
-      <button
-        type="submit"
+      <GonderDugmesi
         title={
           active
             ? "Askıya alınınca kullanıcılar giremez ve QR'lar çalışmaz; veri silinmez."
@@ -176,7 +183,7 @@ export function ToggleAccountButton({
         className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas"
       >
         {active ? "Askıya al" : "Aktifleştir"}
-      </button>
+      </GonderDugmesi>
     </form>
   );
 }
@@ -242,6 +249,7 @@ export function SubscriptionForm({
         <span className="text-caption text-ink-muted">İYS hizmet sağlayıcı kodu</span>
         <input
           name="iysCode"
+          {...alanOzellikleri("iysKodu", { zorunlu: false })}
           defaultValue={iysCode}
           placeholder="ör. 123456"
           className={`${INPUT} w-36 py-1.5`}
@@ -256,9 +264,9 @@ export function SubscriptionForm({
         {pending ? "Kaydediliyor…" : "Kaydet"}
       </button>
 
-      <span className="pb-2 text-caption">
-        {state.error ? <span className="text-danger">{state.error}</span> : null}
-        {state.saved ? <span className="text-success-ink">{state.saved}</span> : null}
+      <span className="pb-2 text-caption" role="alert">
+        {state.error ? <span className="text-danger" role="alert">{state.error}</span> : null}
+        {state.saved ? <span className="text-success-ink" role="status">{state.saved}</span> : null}
         {!state.error && !state.saved ? (
           <span className="text-ink-faint">
             Boş bırakılırsa süresiz. Tarih geçince QR kodları çalışmaz.

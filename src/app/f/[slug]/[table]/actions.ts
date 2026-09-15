@@ -3,26 +3,27 @@
 import { createHash } from "node:crypto";
 import { headers } from "next/headers";
 import { after } from "next/server";
-import { prisma } from "@/lib/db";
-import { notifyLowRating } from "@/lib/mail";
-import { validateImageDataUrl } from "@/lib/image";
-import { googleYorumLinkiGecerliMi } from "@/lib/google-yorum";
-import { vardiyaHesapla } from "@/lib/vardiya";
-import { foldTr } from "@/lib/text";
-import { detaylariDerle, sorunSecenekleri } from "@/lib/anket-detay";
-import { cevir } from "@/lib/ceviriler";
-import { VARSAYILAN_DIL, gecerliDilMi } from "@/lib/diller";
-import { CONTACT_TYPES, KVKK_VERSION, type ContactType } from "@/lib/kvkk";
-import { getOrCreateVisitorId } from "@/lib/visitor";
-import { hesapAktifMi } from "@/lib/abonelik";
-import { ANKET_KATILIM_PUANI } from "@/lib/ziyaret";
-import { appJetonCoz, appOturumIptalSebebi } from "@/lib/app-oturum";
+import { prisma } from "@/lib/cekirdek/db";
+import { notifyLowRating } from "@/lib/altyapi/mail";
+import { validateImageDataUrl } from "@/lib/isletme/image";
+import { googleYorumLinkiGecerliMi } from "@/lib/isletme/google-yorum";
+import { vardiyaHesapla } from "@/lib/personel/vardiya";
+import { foldTr } from "@/lib/cekirdek/text";
+import { detaylariDerle, sorunSecenekleri } from "@/lib/isletme/anket-detay";
+import { cevir } from "@/lib/cekirdek/ceviriler";
+import { VARSAYILAN_DIL, gecerliDilMi } from "@/lib/cekirdek/diller";
+import { CONTACT_TYPES, KVKK_VERSION, type ContactType } from "@/lib/isletme/kvkk";
+import { getOrCreateVisitorId } from "@/lib/kimlik/visitor";
+import { hesapAktifMi } from "@/lib/isletme/abonelik";
+import { ANKET_KATILIM_PUANI } from "@/lib/biyerlere/ziyaret";
+import { appJetonCoz, appOturumIptalSebebi } from "@/lib/kimlik/app-oturum";
 import {
   DEFAULT_IYS_SOURCE,
   MARKETING_TEXT_VERSION,
   marketingConsentText,
   toRecipient,
-} from "@/lib/iys";
+} from "@/lib/isletme/iys";
+import { alanDogrula } from "@/lib/cekirdek/desenler";
 
 export type SubmitResult =
   | {
@@ -295,7 +296,10 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
       error: "İletişim bilgisi bırakmak için aydınlatma metnini onaylamanız gerekiyor.",
     };
   }
-  if (storeContact && contactType === "eposta" && !/^\S+@\S+\.\S+$/.test(rawContact)) {
+  // Desen desenler.ts'ten: aynı e-posta kontrolünün BEŞİNCİ elle yazılmış
+  // kopyasıydı. Bu form kimlik istemiyor (masadaki karekoddan açılıyor),
+  // yani biçim kuralının en gevşek kalmaması gereken yerlerden biri.
+  if (storeContact && contactType === "eposta" && !alanDogrula(rawContact, "eposta", "E-posta").ok) {
     return { ok: false, error: "E-posta adresi geçerli görünmüyor." };
   }
   if (storeContact && contactType === "telefon" && rawContact.replace(/\D/g, "").length < 10) {

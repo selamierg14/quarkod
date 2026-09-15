@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { REZERVASYON_DURUMLARI, type RezervasyonDurumu } from "@/lib/rezervasyon";
+import { REZERVASYON_DURUMLARI, type RezervasyonDurumu } from "@/lib/isletme/rezervasyon";
 import { rezervasyonDurumDegistir, type RezervasyonFormState } from "./actions";
 
 export type ListeKaydi = {
@@ -121,7 +121,7 @@ function Satir({ businessId, kayit }: { businessId: string; kayit: ListeKaydi })
         </form>
       </div>
 
-      {durum.error ? <p className="text-caption text-danger-ink">{durum.error}</p> : null}
+      {durum.error ? <p className="text-caption text-danger-ink" role="alert">{durum.error}</p> : null}
     </div>
   );
 }

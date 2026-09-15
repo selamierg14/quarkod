@@ -1,11 +1,11 @@
 import { Lock, Sparkles } from "lucide-react";
-import { requireMenuErisim } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { requireMenuErisim } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
 import { EmptyState, PageHeader } from "@/components/ui";
 import { IsletmeSecici, MenuSekmeleri } from "../MenuUst";
 import { SablonSecici } from "../SablonSecici";
 import { menuSecimi } from "../_secim";
-import type { BusinessType } from "@/lib/constants";
+import type { BusinessType } from "@/lib/cekirdek/constants";
 
 export const dynamic = "force-dynamic";
 

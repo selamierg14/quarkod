@@ -1,7 +1,7 @@
 import "server-only";
 import { notFound } from "next/navigation";
-import { canAccessBusiness, requireUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { canAccessBusiness, requireUser } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
 
 /**
  * İşletme sekmelerinin ortak yükleyicisi: yetki kontrolü + kayıt.

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { sorunSecenekleri } from "@/lib/anket-detay";
+import { sorunSecenekleri } from "@/lib/isletme/anket-detay";
 import {
   addCategory,
   moveCategory,
@@ -9,6 +9,7 @@ import {
   updateCategoryProblems,
   type FormState,
 } from "../actions";
+import { GonderDugmesi } from "@/components/ui";
 
 type Category = {
   id: string;
@@ -74,12 +75,11 @@ export function CategoryManager({
             </form>
             <form action={toggleCategory}>
               <input type="hidden" name="categoryId" value={category.id} />
-              <button
-                type="submit"
+              <GonderDugmesi
                 className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas"
-              >
+      >
                 {category.active ? "Kapat" : "Aç"}
-              </button>
+              </GonderDugmesi>
             </form>
           </div>
 
@@ -111,7 +111,7 @@ export function CategoryManager({
       </form>
 
       {state.error ? (
-        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
+        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
           {state.error}
         </p>
       ) : null}
@@ -158,12 +158,11 @@ function SorunSecenekleri({ kategori }: { kategori: Category }) {
             placeholder="Tuvaletler, Masalar, Zemin"
             className="min-w-56 flex-1 rounded-chip border border-line bg-surface px-3 py-1.5 text-caption outline-none focus:border-line-strong"
           />
-          <button
-            type="submit"
+          <GonderDugmesi
             className="rounded-chip bg-accent-600 px-3 py-1.5 text-caption font-medium text-white transition hover:bg-accent-700"
-          >
+      >
             Kaydet
-          </button>
+          </GonderDugmesi>
           <span className="w-full text-caption text-ink-faint">
             Virgülle ayırın. Boş bırakırsanız varsayılana döner.
           </span>

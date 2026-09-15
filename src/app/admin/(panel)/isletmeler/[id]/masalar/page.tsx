@@ -1,7 +1,7 @@
 import { Armchair, DoorOpen } from "lucide-react";
 import Link from "next/link";
 import { SectionCard } from "@/components/ui";
-import { masaSirala } from "@/lib/masa";
+import { masaSirala } from "@/lib/isletme/masa";
 import { TableManager } from "../TableManager";
 import { TekQrKurulum } from "../TekQrKurulum";
 import { IsletmeUst } from "../IsletmeUst";

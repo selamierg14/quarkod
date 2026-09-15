@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { mekanDetayGetir } from "@/lib/kesfet-veri";
+import { mekanDetayGetir } from "@/lib/biyerlere/kesfet-veri";
 
 export const dynamic = "force-dynamic";
 

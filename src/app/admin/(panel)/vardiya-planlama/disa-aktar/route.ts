@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { canAccessBusiness, getSession, visibleBusinesses } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { toCsv } from "@/lib/feedback-filters";
-import { gunEkle, gunGirdisi, haftaBaslangici } from "@/lib/gun";
-import { cizelgeyiTabloyaDok } from "@/lib/vardiya-tablo";
-import { izinKumesiKur } from "@/lib/izin";
+import { canAccessBusiness, getSession, visibleBusinesses } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { toCsv } from "@/lib/isletme/feedback-filters";
+import { gunEkle, gunGirdisi, haftaBaslangici } from "@/lib/cekirdek/gun";
+import { cizelgeyiTabloyaDok } from "@/lib/personel/vardiya-tablo";
+import { izinKumesiKur } from "@/lib/isletme/izin";
 
 /**
  * Haftalık vardiya çizelgesini Excel'de açılabilir bir tablo olarak indirir.

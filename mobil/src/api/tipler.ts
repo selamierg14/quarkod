@@ -36,7 +36,8 @@ export type ProfilYaniti = {
     seviye: number;
     sonrakiSeviyeyeKalan: number | null;
     dogrulanmisZiyaret: number;
-    cuzdandakiKupon: number;
+    /** Kupon özelliği kapalıyken sunucu bu alanı HİÇ göndermiyor. */
+    cuzdandakiKupon?: number;
     davetEttigiKisiSayisi: number;
   };
   rozetler: Rozet[];
@@ -56,6 +57,7 @@ export type MekanOzet = {
   logoUrl: string | null;
   kapakUrl: string | null;
   markaRengi: string;
+  instagram: string | null;
   konum: { enlem: number | null; boylam: number | null };
   mesafeMetre: number | null;
   fiyatSegmenti: string | null;
@@ -108,4 +110,72 @@ export type CuzdanYaniti = {
     kalanZiyaret: number;
     hediyeKazanildiMi: boolean;
   }[];
+};
+
+/**
+ * `/api/app/mekanlar/[slug]` yanıtı.
+ *
+ * Listeden (`MekanOzet`) ayrı: menü onlarca ürün taşıyor ve bunu liste
+ * yanıtına koymak, kullanıcının hiç açmayacağı kırk mekanın menüsünü de
+ * indirmesi demekti (sunucudaki aynı gerekçe).
+ */
+export type MekanUrunu = {
+  id: string;
+  ad: string;
+  aciklama: string | null;
+  fiyatKurus: number;
+  gorselUrl: string | null;
+  etiketler: string[];
+  tukendi: boolean;
+  kaloriKcal: number | null;
+  alerjenler: string[];
+};
+
+export type MekanDetay = MekanOzet & {
+  siparisLinkleri: {
+    yemeksepeti: string | null;
+    getir: string | null;
+    trendyol: string | null;
+    migros: string | null;
+  };
+  telefon: string | null;
+  biyerlerePlusOrtagi: boolean;
+  menu: {
+    fiyatGuncelleme: string | null;
+    bolumler: { id: string; ad: string; urunler: MekanUrunu[] }[];
+  };
+  dogrulanmisYorumlar: {
+    id: string;
+    isim: string;
+    yorum: string;
+    puan: number | null;
+    tarih: string;
+    rozetler: string[];
+  }[];
+};
+
+export type MekanDetayYaniti = { mekan: MekanDetay };
+
+/** `/api/app/ziyaret` başarı yanıtı (201). */
+export type ZiyaretYaniti = {
+  ziyaret: { id: string; mekanAdi: string; mesafeMetre: number | null; tarih: string };
+  kazanilanPuan: number;
+  yeniRozetler: { anahtar: string; ad: string; aciklama: string; puan: number }[];
+  toplamPuan: number;
+  seviye: number;
+  /**
+   * Sadakat damga kartı — sunucu bu özelliği kapatabiliyor ve o zaman alan
+   * HİÇ GELMİYOR (bkz. sunucuda lib/biyerlere/kupon.ts). İsteğe bağlı
+   * olması bilinçli: uygulamanın yayındaki sürümleri sunucu bayrağını
+   * bilmiyor, verinin varlığına bakıp çiziyor. Böylece özellik geri
+   * açıldığında yeni sürüm beklemeden yeniden görünüyor.
+   */
+  sadakat?: {
+    damgaSayisi: number;
+    esik: number;
+    kalanZiyaret: number;
+    kazanilanKupon: { id: string; kod: string; indirim: string } | null;
+  };
+  tamamlananRotalar: { id: string; ad: string; slug: string }[];
+  rotaTamamlamaPuani: number;
 };

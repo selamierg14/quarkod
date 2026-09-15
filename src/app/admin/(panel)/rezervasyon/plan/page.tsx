@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { LayoutGrid } from "lucide-react";
-import { requireRezervasyonErisim, visibleBusinesses } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { requireRezervasyonErisim, visibleBusinesses } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
 import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
 import { IsletmeSecici } from "../../menu/MenuUst";
 import { KatPlani, type PlanMasasi } from "../KatPlani";

@@ -11,7 +11,9 @@ import Animated, {
 } from "react-native-reanimated";
 import Svg, { Path, Circle } from "react-native-svg";
 import { CamYuzey } from "../../src/bilesenler/CamYuzey";
+import { TaraDugmesi } from "../../src/bilesenler/TaraDugmesi";
 import { renkler, bosluk, yaricap, fontlar, SEKME_YUKSEKLIGI } from "../../src/tasarim";
+import { KUPON_AKTIF } from "../../src/ozellikler";
 
 /**
  * Alt navigasyon — ekranın altında yüzen buzlu cam ada.
@@ -26,7 +28,10 @@ export default function SekmeLayout() {
   const guvenliAlan = useSafeAreaInsets();
 
   return (
-    <Tabs
+    // Tara düğmesi sekme çubuğunun KARDEŞİ: `Tabs` içine konulduğunda
+    // çubuğun kendi kırpma alanına giriyor ve üst yarısı kesiliyordu.
+    <View style={{ flex: 1 }}>
+      <Tabs
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
@@ -75,6 +80,12 @@ export default function SekmeLayout() {
       <Tabs.Screen
         name="cuzdan"
         options={{
+          // Kupon/sadakat kapalıyken sekme gizleniyor: içeriği yalnızca
+          // kupon ve damga kartıydı, açık bırakmak kullanıcıyı kalıcı
+          // olarak boş bir ekrana götürmek olurdu (bkz. src/ozellikler.ts).
+          // `href: null` ekranı yönlendirmede tutuyor ama çubuktan
+          // düşürüyor; dosyayı silmeye gerek kalmıyor.
+          href: KUPON_AKTIF ? undefined : null,
           tabBarIcon: ({ focused }) => <Sekme ad="Cüzdan" aktif={focused} simge="cuzdan" />,
         }}
       />
@@ -84,7 +95,10 @@ export default function SekmeLayout() {
           tabBarIcon: ({ focused }) => <Sekme ad="Profil" aktif={focused} simge="kisi" />,
         }}
       />
-    </Tabs>
+      </Tabs>
+
+      <TaraDugmesi altBosluk={guvenliAlan.bottom} />
+    </View>
   );
 }
 

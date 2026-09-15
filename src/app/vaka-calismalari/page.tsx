@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, FlaskConical } from "lucide-react";
-import { markaStili } from "@/lib/marka";
-import { VAKALAR } from "@/lib/vakalar";
+import { markaStili } from "@/lib/isletme/marka";
+import { VAKALAR } from "@/lib/rapor/vakalar";
 import { Breadcrumb } from "../_landing/Breadcrumb";
 import { Footer } from "../_landing/Footer";
 import { Header } from "../_landing/Header";

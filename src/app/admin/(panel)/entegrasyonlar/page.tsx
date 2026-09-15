@@ -1,5 +1,5 @@
 import { Plug } from "lucide-react";
-import { requireModul, requireTenantOwner } from "@/lib/auth";
+import { requireModul, requireTenantOwner } from "@/lib/kimlik/auth";
 import { PageHeader } from "@/components/ui";
 
 export const dynamic = "force-dynamic";

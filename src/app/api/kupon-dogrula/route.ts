@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { canAccessBusiness, getSession } from "@/lib/auth";
-import { kuponKoduGecerliMi } from "@/lib/kupon-kod";
+import { prisma } from "@/lib/cekirdek/db";
+import { canAccessBusiness, getSession, yazmaEngeli } from "@/lib/kimlik/auth";
+import { kuponKoduGecerliMi } from "@/lib/biyerlere/kupon-kod";
+import { SINIRLAR, hizSiniriIsaretle, hizSiniriKontrol, hizSiniriMesaji } from "@/lib/kimlik/hiz-siniri";
+import { KUPON_AKTIF } from "@/lib/biyerlere/kupon";
 
 export const dynamic = "force-dynamic";
 
@@ -17,9 +19,25 @@ export const dynamic = "force-dynamic";
  * ekran görüntüsü en fazla 15-30 dakika yaşıyor.
  */
 export async function POST(request: Request) {
+  // Özellik kapalıyken uç hiç yokmuş gibi davranıyor (bkz.
+  // lib/biyerlere/kupon.ts). 404 bilinçli: "kapalı" demek, var olan ama
+  // şu an çalışmayan bir uç olduğunu duyurmak olurdu.
+  if (!KUPON_AKTIF) {
+    return NextResponse.json({ hata: "Uç bulunamadı." }, { status: 404 });
+  }
+
   const user = await getSession();
   if (!user) {
     return NextResponse.json({ hata: "Oturum gerekli." }, { status: 401 });
+  }
+
+  // Kupon yakmak bir YAZMA işlemi ve geri alınamıyor. Bu kapı eksikti:
+  // aboneliği bitmiş bir hesabın personeli müşterinin kuponunu
+  // harcayabiliyordu (panelin geri kalanında requireYazma bunu engelliyor,
+  // ama o yardımcı yönlendirme yaptığı için API rotasında kullanılamıyor).
+  const engel = await yazmaEngeli(user);
+  if (engel) {
+    return NextResponse.json({ hata: engel }, { status: 403 });
   }
 
   let govde: { kuponId?: unknown; kod?: unknown };
@@ -31,6 +49,13 @@ export async function POST(request: Request) {
 
   const kuponId = typeof govde.kuponId === "string" ? govde.kuponId : "";
   const kod = typeof govde.kod === "string" ? govde.kod : "";
+  // Yalnızca HATALI denemeler sayılıyor (aşağıda işaretleniyor): her
+  // başarılı yakmayı da saymak, yoğun bir kafede personeli kendi kotasıyla
+  // kilitliyordu.
+  const denemeKotasi = await hizSiniriKontrol(SINIRLAR.kuponKodu, user.id);
+  if (!denemeKotasi.izin) {
+    return NextResponse.json({ hata: hizSiniriMesaji(denemeKotasi) }, { status: 429 });
+  }
   if (!kuponId || !kod) {
     return NextResponse.json({ hata: "Kupon ve kod gerekli." }, { status: 400 });
   }
@@ -65,6 +90,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ hata: "Kuponun süresi dolmuş." }, { status: 409 });
   }
   if (!kuponKoduGecerliMi(kupon.id, kod)) {
+    // Kod 32^8 kombinasyon; kaba kuvvet pratik değil ama sınır yine de
+    // gerekli: hatalı denemeler her seferinde bir yazma işlemi tetikliyor
+    // ve kasadaki bir hesap üzerinden sunucu meşgul edilebiliyordu.
+    await hizSiniriIsaretle(SINIRLAR.kuponKodu, user.id);
     // Kodun neresinin yanlış olduğu söylenmiyor; ayrıca doğrulama sabit
     // sürede yapılıyor (bkz. kuponKoduGecerliMi).
     return NextResponse.json(

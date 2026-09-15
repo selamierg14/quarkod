@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { CalendarClock } from "lucide-react";
-import { requireRezervasyonErisim, visibleBusinesses } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { requireRezervasyonErisim, visibleBusinesses } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
 import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
-import { masaDurumu, type MevcutRezervasyon } from "@/lib/rezervasyon";
+import { masaDurumu, type MevcutRezervasyon } from "@/lib/isletme/rezervasyon";
 import { IsletmeSecici } from "../menu/MenuUst";
 import { KatPlani, type PlanMasasi } from "./KatPlani";
 import { RezervasyonForm } from "./RezervasyonForm";

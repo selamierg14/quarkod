@@ -1,9 +1,9 @@
 import "dotenv/config";
 import { randomBytes } from "crypto";
 import { createScriptClient } from "./prisma-client";
-import { SADAKAT_ESIGI } from "../src/lib/sadakat";
-import { ROZETLER, hakEdilenRozetler, type ZiyaretOzeti } from "../src/lib/rozet";
-import { ZIYARET_PUANI } from "../src/lib/ziyaret";
+import { SADAKAT_ESIGI } from "../src/lib/biyerlere/sadakat";
+import { ROZETLER, hakEdilenRozetler, type ZiyaretOzeti } from "../src/lib/biyerlere/rozet";
+import { ZIYARET_PUANI } from "../src/lib/biyerlere/ziyaret";
 
 /**
  * Demo verisindeki ÜÇ BOŞLUĞU kapatır.

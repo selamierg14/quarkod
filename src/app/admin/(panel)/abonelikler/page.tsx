@@ -1,7 +1,7 @@
-import { requireSuperadmin } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { abonelikKademe, kalanGun, type AbonelikKademe } from "@/lib/abonelik";
-import { formatPrice } from "@/lib/menu";
+import { requireSuperadmin } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { abonelikKademe, kalanGun, type AbonelikKademe } from "@/lib/isletme/abonelik";
+import { formatPrice } from "@/lib/isletme/menu";
 import { formatDateTime, PageHeader } from "@/components/ui";
 import { PaymentForm } from "./PaymentForm";
 

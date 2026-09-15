@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
-import { SITE_ADI } from "@/lib/site";
-import { QrIsareti } from "@/lib/og-isaret";
+import { SITE_ADI } from "@/lib/cekirdek/site";
+import { QrIsareti } from "@/lib/rapor/og-isaret";
 
 /**
  * Paylaşım görseli (WhatsApp, X, LinkedIn önizlemesi).

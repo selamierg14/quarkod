@@ -34,6 +34,14 @@ export function BildirimZili() {
     let iptal = false;
 
     async function yenile() {
+      // Zil hem AdminSidebar'ın mobil başlığında hem de panel layout'unun
+      // masaüstü çubuğunda duruyor; biri `lg:hidden`, diğeri `hidden
+      // lg:flex`. CSS bir React bileşenini söküp atmadığı için ikisi de
+      // her zaman monte oluyordu ve görünmeyen kopya da 45 saniyede bir
+      // sunucuya gidiyordu — her panel kullanıcısı için iki kat sorgu.
+      // Görünmeyen kopya yoklamayı atlıyor (display:none olan öğenin hiç
+      // istemci dikdörtgeni olmaz).
+      if (kutuRef.current && kutuRef.current.getClientRects().length === 0) return;
       try {
         const sonuc = await bildirimlerimiGetir();
         if (iptal) return;

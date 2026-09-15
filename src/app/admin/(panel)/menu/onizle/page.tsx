@@ -1,6 +1,6 @@
 import { Lock, Smartphone, Utensils } from "lucide-react";
 import Link from "next/link";
-import { requireMenuErisim } from "@/lib/auth";
+import { requireMenuErisim } from "@/lib/kimlik/auth";
 import { EmptyState, PageHeader } from "@/components/ui";
 import { IsletmeSecici, MenuSekmeleri } from "../MenuUst";
 import { menuSecimi } from "../_secim";
