@@ -26,6 +26,37 @@ export {
  */
 
 /** Kodun hangi akış için üretildiği — aynı anda ikisi ayrı yaşayabilir. */
+/**
+ * OTP kayıtlarının tutulduğu tablo — dışarıdan veriliyor.
+ *
+ * İki ayrı kullanıcı dünyası var (panel `User`, tüketici `AppUser`) ve
+ * ikisinin OTP tabloları ayrı (`otp_codes`, `app_otp_codes`). Mantığı
+ * ikinci kez yazmak yerine depo enjekte ediliyor — `hiz-siniri.ts` de
+ * aynı deseni kullanıyor.
+ *
+ * Bunun güvenlik tarafı da var: deneme sayacının atomik artırılması
+ * (bkz. aşağıdaki uzun yorum) TEK yerde duruyor. İki kopya olsaydı biri
+ * düzeltilip diğeri unutulduğunda, unutulanda altı haneli kod sınırsız
+ * denenebilir kalırdı.
+ */
+export type OtpDeposu = {
+  findFirst: (args: unknown) => Promise<OtpKaydi | null>;
+  create: (args: unknown) => Promise<{ id: string }>;
+  update: (args: unknown) => Promise<{ attempts: number; usedAt: Date | null }>;
+  updateMany: (args: unknown) => Promise<unknown>;
+  delete: (args: unknown) => Promise<unknown>;
+};
+
+type OtpKaydi = {
+  id: string;
+  codeHash: string;
+  attempts: number;
+  expiresAt: Date;
+};
+
+/** Kaydın kime ait olduğunu söyleyen alan — tabloya göre değişiyor. */
+export type OtpSahibi = { userId: string } | { appUserId: string };
+
 export type OtpPurpose = "giris" | "sifre";
 
 const CODE_LENGTH = 6;
@@ -62,10 +93,12 @@ export type IssueResult =
  * Kod gönderilemezse kayıt da silinir — kullanıcıyı eline geçmeyecek bir kodu
  * beklerken bırakmak, hata mesajı vermekten daha kötü.
  */
-export async function issueOtp(
-  userId: string,
+export async function issueOtpFor(
+  depo: OtpDeposu,
+  sahip: OtpSahibi,
   phone: string,
-  purpose: OtpPurpose,
+  purpose: string,
+  metinUret: (kod: string, purpose: string) => string = varsayilanMetin,
 ): Promise<IssueResult> {
   const hedef = normalizePhone(phone);
   if (!hedef) return { ok: false, error: "Telefon numarası geçersiz." };
@@ -81,9 +114,9 @@ export async function issueOtp(
   // `phone: null` olan eski kayıtlar "bilinmiyor" sayılıp bekletiyor —
   // temkinli taraf.
   const since = new Date(Date.now() - RESEND_COOLDOWN_SECONDS * 1000);
-  const recent = await prisma.otpCode.findFirst({
+  const recent = await depo.findFirst({
     where: {
-      userId,
+      ...sahip,
       purpose,
       createdAt: { gte: since },
       usedAt: null,
@@ -99,15 +132,15 @@ export async function issueOtp(
   }
 
   // Bekleyen eski kodlar geçersizleşsin: aynı anda iki geçerli kod olmasın.
-  await prisma.otpCode.updateMany({
-    where: { userId, purpose, usedAt: null },
+  await depo.updateMany({
+    where: { ...sahip, purpose, usedAt: null },
     data: { usedAt: new Date() },
   });
 
   const code = generateCode();
-  const record = await prisma.otpCode.create({
+  const record = await depo.create({
     data: {
-      userId,
+      ...sahip,
       purpose,
       codeHash: await bcrypt.hash(code, 10),
       phone: hedef,
@@ -115,16 +148,13 @@ export async function issueOtp(
     },
   });
 
-  const metin =
-    purpose === "giris"
-      ? `Memnuniyet paneli giris kodunuz: ${code}. ${OTP_TTL_MINUTES} dakika gecerlidir.`
-      : `Sifre sifirlama kodunuz: ${code}. ${OTP_TTL_MINUTES} dakika gecerlidir.`;
+  const metin = metinUret(code, purpose);
 
   // Test aşamasında yönlendirme yapılır; maskeleme yine kullanıcının kendi
   // numarasını gösterir ki ekranda tutarsızlık olmasın.
   const sonuc = await sendSms(deliveryPhone(hedef), metin);
   if (!sonuc.sent) {
-    await prisma.otpCode.delete({ where: { id: record.id } });
+    await depo.delete({ where: { id: record.id } });
     return { ok: false, error: sonuc.error ?? "Kod gönderilemedi." };
   }
 
@@ -134,13 +164,14 @@ export async function issueOtp(
 export type VerifyResult = { ok: true } | { ok: false; error: string };
 
 /** Kodu doğrular ve tek kullanımlık olarak yakar. */
-export async function verifyOtp(
-  userId: string,
-  purpose: OtpPurpose,
+export async function verifyOtpFor(
+  depo: OtpDeposu,
+  sahip: OtpSahibi,
+  purpose: string,
   code: string,
 ): Promise<VerifyResult> {
-  const record = await prisma.otpCode.findFirst({
-    where: { userId, purpose, usedAt: null },
+  const record = await depo.findFirst({
+    where: { ...sahip, purpose, usedAt: null },
     orderBy: { createdAt: "desc" },
   });
 
@@ -169,7 +200,7 @@ export async function verifyOtp(
    * geçebiliyor. Başarılı denemenin de sayacı artırması zararsız — kod
    * zaten o an yakılıyor.
    */
-  const guncel = await prisma.otpCode.update({
+  const guncel = await depo.update({
     where: { id: record.id },
     data: { attempts: { increment: 1 } },
     select: { attempts: true, usedAt: true },
@@ -181,7 +212,7 @@ export async function verifyOtp(
   }
 
   if (guncel.attempts > MAX_ATTEMPTS) {
-    await prisma.otpCode.update({
+    await depo.update({
       where: { id: record.id },
       data: { usedAt: new Date() },
     });
@@ -200,9 +231,30 @@ export async function verifyOtp(
     };
   }
 
-  await prisma.otpCode.update({
+  await depo.update({
     where: { id: record.id },
     data: { usedAt: new Date() },
   });
   return { ok: true };
+}
+
+/** Panel akışlarının SMS metni. */
+function varsayilanMetin(code: string, purpose: string): string {
+  return purpose === "giris"
+    ? `Memnuniyet paneli giris kodunuz: ${code}. ${OTP_TTL_MINUTES} dakika gecerlidir.`
+    : `Sifre sifirlama kodunuz: ${code}. ${OTP_TTL_MINUTES} dakika gecerlidir.`;
+}
+
+/* ---------------------------------------------------------------- panel */
+/**
+ * Panel (`User`) için sarmalayıcılar — çağıranlar deponun varlığını
+ * bilmek zorunda kalmasın. Tüketici tarafı kendi sarmalayıcılarını
+ * lib/biyerlere/app-otp.ts'te kuruyor.
+ */
+export function issueOtp(userId: string, phone: string, purpose: OtpPurpose) {
+  return issueOtpFor(prisma.otpCode as unknown as OtpDeposu, { userId }, phone, purpose);
+}
+
+export function verifyOtp(userId: string, purpose: OtpPurpose, code: string) {
+  return verifyOtpFor(prisma.otpCode as unknown as OtpDeposu, { userId }, purpose, code);
 }

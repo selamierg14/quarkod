@@ -34,7 +34,7 @@ export type Erisim =
 export type ApiPolitikasi = {
   erisim: Erisim;
   /** İzin verilen HTTP metotları; listede olmayan 405 alır. */
-  metotlar: readonly ("GET" | "POST" | "DELETE")[];
+  metotlar: readonly ("GET" | "POST" | "PUT" | "DELETE")[];
   /** Yol sonunda dinamik bir parça var mı (`/mekanlar/<slug>`). */
   dinamik?: boolean;
 };
@@ -50,6 +50,14 @@ export const API_POLITIKALARI: Record<string, ApiPolitikasi> = {
   // kaydolmaya ikna etmez.
   "/giris": { erisim: "acik", metotlar: ["POST"] },
   "/kayit": { erisim: "acik", metotlar: ["POST"] },
+  /**
+   * Şifre kurtarma AÇIK olmak zorunda — girişi olmayan biri kullanıyor.
+   *
+   * Korumaları jeton değil: kullanıcı adına göre hız sınırı, ve yanıtın
+   * kullanıcı varlığını sızdırmaması (bkz. route.ts). Kod da istemcinin
+   * verdiği numaraya değil veritabanındaki DOĞRULANMIŞ numaraya gidiyor.
+   */
+  "/sifre-kurtar": { erisim: "acik", metotlar: ["POST", "PUT"] },
   "/mekanlar": { erisim: "acik", metotlar: ["GET"] },
   "/mekanlar/": { erisim: "acik", metotlar: ["GET"], dinamik: true },
   // Anonim ölçüm: kim olduğunu bilmek gerekmiyor, yalnızca "kaç kez".
@@ -66,6 +74,8 @@ export const API_POLITIKALARI: Record<string, ApiPolitikasi> = {
   "/push": { erisim: "jetonlu", metotlar: ["POST", "DELETE"] },
   "/ziyaret": { erisim: "jetonlu", metotlar: ["POST"] },
   "/plus-talep": { erisim: "jetonlu", metotlar: ["POST"] },
+  /** Kurtarma numarası ekleme/doğrulama/kaldırma — oturum şart. */
+  "/telefon": { erisim: "jetonlu", metotlar: ["POST", "PUT", "DELETE"] },
 };
 
 const ONEK = "/api/app";

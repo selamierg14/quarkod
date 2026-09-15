@@ -63,7 +63,7 @@ export async function middleware(request: NextRequest) {
     const corsBasliklari = karar.corsGerekli
       ? {
           "Access-Control-Allow-Origin": request.headers.get("origin") ?? "*",
-          "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
+          "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, Authorization",
           "Access-Control-Max-Age": "86400",
         }

@@ -1258,6 +1258,23 @@ model AppUser {
   /// Kaşif puanı. Rozet eşikleri ve seviye bundan hesaplanıyor.
   puan Int @default(0)
 
+  /// KURTARMA KANALI — +905XXXXXXXXX biçiminde, DOĞRULANMIŞ numara.
+  ///
+  /// Bu alan olmadan şifresini unutan tüketici hesabını KALICI olarak
+  /// kaybediyordu: "şifremi unuttum" akışı yazılamıyordu, destek de
+  /// yardım edemiyordu çünkü kişinin o hesabın sahibi olduğunu
+  /// doğrulayacak hiçbir bilgi yoktu. Puanlar, rozetler, ziyaret geçmişi
+  /// ve favoriler o hesapla birlikte gidiyordu.
+  ///
+  /// TEKİL: bir numara tek hesaba bağlanabilir. Aksi halde biri başkasının
+  /// numarasını kendi hesabına ekleyip o numaraya gelen kodla iki hesabı
+  /// da kurtarabilirdi.
+  telefon           String?   @unique
+  /// Numaranın SMS koduyla doğrulandığı an. Null ise kurtarma için
+  /// KULLANILMAZ — yazım hatası olan bir numara, hiç numara olmamasından
+  /// farksız; üstelik "kurtarma kanalım var" diye yanlış güven veriyor.
+  telefonDogrulandi DateTime?
+
   /// Arkadaş davet kodu — kayıtta üretilir, hiç değişmez. Kullanıcı adından
   /// ayrı bir alan olmasının sebebi: kullanıcı adı değişebilir hâle
   /// gelirse (ileride) paylaşılmış eski linkler kırılmasın.
@@ -1298,6 +1315,7 @@ model AppUser {
   favoriler         AppFavorite[]
   rotaTamamlamalari RotaTamamlama[]
   pushAbonelikleri  AppPushSubscription[]
+  otpKodlari        AppOtpCode[]
 
   @@map("app_users")
 }
@@ -1421,6 +1439,37 @@ model AppPushSubscription {
 ///
 /// Aynı mekanda 4 saatte bir sayılıyor; masada oturup arka arkaya QR
 /// okutarak puan biriktirmek işe yaramasın diye.
+/// Tüketici tarafının tek kullanımlık SMS kodları.
+///
+/// Panelin `OtpCode` tablosundan AYRI: iki kullanıcı dünyası ayrı tablolar
+/// (`users` / `app_users`) ve tek bir OTP tablosuna iki farklı yabancı
+/// anahtar koymak "ikisinden tam biri dolu" kuralını veritabanında değil
+/// kodda doğrulamak demekti.
+///
+/// MANTIK PAYLAŞILIYOR: kod üretimi, süre, deneme sayacı ve sayacın atomik
+/// artırılması lib/kimlik/otp.ts'te TEK yerde — depo dışarıdan veriliyor.
+/// İki kopya olsaydı biri düzeltilip diğeri unutulduğunda, unutulanda
+/// altı haneli kod sınırsız denenebilir kalırdı.
+model AppOtpCode {
+  id        String  @id @default(cuid())
+  appUserId String
+  /// "sifre" (kurtarma) | "telefon" (numara doğrulama)
+  purpose   String
+  codeHash  String
+  /// Kodun gönderildiği numara — bekleme süresi numara başına uygulanıyor.
+  phone     String?
+
+  attempts  Int       @default(0)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  appUser AppUser @relation(fields: [appUserId], references: [id], onDelete: Cascade)
+
+  @@index([appUserId, purpose, createdAt])
+  @@map("app_otp_codes")
+}
+
 model AppVisit {
   id         String  @id @default(cuid())
   appUserId  String
