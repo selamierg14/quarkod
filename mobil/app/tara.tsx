@@ -12,6 +12,7 @@ import type { ZiyaretYaniti } from "../src/api/tipler";
 import { useOturum } from "../src/store/oturum";
 import { Basilabilir } from "../src/bilesenler/Basilabilir";
 import { qrCoz } from "../src/ozellikler/tara/qrCoz";
+import { ziyaretAkisi } from "../src/ozellikler/tara/ziyaretAkisi";
 import { Nisangah, PENCERE } from "../src/ozellikler/tara/Nisangah";
 import { OdulSayfasi } from "../src/ozellikler/tara/OdulSayfasi";
 
@@ -60,64 +61,39 @@ export default function TaraEkrani() {
   const okundu = useCallback(
     async ({ data }: { data: string }) => {
       if (kilit.current) return;
-
-      const hedef = qrCoz(data);
-      if (!hedef) {
-        kilit.current = true;
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        setDurum({
-          ad: "hatali",
-          mesaj: "Bu karekod Biyerlere'ye ait değil. Masadaki karekodu okuttuğundan emin ol.",
-          yenidenDenenebilir: true,
-        });
-        return;
-      }
-
       kilit.current = true;
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      setDurum({ ad: "gonderiyor" });
 
-      // Konum ziyaretin ikinci ayağı; izin verilmezse sunucu zaten
-      // reddediyor, o yüzden burada net bir mesajla duruyoruz.
-      let konum: { enlem: number; boylam: number } | null = null;
-      try {
-        const { granted } = await Location.requestForegroundPermissionsAsync();
-        if (granted) {
-          const nokta = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          });
-          konum = { enlem: nokta.coords.latitude, boylam: nokta.coords.longitude };
-        }
-      } catch {
-        // Konum alınamadı; aşağıdaki kontrol devreye giriyor.
-      }
+      // Akışın KARARLARI ziyaretAkisi'nde ve test edilmiş durumda; burada
+      // kalan iş titreşim ve çizim.
+      const hedefTanindi = qrCoz(data) !== null;
+      void (hedefTanindi
+        ? Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+        : Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning));
+      if (hedefTanindi) setDurum({ ad: "gonderiyor" });
 
-      if (!konum) {
-        setDurum({
-          ad: "hatali",
-          mesaj:
-            "Ziyaretini doğrulamak için konum izni gerekiyor — mekanda olduğunu böyle anlıyoruz.",
-          yenidenDenenebilir: true,
-        });
-        return;
-      }
-
-      const sonuc = await api.post<ZiyaretYaniti>("/api/app/ziyaret", {
-        slug: hedef.slug,
-        masa: hedef.masa ?? "",
-        enlem: konum.enlem,
-        boylam: konum.boylam,
+      const durum = await ziyaretAkisi(data, {
+        konumAl: async () => {
+          try {
+            const { granted } = await Location.requestForegroundPermissionsAsync();
+            if (!granted) return null;
+            const nokta = await Location.getCurrentPositionAsync({
+              accuracy: Location.Accuracy.Balanced,
+            });
+            return { enlem: nokta.coords.latitude, boylam: nokta.coords.longitude };
+          } catch {
+            return null;
+          }
+        },
+        gonder: (govde) => api.post<ZiyaretYaniti>("/api/app/ziyaret", govde),
       });
 
-      if (sonuc.ok) {
-        setDurum({ ad: "basarili", sonuc: sonuc.veri });
+      setDurum(durum);
+      if (durum.ad === "basarili") {
         // Puan başka ekranlarda da okunuyor (Keşfet'teki çip, Profil).
         void oturum.yenile();
-        return;
+      } else if (hedefTanindi) {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       }
-
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      setDurum({ ad: "hatali", mesaj: sonuc.hata, yenidenDenenebilir: true });
     },
     [oturum],
   );

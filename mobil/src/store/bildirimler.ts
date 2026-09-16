@@ -64,13 +64,6 @@ export const useBildirimler = create<BildirimStore>((set, get) => ({
   temizle: () => set({ ogeler: null, yukleniyor: false }),
 }));
 
-/** Zil rozetindeki sayı — son bakıştan sonra düşen öğeler. */
-export function yeniBildirimSayisi(
-  ogeler: BildirimOgesi[] | null,
-  sonGorulme: string | null,
-): number {
-  if (!ogeler) return 0;
-  if (!sonGorulme) return ogeler.length;
-  // ISO tarihleri sözlük sırasında da kronolojik: ayrıştırmaya gerek yok.
-  return ogeler.filter((o) => o.tarih > sonGorulme).length;
-}
+// Saf sayaç ayrı dosyada (testte react-native yüklenemiyor); buradan
+// yeniden dışa veriliyor ki çağıranlar tek yere baksın.
+export { yeniBildirimSayisi } from "./bildirim-sayaci";

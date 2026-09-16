@@ -49,13 +49,37 @@ export const useOturum = create<OturumStore>((set) => ({
     // Jeton duruyor diye oturum geçerli sayılmıyor: hesap askıya alınmış
     // ya da şifre değişmiş olabilir — kararı sunucu veriyor.
     const sonuc = await api.get<{ kullanici: AppKullanici }>("/api/app/ben");
-    if (sonuc.ok) set({ durum: "girisli", kullanici: sonuc.veri.kullanici });
-    else {
-      await jetonDeposu.sil();
-      useFavoriler.getState().temizle();
-    useBildirimler.getState().temizle();
-      set({ durum: "cikisli", kullanici: null });
+    if (sonuc.ok) {
+      set({ durum: "girisli", kullanici: sonuc.veri.kullanici });
+      return;
     }
+
+    /**
+     * JETON YALNIZCA SUNUCU "BU KİMLİK GEÇERSİZ" DEDİĞİNDE siliniyor.
+     *
+     * Önceden her başarısız yanıt jetonu siliyordu ve buna ağ hatası da
+     * dahildi. Sonuç: metroda ya da çekmeyen bir yerde uygulamayı açan
+     * kullanıcı çıkış yapmış oluyor, geri girmek için şifresini yeniden
+     * yazmak zorunda kalıyordu. Sunucu bakımdayken (5xx) de aynı şey
+     * oluyordu; oysa 500, kullanıcının kimliğiyle ilgili hiçbir şey
+     * söylemiyor. Tarayıcıda sunucu durdurularak doğrulanmıştı.
+     *
+     * `durum: 0` "istek hiç ulaşmadı" demek. Bu durumlarda jeton elde
+     * tutuluyor ve oturum AÇIK kabul ediliyor: jeton zaten imzalı ve
+     * süreli, ağ dönünce ilk istekte gerçek karar veriliyor. Kullanıcı
+     * bilgisi null kalıyor — eldeki veri eski, uydurulmuyor.
+     */
+    const kimlikReddi = sonuc.durum === 401 || sonuc.durum === 403;
+    if (!kimlikReddi) {
+      set({ durum: "girisli", kullanici: null });
+      return;
+    }
+
+    await jetonDeposu.sil();
+    useFavoriler.getState().temizle();
+    useBildirimler.getState().temizle();
+    void onbellegiTemizle();
+    set({ durum: "cikisli", kullanici: null });
   },
 
   girisYap: async (username, sifre) => {
