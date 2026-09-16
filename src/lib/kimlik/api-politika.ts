@@ -59,6 +59,17 @@ export const API_POLITIKALARI: Record<string, ApiPolitikasi> = {
    */
   "/sifre-kurtar": { erisim: "acik", metotlar: ["POST", "PUT", "PATCH"] },
   "/mekanlar": { erisim: "acik", metotlar: ["GET"] },
+  /**
+   * Rotalar AÇIK — ama yanıt jetona göre zenginleşiyor.
+   *
+   * Route zaten `appKullaniciOku` kullanıyor (zorunlu değil, varsa okur):
+   * girişsiz kullanıcı rota listesini görüyor, girişli olan ek olarak
+   * "hangi durakları ziyaret ettim" ve "tamamladım mı" bilgisini de
+   * alıyor. Satır bir süre "jetonlu" yazıyordu ve bu, route'un desteklediği
+   * girişsiz durumu middleware'de kapatıyordu: rotalar keşif içeriği,
+   * uygulamayı yeni açan birine gösterilmemesi için bir sebep yok.
+   */
+  "/rotalar": { erisim: "acik", metotlar: ["GET"] },
   "/mekanlar/": { erisim: "acik", metotlar: ["GET"], dinamik: true },
   // Anonim ölçüm: kim olduğunu bilmek gerekmiyor, yalnızca "kaç kez".
   "/mekan-etkilesim": { erisim: "acik", metotlar: ["POST"] },
@@ -68,7 +79,6 @@ export const API_POLITIKALARI: Record<string, ApiPolitikasi> = {
   "/profil": { erisim: "jetonlu", metotlar: ["GET"] },
   "/cuzdan": { erisim: "jetonlu", metotlar: ["GET"] },
   "/bildirimler": { erisim: "jetonlu", metotlar: ["GET"] },
-  "/rotalar": { erisim: "jetonlu", metotlar: ["GET"] },
   "/favoriler": { erisim: "jetonlu", metotlar: ["GET", "POST"] },
   "/konum": { erisim: "jetonlu", metotlar: ["POST"] },
   "/push": { erisim: "jetonlu", metotlar: ["POST", "DELETE"] },

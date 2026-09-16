@@ -104,6 +104,32 @@ export type MekanOzet = {
 
 export type MekanListesi = { adet: number; mekanlar: MekanOzet[] };
 
+/**
+ * `/api/app/rotalar` öğesi.
+ *
+ * `ziyaretEdilenler` ve `tamamlandiMi` girişsiz istekte de GELİYOR ama
+ * boş/false olarak — sunucu alanları hiç göndermemek yerine nötr değerle
+ * dolduruyor, böylece istemci iki ayrı şekil için dallanmıyor.
+ */
+export type RotaOzet = {
+  id: string;
+  slug: string;
+  ad: string;
+  aciklama: string | null;
+  duraklar: {
+    id: string;
+    businessId: string;
+    slug: string;
+    ad: string;
+    logoUrl: string | null;
+  }[];
+  /** Ziyaret edilmiş durakların işletme kimlikleri. */
+  ziyaretEdilenler: string[];
+  tamamlandiMi: boolean;
+};
+
+export type RotaListesi = { rotalar: RotaOzet[] };
+
 export type MekanKisa = {
   id: string;
   slug: string;

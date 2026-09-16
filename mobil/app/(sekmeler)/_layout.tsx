@@ -78,6 +78,12 @@ export default function SekmeLayout() {
         }}
       />
       <Tabs.Screen
+        name="rotalar"
+        options={{
+          tabBarIcon: ({ focused }) => <Sekme ad="Rotalar" aktif={focused} simge="rota" />,
+        }}
+      />
+      <Tabs.Screen
         name="cuzdan"
         options={{
           // Kupon/sadakat kapalıyken sekme gizleniyor: içeriği yalnızca
@@ -109,7 +115,7 @@ function Sekme({
 }: {
   ad: string;
   aktif: boolean;
-  simge: "pusula" | "harita" | "cuzdan" | "kisi";
+  simge: "pusula" | "harita" | "rota" | "cuzdan" | "kisi";
 }) {
   const gecis = useSharedValue(aktif ? 1 : 0);
 
@@ -149,7 +155,7 @@ function Sekme({
   );
 }
 
-function Ikon({ ad, renk }: { ad: "pusula" | "harita" | "cuzdan" | "kisi"; renk: string }) {
+function Ikon({ ad, renk }: { ad: "pusula" | "harita" | "rota" | "cuzdan" | "kisi"; renk: string }) {
   const ortak = {
     stroke: renk,
     strokeWidth: 1.9,
@@ -169,6 +175,14 @@ function Ikon({ ad, renk }: { ad: "pusula" | "harita" | "cuzdan" | "kisi"; renk:
         <>
           <Path d="M9 4L3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4z" {...ortak} />
           <Path d="M9 4v13M15 6.5v13" {...ortak} />
+        </>
+      ) : null}
+      {ad === "rota" ? (
+        <>
+          {/* Birbirine bağlı duraklar: rota mekaniğinin görsel karşılığı. */}
+          <Circle cx="6" cy="18" r="2.6" {...ortak} />
+          <Circle cx="18" cy="6" r="2.6" {...ortak} />
+          <Path d="M8.4 16.4C12 13 9 11 12.6 7.6" {...ortak} strokeDasharray="2.6 2.6" />
         </>
       ) : null}
       {ad === "cuzdan" ? (
