@@ -119,7 +119,11 @@ export default function KesfetEkrani() {
     return `/api/app/mekanlar${sorgu ? `?${sorgu}` : ""}`;
   }, [aramaGecikmeli, suzgec.tur, suzgec.ozellikler, suzgec.yalnizcaAcik, konum]);
 
-  const { veri, yenileniyor, yenile } = useVeri<MekanListesi>(yol);
+  const { veri, yenileniyor, cevrimdisi, yenile } = useVeri<MekanListesi>(yol, {
+    // Keşfet uygulamanın açılış ekranı: internet yokken burada boş bir
+    // sayfa görmek, uygulamanın bozuk olduğu izlenimi veriyordu.
+    onbellek: true,
+  });
 
   const mekanlar = useMemo(() => veri?.mekanlar ?? [], [veri]);
   const suzuluyor = !suzgecBosMu({ ...suzgec, arama: aramaGecikmeli });
@@ -234,8 +238,31 @@ export default function KesfetEkrani() {
         <Suzgec durum={suzgec} onDegis={setSuzgec} />
       </View>
 
+      {cevrimdisi ? (
+        <View style={stiller.cevrimdisiSerit}>
+          <Text style={stiller.cevrimdisiMetni}>
+            {veri
+              ? "Çevrimdışısın — bu liste en son gördüğün hâli."
+              : "Çevrimdışısın."}
+          </Text>
+          <Basilabilir onPress={yenile} olcek={0.94} style={stiller.tekrarDene}>
+            <Text style={stiller.tekrarDeneMetni}>Tekrar dene</Text>
+          </Basilabilir>
+        </View>
+      ) : null}
+
       {!veri ? (
-        <YuklemeIskeleti />
+        cevrimdisi ? (
+          <BosDurum
+            cizim="arama"
+            baslik="Bağlantı kurulamadı"
+            aciklama="İnternetini kontrol edip tekrar dene; daha önce baktığın liste yoksa gösterecek bir şeyimiz yok."
+            butonMetni="Tekrar dene"
+            onButon={yenile}
+          />
+        ) : (
+          <YuklemeIskeleti />
+        )
       ) : mekanlar.length === 0 ? (
         <BosDurum
           cizim="arama"
@@ -409,4 +436,24 @@ const stiller = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
   bolumBasligi: { ...yazi.bolumBasligi, paddingHorizontal: bosluk.xl },
+  cevrimdisiSerit: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: bosluk.m,
+    marginHorizontal: bosluk.xl,
+    marginBottom: bosluk.s,
+    paddingHorizontal: bosluk.m,
+    paddingVertical: bosluk.s,
+    borderRadius: yaricap.m,
+    backgroundColor: "rgba(255,107,74,0.14)",
+  },
+  cevrimdisiMetni: { ...yazi.kucuk, flex: 1, color: renkler.uyari },
+  tekrarDene: {
+    minHeight: 0,
+    paddingHorizontal: bosluk.m,
+    paddingVertical: 5,
+    borderRadius: yaricap.tam,
+    backgroundColor: renkler.katmanYuksek,
+  },
+  tekrarDeneMetni: { ...yazi.kucuk, fontSize: 12, color: renkler.metin.ana, fontWeight: "600" },
 });

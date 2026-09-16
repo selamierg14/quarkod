@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { api, jetonDeposu } from "../api/istemci";
 import { useFavoriler } from "./favoriler";
 import { useBildirimler } from "./bildirimler";
+import { onbellegiTemizle } from "../api/onbellek";
 import type { AppKullanici, GirisYaniti } from "../api/tipler";
 
 /**
@@ -80,6 +81,8 @@ export const useOturum = create<OturumStore>((set) => ({
 
   cikisYap: async () => {
     await jetonDeposu.sil();
+    // Kişiye bağlı yanıtlar (profil, favoriler) diskte kalmasın.
+    void onbellegiTemizle();
     // Kişiye bağlı ne varsa birlikte düşüyor: aynı telefonda ikinci bir
     // kullanıcı giriş yaptığında bir öncekinin favorileri ekranda
     // kalmamalı.
