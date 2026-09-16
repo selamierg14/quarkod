@@ -13,6 +13,7 @@ import { useVeri } from "../../src/api/useVeri";
 import type { MekanDetayYaniti } from "../../src/api/tipler";
 import { Basilabilir } from "../../src/bilesenler/Basilabilir";
 import { Cip } from "../../src/bilesenler/Cip";
+import { AcikRozeti } from "../../src/bilesenler/AcikRozeti";
 import { ParalaksBaslik, KAPAK_YUKSEKLIGI } from "../../src/ozellikler/mekan/ParalaksBaslik";
 import { MenuBolumu } from "../../src/ozellikler/mekan/MenuBolumu";
 import { YorumBolumu } from "../../src/ozellikler/mekan/YorumBolumu";
@@ -168,6 +169,12 @@ export default function MekanEkrani() {
                 <Text style={stiller.soluk}>Henüz puanlanmamış</Text>
               )}
               {fiyat ? <Text style={stiller.soluk}>·  {fiyat}</Text> : null}
+            </View>
+
+            {/* Mekan sayfası "gideyim mi" kararının verildiği yer: açıklık
+                bilgisi yol tarifi düğmesinin hemen üstünde duruyor. */}
+            <View style={{ flexDirection: "row" }}>
+              <AcikRozeti durum={mekan.acik} sonrakiAcilis={mekan.sonrakiAcilis} />
             </View>
 
             {mekan.adres ? <Text style={yazi.kucuk}>📍 {mekan.adres}</Text> : null}

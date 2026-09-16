@@ -30,6 +30,16 @@ export type KesfetSorgusu = {
   /** Kategori — /ara sayfasının "Kafe/Restoran/Balıkçı" çiplerinden gelir. */
   tur: BusinessType | null;
   arama: string;
+  /**
+   * "Şimdi açık olanlar" — çalışma saatlerine göre süzme.
+   *
+   * Bu filtre diğerlerinden AYRI BİR YERDE uygulanıyor (bkz.
+   * kesfet-veri.ts): buradaki `mekanlariSuz` yalnızca veritabanı
+   * satırının kendi alanlarına bakıyor, açıklık ise ham saat metninin
+   * O ANKİ ZAMANA göre çözülmesiyle bulunuyor. İkisini aynı yere koymak,
+   * saf bir süzgeci "şu an saat kaç" sorusuna bağımlı kılardı.
+   */
+  yalnizcaAcik: boolean;
 };
 
 /** Varsayılan yarıçap: şehir içi "çevremde" için makul bir mesafe. */
@@ -77,6 +87,10 @@ export function sorguCoz(params: URLSearchParams): KesfetSorgusu {
     segment: gecerliSegmentMi(segment) ? segment : null,
     tur: gecerliTurMu(tur) ? tur : null,
     arama: (params.get("q") ?? "").trim().slice(0, 60),
+    // Yalnızca "1" kabul ediliyor: "0", "false" ya da boş değer filtreyi
+    // açmamalı — istemcinin filtreyi kapatırken parametreyi silmek yerine
+    // "0" göndermesi yaygın bir kalıp.
+    yalnizcaAcik: params.get("acik") === "1",
   };
 }
 

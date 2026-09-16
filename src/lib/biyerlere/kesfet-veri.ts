@@ -226,9 +226,7 @@ export async function mekanlariGetir(
 
   const suzulmus = mekanlariSuz(isletmeler, sorgu);
 
-  return {
-    adet: suzulmus.length,
-    mekanlar: suzulmus.map((m) => ({
+  const liste = suzulmus.map((m) => ({
       id: m.id,
       slug: m.slug,
       ad: m.name,
@@ -256,8 +254,23 @@ export async function mekanlariGetir(
           baslangic: d.baslangic,
           bitis: d.bitis,
         })),
-    })),
-  };
+    }));
+
+  /**
+   * "Şimdi açık" süzgeci BURADA, listenin kurulmasından sonra.
+   *
+   * Sebebi `acik` alanının veritabanından gelmemesi: ham saat metni
+   * (`calismaSaatleri`) o anki zamana göre çözülünce ortaya çıkıyor.
+   * Süzgeci `mekanlariSuz` içine koymak, saf ve test edilebilir bir
+   * fonksiyonu "şu an saat kaç" sorusuna bağımlı kılardı.
+   *
+   * "bilinmiyor" olanlar DA eleniyor. Saatini girmemiş bir mekanı "açık"
+   * saymak, kullanıcıyı kapalı bir kapıya göndermek demek; filtrenin
+   * verdiği sözü tutan tek davranış bu.
+   */
+  const sonuc = sorgu.yalnizcaAcik ? liste.filter((m) => m.acik === "acik") : liste;
+
+  return { adet: sonuc.length, mekanlar: sonuc };
 }
 
 export type MekanDetay = MekanOzet & {

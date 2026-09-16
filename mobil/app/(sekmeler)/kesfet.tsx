@@ -92,6 +92,7 @@ export default function KesfetEkrani() {
     if (aramaGecikmeli) p.set("q", aramaGecikmeli);
     if (suzgec.tur) p.set("tur", suzgec.tur);
     if (suzgec.ozellikler.length > 0) p.set("ozellik", suzgec.ozellikler.join(","));
+    if (suzgec.yalnizcaAcik) p.set("acik", "1");
     if (konum) {
       p.set("enlem", String(konum.enlem));
       p.set("boylam", String(konum.boylam));
@@ -99,7 +100,7 @@ export default function KesfetEkrani() {
     }
     const sorgu = p.toString();
     return `/api/app/mekanlar${sorgu ? `?${sorgu}` : ""}`;
-  }, [aramaGecikmeli, suzgec.tur, suzgec.ozellikler, konum]);
+  }, [aramaGecikmeli, suzgec.tur, suzgec.ozellikler, suzgec.yalnizcaAcik, konum]);
 
   const { veri, yenileniyor, yenile } = useVeri<MekanListesi>(yol);
 

@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { Basilabilir } from "../../bilesenler/Basilabilir";
 import { Gorsel } from "../../bilesenler/Gorsel";
+import { AcikRozeti } from "../../bilesenler/AcikRozeti";
 import type { MekanOzet } from "../../api/tipler";
 import {
   renkler,
@@ -94,6 +95,16 @@ export function MekanKarti({
               {fiyat ? <Text style={stiller.bilgi}>{fiyat}</Text> : null}
               {mesafe ? <Text style={stiller.mesafe}>{mesafe}</Text> : null}
             </View>
+            {/* Kartta YALNIZCA "açık" gösteriliyor, kapalı gösterilmiyor:
+                şeritler ("Yakınında", "Bu hafta etkinlik var") bir öneri
+                vitrini ve her kartın altına gri "kapalı" yazmak vitrini
+                ölü bir listeye çeviriyor. Kapalı bilgisi dikey listede ve
+                mekan sayfasında zaten var. */}
+            {mekan.acik === "acik" ? (
+              <View style={stiller.acikSatiri}>
+                <AcikRozeti durum="acik" boyut="kucuk" />
+              </View>
+            ) : null}
           </View>
         </View>
       </Basilabilir>
@@ -102,6 +113,7 @@ export function MekanKarti({
 }
 
 const stiller = StyleSheet.create({
+  acikSatiri: { flexDirection: "row", marginTop: 2 },
   kart: {
     borderRadius: yaricap.l,
     overflow: "hidden",

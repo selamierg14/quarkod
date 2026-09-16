@@ -14,12 +14,24 @@ export type SuzgecDurumu = {
   arama: string;
   tur: string | null;
   ozellikler: string[];
+  /** "Şimdi açık" — süzme sunucuda, çalışma saatlerine göre. */
+  yalnizcaAcik: boolean;
 };
 
-export const BOS_SUZGEC: SuzgecDurumu = { arama: "", tur: null, ozellikler: [] };
+export const BOS_SUZGEC: SuzgecDurumu = {
+  arama: "",
+  tur: null,
+  ozellikler: [],
+  yalnizcaAcik: false,
+};
 
 export function suzgecBosMu(s: SuzgecDurumu): boolean {
-  return s.arama.trim() === "" && s.tur === null && s.ozellikler.length === 0;
+  return (
+    s.arama.trim() === "" &&
+    s.tur === null &&
+    s.ozellikler.length === 0 &&
+    !s.yalnizcaAcik
+  );
 }
 
 /**
@@ -93,8 +105,17 @@ export function Suzgec({
       >
         <Cip
           metin="Tümü"
-          secili={durum.tur === null && durum.ozellikler.length === 0}
-          onPress={() => onDegis({ ...durum, tur: null, ozellikler: [] })}
+          secili={suzgecBosMu({ ...durum, arama: "" })}
+          onPress={() => onDegis({ ...BOS_SUZGEC, arama: durum.arama })}
+        />
+        {/* "Şimdi açık" çipler arasında EN BAŞTA ve ayracın solunda:
+            kullanıcının en sık sorduğu soru bu ve kategori seçmeden de
+            anlamlı — "şu an açık olan ne varsa göster". */}
+        <Cip
+          metin="Şimdi açık"
+          simge="🟢"
+          secili={durum.yalnizcaAcik}
+          onPress={() => onDegis({ ...durum, yalnizcaAcik: !durum.yalnizcaAcik })}
         />
         {turSirasi.map((tur) => (
           <Cip

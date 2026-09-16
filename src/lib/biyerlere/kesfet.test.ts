@@ -47,6 +47,7 @@ const BOS_SORGU: KesfetSorgusu = {
   segment: null,
   tur: null,
   arama: "",
+  yalnizcaAcik: false,
 };
 
 describe("sorgu çözümü", () => {
@@ -228,5 +229,29 @@ describe("sınır kutusu", () => {
     const ekvatorGenislik = ekvator.boylamMax - ekvator.boylamMin;
     const kuzeyGenislik = kuzey.boylamMax - kuzey.boylamMin;
     expect(kuzeyGenislik).toBeGreaterThan(ekvatorGenislik * 1.8);
+  });
+});
+
+describe("şimdi açık süzgeci sorgudan doğru okunuyor", () => {
+  /**
+   * Süzgecin KENDİSİ kesfet-veri.ts'te (çalışma saati çözümü orada);
+   * burada sınanan, parametrenin nasıl okunduğu. Bir tuşa basıp
+   * kapattığında filtrenin gerçekten kapanması buna bağlı.
+   */
+  it("acik=1 filtreyi açıyor", () => {
+    expect(sorguCoz(new URLSearchParams("acik=1")).yalnizcaAcik).toBe(true);
+  });
+
+  it("parametre yoksa filtre kapalı", () => {
+    expect(sorguCoz(new URLSearchParams("")).yalnizcaAcik).toBe(false);
+  });
+
+  it('"0" ve "false" filtreyi AÇMIYOR', () => {
+    // İstemciler filtreyi kapatırken parametreyi silmek yerine "0"
+    // göndermeye eğilimli; bu değerin açık sayılması filtreyi
+    // kapatılamaz hâle getirirdi.
+    expect(sorguCoz(new URLSearchParams("acik=0")).yalnizcaAcik).toBe(false);
+    expect(sorguCoz(new URLSearchParams("acik=false")).yalnizcaAcik).toBe(false);
+    expect(sorguCoz(new URLSearchParams("acik=")).yalnizcaAcik).toBe(false);
   });
 });

@@ -2,6 +2,7 @@ import { View, Text, StyleSheet } from "react-native";
 import { Basilabilir } from "../../bilesenler/Basilabilir";
 import { Cip } from "../../bilesenler/Cip";
 import { Gorsel } from "../../bilesenler/Gorsel";
+import { AcikRozeti } from "../../bilesenler/AcikRozeti";
 import type { MekanOzet } from "../../api/tipler";
 import { renkler, yazi, bosluk, yaricap, turRenkleri, turSimgeleri } from "../../tasarim";
 import {
@@ -79,8 +80,13 @@ export function MekanSatiri({
           {mesafe ? <Text style={stiller.soluk}>· {mesafe}</Text> : null}
         </View>
 
-        {ozellikler.length > 0 ? (
+        {/* Açıklık ve özellikler AYNI satırda: ikisini alt alta koymak
+            satır yüksekliğini sabit tutan ölçüyü (SATIR_YUKSEKLIGI)
+            bozuyordu. Açıklık önce geliyor — "gidebilir miyim" sorusu
+            "prizi var mı"dan önce cevaplanmalı. */}
+        {mekan.acik !== "bilinmiyor" || ozellikler.length > 0 ? (
           <View style={stiller.ozellikSatiri}>
+            <AcikRozeti durum={mekan.acik} sonrakiAcilis={mekan.sonrakiAcilis} boyut="kucuk" />
             {ozellikler.map((o) => (
               <Cip key={o} metin={ozellikAdlari[o]} simge={ozellikSimgeleri[o]} />
             ))}
@@ -128,5 +134,5 @@ const stiller = StyleSheet.create({
   tur: { fontSize: 11, fontWeight: "600" },
   puan: { fontSize: 12, color: renkler.odulParlak, fontWeight: "600" },
   soluk: { fontSize: 12, color: renkler.metin.soluk },
-  ozellikSatiri: { flexDirection: "row", gap: bosluk.xs },
+  ozellikSatiri: { flexDirection: "row", alignItems: "center", gap: bosluk.xs },
 });

@@ -65,6 +65,16 @@ export type MekanOzet = {
   puan: number | null;
   degerlendirmeSayisi: number;
   sponsorluMu: boolean;
+  /**
+   * Mekan ŞU AN açık mı.
+   *
+   * "bilinmiyor", saatini hiç girmemiş mekan demek — "kapalı" ile aynı
+   * şey değil ve öyle gösterilmemeli: kapalı yazmak, aslında açık olan
+   * bir mekandan müşteri kaçırır.
+   */
+  acik: "acik" | "kapali" | "bilinmiyor";
+  /** Kapalıyken bir sonraki açılış ("Salı 09:00"); açıkken null. */
+  sonrakiAcilis: string | null;
   etkinlikler: {
     id: string;
     baslik: string;

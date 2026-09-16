@@ -20,6 +20,7 @@ import {
   SEKME_YUKSEKLIGI,
 } from "../../tasarim";
 import { Basilabilir } from "../../bilesenler/Basilabilir";
+import { AcikRozeti } from "../../bilesenler/AcikRozeti";
 import type { MekanOzet } from "../../api/tipler";
 
 /**
@@ -100,6 +101,14 @@ export function MekanSayfasi({
               : "Henüz puan yok"}
             {mekan.mesafeMetre !== null ? `  ·  ${mesafeYazisi(mekan.mesafeMetre)}` : ""}
           </Text>
+          {/* Panel haritadan ve Keşfet'ten açılıyor; kullanıcı buradan
+              "yol tarifi"ne basıp yola çıkabiliyor. Açıklık tam da bu
+              kararın yanında durmalı — kapalıysa da yazıyor. */}
+          <AcikRozeti
+            durum={mekan.acik}
+            sonrakiAcilis={mekan.sonrakiAcilis}
+            boyut="kucuk"
+          />
         </View>
 
         <Basilabilir style={stiller.kapatButonu} onPress={onKapat} accessibilityLabel="Kapat">
