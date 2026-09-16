@@ -102,7 +102,11 @@ export type ApiSonuc<T> =
 
 async function istek<T>(
   yol: string,
-  secenekler: { yontem?: "GET" | "POST" | "DELETE"; govde?: unknown; jetonlu?: boolean } = {},
+  secenekler: {
+    yontem?: "GET" | "POST" | "PUT" | "DELETE";
+    govde?: unknown;
+    jetonlu?: boolean;
+  } = {},
 ): Promise<ApiSonuc<T>> {
   const { yontem = "GET", govde, jetonlu = true } = secenekler;
   const jeton = jetonlu ? await jetonDeposu.oku() : null;
@@ -141,6 +145,7 @@ async function istek<T>(
 export const api = {
   get: <T,>(yol: string) => istek<T>(yol),
   post: <T,>(yol: string, govde?: unknown) => istek<T>(yol, { yontem: "POST", govde }),
+  put: <T,>(yol: string, govde?: unknown) => istek<T>(yol, { yontem: "PUT", govde }),
   delete: <T,>(yol: string, govde?: unknown) => istek<T>(yol, { yontem: "DELETE", govde }),
   /** Girişsiz uçlar (keşfet listesi, mekan detayı). */
   acikGet: <T,>(yol: string) => istek<T>(yol, { jetonlu: false }),

@@ -1,4 +1,4 @@
-import { MapPin, Zap } from "lucide-react";
+import { MapPin, Users, Zap } from "lucide-react";
 import { requireKesfetErisim, visibleBusinesses } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
 import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
@@ -6,6 +6,8 @@ import { sponsorMu } from "@/lib/biyerlere/sponsorluk";
 import { IsletmeSecici } from "../menu/MenuUst";
 import { BiyerlereForm } from "./BiyerlereForm";
 import { FlasIndirim } from "./FlasIndirim";
+import { KullaniciEtkinlikleri } from "./KullaniciEtkinlikleri";
+import { listeAltSiniri } from "@/lib/biyerlere/etkinlik";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +50,31 @@ export default async function BiyerlerePage({
     },
   });
 
+  /**
+   * Mekanda açılmış müşteri buluşmaları — moderasyon listesi.
+   *
+   * Kaldırılmış olanlar gelmiyor; iptal edilenler de. İşletmenin
+   * ilgilendiği soru "şu an adımın yanında ne duruyor".
+   */
+  const kullaniciEtkinlikleri = await prisma.appEtkinlik.findMany({
+    where: {
+      businessId: business.id,
+      baslangic: { gte: listeAltSiniri(new Date()) },
+      iptalEdildi: null,
+      kaldirildi: null,
+    },
+    orderBy: { baslangic: "asc" },
+    take: 30,
+    select: {
+      id: true,
+      baslik: true,
+      aciklama: true,
+      baslangic: true,
+      appUser: { select: { name: true } },
+      _count: { select: { ilgiler: true } },
+    },
+  });
+
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
@@ -81,6 +108,24 @@ export default async function BiyerlerePage({
         description="Kısa süreli, öne çıkan bir kampanya duyurusu — bkz. aşağıdaki not."
       >
         <FlasIndirim businessId={business.id} pushKredisi={business.pushKredisi} />
+      </SectionCard>
+
+      <SectionCard
+        ikon={<Users className="h-4 w-4" aria-hidden="true" />}
+        renk="sky"
+        title="Müşteri buluşmaları"
+        description="Müşterilerin mekanınız için açtığı buluşma çağrıları. İşletme adına söz vermiyorlar ama adınızın yanında duruyorlar — uygun bulmadığınızı kaldırabilirsiniz."
+      >
+        <KullaniciEtkinlikleri
+          etkinlikler={kullaniciEtkinlikleri.map((e) => ({
+            id: e.id,
+            baslik: e.baslik,
+            aciklama: e.aciklama,
+            baslangic: e.baslangic.toISOString(),
+            acan: e.appUser.name,
+            ilgiSayisi: e._count.ilgiler,
+          }))}
+        />
       </SectionCard>
     </div>
   );

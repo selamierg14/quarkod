@@ -272,6 +272,26 @@ export const DESENLER = {
   },
 
   /** Uzun serbest not (iç not, geri bildirim yanıtı). */
+  /**
+   * Kullanıcının açtığı etkinliğin başlığı.
+   *
+   * `kisaBaslik`tan ayrı bir tür: burada metni bir MÜŞTERİ yazıyor ve
+   * bir mekanın adının yanında yayınlanıyor. Alt sınır 4 karakter —
+   * "a" ya da "..." gibi bir başlık, listeyi çöple dolduran en ucuz yol.
+   */
+  etkinlikBasligi: {
+    enAz: 4,
+    enCok: 80,
+    ipucu: "Başlık 4-80 karakter olmalı.",
+  },
+
+  /** Etkinlik açıklaması — isteğe bağlı, tek paragraf. */
+  etkinlikAciklamasi: {
+    enAz: 0,
+    enCok: 400,
+    ipucu: "Açıklama en fazla 400 karakter olabilir.",
+  },
+
   not: {
     enAz: 0,
     enCok: 1000,

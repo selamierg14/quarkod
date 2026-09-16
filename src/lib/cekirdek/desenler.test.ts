@@ -130,6 +130,15 @@ describe("arayüz ile sunucu aynı kuralı uyguluyor", () => {
       gecerli: ["", "uzun not"],
       gecersiz: ["a".repeat(1001)],
     },
+    etkinlikBasligi: {
+      gecerli: ["Cumartesi kahve", "a".repeat(80)],
+      // Alt sınır çöp başlığa karşı: "a" ya da "..." listeyi doldurur.
+      gecersiz: ["ab", "a".repeat(81)],
+    },
+    etkinlikAciklamasi: {
+      gecerli: ["", "Saat 20:00'de bahçe tarafındayız."],
+      gecersiz: ["a".repeat(401)],
+    },
     adres: {
       gecerli: ["", "Bağdat Cad. No:12, Kadıköy/İstanbul"],
       gecersiz: ["a".repeat(301)],

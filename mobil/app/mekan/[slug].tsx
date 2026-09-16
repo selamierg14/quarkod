@@ -242,6 +242,19 @@ export default function MekanEkrani() {
                 onPress={() => void Linking.openURL(mekan.instagram!)}
               />
             ) : null}
+            {/* Buluşma açma akışı HER ZAMAN bir mekan sayfasından
+                başlıyor: "nerede buluşalım" kararı zaten burada veriliyor,
+                formun içinde 52 mekanlık bir seçiciyle tekrar sorulmuyor. */}
+            <AksiyonDugmesi
+              etiket="Buluşma aç"
+              yol="M17 20h5v-1.5a3.5 3.5 0 00-5-3.2M7 20H2v-1.5a3.5 3.5 0 015-3.2M12 12.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z M12 20v-4"
+              onPress={() =>
+                router.push({
+                  pathname: "/etkinlik-ac",
+                  params: { mekanId: mekan.id, mekanAd: mekan.ad },
+                })
+              }
+            />
           </View>
 
           {etkinlik ? (

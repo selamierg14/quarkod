@@ -130,6 +130,31 @@ export type RotaOzet = {
 
 export type RotaListesi = { rotalar: RotaOzet[] };
 
+/**
+ * `/api/app/etkinlikler` öğesi — KULLANICININ açtığı buluşma.
+ *
+ * `MekanOzet.etkinlikler` ile karıştırılmamalı: oradakiler İŞLETMENİN
+ * duyuruları ("bu hafta canlı müzik"), burası müşterilerin çağrıları
+ * ("cumartesi 20:00'de buradayım"). İkisinin güvenilirliği farklı ve
+ * arayüzde de ayrı gösteriliyorlar.
+ *
+ * `acan` yalnızca AD taşıyor — kullanıcı adı ya da kimlik değil; liste
+ * kişi arama dizinine dönüşmemeli.
+ */
+export type KullaniciEtkinligi = {
+  id: string;
+  baslik: string;
+  aciklama: string | null;
+  baslangic: string;
+  acan: string;
+  benimMi: boolean;
+  mekan: MekanKisa;
+  ilgiSayisi: number;
+  ilgilendimMi: boolean;
+};
+
+export type EtkinlikListesi = { etkinlikler: KullaniciEtkinligi[] };
+
 export type MekanKisa = {
   id: string;
   slug: string;

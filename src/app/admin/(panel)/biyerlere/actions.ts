@@ -249,3 +249,63 @@ async function yakindakilereBildir(
 
   return gonderilen;
 }
+
+export type EtkinlikKaldirState = { error?: string; saved?: string };
+
+/**
+ * KULLANICI ETKİNLİĞİNİ KALDIRMA — moderasyon.
+ *
+ * Bu, projedeki tek kullanıcı-üretimi yayın yüzeyi: bir müşteri, bir
+ * mekanın adının yanında duran bir metin yazıyor. Kötüye kullanımın
+ * bedelini yazan değil, adı geçen işletme ödüyor — dolayısıyla o metni
+ * kaldırma yetkisi de işletmenin olmalı. Moderasyon aracı olmadan
+ * kullanıcı içeriği yayınlamak, işletmeyi savunmasız bırakmak olurdu.
+ *
+ * KALDIRMA, İPTALDEN AYRI BİR ALAN (`kaldirildi` / `iptalEdildi`). İkisi
+ * de etkinliği listeden düşürüyor ama farklı sorulara cevap veriyorlar:
+ * biri "açan vazgeçti", diğeri "kurallara aykırıydı". Tek alanda
+ * birleştirmek, sonradan "bu kullanıcı kaç kez moderasyona takıldı"
+ * sorusunu cevaplanamaz hâle getirirdi.
+ *
+ * Satır SİLİNMİYOR: denetim kaydı bir kimliğe işaret ediyor ve o kimlik
+ * ortadan kalkarsa kayıt "silinmiş bir şeyi kaldırdı" demekten öteye
+ * gidemez.
+ */
+export async function kullaniciEtkinliginiKaldir(
+  _prev: EtkinlikKaldirState,
+  formData: FormData,
+): Promise<EtkinlikKaldirState> {
+  const user = await requireYazma();
+
+  const etkinlikId = String(formData.get("etkinlikId") ?? "");
+  if (!etkinlikId) return { error: "Etkinlik bilgisi eksik." };
+
+  const etkinlik = await prisma.appEtkinlik.findUnique({
+    where: { id: etkinlikId },
+    select: { id: true, baslik: true, businessId: true, kaldirildi: true },
+  });
+  if (!etkinlik) return { error: "Etkinlik bulunamadı." };
+
+  // Yetki ETKİNLİĞİN MEKANINA göre: bir işletme yalnızca kendi adının
+  // geçtiği çağrıyı kaldırabilir.
+  if (!(await canAccessBusiness(user, etkinlik.businessId))) {
+    return { error: "Bu işletmeye yetkiniz yok." };
+  }
+  if (etkinlik.kaldirildi) return { saved: "Bu etkinlik zaten kaldırılmış." };
+
+  const sebep = String(formData.get("sebep") ?? "").trim().slice(0, 200);
+
+  await prisma.appEtkinlik.update({
+    where: { id: etkinlikId },
+    data: { kaldirildi: new Date(), kaldirmaSebebi: sebep || null },
+  });
+
+  await denetimYaz(user, "biyerlere.etkinlik.kaldir", {
+    entity: "appEtkinlik",
+    entityId: etkinlikId,
+    detail: `"${etkinlik.baslik}" kaldırıldı${sebep ? ` — ${sebep}` : ""}`,
+  });
+
+  revalidatePath(YOL);
+  return { saved: "Etkinlik kaldırıldı." };
+}

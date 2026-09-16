@@ -13,7 +13,7 @@ import Animated, {
 import { renkler, yazi, bosluk, yaricap, SEKME_YUKSEKLIGI } from "../../src/tasarim";
 import { TARA_DUGMESI_PAYI } from "../../src/bilesenler/TaraDugmesi";
 import { useVeri } from "../../src/api/useVeri";
-import type { MekanListesi, MekanOzet } from "../../src/api/tipler";
+import type { EtkinlikListesi, MekanListesi, MekanOzet } from "../../src/api/tipler";
 import { useOturum } from "../../src/store/oturum";
 import { useBildirimler, yeniBildirimSayisi } from "../../src/store/bildirimler";
 import { konumuBildir } from "../../src/push/konum";
@@ -102,6 +102,14 @@ export default function KesfetEkrani() {
 
   const yeniBildirim = yeniBildirimSayisi(bildirimOgeleri, sonGorulme);
 
+  // Kullanıcı buluşmaları: listenin başında yalnızca SAYI gösteriliyor,
+  // kartların kendisi kendi ekranında. Keşfet zaten iki şerit taşıyor;
+  // üçüncüsü ekranı asıl işinden (mekan bulmak) uzaklaştırırdı.
+  const { veri: etkinlikVerisi } = useVeri<EtkinlikListesi>("/api/app/etkinlikler", {
+    jetonlu: true,
+  });
+  const bulusmaSayisi = etkinlikVerisi?.etkinlikler.length ?? 0;
+
   // Süzme SUNUCUDA: kurallar (özellik kesişimi, mesafe, sıralama) web ile
   // tek yerden paylaşılıyor — bkz. lib/kesfet.ts.
   const yol = useMemo(() => {
@@ -181,6 +189,27 @@ export default function KesfetEkrani() {
       {etkinlikliler.length > 0 ? (
         <Serit baslik="Bu hafta etkinlik var 🔥" mekanlar={etkinlikliler} onSec={mekanaGit} />
       ) : null}
+      {bulusmaSayisi > 0 ? (
+        <Basilabilir
+          onPress={() => router.push("/etkinlikler")}
+          style={stiller.bulusmaSatiri}
+          olcek={0.985}
+          accessibilityRole="button"
+          accessibilityLabel={`Buluşmalar, ${bulusmaSayisi} yaklaşan`}
+        >
+          <Text style={stiller.bulusmaSimgesi}>🥂</Text>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={yazi.kartBasligi} numberOfLines={1}>
+              Buluşmalar
+            </Text>
+            <Text style={yazi.kucuk} numberOfLines={1}>
+              {bulusmaSayisi} yaklaşan buluşma · kullanıcıların açtığı
+            </Text>
+          </View>
+          <Text style={stiller.bulusmaOk}>›</Text>
+        </Basilabilir>
+      ) : null}
+
       <Text style={stiller.bolumBasligi}>
         {suzuluyor ? `Sonuçlar · ${mekanlar.length}` : `Tüm mekanlar · ${mekanlar.length}`}
       </Text>
@@ -436,6 +465,19 @@ const stiller = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
   bolumBasligi: { ...yazi.bolumBasligi, paddingHorizontal: bosluk.xl },
+  bulusmaSatiri: {
+    marginHorizontal: bosluk.xl,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: bosluk.m,
+    padding: bosluk.m,
+    borderRadius: yaricap.l,
+    backgroundColor: renkler.katman,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: renkler.cizgi,
+  },
+  bulusmaSimgesi: { fontSize: 22 },
+  bulusmaOk: { fontSize: 20, color: renkler.metin.soluk },
   cevrimdisiSerit: {
     flexDirection: "row",
     alignItems: "center",

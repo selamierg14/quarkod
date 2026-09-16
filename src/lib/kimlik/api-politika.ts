@@ -70,6 +70,17 @@ export const API_POLITIKALARI: Record<string, ApiPolitikasi> = {
    * uygulamayı yeni açan birine gösterilmemesi için bir sebep yok.
    */
   "/rotalar": { erisim: "acik", metotlar: ["GET"] },
+  /**
+   * Kullanıcı etkinlikleri — okuma AÇIK, yazma jeton istiyor.
+   *
+   * Tabloda tek satır olmasının sebebi GET'in girişsize de açık olması:
+   * erişim sınıfı yol başına tanımlı, metot başına değil. Yazan metotlar
+   * (POST/PUT/DELETE) route içinde `appKullaniciGerekli` ile kapalı —
+   * yani middleware'in geçirdiği kimliksiz bir POST, veritabanına
+   * dokunmadan 401 alıyor. Bu, kaba kapının ince kapının yerine
+   * geçmediği örneklerden biri (bkz. dosya başındaki iş bölümü).
+   */
+  "/etkinlikler": { erisim: "acik", metotlar: ["GET", "POST", "PUT", "DELETE"] },
   "/mekanlar/": { erisim: "acik", metotlar: ["GET"], dinamik: true },
   // Anonim ölçüm: kim olduğunu bilmek gerekmiyor, yalnızca "kaç kez".
   "/mekan-etkilesim": { erisim: "acik", metotlar: ["POST"] },

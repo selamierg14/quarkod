@@ -210,30 +210,31 @@ model Business {
 
   createdAt DateTime @default(now())
 
-  account              Account               @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  categories           CategoryTemplate[]
-  tables               Table[]
-  bolgeler             Zone[]
-  rezervasyonlar       Rezervasyon[]
-  feedbacks            Feedback[]
-  users                User[]
-  coupons              Coupon[]
-  surveyViews          SurveyView[]
-  consents             MarketingConsent[]
-  menuCategories       MenuCategory[]
-  menuItems            MenuItem[]
-  itemRatings          ItemRating[]
-  bolgeMudurleri       UserBusiness[]
-  shiftAssignments     ShiftAssignment[]
-  shiftNotes           ShiftNote[]
-  leaveRequests        LeaveRequest[]
-  checklistItems       ChecklistItem[]
-  checklistCompletions ChecklistCompletion[]
-  duyurular            Duyuru[]
-  appVisits            AppVisit[]
-  favorileyenler       AppFavorite[]
-  rotaDuraklari        RotaDurak[]
-  etkilesimler         MekanEtkilesim[]
+  account               Account               @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  categories            CategoryTemplate[]
+  tables                Table[]
+  bolgeler              Zone[]
+  rezervasyonlar        Rezervasyon[]
+  feedbacks             Feedback[]
+  users                 User[]
+  coupons               Coupon[]
+  surveyViews           SurveyView[]
+  consents              MarketingConsent[]
+  menuCategories        MenuCategory[]
+  menuItems             MenuItem[]
+  itemRatings           ItemRating[]
+  bolgeMudurleri        UserBusiness[]
+  shiftAssignments      ShiftAssignment[]
+  shiftNotes            ShiftNote[]
+  leaveRequests         LeaveRequest[]
+  checklistItems        ChecklistItem[]
+  checklistCompletions  ChecklistCompletion[]
+  duyurular             Duyuru[]
+  appVisits             AppVisit[]
+  favorileyenler        AppFavorite[]
+  rotaDuraklari         RotaDurak[]
+  kullaniciEtkinlikleri AppEtkinlik[]
+  etkilesimler          MekanEtkilesim[]
 
   @@index([accountId])
   @@map("businesses")
@@ -1316,6 +1317,8 @@ model AppUser {
   rotaTamamlamalari RotaTamamlama[]
   pushAbonelikleri  AppPushSubscription[]
   otpKodlari        AppOtpCode[]
+  etkinlikleri      AppEtkinlik[]
+  etkinlikIlgileri  AppEtkinlikIlgi[]
 
   @@map("app_users")
 }
@@ -1502,6 +1505,74 @@ model AppVisit {
 /// değişirse eski kayıtlar geri alınmıyor — kazanılmış bir rozeti geri
 /// almak, kullanıcının uygulamaya güvenini kural değişikliğinden daha
 /// çok sarsar.
+/// KULLANICI ETKİNLİĞİ — "şu saatte şurada şu var, gelen gelsin".
+///
+/// İşletmenin `Duyuru`sundan AYRI bir tablo ve bu bilinçli. İkisi
+/// yüzeyde benziyor (başlık, açıklama, saat) ama kaynakları ve
+/// güvenilirlikleri farklı: duyuruyu mekanın sahibi yazıyor ve mekan
+/// adına söz veriyor, etkinliği bir müşteri açıyor ve yalnızca kendi
+/// adına konuşuyor. Tek tabloda birleştirmek, "mekan böyle diyor" ile
+/// "bir kullanıcı böyle diyor" ayrımını kaybetmek olurdu — o ayrım
+/// kaybolduğunda mekan, hiç haberi olmadığı bir sözün altında kalır.
+model AppEtkinlik {
+  id         String @id @default(cuid())
+  /// Etkinliği açan kullanıcı. Hesap silinirse etkinlik de gider.
+  appUserId  String
+  /// Nerede. Mekan bağı ZORUNLU: yeri belli olmayan bir buluşma çağrısı
+  /// ne haritada ne de mekan sayfasında gösterilebilir.
+  businessId String
+
+  baslik   String
+  aciklama String?
+
+  /// Buluşma anı. Geçmiş bir tarih kabul edilmiyor (bkz. lib/etkinlik.ts).
+  baslangic DateTime
+
+  /// Açan kişi vazgeçtiğinde işaretleniyor. Satır SİLİNMİYOR: ilgi
+  /// gösterenler etkinliğin iptal edildiğini görebilmeli, listeden
+  /// sessizce kaybolması "ben mi yanlış hatırlıyorum" hissi veriyor.
+  iptalEdildi DateTime?
+
+  /// Moderasyon izi — panelden kaldırıldıysa dolu. `iptalEdildi`den ayrı
+  /// tutuluyor ki "kullanıcı vazgeçti" ile "kurallara aykırıydı"
+  /// karıştırılmasın; ikisi farklı sorulara cevap veriyor.
+  kaldirildi     DateTime?
+  kaldirmaSebebi String?
+
+  createdAt DateTime @default(now())
+
+  appUser  AppUser           @relation(fields: [appUserId], references: [id], onDelete: Cascade)
+  business Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  ilgiler  AppEtkinlikIlgi[]
+
+  /// Liste sorgusu hep "yaklaşan, kaldırılmamış etkinlikler" biçiminde.
+  @@index([baslangic])
+  @@index([businessId, baslangic])
+  @@index([appUserId])
+  @@map("app_etkinlikler")
+}
+
+/// "İlgileniyorum" işareti.
+///
+/// Katılım TAAHHÜDÜ DEĞİL ve olmamalı: kontenjan, bilet ya da onay
+/// mekaniği kurmak, kimsenin altından kalkamayacağı bir söz üretiyordu
+/// (gelmeyen kullanıcı, boş kalan masa, kızgın işletmeci). İşaret
+/// yalnızca "ilgi çekti mi" sorusunu cevaplıyor.
+model AppEtkinlikIlgi {
+  id            String   @id @default(cuid())
+  appEtkinlikId String
+  appUserId     String
+  createdAt     DateTime @default(now())
+
+  etkinlik AppEtkinlik @relation(fields: [appEtkinlikId], references: [id], onDelete: Cascade)
+  appUser  AppUser     @relation(fields: [appUserId], references: [id], onDelete: Cascade)
+
+  /// Bir kişi bir etkinliğe bir kez ilgi gösterebilir.
+  @@unique([appEtkinlikId, appUserId])
+  @@index([appUserId])
+  @@map("app_etkinlik_ilgileri")
+}
+
 model AppBadge {
   id        String   @id @default(cuid())
   appUserId String
