@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { View, Text, StyleSheet, Linking, Platform, Share, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -12,6 +13,8 @@ import { API_TABAN } from "../../src/api/istemci";
 import { useVeri } from "../../src/api/useVeri";
 import type { MekanDetayYaniti } from "../../src/api/tipler";
 import { Basilabilir } from "../../src/bilesenler/Basilabilir";
+import { useOturum } from "../../src/store/oturum";
+import { useFavoriler } from "../../src/store/favoriler";
 import { Cip } from "../../src/bilesenler/Cip";
 import { AcikRozeti } from "../../src/bilesenler/AcikRozeti";
 import { ParalaksBaslik, KAPAK_YUKSEKLIGI } from "../../src/ozellikler/mekan/ParalaksBaslik";
@@ -43,6 +46,18 @@ export default function MekanEkrani() {
   const router = useRouter();
 
   const { veri, hata } = useVeri<MekanDetayYaniti>(`/api/app/mekanlar/${slug}`);
+
+  const girisli = useOturum((s) => s.durum === "girisli");
+  const favoriIdler = useFavoriler((s) => s.idler);
+  const favoriDegistir = useFavoriler((s) => s.degistir);
+  const favorileriYukle = useFavoriler((s) => s.yukle);
+  const favoriMekanlar = useFavoriler((s) => s.mekanlar);
+
+  // Liste bir kez çekiliyor; kalbin dolu mu boş mu olacağını bilmenin
+  // başka yolu yok (detay ucu favori bilgisi taşımıyor).
+  useEffect(() => {
+    if (girisli && favoriMekanlar === null) void favorileriYukle();
+  }, [girisli, favoriMekanlar, favorileriYukle]);
   const kaydirma = useSharedValue(0);
   const kaydirmaOlayi = useAnimatedScrollHandler((olay) => {
     kaydirma.value = olay.contentOffset.y;
@@ -110,6 +125,26 @@ export default function MekanEkrani() {
     void Linking.openURL(adres);
   }
 
+  /**
+   * Favorileme kime ait olduğu bilinmesi gereken bir eylem; girişsiz
+   * kullanıcı kalbe basınca giriş ekranına gidiyor (web'deki davranışın
+   * aynısı). Kalp yine de GÖSTERİLİYOR: mekan sayfası herkese açık ve
+   * düğmeyi gizlemek, özelliğin var olduğunu da gizlemek olurdu.
+   */
+  function favorile() {
+    if (!girisli) {
+      router.push("/giris");
+      return;
+    }
+    void favoriDegistir({
+      id: mekan.id,
+      slug: mekan.slug,
+      ad: mekan.ad,
+      logoUrl: mekan.logoUrl,
+      markaRengi: mekan.markaRengi,
+    });
+  }
+
   function paylas() {
     void Share.share({
       message: `${mekan.ad} — Biyerlere'de keşfet: ${API_TABAN}/mekan/${mekan.slug}`,
@@ -131,6 +166,8 @@ export default function MekanEkrani() {
         ustBosluk={guvenliAlan.top}
         onGeri={geri}
         onPaylas={paylas}
+        onFavori={favorile}
+        favoriMi={girisli && favoriIdler.has(mekan.id)}
       />
 
       <Animated.ScrollView

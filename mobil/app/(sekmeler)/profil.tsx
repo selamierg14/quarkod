@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -17,6 +17,9 @@ import { RozetVitrini } from "../../src/ozellikler/profil/RozetVitrini";
 import { IstatistikSeridi } from "../../src/ozellikler/profil/IstatistikSeridi";
 import { DavetKarti } from "../../src/ozellikler/profil/DavetKarti";
 import { BildirimAnahtari } from "../../src/ozellikler/profil/BildirimAnahtari";
+import { FavoriSeridi } from "../../src/ozellikler/profil/FavoriSeridi";
+import { ZiyaretGecmisi } from "../../src/ozellikler/profil/ZiyaretGecmisi";
+import { useFavoriler } from "../../src/store/favoriler";
 
 const SEVIYE_ADLARI: Record<number, string> = {
   1: "Meraklı",
@@ -43,11 +46,19 @@ export default function ProfilEkrani() {
     etkin: oturum.durum === "girisli",
   });
 
-  // Profil ekranı iki kaynağı birden tazeliyor: ekranın kendi verisi ve
-  // üstteki oturum (puan rozeti başka ekranlarda da okunuyor).
+  const favoriler = useFavoriler((s) => s.mekanlar);
+  const favorileriYukle = useFavoriler((s) => s.yukle);
+
+  useEffect(() => {
+    if (oturum.durum === "girisli") void favorileriYukle();
+  }, [oturum.durum, favorileriYukle]);
+
+  // Profil ekranı üç kaynağı birden tazeliyor: ekranın kendi verisi,
+  // üstteki oturum (puan rozeti başka ekranlarda da okunuyor) ve favori
+  // listesi — başka bir ekrandan favorilenen mekan burada görünsün.
   const yenile = useCallback(async () => {
-    await Promise.all([veriYenile(), oturum.yenile()]);
-  }, [veriYenile, oturum]);
+    await Promise.all([veriYenile(), oturum.yenile(), favorileriYukle()]);
+  }, [veriYenile, oturum, favorileriYukle]);
 
   if (oturum.durum === "cikisli") {
     return (
@@ -97,6 +108,10 @@ export default function ProfilEkrani() {
           />
 
           <BildirimAnahtari />
+
+          {favoriler ? <FavoriSeridi mekanlar={favoriler} /> : null}
+
+          <ZiyaretGecmisi ziyaretler={veri.sonZiyaretler} />
 
           <DavetKarti
             davetKodu={veri.kullanici.referralCode}

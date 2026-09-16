@@ -38,6 +38,8 @@ export function ParalaksBaslik({
   ustBosluk,
   onGeri,
   onPaylas,
+  onFavori,
+  favoriMi,
 }: {
   kaydirma: SharedValue<number>;
   kapakUrl: string | null;
@@ -46,6 +48,9 @@ export function ParalaksBaslik({
   ustBosluk: number;
   onGeri: () => void;
   onPaylas?: () => void;
+  /** Verilmezse kalp hiç çizilmiyor (ör. girişsiz akışlar). */
+  onFavori?: () => void;
+  favoriMi?: boolean;
 }) {
   const cubukYuksekligi = ustBosluk + 52;
   const gecisNoktasi = KAPAK_YUKSEKLIGI - cubukYuksekligi;
@@ -116,6 +121,17 @@ export function ParalaksBaslik({
       {/* Yüzen düğmeler her zaman üstte: çubuk belirse de kaybolmuyorlar. */}
       <View style={[stiller.dugmeSatiri, { top: ustBosluk + bosluk.s }]}>
         <YuzenDugme etiket="Geri" yol="M15 19l-7-7 7-7" onPress={onGeri} />
+        {onFavori ? (
+          <YuzenDugme
+            // Etiket duruma göre değişiyor: ekran okuyucu kullanan biri
+            // kalbin dolu mu boş mu olduğunu göremiyor, düğmenin adı
+            // eylemi söylemek zorunda.
+            etiket={favoriMi ? "Favorilerden çıkar" : "Favorile"}
+            yol="M12 20.5l-1.4-1.3C5.9 15 3 12.4 3 9.1 3 6.6 5 4.6 7.5 4.6c1.4 0 2.8.7 3.6 1.8l.9 1.2.9-1.2c.8-1.1 2.2-1.8 3.6-1.8C19 4.6 21 6.6 21 9.1c0 3.3-2.9 5.9-7.6 10.1L12 20.5z"
+            onPress={onFavori}
+            dolu={favoriMi}
+          />
+        ) : null}
         {onPaylas ? (
           <YuzenDugme
             etiket="Paylaş"
@@ -132,11 +148,14 @@ function YuzenDugme({
   etiket,
   yol,
   onPress,
+  dolu,
 }: {
   etiket: string;
   /** SVG path verisi — 24x24 kutuda. */
   yol: string;
   onPress: () => void;
+  /** Şekli doldurur ve vurgulu renge çevirir (favori kalbi). */
+  dolu?: boolean;
 }) {
   return (
     <Basilabilir
@@ -145,12 +164,14 @@ function YuzenDugme({
       style={stiller.yuzenDugme}
       accessibilityRole="button"
       accessibilityLabel={etiket}
+      accessibilityState={dolu === undefined ? undefined : { selected: dolu }}
     >
       <CamYuzey yogunluk={40} stil={[StyleSheet.absoluteFill, stiller.ortala]}>
         <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
           <Path
             d={yol}
-            stroke={renkler.metin.ana}
+            stroke={dolu ? renkler.uyari : renkler.metin.ana}
+            fill={dolu ? renkler.uyari : "none"}
             strokeWidth={2}
             strokeLinecap="round"
             strokeLinejoin="round"
