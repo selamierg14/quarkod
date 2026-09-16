@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { api, jetonDeposu } from "../api/istemci";
 import { useFavoriler } from "./favoriler";
+import { useBildirimler } from "./bildirimler";
 import type { AppKullanici, GirisYaniti } from "../api/tipler";
 
 /**
@@ -51,6 +52,7 @@ export const useOturum = create<OturumStore>((set) => ({
     else {
       await jetonDeposu.sil();
       useFavoriler.getState().temizle();
+    useBildirimler.getState().temizle();
       set({ durum: "cikisli", kullanici: null });
     }
   },
@@ -82,6 +84,7 @@ export const useOturum = create<OturumStore>((set) => ({
     // kullanıcı giriş yaptığında bir öncekinin favorileri ekranda
     // kalmamalı.
     useFavoriler.getState().temizle();
+    useBildirimler.getState().temizle();
     set({ durum: "cikisli", kullanici: null });
   },
 

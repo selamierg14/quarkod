@@ -48,6 +48,23 @@ export type ProfilYaniti = {
   }[];
 };
 
+/**
+ * `/api/app/bildirimler` öğesi.
+ *
+ * `href` SUNUCUDAN geliyor ve web yollarını taşıyor ("/profil",
+ * "/mekan/<slug>"). Mobil yönlendirmesi de aynı yolları kullandığı için
+ * doğrudan uygulanabiliyor; ayrışırlarsa eşleme burada değil, ekranda
+ * yapılmalı.
+ */
+export type BildirimOgesi = {
+  id: string;
+  tur: "rozet" | "kupon" | "duyuru";
+  tarih: string;
+  baslik: string;
+  aciklama: string | null;
+  href: string;
+};
+
 export type MekanOzet = {
   id: string;
   slug: string;

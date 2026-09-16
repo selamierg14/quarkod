@@ -15,6 +15,7 @@ import { TARA_DUGMESI_PAYI } from "../../src/bilesenler/TaraDugmesi";
 import { useVeri } from "../../src/api/useVeri";
 import type { MekanListesi, MekanOzet } from "../../src/api/tipler";
 import { useOturum } from "../../src/store/oturum";
+import { useBildirimler, yeniBildirimSayisi } from "../../src/store/bildirimler";
 import { konumuBildir } from "../../src/push/konum";
 import { Iskelet } from "../../src/bilesenler/Iskelet";
 import { BosDurum } from "../../src/bilesenler/BosDurum";
@@ -84,6 +85,22 @@ export default function KesfetEkrani() {
   useEffect(() => {
     if (kullanici) void konumuBildir();
   }, [kullanici]);
+
+  // Zil rozeti için: liste bir kez çekiliyor, "en son ne zaman baktı"
+  // izi de cihazdan okunuyor. İkisi olmadan rozette gösterilecek bir
+  // sayı yok.
+  const bildirimOgeleri = useBildirimler((s) => s.ogeler);
+  const sonGorulme = useBildirimler((s) => s.sonGorulme);
+  const bildirimleriYukle = useBildirimler((s) => s.yukle);
+  const bildirimleriHazirla = useBildirimler((s) => s.hazirla);
+
+  useEffect(() => {
+    if (!kullanici) return;
+    void bildirimleriHazirla();
+    void bildirimleriYukle();
+  }, [kullanici, bildirimleriHazirla, bildirimleriYukle]);
+
+  const yeniBildirim = yeniBildirimSayisi(bildirimOgeleri, sonGorulme);
 
   // Süzme SUNUCUDA: kurallar (özellik kesişimi, mesafe, sıralama) web ile
   // tek yerden paylaşılıyor — bkz. lib/kesfet.ts.
@@ -183,15 +200,34 @@ export default function KesfetEkrani() {
             </Text>
           </View>
           {kullanici ? (
-            <Basilabilir
-              onPress={() => router.push("/profil")}
-              olcek={0.92}
-              style={stiller.puanCipi}
-              accessibilityLabel={`${kullanici.puan} kaşif puanı`}
-            >
-              <Text style={stiller.puanSimgesi}>⚡</Text>
-              <Text style={stiller.puanMetni}>{kullanici.puan}</Text>
-            </Basilabilir>
+            <>
+              <Basilabilir
+                onPress={() => router.push("/bildirimler")}
+                olcek={0.9}
+                style={stiller.zil}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  yeniBildirim > 0
+                    ? `Bildirimler, ${yeniBildirim} yeni`
+                    : "Bildirimler"
+                }
+              >
+                <Text style={stiller.zilSimgesi}>🔔</Text>
+                {/* Rozet SAYI TAŞIMIYOR, yalnızca "yeni var" diyor:
+                    ziline 23 yazan bir uygulama, kullanıcıyı temizlemesi
+                    gereken bir görev listesiyle karşılıyor. */}
+                {yeniBildirim > 0 ? <View style={stiller.zilNoktasi} /> : null}
+              </Basilabilir>
+              <Basilabilir
+                onPress={() => router.push("/profil")}
+                olcek={0.92}
+                style={stiller.puanCipi}
+                accessibilityLabel={`${kullanici.puan} kaşif puanı`}
+              >
+                <Text style={stiller.puanSimgesi}>⚡</Text>
+                <Text style={stiller.puanMetni}>{kullanici.puan}</Text>
+              </Basilabilir>
+            </>
           ) : null}
         </Animated.View>
 
@@ -343,6 +379,27 @@ const stiller = StyleSheet.create({
     backgroundColor: renkler.odulSoluk,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(245,165,36,0.35)",
+  },
+  zil: {
+    minHeight: 0,
+    width: 34,
+    height: 34,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: yaricap.tam,
+    backgroundColor: renkler.katman,
+  },
+  zilSimgesi: { fontSize: 15 },
+  zilNoktasi: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: renkler.uyari,
+    borderWidth: 1.5,
+    borderColor: renkler.katman,
   },
   puanSimgesi: { fontSize: 13 },
   puanMetni: {
