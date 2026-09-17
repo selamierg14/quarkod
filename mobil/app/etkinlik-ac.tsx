@@ -10,12 +10,12 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Path } from "react-native-svg";
 import { renkler, yazi, bosluk, yaricap, isima } from "../src/tasarim";
 import { api } from "../src/api/istemci";
 import { useOturum } from "../src/store/oturum";
 import { Basilabilir } from "../src/bilesenler/Basilabilir";
 import { Cip } from "../src/bilesenler/Cip";
+import { EkranBasligi } from "../src/bilesenler/Form";
 import { tarihMetni } from "../src/ozellikler/etkinlik/EtkinlikKarti";
 
 /**
@@ -91,25 +91,8 @@ export default function EtkinlikAcEkrani() {
       style={stiller.kap}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <View style={[stiller.baslikSatiri, { paddingTop: guvenliAlan.top + bosluk.s }]}>
-        <Basilabilir
-          onPress={() => router.back()}
-          style={stiller.geriDugmesi}
-          olcek={0.88}
-          accessibilityRole="button"
-          accessibilityLabel="Geri"
-        >
-          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M15 19l-7-7 7-7"
-              stroke={renkler.metin.ana}
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </Svg>
-        </Basilabilir>
-        <Text style={yazi.ekranBasligi}>Buluşma aç</Text>
+      <View style={{ paddingTop: guvenliAlan.top + bosluk.s }}>
+        <EkranBasligi baslik="Buluşma aç" onGeri={() => router.back()} />
       </View>
 
       <ScrollView
@@ -228,22 +211,6 @@ function haftaSonu(simdi: Date): Date {
 const stiller = StyleSheet.create({
   kap: { flex: 1, backgroundColor: renkler.zemin },
   merkez: { alignItems: "center", justifyContent: "center", gap: bosluk.l, padding: bosluk.xl },
-  baslikSatiri: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: bosluk.m,
-    paddingHorizontal: bosluk.xl,
-    paddingBottom: bosluk.m,
-  },
-  geriDugmesi: {
-    width: 40,
-    height: 40,
-    minHeight: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: yaricap.tam,
-    backgroundColor: renkler.katman,
-  },
   girdi: {
     backgroundColor: renkler.katman,
     borderRadius: yaricap.m,

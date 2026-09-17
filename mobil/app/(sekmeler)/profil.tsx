@@ -109,6 +109,25 @@ export default function ProfilEkrani() {
 
           <BildirimAnahtari />
 
+          {/* Hesap güvenliği: şifre, kurtarma numarası, hesap silme. Sık
+              gidilen bir yer değil ama ARANDIĞINDA bulunabilmeli. */}
+          <Basilabilir
+            onPress={() => router.push("/guvenlik")}
+            style={stiller.ayarSatiri}
+            olcek={0.985}
+            accessibilityRole="button"
+            accessibilityLabel="Hesap güvenliği"
+          >
+            <Text style={{ fontSize: 18 }}>🔐</Text>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={yazi.kartBasligi}>Hesap güvenliği</Text>
+              <Text style={yazi.kucuk} numberOfLines={1}>
+                Şifre, kurtarma numarası, hesabı silme
+              </Text>
+            </View>
+            <Text style={stiller.ok}>›</Text>
+          </Basilabilir>
+
           {favoriler ? <FavoriSeridi mekanlar={favoriler} /> : null}
 
           <ZiyaretGecmisi ziyaretler={veri.sonZiyaretler} />
@@ -265,4 +284,15 @@ const stiller = StyleSheet.create({
     backgroundColor: renkler.katman,
   },
   ilerlemeMetni: { ...yazi.kucuk, textAlign: "center" },
+  ayarSatiri: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: bosluk.m,
+    padding: bosluk.m,
+    borderRadius: yaricap.l,
+    backgroundColor: renkler.katman,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: renkler.cizgi,
+  },
+  ok: { fontSize: 20, color: renkler.metin.soluk },
 });

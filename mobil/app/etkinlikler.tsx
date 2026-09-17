@@ -2,16 +2,16 @@ import { useCallback, useState } from "react";
 import { View, Text, StyleSheet, FlatList, RefreshControl, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Path } from "react-native-svg";
 import { renkler, yazi, bosluk, yaricap } from "../src/tasarim";
 import { api } from "../src/api/istemci";
 import { useVeri } from "../src/api/useVeri";
 import type { EtkinlikListesi, KullaniciEtkinligi } from "../src/api/tipler";
 import { useOturum } from "../src/store/oturum";
-import { Basilabilir } from "../src/bilesenler/Basilabilir";
+import { EkranBasligi } from "../src/bilesenler/Form";
 import { BosDurum } from "../src/bilesenler/BosDurum";
 import { Iskelet } from "../src/bilesenler/Iskelet";
 import { EtkinlikKarti } from "../src/ozellikler/etkinlik/EtkinlikKarti";
+import { onayIste } from "../src/bilesenler/onay";
 
 /**
  * Kullanıcı etkinlikleri — "kimler nerede buluşuyor".
@@ -80,59 +80,25 @@ export default function EtkinliklerEkrani() {
   );
 
   const iptalEt = useCallback(
-    (etkinlik: KullaniciEtkinligi) => {
-      /**
-       * İptal GERİ ALINAMAZ ve ilgi gösterenlerin gördüğü bir çağrıyı
-       * kaldırıyor; onay sorulmadan yapılmamalı.
-       */
-      Alert.alert(
+    async (etkinlik: KullaniciEtkinligi) => {
+      // İptal geri alınamaz ve ilgi gösterenlerin gördüğü bir çağrıyı
+      // kaldırıyor; onay sorulmadan yapılmamalı.
+      const onay = await onayIste(
         "Etkinliği iptal et",
         `"${etkinlik.baslik}" iptal edilsin mi? İlgilenenler artık göremeyecek.`,
-        [
-          { text: "Vazgeç", style: "cancel" },
-          {
-            text: "İptal et",
-            style: "destructive",
-            onPress: () => {
-              void (async () => {
-                const sonuc = await api.delete("/api/app/etkinlikler", {
-                  etkinlikId: etkinlik.id,
-                });
-                if (sonuc.ok) await getir();
-                else Alert.alert("İptal edilemedi", sonuc.hata);
-              })();
-            },
-          },
-        ],
+        "İptal et",
       );
+      if (!onay) return;
+      const sonuc = await api.delete("/api/app/etkinlikler", { etkinlikId: etkinlik.id });
+      if (sonuc.ok) await getir();
+      else Alert.alert("İptal edilemedi", sonuc.hata);
     },
     [getir],
   );
 
   return (
     <View style={[stiller.kap, { paddingTop: guvenliAlan.top + bosluk.s }]}>
-      <View style={stiller.baslikSatiri}>
-        <Basilabilir
-          onPress={() => router.back()}
-          style={stiller.geriDugmesi}
-          olcek={0.88}
-          accessibilityRole="button"
-          accessibilityLabel="Geri"
-        >
-          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M15 19l-7-7 7-7"
-              stroke={renkler.metin.ana}
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </Svg>
-        </Basilabilir>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={yazi.ekranBasligi}>Buluşmalar</Text>
-        </View>
-      </View>
+      <EkranBasligi baslik="Buluşmalar" onGeri={() => (router.canGoBack() ? router.back() : router.replace("/kesfet"))} />
 
       {cevrimdisi && veri ? (
         <Text style={stiller.cevrimdisi}>Çevrimdışısın — bu liste en son gördüğün hâli.</Text>
@@ -159,7 +125,7 @@ export default function EtkinliklerEkrani() {
             <EtkinlikKarti
               etkinlik={item}
               onIlgi={() => void ilgiDegistir(item)}
-              onIptal={item.benimMi ? () => iptalEt(item) : undefined}
+              onIptal={item.benimMi ? () => void iptalEt(item) : undefined}
             />
           )}
           contentContainerStyle={{
@@ -183,22 +149,6 @@ export default function EtkinliklerEkrani() {
 
 const stiller = StyleSheet.create({
   kap: { flex: 1, backgroundColor: renkler.zemin },
-  baslikSatiri: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: bosluk.m,
-    paddingHorizontal: bosluk.xl,
-    paddingBottom: bosluk.m,
-  },
-  geriDugmesi: {
-    width: 40,
-    height: 40,
-    minHeight: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: yaricap.tam,
-    backgroundColor: renkler.katman,
-  },
   cevrimdisi: {
     ...yazi.kucuk,
     color: renkler.uyari,

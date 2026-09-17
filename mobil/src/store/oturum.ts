@@ -3,6 +3,7 @@ import { api, jetonDeposu } from "../api/istemci";
 import { useFavoriler } from "./favoriler";
 import { useBildirimler } from "./bildirimler";
 import { onbellegiTemizle } from "../api/onbellek";
+import { buCihazinAboneliginiKapat } from "../push/bildirim";
 import type { AppKullanici, GirisYaniti } from "../api/tipler";
 
 /**
@@ -104,6 +105,8 @@ export const useOturum = create<OturumStore>((set) => ({
   },
 
   cikisYap: async () => {
+    // Jeton silinmeden ÖNCE: abonelik kapatma ucu kimlik istiyor.
+    await buCihazinAboneliginiKapat();
     await jetonDeposu.sil();
     // Kişiye bağlı yanıtlar (profil, favoriler) diskte kalmasın.
     void onbellegiTemizle();

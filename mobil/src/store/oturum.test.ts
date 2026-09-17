@@ -37,6 +37,9 @@ vi.mock("../api/istemci", () => ({
   yerelTercih: { oku: async () => null, yaz: async () => {} },
 }));
 
+const aboneligiKapat = vi.fn(async () => {});
+vi.mock("../push/bildirim", () => ({ buCihazinAboneliginiKapat: aboneligiKapat }));
+
 vi.mock("../api/onbellek", () => ({
   onbellekOku: async () => null,
   onbellekYaz: async () => {},
@@ -168,6 +171,25 @@ describe("çıkış", () => {
     expect(useOturum.getState().durum).toBe("cikisli");
     expect(useFavoriler.getState().mekanlar).toBeNull();
     expect(useFavoriler.getState().idler.size).toBe(0);
+  });
+
+  it("push aboneliği jeton SİLİNMEDEN ÖNCE kapatılıyor", async () => {
+    /**
+     * Sıra önemli: abonelik ucu kimlik istiyor. Jeton önce silinseydi
+     * istek 401 alır, telefon çıkıştan sonra da o hesabın
+     * bildirimlerini almaya devam ederdi.
+     */
+    depo.deger = "jeton-1";
+    let aboneKapatilirkenJeton: string | null = "okunmadi";
+    aboneligiKapat.mockImplementationOnce(async () => {
+      aboneKapatilirkenJeton = depo.deger;
+    });
+
+    await useOturum.getState().cikisYap();
+
+    expect(aboneligiKapat).toHaveBeenCalledTimes(1);
+    expect(aboneKapatilirkenJeton).toBe("jeton-1");
+    expect(depo.deger).toBeNull();
   });
 });
 

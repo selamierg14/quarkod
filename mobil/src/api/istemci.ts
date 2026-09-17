@@ -103,7 +103,7 @@ export type ApiSonuc<T> =
 async function istek<T>(
   yol: string,
   secenekler: {
-    yontem?: "GET" | "POST" | "PUT" | "DELETE";
+    yontem?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
     govde?: unknown;
     jetonlu?: boolean;
   } = {},
@@ -146,6 +146,11 @@ export const api = {
   get: <T,>(yol: string) => istek<T>(yol),
   post: <T,>(yol: string, govde?: unknown) => istek<T>(yol, { yontem: "POST", govde }),
   put: <T,>(yol: string, govde?: unknown) => istek<T>(yol, { yontem: "PUT", govde }),
+  /** Girişsiz iki adımlı akışlar (şifre kurtarma) için. */
+  acikPut: <T,>(yol: string, govde?: unknown) =>
+    istek<T>(yol, { yontem: "PUT", govde, jetonlu: false }),
+  acikPatch: <T,>(yol: string, govde?: unknown) =>
+    istek<T>(yol, { yontem: "PATCH", govde, jetonlu: false }),
   delete: <T,>(yol: string, govde?: unknown) => istek<T>(yol, { yontem: "DELETE", govde }),
   /** Girişsiz uçlar (keşfet listesi, mekan detayı). */
   acikGet: <T,>(yol: string) => istek<T>(yol, { jetonlu: false }),

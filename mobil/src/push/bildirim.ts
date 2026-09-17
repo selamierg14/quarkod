@@ -108,6 +108,35 @@ export async function bildirimleriKapat(): Promise<void> {
   }
 }
 
+/**
+ * ÇIKIŞTA çağrılıyor: YALNIZCA BU CİHAZIN aboneliğini kapatır.
+ *
+ * Önceden çıkış yapan kullanıcının telefonu bildirim almaya devam ediyordu
+ * — sunucudaki abonelik hesaba bağlı kalıyordu. Aynı telefona başka biri
+ * giriş yapsa bile önceki hesabın bildirimleri o telefona düşerdi.
+ *
+ * `bildirimleriKapat`tan farkı: jeton alınamazsa (web, simülatör, izin
+ * yok) HİÇBİR İSTEK ATILMIYOR. O fonksiyon jetonsuz çağrıldığında
+ * kullanıcının TÜM cihazlarındaki aboneliği kapatıyor; bir telefondan
+ * çıkış yapmak, tabletteki bildirimleri de susturmamalı.
+ *
+ * Jeton henüz geçerliyken, yani oturum silinmeden ÖNCE çağrılmalı —
+ * uç kimlik istiyor.
+ */
+export async function buCihazinAboneliginiKapat(): Promise<void> {
+  if (!Device.isDevice) return;
+  try {
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== "granted") return;
+    const projectId = projeKimligi();
+    const jeton = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
+    await api.delete("/api/app/push", { jeton: jeton.data });
+  } catch {
+    // Çıkışı hiçbir koşulda bloklamamalı; abonelik kapanamadıysa sunucu
+    // geçersiz jetonları gönderim sırasında zaten eliyor.
+  }
+}
+
 /** Cihazın izin durumunu okur — sunucuya sormadan, sadece görünürlük için. */
 export async function bildirimDurumunuOku(): Promise<BildirimDurumu> {
   if (!Device.isDevice) return "desteklenmiyor";

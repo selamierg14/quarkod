@@ -45,7 +45,11 @@ export default function MekanEkrani() {
   const guvenliAlan = useSafeAreaInsets();
   const router = useRouter();
 
-  const { veri, hata } = useVeri<MekanDetayYaniti>(`/api/app/mekanlar/${slug}`);
+  // Önbellekli: daha önce açılmış bir mekan internetsiz de görüntülenebilsin.
+  const { veri, hata, cevrimdisi, yenile } = useVeri<MekanDetayYaniti>(
+    `/api/app/mekanlar/${slug}`,
+    { onbellek: true },
+  );
 
   const girisli = useOturum((s) => s.durum === "girisli");
   const favoriIdler = useFavoriler((s) => s.idler);
@@ -84,12 +88,30 @@ export default function MekanEkrani() {
     router.replace("/kesfet");
   };
 
-  if (hata) {
+  /**
+   * Hata ekranı SEBEBE GÖRE ayrılıyor. Önceden her hata "Mekan bulunamadı"
+   * diyordu — bağlantı koptuğunda da. Kullanıcı mekanın kapandığını ya da
+   * silindiğini sanıyor, oysa yapması gereken yalnızca tekrar denemekti.
+   */
+  if (hata && !veri) {
     return (
       <View style={[stiller.merkez, { paddingTop: guvenliAlan.top }]}>
-        <Text style={yazi.bolumBasligi}>Mekan bulunamadı</Text>
-        <Text style={[yazi.govde, { textAlign: "center" }]}>{hata}</Text>
-        <Basilabilir style={stiller.anaButon} onPress={geri} titresim="orta">
+        <Text style={yazi.bolumBasligi}>
+          {cevrimdisi ? "Bağlantı kurulamadı" : "Mekan bulunamadı"}
+        </Text>
+        <Text style={[yazi.govde, { textAlign: "center" }]}>
+          {cevrimdisi ? "İnternetini kontrol edip tekrar dene." : hata}
+        </Text>
+        {cevrimdisi ? (
+          <Basilabilir style={stiller.anaButon} onPress={yenile} titresim="orta">
+            <Text style={yazi.buton}>Tekrar dene</Text>
+          </Basilabilir>
+        ) : null}
+        <Basilabilir
+          style={[stiller.anaButon, cevrimdisi && { backgroundColor: renkler.katman }]}
+          onPress={geri}
+          titresim="orta"
+        >
           <Text style={yazi.buton}>Geri dön</Text>
         </Basilabilir>
       </View>

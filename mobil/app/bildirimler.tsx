@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, FlatList, RefreshControl } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import Svg, { Path } from "react-native-svg";
 import { renkler, yazi, bosluk, yaricap, isima } from "../src/tasarim";
 import { useOturum } from "../src/store/oturum";
 import { useBildirimler } from "../src/store/bildirimler";
@@ -11,6 +10,7 @@ import type { BildirimOgesi } from "../src/api/tipler";
 import { Basilabilir } from "../src/bilesenler/Basilabilir";
 import { BosDurum } from "../src/bilesenler/BosDurum";
 import { Iskelet } from "../src/bilesenler/Iskelet";
+import { EkranBasligi } from "../src/bilesenler/Form";
 import { goreceliTarih } from "../src/ozellikler/profil/ZiyaretGecmisi";
 
 /**
@@ -51,7 +51,7 @@ export default function BildirimlerEkrani() {
   if (oturumDurumu === "cikisli") {
     return (
       <View style={[stiller.kap, { paddingTop: ustBosluk }]}>
-        <Baslik onGeri={() => router.back()} />
+        <Baslik onGeri={() => (router.canGoBack() ? router.back() : router.replace("/kesfet"))} />
         <View style={stiller.merkez}>
           <Text style={yazi.bolumBasligi}>Bildirimlerini görmek için giriş yap</Text>
           <Basilabilir
@@ -68,7 +68,7 @@ export default function BildirimlerEkrani() {
 
   return (
     <View style={[stiller.kap, { paddingTop: ustBosluk }]}>
-      <Baslik onGeri={() => router.back()} />
+      <Baslik onGeri={() => (router.canGoBack() ? router.back() : router.replace("/kesfet"))} />
 
       {!ogeler ? (
         <View style={{ gap: bosluk.s, paddingHorizontal: bosluk.xl, paddingTop: bosluk.m }}>
@@ -111,28 +111,7 @@ export default function BildirimlerEkrani() {
 }
 
 function Baslik({ onGeri }: { onGeri: () => void }) {
-  return (
-    <View style={stiller.baslikSatiri}>
-      <Basilabilir
-        onPress={onGeri}
-        style={stiller.geriDugmesi}
-        olcek={0.88}
-        accessibilityRole="button"
-        accessibilityLabel="Geri"
-      >
-        <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-          <Path
-            d="M15 19l-7-7 7-7"
-            stroke={renkler.metin.ana}
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </Svg>
-      </Basilabilir>
-      <Text style={yazi.ekranBasligi}>Bildirimler</Text>
-    </View>
-  );
+  return <EkranBasligi baslik="Bildirimler" onGeri={onGeri} />;
 }
 
 const SIMGELER: Record<BildirimOgesi["tur"], string> = {
@@ -180,22 +159,6 @@ function Satir({
 
 const stiller = StyleSheet.create({
   kap: { flex: 1, backgroundColor: renkler.zemin },
-  baslikSatiri: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: bosluk.m,
-    paddingHorizontal: bosluk.xl,
-    paddingBottom: bosluk.m,
-  },
-  geriDugmesi: {
-    width: 40,
-    height: 40,
-    minHeight: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: yaricap.tam,
-    backgroundColor: renkler.katman,
-  },
   merkez: { flex: 1, alignItems: "center", justifyContent: "center", gap: bosluk.l },
   girisButonu: {
     backgroundColor: renkler.vurgu,
