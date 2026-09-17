@@ -1,4 +1,5 @@
 import "server-only";
+import { timingSafeEqual } from "node:crypto";
 import { prisma } from "../cekirdek/db";
 
 /**
@@ -12,7 +13,15 @@ import { prisma } from "../cekirdek/db";
 export function cronYetkiliMi(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
   if (!secret) return false;
-  return request.headers.get("authorization") === `Bearer ${secret}`;
+  const gelen = Buffer.from(request.headers.get("authorization") ?? "");
+  const beklenen = Buffer.from(`Bearer ${secret}`);
+  /**
+   * SABİT SÜRELİ karşılaştırma. `===` ilk farklı karakterde durur; yanıt
+   * süresindeki fark, anahtarın kaç karakterinin doğru tahmin edildiğini
+   * ölçmeye izin verir. Uzunluk farkı ayrıca kontrol ediliyor çünkü
+   * `timingSafeEqual` eşit uzunluk istiyor.
+   */
+  return gelen.length === beklenen.length && timingSafeEqual(gelen, beklenen);
 }
 
 /**

@@ -43,12 +43,21 @@ const ORTAK_BASLIKLAR = [
         },
       ]
     : []),
-  // Kamera/mikrofon/konum bu üründe hiç kullanılmıyor; açık bırakmanın
-  // hiçbir faydası yok, kapatmanın maliyeti sıfır.
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  // Kamera ve mikrofon web'de hiç kullanılmıyor; kapalı.
+  //
+  // KONUM `self`: önceden `geolocation=()` yazıyordu ve bu, Biyerlere web
+  // sürümünün "Konumu aç" özelliğini TARAYICI DÜZEYİNDE kapatıyordu — izin
+  // penceresi bile açılmıyor, "permissions policy ile kapatıldı" hatası
+  // dönüyordu (canlı doğrulandı). `self`, konumu yalnızca kendi
+  // sayfalarımıza açıyor; gömülü üçüncü taraf çerçeveler hâlâ isteyemiyor.
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(self)" },
 ];
 
 const nextConfig: NextConfig = {
+  // `X-Powered-By: Next.js` sürüm/çatı bilgisini her yanıtta dışarı
+  // veriyordu; saldırgana hangi bilinen açıkları deneyeceğini söylemenin
+  // hiçbir faydası yok.
+  poweredByHeader: false,
   experimental: {
     serverActions: {
       // Vardiya çizelgesi Excel içe aktarımı 1 MB'a kadar dosya kabul
@@ -68,8 +77,21 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: ORTAK_BASLIKLAR,
       },
+      /**
+       * ÇERÇEVEYE GÖMÜLME YASAĞI — /f/* (masadaki anket) DIŞINDAKİ HER ŞEY.
+       *
+       * Önceden yalnızca /admin korunuyordu. Biyerlere sayfaları — hesap
+       * silme, şifre değiştirme, favori — başka bir sitenin görünmez
+       * çerçevesine gömülüp kullanıcıya fark ettirmeden tıklatılabiliyordu
+       * (clickjacking). Canlı doğrulandı: /profil/sifre çerçeve başlığı
+       * taşımıyordu.
+       *
+       * Negatif ileri bakış (`(?!f/)`), anket sayfalarını bilerek dışarıda
+       * bırakıyor: onlar aşağıdaki kuralla kendi alan adımızdan
+       * çerçevelenebiliyor (panel önizlemesi).
+       */
       {
-        source: "/admin/:path*",
+        source: "/((?!f/).*)",
         headers: [
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
