@@ -8,6 +8,8 @@ import {
   MAX_FAILURES_PER_EMAIL,
   MAX_FAILURES_PER_IP,
   checkLoginAllowedFor,
+  girisDenemesiAyirFor,
+  girisSonucuFor,
   recordLoginAttemptFor,
 } from "./login-guard";
 
@@ -151,5 +153,62 @@ describe("IP eşiği", () => {
     expect(
       (await checkLoginAllowedFor(prisma, "yepyeni-kullanici", "c".repeat(32))).allowed,
     ).toBe(true);
+  });
+});
+
+describe("eşzamanlı deneme — yer ayırma", () => {
+  it("40 EŞZAMANLI yanlış şifre kilidi AŞAMIYOR", async () => {
+    /**
+     * TESTİN EN ÖNEMLİ MADDESİ ve gerçek bir açığın kaydı. Eski akış "kilit
+     * var mı bak → şifreyi dene → yaz" idi; canlı ölçümde tek kullanıcı
+     * adına eşzamanlı gönderilen 40 tahminin 40'ı da şifre kontrolüne
+     * ulaştı. Yer ayırmayla en fazla eşik kadarı ulaşabilmeli.
+     */
+    const sonuclar = await Promise.all(
+      Array.from({ length: 40 }, () => girisDenemesiAyirFor(prisma, "hedef", null)),
+    );
+    // Sıfır da olabilir: hepsi yazıp sonra sayarsa hepsi 40 görür ve hepsi
+    // reddedilir. Bu güvenli taraf — hiçbir tahmin şifre kontrolüne
+    // ulaşmıyor. Sınır yalnızca üstten.
+    expect(sonuclar.filter((s) => s.allowed).length).toBeLessThanOrEqual(MAX_FAILURES_PER_EMAIL);
+  }, 60_000);
+
+  it("SIRALI denemelerde meşru kullanıcı tam hakkını kullanabiliyor", async () => {
+    // Yer ayırma, normal kullanımda eşiği daraltmamalı: 6 deneme serbest,
+    // 7.si kilitli — eski davranışla aynı.
+    for (let i = 0; i < MAX_FAILURES_PER_EMAIL; i++) {
+      expect((await girisDenemesiAyirFor(prisma, "sirali", null)).allowed, `deneme ${i + 1}`).toBe(true);
+    }
+    expect((await girisDenemesiAyirFor(prisma, "sirali", null)).allowed).toBe(false);
+  });
+
+  it("başarılı giriş satırı başarılıya dönüyor ve kullanıcı sayacını sıfırlıyor", async () => {
+    for (let i = 0; i < MAX_FAILURES_PER_EMAIL - 1; i++) {
+      await girisDenemesiAyirFor(prisma, "gercek", null);
+    }
+    const izin = await girisDenemesiAyirFor(prisma, "gercek", null);
+    expect(izin.allowed).toBe(true);
+    if (izin.allowed) await girisSonucuFor(prisma, izin.kayitId, true);
+
+    // Başarıdan sonra yeniden tam hak.
+    expect((await checkLoginAllowedFor(prisma, "gercek", null)).allowed).toBe(true);
+  });
+});
+
+describe("IP sayacı başarılı girişle SIFIRLANMIYOR", () => {
+  it("saldırgan kendi hesabına girerek IP kilidini açamıyor", async () => {
+    /**
+     * Açık şuydu: IP sayacı da başarılı girişte sıfırlanıyordu. Kendi
+     * hesabı olan saldırgan, başka hesaplara yaptığı tahminlerin arasına
+     * kendi hesabına bir giriş sıkıştırıp IP eşiğine hiç takılmıyordu.
+     */
+    for (let i = 0; i < MAX_FAILURES_PER_IP; i++) {
+      await recordLoginAttemptFor(prisma, `kurban-${i}`, false, IP);
+    }
+    // Kendi hesabına başarılı giriş — aynı IP.
+    await recordLoginAttemptFor(prisma, "saldirganin-kendi-hesabi", true, IP);
+
+    const karar = await checkLoginAllowedFor(prisma, "yeni-kurban", IP);
+    expect(karar.allowed).toBe(false);
   });
 });

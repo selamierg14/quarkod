@@ -1,7 +1,8 @@
 "use server";
 
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { headers } from "next/headers";
+import { istemciIp, ipOzeti } from "@/lib/kimlik/istemci-ip";
 import { redirect } from "next/navigation";
 import { hashPassword, setSessionCookie } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
@@ -22,10 +23,8 @@ export type DenemeState = { error?: string };
 
 /** Ham IP saklanmıyor; sınır kontrolü karma üzerinden yapılıyor. */
 async function ipKarmasi(): Promise<string | null> {
-  const h = await headers();
-  const ip =
-    h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "";
-  return ip ? createHash("sha256").update(ip).digest("hex").slice(0, 32) : null;
+  // Güvenilir kaynak seçimi tek yerde (bkz. lib/kimlik/istemci-ip.ts).
+  return ipOzeti(istemciIp(await headers()));
 }
 
 /**

@@ -1,7 +1,7 @@
 "use server";
 
-import { createHash } from "node:crypto";
 import { headers } from "next/headers";
+import { istemciIp, ipOzeti } from "@/lib/kimlik/istemci-ip";
 import { after } from "next/server";
 import { prisma } from "@/lib/cekirdek/db";
 import { notifyLowRating } from "@/lib/altyapi/mail";
@@ -76,11 +76,6 @@ const REPEAT_WINDOW_MINUTES = 30;
 /** Aynı IP'den aynı işletmeye bu pencerede en fazla bu kadar gönderim kabul edilir. */
 const FLOOD_WINDOW_MINUTES = 10;
 const FLOOD_LIMIT = 5;
-
-/** Aynı IP'yi düz metin saklamamak için tek yönlü özet. */
-function hashIp(ip: string): string {
-  return createHash("sha256").update(ip).digest("hex").slice(0, 32);
-}
 
 /** Aynı ziyaretçinin aynı masayı tekrar açması bu süre içinde tek görüntüleme sayılır. */
 const VIEW_DEDUPE_MINUTES = 120;
@@ -221,9 +216,9 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
   }
 
   const headerList = await headers();
-  const forwarded = headerList.get("x-forwarded-for");
-  const ip = forwarded?.split(",")[0]?.trim() || headerList.get("x-real-ip") || "";
-  const ipHash = ip ? hashIp(ip) : null;
+  // Sel koruması IP'ye dayanıyor; güvenilir kaynak seçimi tek yerde.
+  const ip = istemciIp(headerList);
+  const ipHash = ipOzeti(ip);
   const visitorId = await getOrCreateVisitorId();
 
   // 1) Aynı tarayıcı, aynı masa: kısa aralıkta tekrar gönderim.
@@ -403,7 +398,7 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
             consentAt: now,
             textVersion: MARKETING_TEXT_VERSION,
             consentText: gosterilenMetin,
-            ipAddress: ip || null,
+            ipAddress: ip && ip !== "guvenilmez" ? ip : null,
             ipHash,
             feedbackId: feedback.id,
             reportedAt: null,
@@ -420,7 +415,7 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
             consentAt: now,
             textVersion: MARKETING_TEXT_VERSION,
             consentText: gosterilenMetin,
-            ipAddress: ip || null,
+            ipAddress: ip && ip !== "guvenilmez" ? ip : null,
             ipHash,
           },
         })

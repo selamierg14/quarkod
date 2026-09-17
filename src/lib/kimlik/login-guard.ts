@@ -1,6 +1,6 @@
 import "server-only";
-import { createHash } from "node:crypto";
 import { headers } from "next/headers";
+import { istemciIp, ipOzeti } from "./istemci-ip";
 import { prisma } from "../cekirdek/db";
 import type { PrismaClient } from "@/generated/prisma/client";
 
@@ -37,35 +37,33 @@ export type GuardResult =
   | { allowed: true }
   | { allowed: false; retryAfterMinutes: number };
 
-function hashIp(ip: string): string {
-  return createHash("sha256").update(ip).digest("hex").slice(0, 32);
-}
-
 async function currentIpHash(): Promise<string | null> {
-  const headerList = await headers();
-  const forwarded = headerList.get("x-forwarded-for");
-  const ip = forwarded?.split(",")[0]?.trim() || headerList.get("x-real-ip") || "";
-  return ip ? hashIp(ip) : null;
+  return ipOzeti(istemciIp(await headers()));
 }
 
-/**
- * Verilen pencerede, son başarılı denemeden sonraki başarısız deneme sayısı.
- *
- * Sayım `count` ile yapılıyor, satırlar çekilip uzunluğuna bakılarak değil:
- * bu fonksiyon her giriş denemesinde iki kez (kullanıcı adı ve IP için)
- * çalışıyor ve kilitli bir hesapta yüzlerce satır dönebiliyordu. Sayı ile
- * en son hatanın zamanı tek turda, yan yana isteniyor.
- */
 async function failuresSince(
   db: Sayac,
   where: { email: string } | { ipHash: string },
   windowStart: Date,
 ): Promise<{ count: number; newest: Date | null }> {
-  const lastSuccess = await db.loginAttempt.findFirst({
-    where: { ...where, success: true, createdAt: { gte: windowStart } },
-    orderBy: { createdAt: "desc" },
-    select: { createdAt: true },
-  });
+  /**
+   * Başarılı giriş sayacı YALNIZCA KULLANICI ADI için sıfırlıyor, IP için
+   * değil.
+   *
+   * IP sayacı da sıfırlanıyordu ve bu bir açıktı: kendi hesabı olan
+   * saldırgan, başka hesaplara yaptığı tahminlerin arasına kendi hesabına
+   * başarılı bir giriş sıkıştırıp IP kilidini hiç devreye sokmadan
+   * sınırsız deneme yapabiliyordu. Kullanıcı adı için sıfırlama doğru:
+   * şifresini bir kez yanlış yazıp sonra giren kişi cezalandırılmamalı.
+   */
+  const lastSuccess =
+    "email" in where
+      ? await db.loginAttempt.findFirst({
+          where: { ...where, success: true, createdAt: { gte: windowStart } },
+          orderBy: { createdAt: "desc" },
+          select: { createdAt: true },
+        })
+      : null;
 
   const from = lastSuccess ? lastSuccess.createdAt : windowStart;
   const failureWhere = { ...where, success: false, createdAt: { gt: from } };
@@ -128,15 +126,85 @@ export async function recordLoginAttemptFor(
 }
 
 /** Giriş denenmeden önce çağrılır. */
-export async function checkLoginAllowed(email: string): Promise<GuardResult> {
+export type GirisIzni =
+  | { allowed: true; kayitId: string }
+  | { allowed: false; retryAfterMinutes: number };
+
+/**
+ * GİRİŞ DENEMESİ İÇİN YER AYIRIR — şifre kontrolünden ÖNCE çağrılır.
+ *
+ * Önceki akış "kilit var mı bak → şifreyi dene → sonucu yaz" idi ve
+ * eşzamanlı isteklerde çöküyordu: hepsi kilidi açık görüp şifre
+ * denemesine geçiyordu. Canlı ölçüldü — tek kullanıcı adına 40 eşzamanlı
+ * yanlış şifre gönderildi, 6'da kilitlenmesi gereken hesap 40 tahminin
+ * hepsini işledi.
+ *
+ * Şimdi deneme ÖNCE "başarısız" olarak yazılıyor, SONRA sayılıyor. Bir
+ * isteğin sayımı kendisinden önce sayım yapmış her isteğin satırını
+ * görüyor, yani eşiğin üstündeki her istek şifreye dokunmadan
+ * reddediliyor. Giriş başarılı olursa `girisSonucu` satırı başarılıya
+ * çeviriyor.
+ */
+export async function girisDenemesiAyirFor(
+  db: Sayac,
+  email: string,
+  ipHash: string | null,
+): Promise<GirisIzni> {
+  const normalized = email.trim().toLowerCase();
+  const kayit = await db.loginAttempt.create({
+    data: { email: normalized, ipHash, success: false },
+    select: { id: true },
+  });
+
+  const windowStart = new Date(Date.now() - LOCK_WINDOW_MINUTES * 60 * 1000);
+  const [byEmail, byIp] = await Promise.all([
+    failuresSince(db, { email: normalized }, windowStart),
+    ipHash
+      ? failuresSince(db, { ipHash }, windowStart)
+      : Promise.resolve({ count: 0, newest: null as Date | null }),
+  ]);
+
+  // Kendi satırı da sayıldı: eşiğe EŞİT olmak hâlâ izinli (6. deneme
+  // serbest, 7.si kilitli — önceki davranışla aynı).
+  if (byEmail.count <= MAX_FAILURES_PER_EMAIL && byIp.count <= MAX_FAILURES_PER_IP) {
+    return { allowed: true, kayitId: kayit.id };
+  }
+
+  // Reddedilen deneme sayılmıyor: kilitli hesaba yeniden denemek kilidi
+  // uzatmamalı (kilit zaten SON hatalı denemeden itibaren işliyor).
+  await db.loginAttempt.delete({ where: { id: kayit.id } }).catch(() => {});
+  const karar = await checkLoginAllowedFor(db, normalized, ipHash);
+  return karar.allowed
+    ? // Silme ile sayım arasında pencereden kayıt düşmüş olabilir; yine de
+      // bu denemeyi reddetmek güvenli taraf.
+      { allowed: false, retryAfterMinutes: 1 }
+    : karar;
+}
+
+/** Şifre doğrulandıysa ayrılan satırı başarılıya çevirir. */
+export async function girisSonucuFor(db: Sayac, kayitId: string, basarili: boolean) {
+  if (!basarili) return;
+  await db.loginAttempt.update({ where: { id: kayitId }, data: { success: true } });
+}
+
+/**
+ * Yalnızca OKUR — şifre denemesi yapılmayan akışlar için (panel şifre
+ * sıfırlama adımı). Orada yer ayırmak, başkasının kullanıcı adıyla
+ * sıfırlama isteği yağdıran birinin o kişinin GİRİŞİNİ kilitlemesine yol
+ * açardı.
+ */
+export async function girisKilidiKontrol(email: string): Promise<GuardResult> {
   return checkLoginAllowedFor(prisma, email, await currentIpHash());
 }
 
-export async function recordLoginAttempt(email: string, success: boolean) {
-  await recordLoginAttemptFor(prisma, email, success, await currentIpHash());
+export async function girisDenemesiAyir(email: string): Promise<GirisIzni> {
+  return girisDenemesiAyirFor(prisma, email, await currentIpHash());
 }
 
-/** Eski kayıtlar birikmesin — girişte ara sıra temizlenir. */
+export async function girisSonucu(kayitId: string, basarili: boolean) {
+  return girisSonucuFor(prisma, kayitId, basarili);
+}
+
 export async function pruneLoginAttempts(): Promise<number> {
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const { count } = await prisma.loginAttempt.deleteMany({

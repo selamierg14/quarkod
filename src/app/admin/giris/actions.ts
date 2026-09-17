@@ -25,9 +25,10 @@ import {
 } from "@/lib/kimlik/otp";
 import { sifreSorunu } from "@/lib/kimlik/sifre";
 import {
-  checkLoginAllowed,
+  girisDenemesiAyir,
+  girisKilidiKontrol,
+  girisSonucu,
   pruneLoginAttempts,
-  recordLoginAttempt,
 } from "@/lib/kimlik/login-guard";
 import { SINIRLAR, hizSiniriMesaji, hizSiniriUygula } from "@/lib/kimlik/hiz-siniri";
 
@@ -198,7 +199,12 @@ export async function loginAction(
     }
     const username = kimlik.deger.toLowerCase();
 
-    const guard = await checkLoginAllowed(username);
+    // Giriş kipinde yer ŞİFRE denemesinden önce ayrılıyor (eşzamanlı
+    // tahminler kilidi aşamasın). Sıfırlama kipinde şifre denenmiyor; orada
+    // yalnızca okunuyor — yoksa başkasının adıyla sıfırlama isteği yağdıran
+    // biri o kişinin girişini kilitleyebilirdi.
+    const guard =
+      mode === "giris" ? await girisDenemesiAyir(username) : await girisKilidiKontrol(username);
     if (!guard.allowed) {
       return {
         step: "kimlik",
@@ -260,7 +266,9 @@ export async function loginAction(
     const password = sifre.deger;
 
     const user = await authenticate(username, password);
-    await recordLoginAttempt(username, Boolean(user));
+    // Bu satıra yalnızca giriş kipinde gelinir; kayıt kimliği o kipte var.
+    const kayitId = "kayitId" in guard ? (guard.kayitId as string) : null;
+    if (kayitId) await girisSonucu(kayitId, Boolean(user));
 
     if (!user) {
       return { step: "kimlik", mode, error: "Kullanıcı adı veya şifre hatalı." };

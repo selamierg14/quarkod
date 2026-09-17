@@ -12,17 +12,24 @@ import {
  * sınayabilmek için. Testin ölçtüğü şey SQL değil, karar kuralı.
  */
 function sahteDepo(baslangic: { anahtar: string; zaman: Date }[] = []) {
-  const kayitlar = [...baslangic];
+  const kayitlar: { id?: string; anahtar: string; zaman: Date }[] = [...baslangic];
+  let sira = 0;
+  // Her depo işlemi olay döngüsüne dönüyor: gerçek veritabanı gidiş-dönüşü
+  // gibi, eşzamanlı istekler birbirinin arasına girebilsin. Bu olmadan
+  // yarış testi hiçbir yarışı yakalayamaz.
+  const bekle = () => new Promise((c) => setTimeout(c, 0));
   return {
     kayitlar,
     loginAttempt: {
       count: async (args: unknown) => {
+        await bekle();
         const a = args as { where: { email: string; createdAt: { gte: Date } } };
         return kayitlar.filter(
           (k) => k.anahtar === a.where.email && k.zaman >= a.where.createdAt.gte,
         ).length;
       },
       findFirst: async (args: unknown) => {
+        await bekle();
         const a = args as { where: { email: string; createdAt: { gte: Date } } };
         const eslesen = kayitlar
           .filter((k) => k.anahtar === a.where.email && k.zaman >= a.where.createdAt.gte)
@@ -30,8 +37,17 @@ function sahteDepo(baslangic: { anahtar: string; zaman: Date }[] = []) {
         return eslesen[0] ? { createdAt: eslesen[0].zaman } : null;
       },
       create: async (args: unknown) => {
+        await bekle();
         const a = args as { data: { email: string } };
-        kayitlar.push({ anahtar: a.data.email, zaman: new Date() });
+        const id = `k${sira++}`;
+        kayitlar.push({ id, anahtar: a.data.email, zaman: new Date() });
+        return { id };
+      },
+      delete: async (args: unknown) => {
+        await bekle();
+        const a = args as { where: { id: string } };
+        const i = kayitlar.findIndex((k) => k.id === a.where.id);
+        if (i >= 0) kayitlar.splice(i, 1);
         return {};
       },
     },
@@ -70,6 +86,23 @@ describe("hız sınırı", () => {
     await hizSiniriUygulaFor(depo, SINIR, "ip_x");
 
     expect(depo.kayitlar.length).toBe(oncekiAdet);
+  });
+
+  it("EŞZAMANLI istekler kotayı AŞAMIYOR", async () => {
+    /**
+     * TESTİN EN ÖNEMLİ MADDESİ ve gerçek bir açığın kaydı.
+     *
+     * Sayaç "önce say, sonra yaz" biçimindeydi: aynı anda gelen istekler
+     * hepsi "henüz 0" görüp geçiyordu. Canlı ölçüldü — kayıt ucuna aynı
+     * IP'den 40 eşzamanlı istek atıldı, 5'lik sınıra rağmen 40'ı da geçti.
+     */
+    const depo = sahteDepo();
+    const sonuclar = await Promise.all(
+      Array.from({ length: 40 }, () => hizSiniriUygulaFor(depo, SINIR, "ip_yaris")),
+    );
+    expect(sonuclar.filter((k) => k.izin).length).toBeLessThanOrEqual(SINIR.adet);
+    // Reddedilenler yer tutmuyor: kayıt sayısı izin verilenlerle aynı.
+    expect(depo.kayitlar.length).toBe(sonuclar.filter((k) => k.izin).length);
   });
 
   it("farklı kimlikler birbirinin kotasını yemez", async () => {

@@ -1,7 +1,8 @@
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/cekirdek/db";
-import { checkLoginAllowed, recordLoginAttempt } from "@/lib/kimlik/login-guard";
+import { girisDenemesiAyir, girisSonucu } from "@/lib/kimlik/login-guard";
+import { alanDogrula } from "@/lib/cekirdek/desenler";
 import { appJetonUret } from "@/lib/kimlik/app-oturum";
 import { apiHata, govdeOku, metin } from "@/lib/kimlik/app-api";
 import { plusGecerliMi } from "@/lib/biyerlere/biyerlere-plus";
@@ -21,11 +22,18 @@ export async function POST(request: Request) {
   const govde = await govdeOku(request);
   if (!govde) return apiHata("Geçersiz istek gövdesi.", 400);
 
-  const username = metin(govde, "username").toLowerCase();
-  const sifre = metin(govde, "sifre");
-  if (!username || !sifre) return apiHata("Kullanıcı adı ve şifre gerekli.", 400);
+  // Uzunluklar bcrypt'e ve veritabanına GİRMEDEN sınırlanıyor: 9 MB'lık bir
+  // "şifre" bu uca kimlik doğrulaması olmadan gönderilebiliyor ve her
+  // istekte belleğe alınıp işleniyordu (canlı ölçüldü).
+  const kimlik = alanDogrula(metin(govde, "username"), "girisKimligi", "Kullanıcı adı", {
+    zorunlu: true,
+  });
+  const sifreAlani = alanDogrula(metin(govde, "sifre"), "girisSifresi", "Şifre", { zorunlu: true });
+  if (!kimlik.ok || !sifreAlani.ok) return apiHata("Kullanıcı adı veya şifre hatalı.", 400);
+  const username = kimlik.deger.toLowerCase();
+  const sifre = sifreAlani.deger;
 
-  const izin = await checkLoginAllowed(username);
+  const izin = await girisDenemesiAyir(username);
   if (!izin.allowed) {
     return apiHata(
       `Çok fazla hatalı deneme. ${izin.retryAfterMinutes} dakika sonra tekrar deneyin.`,
@@ -41,13 +49,13 @@ export async function POST(request: Request) {
   const dogru = await bcrypt.compare(sifre, kullanici?.passwordHash ?? sahteKarma);
 
   if (!kullanici || !dogru || !kullanici.active) {
-    await recordLoginAttempt(username, false);
+    // Başarısız deneme zaten `girisDenemesiAyir`da "başarısız" olarak yazıldı.
     // Hangi ayrıntının yanlış olduğu (ad mı, şifre mi, hesap askıda mı)
     // bilerek söylenmiyor: bu bilgi saldırgana kullanıcı listesi çıkarır.
     return apiHata("Kullanıcı adı veya şifre hatalı.", 401);
   }
 
-  await recordLoginAttempt(username, true);
+  await girisSonucu(izin.kayitId, true);
 
   // Kupon kapalıyken sayaç her zaman 0 — sorgu da atlanıyor
   // (bkz. lib/biyerlere/kupon.ts).

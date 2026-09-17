@@ -1,7 +1,7 @@
 import "server-only";
-import { createHash } from "node:crypto";
 import { headers } from "next/headers";
 import { prisma } from "../cekirdek/db";
+import { istemciIp, ipOzeti } from "./istemci-ip";
 
 /**
  * Genel istek hız sınırı.
@@ -79,22 +79,14 @@ function anahtarla(kanal: string, deger: string): string {
   return `${kanal}:${deger}`.slice(0, 190);
 }
 
-function ipOzeti(ip: string): string {
-  // Ham IP saklanmıyor — sayaç için kimliğin kendisi gerekmiyor, yalnızca
-  // "aynı kaynak mı" sorusunun cevabı gerekiyor (KVKK ilkesi: en az veri).
-  return createHash("sha256").update(ip).digest("hex").slice(0, 32);
-}
-
 /** İsteği atan tarafın kimliği — oturum varsa kullanıcı, yoksa IP özeti. */
 export async function istekKimligi(kullaniciId?: string | null): Promise<string> {
   if (kullaniciId) return `u_${kullaniciId}`;
-  const basliklar = await headers();
-  const forwarded = basliklar.get("x-forwarded-for");
-  const ip = forwarded?.split(",")[0]?.trim() || basliklar.get("x-real-ip") || "";
-  // IP hiç okunamıyorsa (bazı çalıştırma ortamları) sınır uygulanamaz;
-  // "anonim" tek bir kovaya düşürmek, tüm kullanıcıları birbirinin
-  // kotasından sorumlu tutmak olurdu.
-  return ip ? `ip_${ipOzeti(ip)}` : "";
+  // Güvenilir kaynak seçimi tek yerde (bkz. istemci-ip.ts). Boş dönmesi
+  // yalnızca yerel geliştirmede mümkün; üretimde en kötü ihtimalle ortak
+  // kova dönüyor, yani sınır hiçbir koşulda sessizce devre dışı kalmıyor.
+  const ozet = ipOzeti(istemciIp(await headers()));
+  return ozet ? `ip_${ozet}` : "";
 }
 
 /** Sayaç deposu — testte sahte bir nesne verilebilsin diye ayrık. */
@@ -102,7 +94,8 @@ type Sayac = {
   loginAttempt: {
     count: (args: unknown) => Promise<number>;
     findFirst: (args: unknown) => Promise<{ createdAt: Date } | null>;
-    create: (args: unknown) => Promise<unknown>;
+    create: (args: unknown) => Promise<{ id: string }>;
+    delete: (args: unknown) => Promise<unknown>;
   };
 };
 
@@ -157,20 +150,51 @@ export async function hizSiniriIsaretleFor(
 /**
  * Kontrol + kayıt tek çağrıda — VARSAYILAN kullanım.
  *
- * Ayrı `kontrol()` ve `kaydet()` çağrılarını çağırana bırakmak,
- * ikincisinin unutulup sınırın sessizce çalışmaması demek; hız
- * sınırlarının en yaygın hatası bu. İkisini ayrı isteyen yerler
- * yukarıdaki fonksiyonları bilerek ve gerekçesiyle çağırıyor.
+ * ÖNCE YER AYIR, SONRA SAY. Önceki hâli "say, sınırın altındaysa yaz"
+ * idi ve eşzamanlı isteklerde çöküyordu: hepsi aynı anda "henüz 0" görüp
+ * geçiyordu. Canlı ölçüldü — kayıt ucuna aynı IP'den 40 eşzamanlı istek,
+ * 5'lik sınıra rağmen 40'ı da geçti.
+ *
+ * Neden bu sıra doğru: her istek kendi satırını yazıp SONRA sayıyor. Bir
+ * isteğin sayımı, kendisinden önce sayım yapmış her isteğin satırını
+ * görmek zorunda (onlar saymadan önce yazdı). Yani k'ıncı sayım en az k
+ * görüyor ve sınırın üstündeki her istek reddediliyor — kilit ya da
+ * işlem gerekmeden.
+ *
+ * Reddedilen istek kendi satırını SİLİYOR: sınıra takılan birinin yeniden
+ * denemesi, kendi kilidini sonsuza kadar uzatmamalı.
+ *
+ * Ayrı `kontrol()` + `isaretle()` çağrılarını çağırana bırakmak hem bu
+ * yarışı yeniden açar hem de ikincisinin unutulması riskini taşır.
  */
 export async function hizSiniriUygulaFor(
   db: Sayac,
   sinir: HizSiniri,
   kimlik: string,
 ): Promise<HizSiniriKarari> {
-  const karar = await hizSiniriKontrolFor(db, sinir, kimlik);
-  if (!karar.izin) return karar;
-  await hizSiniriIsaretleFor(db, sinir, kimlik);
-  return karar;
+  if (!kimlik) return { izin: true };
+
+  const anahtar = anahtarla(sinir.kanal, kimlik);
+  const kayit = await db.loginAttempt.create({ data: { email: anahtar, success: true } });
+
+  const pencereBasi = new Date(Date.now() - sinir.dakika * 60 * 1000);
+  const adet = await db.loginAttempt.count({
+    where: { email: anahtar, createdAt: { gte: pencereBasi } },
+  });
+  if (adet <= sinir.adet) return { izin: true };
+
+  await db.loginAttempt.delete({ where: { id: kayit.id } }).catch(() => {});
+
+  const enEski = await db.loginAttempt.findFirst({
+    where: { email: anahtar, createdAt: { gte: pencereBasi } },
+    orderBy: { createdAt: "asc" },
+    select: { createdAt: true },
+  });
+  const acilis = (enEski?.createdAt.getTime() ?? Date.now()) + sinir.dakika * 60 * 1000;
+  return {
+    izin: false,
+    kalanDakika: Math.max(1, Math.ceil((acilis - Date.now()) / 60000)),
+  };
 }
 
 /** Uygulama içinden kullanım — depo ve kimlik hazır gelir. */
