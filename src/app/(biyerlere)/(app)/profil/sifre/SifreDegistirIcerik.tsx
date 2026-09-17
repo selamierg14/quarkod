@@ -164,6 +164,13 @@ export function SifreDegistirIcerik() {
       </section>
 
       <KurtarmaNumarasi />
+
+      <HesabiSil
+        onSilindi={() => {
+          cikisYap();
+          router.push("/kesfet");
+        }}
+      />
     </div>
   );
 }
@@ -324,6 +331,93 @@ function KurtarmaNumarasi() {
             </AnaDugme>
           </form>
         </>
+      )}
+    </section>
+  );
+}
+
+/**
+ * Hesabı kalıcı silme.
+ *
+ * İKİ AŞAMALI: önce yalnızca açıklayıcı bir düğme, basılınca şifre alanı
+ * ve kırmızı onay. Geri alınamayan tek işlem bu; sayfanın en altında, tek
+ * dokunuşla ulaşılamayacak yerde duruyor. Şifre sunucuda da doğrulanıyor
+ * (bkz. api/app/hesap).
+ */
+function HesabiSil({ onSilindi }: { onSilindi: () => void }) {
+  const [acik, setAcik] = useState(false);
+  const [sifre, setSifre] = useState("");
+  const [hata, setHata] = useState<string | null>(null);
+  const [bekliyor, setBekliyor] = useState(false);
+
+  async function sil(e: React.FormEvent) {
+    e.preventDefault();
+    setHata(null);
+    setBekliyor(true);
+    const sonuc = await appAuthPost<{ silindi: boolean }>(
+      "/api/app/hesap",
+      { mevcutSifre: sifre },
+      "DELETE",
+    );
+    setBekliyor(false);
+    if (!sonuc.ok) {
+      setHata(sonuc.hata);
+      return;
+    }
+    onSilindi();
+  }
+
+  return (
+    <section className="border-t border-white/10 pt-6">
+      <h2 className="text-base font-bold text-white">Hesabı sil</h2>
+      <p className="mt-1 text-small text-gray-400">
+        Puanların, rozetlerin, ziyaret geçmişin, favorilerin ve açtığın buluşmalar kalıcı olarak
+        silinir. Bu işlem geri alınamaz.
+      </p>
+
+      {!acik ? (
+        <button
+          type="button"
+          onClick={() => setAcik(true)}
+          className="mt-4 rounded-control border border-[#FF6B4A]/40 px-4 py-2.5 text-small font-semibold text-[#FF6B4A] transition active:scale-[0.97] duration-150 ease-out"
+        >
+          Hesabımı silmek istiyorum
+        </button>
+      ) : (
+        <form onSubmit={sil} className="mt-4 flex flex-col gap-4">
+          <Alan
+            id="hesap-sil-sifre"
+            etiket="Onaylamak için şifreni yaz"
+            tur="girisSifresi"
+            zorunlu
+            autoComplete="current-password"
+            value={sifre}
+            onChange={(e) => setSifre(e.target.value)}
+            disabled={bekliyor}
+          />
+          <Hata mesaj={hata} />
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setAcik(false);
+                setSifre("");
+                setHata(null);
+              }}
+              disabled={bekliyor}
+              className="flex-1 rounded-control border border-white/15 px-4 py-3 text-small font-semibold text-gray-200"
+            >
+              Vazgeç
+            </button>
+            <button
+              type="submit"
+              disabled={bekliyor || sifre.length === 0}
+              className="flex-1 rounded-control bg-[#FF6B4A] px-4 py-3 text-small font-semibold text-white transition active:scale-[0.97] duration-150 ease-out disabled:opacity-60"
+            >
+              {bekliyor ? "Siliniyor…" : "Kalıcı olarak sil"}
+            </button>
+          </div>
+        </form>
       )}
     </section>
   );
