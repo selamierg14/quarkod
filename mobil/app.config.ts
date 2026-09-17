@@ -21,7 +21,30 @@ import type { ConfigContext, ExpoConfig } from "expo/config";
 /** Sitenin alan adı — "biyerlere.com" gibi, şema ve eğik çizgi olmadan. */
 const ALAN_ADI = process.env.EXPO_PUBLIC_SITE_DOMAIN?.trim().replace(/^https?:\/\//, "").replace(/\/$/, "");
 
+/**
+ * YAYIN DERLEMESİNDE API ADRESİ HTTPS OLMAK ZORUNDA — derleme burada duruyor.
+ *
+ * İki sebep: (1) iOS, yayın derlemesinde düz `http` isteklerini App
+ * Transport Security ile engelliyor; uygulama mağazadan indirilir ve ilk
+ * açılışta hiçbir veri gelmez. (2) Jeton ve şifre ağda şifresiz
+ * dolaşmamalı. Adres verilmezse istemci geliştirme varsayılanına
+ * (`http://<LAN IP>:3000`) düşüyor — yayında bu, sessizce bozuk bir
+ * uygulama demek. Bunu mağaza incelemesinde ya da kullanıcı şikayetinde
+ * değil, derleme anında öğrenmek gerekiyor.
+ */
+function yayinAdresiniDogrula() {
+  if (process.env.APP_ORTAMI !== "yayin") return;
+  const adres = process.env.EXPO_PUBLIC_API_URL?.trim() ?? "";
+  if (!adres.startsWith("https://")) {
+    throw new Error(
+      `Yayın derlemesi için EXPO_PUBLIC_API_URL "https://" ile başlamalı (şu an: "${adres || "tanımsız"}"). ` +
+        "SSL sertifikası kurulduktan sonra EAS ortam değişkenlerine ekleyin.",
+    );
+  }
+}
+
 export default ({ config }: ConfigContext): ExpoConfig => {
+  yayinAdresiniDogrula();
   const temel = config as ExpoConfig;
   if (!ALAN_ADI) return temel;
 
