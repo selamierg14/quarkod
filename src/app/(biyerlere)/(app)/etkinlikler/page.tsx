@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { CalendarDays } from "lucide-react";
 import { etkinlikleriGetir } from "@/lib/biyerlere/kesfet-veri";
+import { Bulusmalar } from "./Bulusmalar";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,10 @@ export default async function EtkinliklerPage() {
       <p className="mt-1 text-small text-gray-400">
         Şehirdeki mekanlardan bu haftaki canlı müzik, indirim ve özel geceler.
       </p>
+
+      <Bulusmalar />
+
+      <h2 className="mt-8 text-base font-bold text-white">Mekanların duyuruları</h2>
 
       {etkinlikler.length === 0 ? (
         <p className="mt-6 rounded-2xl border border-dashed border-white/10 p-6 text-center text-small text-gray-400">
