@@ -4,6 +4,7 @@ import { canAccessBusiness, getSession, yazmaEngeli } from "@/lib/kimlik/auth";
 import { kuponKoduGecerliMi } from "@/lib/biyerlere/kupon-kod";
 import { SINIRLAR, hizSiniriIsaretle, hizSiniriKontrol, hizSiniriMesaji } from "@/lib/kimlik/hiz-siniri";
 import { KUPON_AKTIF } from "@/lib/biyerlere/kupon";
+import { govdeOku } from "@/lib/kimlik/app-api";
 
 export const dynamic = "force-dynamic";
 
@@ -40,10 +41,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ hata: engel }, { status: 403 });
   }
 
-  let govde: { kuponId?: unknown; kod?: unknown };
-  try {
-    govde = await request.json();
-  } catch {
+  // Ortak okuyucu: içerik türü, boyut ve JSON nesnesi kapıları tek yerde
+  // (bkz. govdeOku). `request.json()` text/plain gövdeyi de kabul ediyordu.
+  const govde = await govdeOku(request);
+  if (!govde) {
     return NextResponse.json({ hata: "Geçersiz istek." }, { status: 400 });
   }
 

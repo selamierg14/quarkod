@@ -106,6 +106,18 @@ export function OturumSaglayici({ children }: { children: ReactNode }) {
   }, []);
 
   const cikisYap = useCallback(() => {
+    // Jeton SUNUCUDA da iptal ediliyor; yalnızca yerel kopyayı silmek, başka
+    // yerde duran bir kopyayı 30 gün geçerli bırakıyordu. Beklenmiyor:
+    // çıkış ağ durumundan bağımsız olarak anında tamamlanmalı. `keepalive`
+    // sayfa hemen değişse bile isteğin gitmesini sağlıyor.
+    const jeton = jetonOku();
+    if (jeton) {
+      void fetch("/api/app/cikis", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${jeton}` },
+        keepalive: true,
+      }).catch(() => {});
+    }
     jetonYaz(null);
     setOturum({ durum: "cikisli" });
   }, []);

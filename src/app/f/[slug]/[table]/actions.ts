@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { istemciIp, ipOzeti } from "@/lib/kimlik/istemci-ip";
+import { jetonIptalMi } from "@/lib/kimlik/jeton-iptal";
 import { after } from "next/server";
 import { prisma } from "@/lib/cekirdek/db";
 import { notifyLowRating } from "@/lib/altyapi/mail";
@@ -327,11 +328,15 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
   if (appJetonHam) {
     const cozulen = await appJetonCoz(appJetonHam);
     if (cozulen) {
-      const appUser = await prisma.appUser.findUnique({
-        where: { id: cozulen.id },
-        select: { id: true, active: true, passwordChangedAt: true },
-      });
-      if (!appOturumIptalSebebi(appUser, cozulen.issuedAt)) {
+      const [appUser, iptal] = await Promise.all([
+        prisma.appUser.findUnique({
+          where: { id: cozulen.id },
+          select: { id: true, active: true, passwordChangedAt: true },
+        }),
+        jetonIptalMi(cozulen.jti),
+      ]);
+      // Çıkış yapılmış bir jetonla yazılan anket, o kişinin adına bağlanmamalı.
+      if (!iptal && !appOturumIptalSebebi(appUser, cozulen.issuedAt)) {
         appUserId = appUser!.id;
       }
     }

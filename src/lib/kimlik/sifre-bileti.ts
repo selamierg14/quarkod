@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { gizliAnahtar } from "../cekirdek/ortam";
 import { OTP_TTL_MINUTES } from "./otp";
+import { gelecekteMi, katiDogrulama } from "./jeton-kurallari";
 
 /**
  * ŞİFRE SIFIRLAMA BİLETİ — "bu kişi az önce SMS kodunu doğruladı" belgesi.
@@ -51,6 +52,10 @@ export async function sifreBiletiUret(appUserId: string): Promise<string> {
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(appUserId)
     .setAudience(AUDIENCE)
+    // Bilet TEK KULLANIMLIK: kullanıldığı an bu kimlik iptal ediliyor
+    // (bkz. api/app/sifre-kurtar PATCH). Önceden 3 dakika içinde aynı
+    // biletle istenen kadar şifre değiştirilebiliyordu.
+    .setJti(crypto.randomUUID())
     .setIssuedAt()
     .setExpirationTime(`${BILET_SURESI_SN}s`)
     .sign(anahtar());
@@ -62,10 +67,14 @@ export async function sifreBiletiUret(appUserId: string): Promise<string> {
  * Veritabanına BAKMIYOR — "bu bilet bizim mi" sorusunu cevaplıyor.
  * "Kullanıcı hâlâ var mı, aktif mi" sorusu çağıranın işi.
  */
-export async function sifreBiletiCoz(bilet: string): Promise<{ appUserId: string } | null> {
+export async function sifreBiletiCoz(
+  bilet: string,
+): Promise<{ appUserId: string; jti: string; bitisSn: number } | null> {
   try {
-    const { payload } = await jwtVerify(bilet, anahtar(), { audience: AUDIENCE });
-    return payload.sub ? { appUserId: payload.sub } : null;
+    const { payload } = await jwtVerify(bilet, anahtar(), katiDogrulama(BILET_SURESI_SN, AUDIENCE));
+    if (!payload.sub || !payload.jti || typeof payload.exp !== "number") return null;
+    if (gelecekteMi(payload)) return null;
+    return { appUserId: payload.sub, jti: payload.jti, bitisSn: payload.exp };
   } catch {
     return null;
   }

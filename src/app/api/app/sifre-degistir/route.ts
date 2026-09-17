@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/cekirdek/db";
-import { apiHata, appKullaniciGerekli, govdeOku, metin } from "@/lib/kimlik/app-api";
-import { alanDogrula } from "@/lib/cekirdek/desenler";
+import {
+  apiHata,
+  appKullaniciGerekli,
+  govdeOku,
+  mevcutSifreyiDogrula,
+  metin,
+} from "@/lib/kimlik/app-api";
 import { yeniSifreSorunu } from "@/lib/kimlik/sifre";
 import { hashPassword } from "@/lib/kimlik/auth";
-import { SINIRLAR, hizSiniriMesaji, hizSiniriUygula } from "@/lib/kimlik/hiz-siniri";
 
 export const dynamic = "force-dynamic";
 
@@ -32,34 +36,15 @@ export async function POST(request: Request) {
   const govde = await govdeOku(request);
   if (!govde) return apiHata("İstek gövdesi okunamadı.", 400);
 
-  /**
-   * Mevcut şifre bcrypt'e GİRMEDEN uzunluk sınırına takılıyor: bcrypt'in
-   * maliyeti girdiyle artıyor, megabaytlık bir "mevcut şifre" tek istekte
-   * sunucuyu meşgul edebilirdi.
-   *
-   * Tür `girisSifresi` (asgari uzunluk yok), `sifre` değil: kural
-   * sıkılaşmadan önce açılmış hesapların şifreleri daha kısa olabilir ve
-   * onları BURADA reddetmek, düzeltmenin tek yolunu kapatmak olurdu.
-   */
-  const mevcut = alanDogrula(metin(govde, "mevcutSifre"), "girisSifresi", "Mevcut şifre", {
-    zorunlu: true,
-  });
-  if (!mevcut.ok) return apiHata("Mevcut şifre hatalı.", 400);
-
-  // Şifre deneme hızı sınırlı: açık bırakılmış bir oturumu bulan kişi
-  // mevcut şifreyi bu uçtan deneyerek aramasın.
-  const sinir = await hizSiniriUygula(SINIRLAR.otpDeneme, oturum.kullanici.id);
-  if (!sinir.izin) return apiHata(hizSiniriMesaji(sinir), 429);
+  // Uzunluk → ortak hız sınırı → bcrypt (bkz. mevcutSifreyiDogrula).
+  const dogrulama = await mevcutSifreyiDogrula(oturum.kullanici.id, metin(govde, "mevcutSifre"));
+  if (!dogrulama.ok) return dogrulama.yanit;
 
   const kullanici = await prisma.appUser.findUnique({
     where: { id: oturum.kullanici.id },
     select: { passwordHash: true },
   });
   if (!kullanici) return apiHata("Hesap bulunamadı.", 404);
-
-  if (!(await bcrypt.compare(mevcut.deger, kullanici.passwordHash))) {
-    return apiHata("Mevcut şifre hatalı.", 400);
-  }
 
   const yeniSifre = metin(govde, "yeniSifre");
   const sorun = yeniSifreSorunu(yeniSifre, metin(govde, "yeniSifreTekrar"));

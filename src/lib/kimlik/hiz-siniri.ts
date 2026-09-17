@@ -71,6 +71,34 @@ export const SINIRLAR = {
    * engellememek, saldırıyı imkânsız kılmak.
    */
   otpDeneme: { kanal: "otp", adet: 20, dakika: 10 },
+  /**
+   * OTURUM İÇİNDE mevcut şifre doğrulaması — şifre değiştirme, kurtarma
+   * numarası ekleme/silme, hesap silme. KULLANICI BAŞINA ve DÖRDÜ ORTAK.
+   *
+   * Çalınmış bir oturumla asıl şifreyi bulmaya çalışan kişi bu uçları
+   * tahmin makinesi olarak kullanabiliyordu: telefon silme ucunda hiç
+   * sınır yoktu, telefon eklemede sınır şifre kontrolünden SONRAYDI.
+   * Ortak kota, uç değiştirerek hakkı çoğaltmayı da kapatıyor.
+   */
+  sifreDogrulama: { kanal: "sifre-dogrulama", adet: 10, dakika: 10 },
+  /**
+   * Şifre kurtarmada IP BAŞINA sınır — kullanıcı adı başına olanın yanında.
+   *
+   * Yalnızca kullanıcı adına göre sınır, tek IP'den SIRAYLA farklı
+   * kullanıcı adlarına kod istemeyi engellemiyordu: her ad kendi 20'lik
+   * kotasıyla başlıyor, her istek birine SMS demek.
+   */
+  kurtarmaIp: { kanal: "kurtarma-ip", adet: 10, dakika: 10 },
+  /** Buluşma açma — kullanıcı başına. */
+  etkinlikAc: { kanal: "etkinlik-ac", adet: 10, dakika: 60 },
+  /**
+   * Oturumlu KÜÇÜK yazmalar (favori, ilgi, push aboneliği, konum).
+   *
+   * Tek tek zararsızlar ama sınırsızdılar: bir betik saniyede yüzlerce
+   * favori aç/kapa ile veritabanına sürekli yazdırabiliyordu. Sınır
+   * insan kullanımının çok üstünde.
+   */
+  yazma: { kanal: "yazma", adet: 120, dakika: 10 },
 } as const satisfies Record<string, HizSiniri>;
 
 function anahtarla(kanal: string, deger: string): string {

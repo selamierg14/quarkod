@@ -22,7 +22,10 @@ const KULLANICI = "app-kullanici-1";
 describe("bilet kesme ve çözme", () => {
   it("kesilen bilet aynı kullanıcıyı geri veriyor", async () => {
     const bilet = await sifreBiletiUret(KULLANICI);
-    expect(await sifreBiletiCoz(bilet)).toEqual({ appUserId: KULLANICI });
+    const cozulen = await sifreBiletiCoz(bilet);
+    expect(cozulen?.appUserId).toBe(KULLANICI);
+    // Tek kullanımlık olabilmesi için her biletin benzersiz kimliği var.
+    expect(cozulen?.jti).toMatch(/^[0-9a-f-]{36}$/);
   });
 
   it("ömrü kodunkiyle aynı: 3 dakika", async () => {

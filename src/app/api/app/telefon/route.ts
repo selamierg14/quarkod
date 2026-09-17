@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/cekirdek/db";
-import { apiHata, appKullaniciGerekli, govdeOku, metin } from "@/lib/kimlik/app-api";
+import {
+  apiHata,
+  appKullaniciGerekli,
+  govdeOku,
+  mevcutSifreyiDogrula,
+  metin,
+} from "@/lib/kimlik/app-api";
 import { normalizePhone } from "@/lib/kimlik/username";
 import { alanDogrula } from "@/lib/cekirdek/desenler";
 import { SINIRLAR, hizSiniriMesaji, hizSiniriUygula } from "@/lib/kimlik/hiz-siniri";
@@ -83,21 +88,9 @@ export async function POST(request: Request) {
     return apiHata("Geçerli bir cep telefonu girin (5XX...).", 400);
   }
 
-  // Mevcut şifre bcrypt'e GİRMEDEN uzunluk sınırına takılıyor: bcrypt'in
-  // maliyeti girdiyle artıyor.
-  const mevcut = alanDogrula(metin(govde, "mevcutSifre"), "girisSifresi", "Mevcut şifre", {
-    zorunlu: true,
-  });
-  if (!mevcut.ok) return apiHata("Mevcut şifre hatalı.", 400);
-
-  const hesap = await prisma.appUser.findUnique({
-    where: { id: oturum.kullanici.id },
-    select: { passwordHash: true },
-  });
-  if (!hesap) return apiHata("Hesap bulunamadı.", 404);
-  if (!(await bcrypt.compare(mevcut.deger, hesap.passwordHash))) {
-    return apiHata("Mevcut şifre hatalı.", 400);
-  }
+  // Uzunluk → ortak hız sınırı → bcrypt; sıra ve kota tek yerde.
+  const sifre = await mevcutSifreyiDogrula(oturum.kullanici.id, metin(govde, "mevcutSifre"));
+  if (!sifre.ok) return sifre.yanit;
 
   /**
    * Numara BAŞKA bir hesapta kayıtlıysa reddediliyor.
@@ -170,19 +163,10 @@ export async function DELETE(request: Request) {
   const govde = await govdeOku(request);
   if (!govde) return apiHata("İstek gövdesi okunamadı.", 400);
 
-  const mevcut = alanDogrula(metin(govde, "mevcutSifre"), "girisSifresi", "Mevcut şifre", {
-    zorunlu: true,
-  });
-  if (!mevcut.ok) return apiHata("Mevcut şifre hatalı.", 400);
-
-  const hesap = await prisma.appUser.findUnique({
-    where: { id: oturum.kullanici.id },
-    select: { passwordHash: true },
-  });
-  if (!hesap) return apiHata("Hesap bulunamadı.", 404);
-  if (!(await bcrypt.compare(mevcut.deger, hesap.passwordHash))) {
-    return apiHata("Mevcut şifre hatalı.", 400);
-  }
+  // Bu uçta önceden HİÇ hız sınırı yoktu: çalınmış bir oturumla şifreyi
+  // tahmin etmek için kullanılabiliyordu.
+  const sifre = await mevcutSifreyiDogrula(oturum.kullanici.id, metin(govde, "mevcutSifre"));
+  if (!sifre.ok) return sifre.yanit;
 
   await prisma.appUser.update({
     where: { id: oturum.kullanici.id },

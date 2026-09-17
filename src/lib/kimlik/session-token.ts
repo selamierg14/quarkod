@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
+import { gelecekteMi, katiDogrulama } from "./jeton-kurallari";
 import { gizliAnahtar } from "../cekirdek/ortam";
 
 /**
@@ -131,25 +132,41 @@ export async function createSessionToken(user: SessionUser): Promise<string> {
   })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(user.id)
+    // İzleyici: tüketici jetonu ("biyerlere-app") panelde, panel jetonu
+    // tüketici uçlarında HİÇBİR koşulda geçmesin. Önceden ayrım yalnızca
+    // rol alanına dayanıyordu; izleyici kriptografik olarak bağlayıcı.
+    .setAudience(PANEL_IZLEYICI)
+    .setJti(crypto.randomUUID())
     .setIssuedAt()
     .setExpirationTime(`${SESSION_MAX_AGE}s`)
     .sign(secretKey());
 }
 
+const PANEL_IZLEYICI = "quarkod-panel";
+
 /** Jetonun kendisinden okunan, henüz veritabanıyla karşılaştırılmamış oturum. */
 export type TokenSession = SessionUser & {
   /** Jetonun üretildiği an (saniye). Şifre değişiminde eski jetonları elemek için. */
   issuedAt: number;
+  /** Benzersiz kimlik — çıkışta sunucu tarafında iptal için. */
+  jti: string;
+  /** Bitiş anı (saniye). */
+  expiresAt: number;
 };
 
 export async function verifySessionToken(
   token: string,
 ): Promise<TokenSession | null> {
   try {
-    const { payload } = await jwtVerify(token, secretKey());
+    const { payload } = await jwtVerify(
+      token,
+      secretKey(),
+      katiDogrulama(SESSION_MAX_AGE, PANEL_IZLEYICI),
+    );
     if (typeof payload.email !== "string" || typeof payload.role !== "string") {
       return null;
     }
+    if (gelecekteMi(payload) || !payload.jti || typeof payload.exp !== "number") return null;
     if (!gecerliRolMu(payload.role)) return null;
     const role = payload.role;
     // superadmin dışındaki her kullanıcı bir hesaba bağlı olmak zorunda;
@@ -166,7 +183,9 @@ export async function verifySessionToken(
       businessId: (payload.businessId as string | null) ?? null,
       // Jeton modül taşımaz; gerçek küme getSession'da DB'den okunuyor.
       moduller: [],
-      issuedAt: typeof payload.iat === "number" ? payload.iat : 0,
+      issuedAt: payload.iat as number,
+      jti: payload.jti,
+      expiresAt: payload.exp,
     };
   } catch {
     return null;

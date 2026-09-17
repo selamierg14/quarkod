@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/cekirdek/db";
-import { apiHata, appKullaniciGerekli, govdeOku, metin } from "@/lib/kimlik/app-api";
-import { alanDogrula } from "@/lib/cekirdek/desenler";
-import { SINIRLAR, hizSiniriMesaji, hizSiniriUygula } from "@/lib/kimlik/hiz-siniri";
+import {
+  apiHata,
+  appKullaniciGerekli,
+  govdeOku,
+  mevcutSifreyiDogrula,
+  metin,
+} from "@/lib/kimlik/app-api";
 
 export const dynamic = "force-dynamic";
 
@@ -39,25 +42,8 @@ export async function DELETE(request: Request) {
   const govde = await govdeOku(request);
   if (!govde) return apiHata("İstek gövdesi okunamadı.", 400);
 
-  const sifre = alanDogrula(metin(govde, "mevcutSifre"), "girisSifresi", "Şifre", {
-    zorunlu: true,
-  });
-  if (!sifre.ok) return apiHata("Şifre hatalı.", 400);
-
-  // Şifre deneme hızı sınırlı: çalınmış bir oturumla şifreyi bu uçtan
-  // tahmin ederek aramak mümkün olmasın.
-  const sinir = await hizSiniriUygula(SINIRLAR.otpDeneme, `hesap-sil:${oturum.kullanici.id}`);
-  if (!sinir.izin) return apiHata(hizSiniriMesaji(sinir), 429);
-
-  const hesap = await prisma.appUser.findUnique({
-    where: { id: oturum.kullanici.id },
-    select: { passwordHash: true },
-  });
-  if (!hesap) return apiHata("Hesap bulunamadı.", 404);
-
-  if (!(await bcrypt.compare(sifre.deger, hesap.passwordHash))) {
-    return apiHata("Şifre hatalı.", 400);
-  }
+  const sifre = await mevcutSifreyiDogrula(oturum.kullanici.id, metin(govde, "mevcutSifre"));
+  if (!sifre.ok) return sifre.yanit;
 
   /**
    * `deleteMany`, `delete` değil: iki cihazdan aynı anda basıldığında

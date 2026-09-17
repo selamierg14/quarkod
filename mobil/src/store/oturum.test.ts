@@ -61,6 +61,8 @@ const KULLANICI = {
 beforeEach(() => {
   depo.deger = null;
   vi.clearAllMocks();
+  // Gerçek istemci hiçbir zaman istisna fırlatmıyor, sonuç nesnesi dönüyor.
+  apiTaklidi.post.mockResolvedValue({ ok: true, veri: { cikis: true } });
   useOturum.setState({ durum: "yukleniyor", kullanici: null });
   useFavoriler.getState().temizle();
 });
@@ -190,6 +192,38 @@ describe("çıkış", () => {
     expect(aboneligiKapat).toHaveBeenCalledTimes(1);
     expect(aboneKapatilirkenJeton).toBe("jeton-1");
     expect(depo.deger).toBeNull();
+  });
+
+  it("jeton SUNUCUDA iptal ediliyor — yerel silmeden önce", async () => {
+    /**
+     * Yalnızca yerel kopyayı silmek, başka yerde duran bir kopyayı 30 gün
+     * geçerli bırakıyordu (canlı doğrulandı). Sıra önemli: çıkış ucu kimlik
+     * istiyor.
+     */
+    depo.deger = "jeton-1";
+    let cikisAnindaJeton: string | null = "okunmadi";
+    apiTaklidi.post.mockImplementationOnce(async () => {
+      cikisAnindaJeton = depo.deger;
+      return { ok: true, veri: { cikis: true } };
+    });
+
+    await useOturum.getState().cikisYap();
+
+    expect(apiTaklidi.post).toHaveBeenCalledWith("/api/app/cikis");
+    expect(cikisAnindaJeton).toBe("jeton-1");
+  });
+
+  it("sunucuya ulaşılamasa da çıkış TAMAMLANIYOR", async () => {
+    // Çevrimdışıyken çıkış düğmesi takılı kalmamalı.
+    depo.deger = "jeton-1";
+    apiTaklidi.post.mockImplementationOnce(() => new Promise(() => {}));
+    vi.useFakeTimers();
+    const cikis = useOturum.getState().cikisYap();
+    await vi.advanceTimersByTimeAsync(3500);
+    await cikis;
+    vi.useRealTimers();
+    expect(depo.deger).toBeNull();
+    expect(useOturum.getState().durum).toBe("cikisli");
   });
 });
 

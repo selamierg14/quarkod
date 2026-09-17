@@ -3,9 +3,10 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { SignJWT, jwtVerify } from "jose";
+import { gelecekteMi, katiDogrulama } from "@/lib/kimlik/jeton-kurallari";
 import {
   authenticate,
-  clearSessionCookie,
+  oturumuKapat,
   hashPassword,
   setSessionCookie,
   toSessionUser,
@@ -43,6 +44,7 @@ import { SINIRLAR, hizSiniriMesaji, hizSiniriUygula } from "@/lib/kimlik/hiz-sin
 
 const CHALLENGE_COOKIE = "mm_challenge";
 const CHALLENGE_TTL_SECONDS = 10 * 60;
+const CHALLENGE_IZLEYICI = "quarkod-giris-adimi";
 
 // Adım/kip sabitleri lib'de: `"use server"` dosyası yalnızca async
 // fonksiyon dışa aktarabiliyor (bkz. lib/kimlik/giris-akisi.ts).
@@ -94,6 +96,11 @@ async function setChallenge(userId: string, purpose: "giris" | "sifre") {
   const token = await new SignJWT({ purpose })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(userId)
+    // İzleyici olmadan aynı anahtarla imzalanmış HER jeton (tüketici
+    // oturumu, panel oturumu, şifre bileti) bu çereze konup doğrulamadan
+    // geçebiliyordu; ayrımı yalnızca `purpose` alanının içeriği yapıyordu.
+    .setAudience(CHALLENGE_IZLEYICI)
+    .setJti(crypto.randomUUID())
     .setIssuedAt()
     .setExpirationTime(`${CHALLENGE_TTL_SECONDS}s`)
     .sign(secretKey());
@@ -113,8 +120,13 @@ async function readChallenge(): Promise<{ userId: string; purpose: string } | nu
   const token = store.get(CHALLENGE_COOKIE)?.value;
   if (!token) return null;
   try {
-    const { payload } = await jwtVerify(token, secretKey());
-    return { userId: String(payload.sub), purpose: String(payload.purpose) };
+    const { payload } = await jwtVerify(
+      token,
+      secretKey(),
+      katiDogrulama(CHALLENGE_TTL_SECONDS, CHALLENGE_IZLEYICI),
+    );
+    if (gelecekteMi(payload) || typeof payload.purpose !== "string") return null;
+    return { userId: String(payload.sub), purpose: payload.purpose };
   } catch {
     return null;
   }
@@ -490,6 +502,6 @@ export async function loginAction(
 }
 
 export async function logout() {
-  await clearSessionCookie();
+  await oturumuKapat();
   redirect("/admin/giris");
 }

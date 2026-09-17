@@ -5,6 +5,7 @@ import { alanDogrula } from "@/lib/cekirdek/desenler";
 import { yeniSifreSorunu } from "@/lib/kimlik/sifre";
 import { BILET_SURESI_SN, sifreBiletiCoz, sifreBiletiUret } from "@/lib/kimlik/sifre-bileti";
 import { hashPassword } from "@/lib/kimlik/auth";
+import { jetonuTuket } from "@/lib/kimlik/jeton-iptal";
 import { SINIRLAR, hizSiniriMesaji, hizSiniriUygula } from "@/lib/kimlik/hiz-siniri";
 import { appKodDogrula, appKodGonder, kurtarmaHedefi } from "@/lib/biyerlere/app-otp";
 
@@ -76,9 +77,13 @@ export async function POST(request: Request) {
   const kimlik = alanDogrula(metin(govde, "kullaniciAdi"), "girisKimligi", "Kullanıcı adı");
   if (!kimlik.ok) return apiHata(kimlik.hata, 400);
 
-  // Hız sınırı KULLANICI ADINA göre: kod göndermek SMS maliyeti demek ve
-  // bu uç kimlik doğrulaması istemiyor.
-  const sinir = await hizSiniriUygula(SINIRLAR.otpDeneme, kimlik.deger.toLowerCase());
+  // İKİ SINIR: IP başına (tek kaynaktan sırayla farklı kullanıcı adlarına
+  // SMS yağdırmayı keser) ve kullanıcı adı başına (tek hesaba farklı
+  // IP'lerden yağdırmayı keser). Kod göndermek SMS maliyeti demek ve bu uç
+  // kimlik doğrulaması istemiyor.
+  const ipSiniri = await hizSiniriUygula(SINIRLAR.kurtarmaIp);
+  if (!ipSiniri.izin) return apiHata(hizSiniriMesaji(ipSiniri), 429);
+  const sinir = await hizSiniriUygula(SINIRLAR.otpDeneme, `kurtarma:${kimlik.deger.toLowerCase()}`);
   if (!sinir.izin) return apiHata(hizSiniriMesaji(sinir), 429);
 
   const hedef = await kurtarmaHedefi(kimlik.deger);
@@ -144,7 +149,9 @@ export async function PUT(request: Request) {
   if (!kimlik.ok) return apiHata(kimlik.hata, 400);
   if (!kod.ok) return apiHata(kod.hata, 400);
 
-  const sinir = await hizSiniriUygula(SINIRLAR.otpDeneme, kimlik.deger.toLowerCase());
+  const ipSiniri = await hizSiniriUygula(SINIRLAR.kurtarmaIp);
+  if (!ipSiniri.izin) return apiHata(hizSiniriMesaji(ipSiniri), 429);
+  const sinir = await hizSiniriUygula(SINIRLAR.otpDeneme, `kurtarma:${kimlik.deger.toLowerCase()}`);
   if (!sinir.izin) return apiHata(hizSiniriMesaji(sinir), 429);
 
   const hedef = await kurtarmaHedefi(kimlik.deger);
@@ -200,6 +207,22 @@ export async function PATCH(request: Request) {
     select: { active: true },
   });
   if (!kullanici?.active) return apiHata("Hesap bulunamadı.", 404);
+
+  /**
+   * BİLET TEK KULLANIMLIK. Önceden 3 dakikalık ömür boyunca aynı biletle
+   * istenen kadar şifre değiştirilebiliyordu — ekran görüntüsünden, ağ
+   * kaydından ya da geri tuşuyla ele geçen bir bilet, sahibi şifresini
+   * belirledikten SONRA da onu değiştirebilirdi. Tüketme veritabanında tek
+   * yazmayla yapılıyor: eşzamanlı iki istekten yalnızca biri geçiyor.
+   * Biçim kontrolleri (uyuşma, uzunluk) yukarıda: yazım hatası bileti
+   * yakmasın, kullanıcı düzeltip tekrar deneyebilsin.
+   */
+  if (!(await jetonuTuket(bilet.jti, bilet.bitisSn))) {
+    return apiHata(
+      "Bu doğrulama zaten kullanıldı. Kurtarmayı baştan başlatıp yeni bir kod isteyin.",
+      400,
+    );
+  }
 
   await prisma.appUser.update({
     where: { id: bilet.appUserId },

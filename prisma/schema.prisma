@@ -1069,6 +1069,30 @@ model SurveyView {
 }
 
 /// Admin giriş denemeleri — kaba kuvvet saldırısını yavaşlatmak için.
+/// SUNUCU TARAFINDA İPTAL EDİLMİŞ JETONLAR.
+///
+/// Jetonlar imzalı ve durumsuz (JWT): sunucu bir jetonu ancak süresi
+/// dolunca "bilmez" hâle getirebiliyordu. Çıkış yapmak yalnızca istemcideki
+/// kopyayı siliyordu; çalınmış bir kopya tüketicide 30 gün, panelde 12 saat
+/// geçerli kalıyordu (canlı doğrulandı).
+///
+/// Her jeton benzersiz bir `jti` taşıyor; çıkışta o kimlik buraya yazılıyor
+/// ve her istekte bakılıyor. Satır jetonun kendi bitiş anına kadar
+/// tutuluyor — ondan sonra jeton zaten geçersiz ve satırın işi bitiyor
+/// (günlük temizlik: api/cron/kvkk-temizle).
+///
+/// Tek kullanımlık şifre sıfırlama biletleri de aynı tabloyu kullanıyor:
+/// kullanıldığı an iptal ediliyor.
+model IptalEdilenJeton {
+  jti       String   @id
+  /// Jetonun kendi `exp` anı — bu andan sonra satır silinebilir.
+  bitis     DateTime
+  createdAt DateTime @default(now())
+
+  @@index([bitis])
+  @@map("iptal_edilen_jetonlar")
+}
+
 model LoginAttempt {
   id        String   @id @default(cuid())
   email     String

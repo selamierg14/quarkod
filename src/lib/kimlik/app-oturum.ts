@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
+import { gelecekteMi, katiDogrulama } from "./jeton-kurallari";
 import { gizliAnahtar } from "../cekirdek/ortam";
 
 /**
@@ -43,6 +44,10 @@ export type AppJeton = {
   name: string;
   /** Jetonun üretildiği an (saniye). Şifre değişiminde eskiyi elemek için. */
   issuedAt: number;
+  /** Jetonun benzersiz kimliği — sunucu tarafı iptal buna dayanıyor. */
+  jti: string;
+  /** Jetonun bitiş anı (saniye) — iptal kaydı bu ana kadar tutuluyor. */
+  expiresAt: number;
 };
 
 export async function appJetonUret(kullanici: {
@@ -54,6 +59,7 @@ export async function appJetonUret(kullanici: {
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(kullanici.id)
     .setAudience(AUDIENCE)
+    .setJti(crypto.randomUUID())
     .setIssuedAt()
     .setExpirationTime(`${APP_OTURUM_SURESI}s`)
     .sign(secretKey());
@@ -67,16 +73,21 @@ export async function appJetonUret(kullanici: {
  */
 export async function appJetonCoz(token: string): Promise<AppJeton | null> {
   try {
-    const { payload } = await jwtVerify(token, secretKey(), {
-      audience: AUDIENCE,
-    });
+    const { payload } = await jwtVerify(
+      token,
+      secretKey(),
+      katiDogrulama(APP_OTURUM_SURESI, AUDIENCE),
+    );
     if (!payload.sub || typeof payload.username !== "string") return null;
+    if (gelecekteMi(payload) || !payload.jti || typeof payload.exp !== "number") return null;
 
     return {
       id: payload.sub,
       username: payload.username,
       name: typeof payload.name === "string" ? payload.name : "",
-      issuedAt: typeof payload.iat === "number" ? payload.iat : 0,
+      issuedAt: payload.iat as number,
+      jti: payload.jti,
+      expiresAt: payload.exp,
     };
   } catch {
     return null;

@@ -1,4 +1,5 @@
 import "server-only";
+import { jetonIptalEt, jetonIptalMi } from "./jeton-iptal";
 import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -35,6 +36,23 @@ export async function setSessionCookie(user: SessionUser) {
     path: "/",
     maxAge: SESSION_MAX_AGE,
   });
+}
+
+/**
+ * Çıkış: çerezi siler VE jetonu sunucuda iptal eder.
+ *
+ * Yalnızca çerezi silmek, o çerezin başka bir yerde duran kopyasını (açık
+ * kalmış başka bir sekme, ele geçirilmiş bir kopya) 12 saat daha geçerli
+ * bırakıyordu.
+ */
+export async function oturumuKapat() {
+  const store = await cookies();
+  const token = store.get(SESSION_COOKIE)?.value;
+  if (token) {
+    const jeton = await verifySessionToken(token);
+    if (jeton) await jetonIptalEt(jeton.jti, jeton.expiresAt);
+  }
+  await clearSessionCookie();
 }
 
 export async function clearSessionCookie() {
@@ -76,7 +94,8 @@ export const getSession = cache(async (): Promise<SessionUser | null> => {
   const jeton = await verifySessionToken(token);
   if (!jeton) return null;
 
-  const user = await prisma.user.findUnique({
+  const [user, jetonIptal] = await Promise.all([
+    prisma.user.findUnique({
     where: { id: jeton.id },
     select: {
       id: true,
@@ -90,7 +109,12 @@ export const getSession = cache(async (): Promise<SessionUser | null> => {
       moduller: true,
       account: { select: { active: true, expiresAt: true } },
     },
-  });
+    }),
+    // Çıkış yapılmış oturumun çerez kopyası (başka sekmede kalmış, çalınmış)
+    // artık geçmiyor.
+    jetonIptalMi(jeton.jti),
+  ]);
+  if (jetonIptal) return null;
 
   const iptal = sessionRevokedReason(
     user && {

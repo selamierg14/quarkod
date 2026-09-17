@@ -105,8 +105,20 @@ export const useOturum = create<OturumStore>((set) => ({
   },
 
   cikisYap: async () => {
-    // Jeton silinmeden ÖNCE: abonelik kapatma ucu kimlik istiyor.
+    // Jeton silinmeden ÖNCE: iki uç da kimlik istiyor.
     await buCihazinAboneliginiKapat();
+    /**
+     * Jetonu SUNUCUDA da iptal et. Yalnızca yerel kopyayı silmek, jetonun
+     * başka bir yerde duran kopyasını (yedek, ele geçirilmiş cihaz) 30 gün
+     * geçerli bırakıyordu.
+     *
+     * En fazla 3 saniye bekleniyor: çevrimdışıyken ya da yavaş ağda çıkış
+     * düğmesi takılı kalmamalı. Ulaşılamazsa jeton kendi süresiyle ölür.
+     */
+    await Promise.race([
+      api.post("/api/app/cikis").catch(() => null),
+      new Promise((coz) => setTimeout(coz, 3000)),
+    ]);
     await jetonDeposu.sil();
     // Kişiye bağlı yanıtlar (profil, favoriler) diskte kalmasın.
     void onbellegiTemizle();

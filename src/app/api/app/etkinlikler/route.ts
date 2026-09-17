@@ -105,7 +105,7 @@ export async function POST(request: Request) {
 
   // Yazma hızı sınırı: kapılar geçilse bile arka arkaya istek atarak
   // listeyi doldurmak mümkün olmasın.
-  const sinir = await hizSiniriUygula(SINIRLAR.otpDeneme, `etkinlik:${oturum.kullanici.id}`);
+  const sinir = await hizSiniriUygula(SINIRLAR.etkinlikAc, oturum.kullanici.id);
   if (!sinir.izin) return apiHata(hizSiniriMesaji(sinir), 429);
 
   const [mekan, rozetler, acikSayisi] = await Promise.all([

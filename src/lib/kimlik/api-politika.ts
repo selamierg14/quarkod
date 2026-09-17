@@ -105,6 +105,8 @@ export const API_POLITIKALARI: Record<string, ApiPolitikasi> = {
   "/sifre-degistir": { erisim: "jetonlu", metotlar: ["POST"] },
   /** Hesabı kalıcı silme — mağaza kuralı ve KVKK silme hakkı (bkz. route). */
   "/hesap": { erisim: "jetonlu", metotlar: ["DELETE"] },
+  /** Çıkış — jetonu sunucuda iptal eder (bkz. route). */
+  "/cikis": { erisim: "jetonlu", metotlar: ["POST"] },
 };
 
 const ONEK = "/api/app";
