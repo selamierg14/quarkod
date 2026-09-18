@@ -5,7 +5,7 @@ import {
   apiHata,
   appKullaniciGerekli,
   govdeOku,
-  mevcutSifreyiDogrula,
+  kimlikKanitiDogrula,
   metin,
 } from "@/lib/kimlik/app-api";
 import { yeniSifreSorunu } from "@/lib/kimlik/sifre";
@@ -36,8 +36,8 @@ export async function POST(request: Request) {
   const govde = await govdeOku(request);
   if (!govde) return apiHata("İstek gövdesi okunamadı.", 400);
 
-  // Uzunluk → ortak hız sınırı → bcrypt (bkz. mevcutSifreyiDogrula).
-  const dogrulama = await mevcutSifreyiDogrula(oturum.kullanici.id, metin(govde, "mevcutSifre"));
+  // Uzunluk → ortak hız sınırı → bcrypt (bkz. kimlikKanitiDogrula).
+  const dogrulama = await kimlikKanitiDogrula(oturum.kullanici.id, govde);
   if (!dogrulama.ok) return dogrulama.yanit;
 
   const kullanici = await prisma.appUser.findUnique({
@@ -61,6 +61,10 @@ export async function POST(request: Request) {
     where: { id: oturum.kullanici.id },
     data: {
       passwordHash: await hashPassword(yeniSifre),
+      // Sosyal girişle açılan hesap ilk kez şifre belirliyor olabilir:
+      // bundan sonra hassas işlemlerde sağlayıcı yerine şifre sorulacak
+      // (bkz. kimlikKanitiDogrula).
+      sifreBelirlendi: true,
       // Bu andan önceki jetonlar düşüyor — çalınmış oturum da kapansın.
       passwordChangedAt: new Date(),
     },

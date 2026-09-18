@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "../cekirdek/db";
 import { alanDogrula } from "../cekirdek/desenler";
+import { gecerliSaglayiciMi, kimlikJetonunuDogrula } from "./sosyal-giris";
 import { SINIRLAR, hizSiniriMesaji, hizSiniriUygula } from "./hiz-siniri";
 import { jetonIptalMi } from "./jeton-iptal";
 import {
@@ -185,7 +186,7 @@ export function metin(govde: Record<string, unknown>, alan: string): string {
 }
 
 /**
- * OTURUM İÇİNDE MEVCUT ŞİFREYİ DOĞRULAR — hassas işlemlerin ortak kapısı.
+ * OTURUM İÇİNDE KİMLİK KANITI — hassas işlemlerin ortak kapısı.
  *
  * Dört uçta (şifre değiştirme, kurtarma numarası ekleme/silme, hesap
  * silme) aynı üç adım ayrı ayrı yazılmıştı ve ayrışmıştı: birinde hız
@@ -195,10 +196,63 @@ export function metin(govde: Record<string, unknown>, alan: string): string {
  *
  * Sıra: uzunluk (bcrypt maliyeti girdiyle artıyor) → hız sınırı (dört uç
  * ortak kota) → bcrypt.
+ *
+ * ŞİFRESİZ HESAPLAR. Apple/Google ile açılan hesabın kullanıcısı bir şifre
+ * bilmiyor (bkz. AppUser.sifreBelirlendi). Onlardan şifre istemek, bu
+ * işlemleri sonsuza kadar kilitlemek olurdu; şifre kontrolünü atlamak ise
+ * çalınmış bir oturuma hesabı silme yetkisi vermek. İkisi de kabul
+ * edilemez, o yüzden kanıt SAĞLAYICIDAN TAZE BİR KİMLİK JETONU: kullanıcı
+ * için tek dokunuş, saldırgan için erişilemez.
  */
-export async function mevcutSifreyiDogrula(
+export async function kimlikKanitiDogrula(
+  appUserId: string,
+  govde: Record<string, unknown>,
+): Promise<{ ok: true } | { ok: false; yanit: NextResponse }> {
+  const hesap = await prisma.appUser.findUnique({
+    where: { id: appUserId },
+    select: { passwordHash: true, sifreBelirlendi: true, googleSub: true, appleSub: true },
+  });
+  if (!hesap) return { ok: false, yanit: apiHata("Hesap bulunamadı.", 404) };
+
+  if (hesap.sifreBelirlendi) {
+    return sifreKaniti(appUserId, metin(govde, "mevcutSifre"), hesap.passwordHash);
+  }
+
+  const saglayiciHam = metin(govde, "saglayici");
+  if (!gecerliSaglayiciMi(saglayiciHam)) {
+    return {
+      ok: false,
+      yanit: apiHata(
+        "Bu işlem için hesabını açtığın yöntemle kimliğini doğrulaman gerekiyor.",
+        400,
+      ),
+    };
+  }
+
+  // Hız sınırı burada da geçerli: jeton doğrulaması sağlayıcıya gidiyor.
+  const sinir = await hizSiniriUygula(SINIRLAR.sifreDogrulama, appUserId);
+  if (!sinir.izin) return { ok: false, yanit: apiHata(hizSiniriMesaji(sinir), 429) };
+
+  const sonuc = await kimlikJetonunuDogrula(saglayiciHam, metin(govde, "jeton"));
+  if (!sonuc.ok) return { ok: false, yanit: apiHata(sonuc.hata, 401) };
+
+  /**
+   * Jeton geçerli olmak YETMİYOR, BU hesaba ait olmalı: aksi halde kendi
+   * Google hesabıyla giriş yapan biri, başkasının oturumunu ele
+   * geçirdiğinde o hesabı silebilirdi.
+   */
+  const beklenen = sonuc.kimlik.saglayici === "google" ? hesap.googleSub : hesap.appleSub;
+  if (!beklenen || beklenen !== sonuc.kimlik.sub) {
+    return { ok: false, yanit: apiHata("Kimlik doğrulanamadı.", 401) };
+  }
+
+  return { ok: true };
+}
+
+async function sifreKaniti(
   appUserId: string,
   ham: string,
+  passwordHash: string,
 ): Promise<{ ok: true } | { ok: false; yanit: NextResponse }> {
   const sifre = alanDogrula(ham, "girisSifresi", "Mevcut şifre", { zorunlu: true });
   if (!sifre.ok) return { ok: false, yanit: apiHata("Mevcut şifre hatalı.", 400) };
@@ -206,12 +260,7 @@ export async function mevcutSifreyiDogrula(
   const sinir = await hizSiniriUygula(SINIRLAR.sifreDogrulama, appUserId);
   if (!sinir.izin) return { ok: false, yanit: apiHata(hizSiniriMesaji(sinir), 429) };
 
-  const hesap = await prisma.appUser.findUnique({
-    where: { id: appUserId },
-    select: { passwordHash: true },
-  });
-  if (!hesap) return { ok: false, yanit: apiHata("Hesap bulunamadı.", 404) };
-  if (!(await bcrypt.compare(sifre.deger, hesap.passwordHash))) {
+  if (!(await bcrypt.compare(sifre.deger, passwordHash))) {
     return { ok: false, yanit: apiHata("Mevcut şifre hatalı.", 400) };
   }
   return { ok: true };

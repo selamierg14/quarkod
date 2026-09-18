@@ -60,6 +60,14 @@ export const API_POLITIKALARI: Record<string, ApiPolitikasi> = {
   "/sifre-kurtar": { erisim: "acik", metotlar: ["POST", "PUT", "PATCH"] },
   "/mekanlar": { erisim: "acik", metotlar: ["GET"] },
   /**
+   * Apple/Google ile giriş — AÇIK olmak zorunda, girişi olmayan kullanıyor.
+   *
+   * PUT (hesaba sağlayıcı bağlama) oturum istiyor ama erişim sınıfı yol
+   * başına tanımlı; route içinde `appKullaniciGerekli` ile kapalı
+   * (bkz. /etkinlikler'deki aynı durum).
+   */
+  "/sosyal-giris": { erisim: "acik", metotlar: ["GET", "POST", "PUT"] },
+  /**
    * Rotalar AÇIK — ama yanıt jetona göre zenginleşiyor.
    *
    * Route zaten `appKullaniciOku` kullanıyor (zorunlu değil, varsa okur):

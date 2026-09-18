@@ -90,6 +90,14 @@ export const SINIRLAR = {
    */
   kurtarmaIp: { kanal: "kurtarma-ip", adet: 10, dakika: 10 },
   /**
+   * Apple/Google ile giriş — IP başına.
+   *
+   * Kaba kuvvet anlamsız (jetonun imzası taklit edilemez) ama her çağrı
+   * sağlayıcının JWKS'ine ve veritabanına gidiyor; kaynağı tüketmek
+   * mümkün. Meşru kullanımda kimse dakikada birden fazla giriş yapmıyor.
+   */
+  sosyalGiris: { kanal: "sosyal-giris", adet: 20, dakika: 10 },
+  /**
    * Uygulamadan rezervasyon talebi — kullanıcı başına.
    *
    * Sınır pahalı bir işlemden değil, MASA TUTMAKTAN koruyor: her talep

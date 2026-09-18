@@ -7,6 +7,7 @@ import { renkler, yazi, bosluk } from "../src/tasarim";
 import { useOturum } from "../src/store/oturum";
 import { Basilabilir } from "../src/bilesenler/Basilabilir";
 import { AnaDugme, FormAlani, HataMetni } from "../src/bilesenler/Form";
+import { SosyalGirisDugmeleri } from "../src/bilesenler/SosyalGirisDugmeleri";
 
 /**
  * Giriş ekranı.
@@ -102,6 +103,13 @@ export default function GirisEkrani() {
             bekliyor={gonderiliyor}
             devreDisi={!username.trim() || !sifre}
             onPress={gonder}
+          />
+
+          <SosyalGirisDugmeleri
+            onBasarili={() => {
+              if (router.canGoBack()) router.back();
+              else router.replace("/kesfet");
+            }}
           />
         </Animated.View>
 

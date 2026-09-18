@@ -4,7 +4,7 @@ import {
   apiHata,
   appKullaniciGerekli,
   govdeOku,
-  mevcutSifreyiDogrula,
+  kimlikKanitiDogrula,
   metin,
 } from "@/lib/kimlik/app-api";
 
@@ -42,7 +42,7 @@ export async function DELETE(request: Request) {
   const govde = await govdeOku(request);
   if (!govde) return apiHata("İstek gövdesi okunamadı.", 400);
 
-  const sifre = await mevcutSifreyiDogrula(oturum.kullanici.id, metin(govde, "mevcutSifre"));
+  const sifre = await kimlikKanitiDogrula(oturum.kullanici.id, govde);
   if (!sifre.ok) return sifre.yanit;
 
   /**

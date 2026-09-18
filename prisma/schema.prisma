@@ -1352,6 +1352,27 @@ model AppUser {
   plusUyeMi Boolean   @default(false)
   plusBitis DateTime?
 
+  /// SOSYAL GİRİŞ BAĞLARI — sağlayıcıdaki kalıcı kullanıcı kimliği (`sub`).
+  ///
+  /// E-postayla değil `sub` ile bağlanıyor: e-posta değişebiliyor, Apple
+  /// gizli yönlendirme adresi verebiliyor ve doğrulanmamış bir e-postayla
+  /// eşleştirme yapmak, başkasının hesabını devralmanın en kolay yolu
+  /// olurdu. `sub` ise sağlayıcı nezdinde kalıcı ve tekil.
+  ///
+  /// TEKİL: bir Google/Apple hesabı tek bir Biyerlere hesabına bağlanır.
+  googleSub String? @unique
+  appleSub  String? @unique
+
+  /// Kullanıcının BİLDİĞİ bir şifresi var mı.
+  ///
+  /// Sosyal girişle açılan hesaba rastgele bir şifre yazılıyor (alan
+  /// zorunlu) ama kullanıcı onu bilmiyor. Bu bayrak olmadan, "mevcut
+  /// şifreni gir" diyen hassas işlemler (hesap silme, kurtarma numarası)
+  /// o kullanıcı için sonsuza kadar kilitli kalırdı. Bayrak kapalıyken
+  /// kimlik kanıtı olarak sağlayıcıdan TAZE bir kimlik jetonu isteniyor
+  /// (bkz. lib/kimlik/app-api.ts, kimlikKanitiDogrula).
+  sifreBelirlendi Boolean @default(true)
+
   /// BİLDİRİM TERCİHLERİ — kategori bazlı (bkz. lib/biyerlere/bildirim-tercihi.ts).
   ///
   /// Tek bir aç/kapa anahtarı vardı; ilgisiz iki bildirim alan kullanıcı

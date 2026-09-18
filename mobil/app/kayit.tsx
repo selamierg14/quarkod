@@ -7,6 +7,7 @@ import { renkler, yazi, bosluk } from "../src/tasarim";
 import { useOturum } from "../src/store/oturum";
 import { Basilabilir } from "../src/bilesenler/Basilabilir";
 import { AnaDugme, FormAlani, HataMetni } from "../src/bilesenler/Form";
+import { SosyalGirisDugmeleri } from "../src/bilesenler/SosyalGirisDugmeleri";
 
 /**
  * Kayıt ekranı.
@@ -148,6 +149,8 @@ export default function KayitEkrani() {
             devreDisi={uyusmazlik}
             onPress={gonder}
           />
+
+          <SosyalGirisDugmeleri onBasarili={() => router.replace("/kesfet")} />
         </View>
 
         <View style={stiller.altSatir}>

@@ -4,7 +4,7 @@ import {
   apiHata,
   appKullaniciGerekli,
   govdeOku,
-  mevcutSifreyiDogrula,
+  kimlikKanitiDogrula,
   metin,
 } from "@/lib/kimlik/app-api";
 import { normalizePhone } from "@/lib/kimlik/username";
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
   }
 
   // Uzunluk → ortak hız sınırı → bcrypt; sıra ve kota tek yerde.
-  const sifre = await mevcutSifreyiDogrula(oturum.kullanici.id, metin(govde, "mevcutSifre"));
+  const sifre = await kimlikKanitiDogrula(oturum.kullanici.id, govde);
   if (!sifre.ok) return sifre.yanit;
 
   /**
@@ -165,7 +165,7 @@ export async function DELETE(request: Request) {
 
   // Bu uçta önceden HİÇ hız sınırı yoktu: çalınmış bir oturumla şifreyi
   // tahmin etmek için kullanılabiliyordu.
-  const sifre = await mevcutSifreyiDogrula(oturum.kullanici.id, metin(govde, "mevcutSifre"));
+  const sifre = await kimlikKanitiDogrula(oturum.kullanici.id, govde);
   if (!sifre.ok) return sifre.yanit;
 
   await prisma.appUser.update({

@@ -5,6 +5,7 @@ import { useBildirimler } from "./bildirimler";
 import { onbellegiTemizle } from "../api/onbellek";
 import { buCihazinAboneliginiKapat } from "../push/bildirim";
 import type { AppKullanici, GirisYaniti } from "../api/tipler";
+import type { Saglayici } from "../kimlik/sosyal";
 
 /**
  * Oturum durumu.
@@ -26,6 +27,12 @@ type OturumStore = {
   kullanici: AppKullanici | null;
   hazirla: () => Promise<void>;
   girisYap: (username: string, sifre: string) => Promise<{ ok: boolean; hata?: string }>;
+  /** Apple/Google ile giriş — jeton sağlayıcıdan alınmış olarak gelir. */
+  sosyalGiris: (
+    saglayici: Saglayici,
+    jeton: string,
+    ad?: string | null,
+  ) => Promise<{ ok: boolean; hata?: string }>;
   kayitOl: (
     ad: string,
     username: string,
@@ -85,6 +92,24 @@ export const useOturum = create<OturumStore>((set) => ({
 
   girisYap: async (username, sifre) => {
     const sonuc = await api.acikPost<GirisYaniti>("/api/app/giris", { username, sifre });
+    if (!sonuc.ok) return { ok: false, hata: sonuc.hata };
+    await jetonDeposu.yaz(sonuc.veri.jeton);
+    set({ durum: "girisli", kullanici: sonuc.veri.kullanici });
+    return { ok: true };
+  },
+
+  /**
+   * Sunucu kimliği jetondan çözüyor; burada yapılan tek şey yanıtı
+   * şifreli girişle AYNI şekilde işlemek (jetonu yaz, kullanıcıyı kur).
+   * İki akışın sonrasının aynı olması, oturum mantığının tek yerde
+   * kalmasını sağlıyor.
+   */
+  sosyalGiris: async (saglayici, jeton, ad) => {
+    const sonuc = await api.acikPost<GirisYaniti>("/api/app/sosyal-giris", {
+      saglayici,
+      jeton,
+      ad: ad ?? undefined,
+    });
     if (!sonuc.ok) return { ok: false, hata: sonuc.hata };
     await jetonDeposu.yaz(sonuc.veri.jeton);
     set({ durum: "girisli", kullanici: sonuc.veri.kullanici });
