@@ -10,6 +10,7 @@ import { detaylariCoz } from "@/lib/isletme/anket-detay";
 import { yanitlanabilir } from "@/lib/cekirdek/yanit";
 import { SectionCard, StatusBadge, Stars, formatDateTime } from "@/components/ui";
 import { StatusForm } from "./StatusForm";
+import { hazirYanitlar } from "@/lib/isletme/hazir-yanit";
 import { RespondForm } from "./RespondForm";
 
 export const dynamic = "force-dynamic";
@@ -245,6 +246,10 @@ export default async function FeedbackDetailPage({
                       id={feedback.id}
                       channel={feedback.contactType === "eposta" ? "eposta" : "telefon"}
                       alreadyResponded={Boolean(feedback.respondedAt)}
+                      hazirYanitlar={hazirYanitlar(
+                        feedback.overallRating,
+                        feedback.business.name,
+                      )}
                     />
                   ) : null}
                 </div>

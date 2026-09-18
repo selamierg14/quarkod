@@ -46,7 +46,8 @@ export type IkonAdi =
   | "gorev"
   | "duyuru"
   | "biyerlere"
-  | "rota";
+  | "rota"
+  | "telefon";
 
 export type AltNavLink = {
   href: string;
@@ -177,6 +178,12 @@ export function panelMenusu(
 
   const gunluk: NavLink[] = [
     { href: "/admin", label: "Özet", ikon: "pano", exact: true },
+    /**
+     * CEP MODU en üstte ve herkeste: salonda telefondan açılan tek ekran
+     * (bkz. admin/(panel)/cep/page.tsx). Menünün dibinde dursaydı, tam da
+     * kullanılacağı anda — ayaktayken, tek elle — bulunamazdı.
+     */
+    { href: "/admin/cep", label: "Cep modu", ikon: "telefon", exact: true },
   ];
   // Geri bildirimler ve QR Menü modül bazlı kısıtlanabilir; sahip/platform
   // yöneticisi her zaman görür (izinler zaten getSession'da true'ya sabitlenir).

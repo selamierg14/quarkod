@@ -2,7 +2,7 @@
 
 > Bu belge, projeyi hiç görmemiş bir yapay zekâ asistanının (veya geliştiricinin) tek okumada
 > tam bağlamı kavraması için hazırlandı. Kodla çelişen bir şey görürsen **kod doğrudur**;
-> bu belge 2026-09-17 tarihli durumu anlatır (dal: `guvenlik-ve-yapi`, son commit `ec04a51`).
+> bu belge 2026-09-18 tarihli durumu anlatır (dal: `guvenlik-ve-yapi`).
 
 ---
 
@@ -15,7 +15,7 @@
    - "HTTP istek karşılamamamız gerekiyor, HTTPS olması gerek." SSL henüz alınmadı; alınınca `HTTPS_ZORUNLU=1` açılacak (middleware 308 yönlendirir, HSTS başlığı eklenir).
    - "Asla ve asla veri sızıntısı ve backend hataları istemiyorum." → Hata mesajları iç ayrıntı sızdırmaz, varlık kâhini (kullanıcı adı/numara var mı) bırakılmaz, 500 yerine anlamlı 4xx döner.
 4. **Geliştirme ve üretim AYNI Neon Postgres'i kullanıyor.** Yerel betik/test yazan her şey canlı veriye yazar. Test verisi oluşturduysan sonunda temizle.
-5. Değişiklikten sonra doğrulama seti: `npx tsc --noEmit`, `npm run lint`, `npm test` (web ~1082 test), `cd mobil && npx vitest run` (46 test), `npm run build`, `npm run guvenlik:tara`.
+5. Değişiklikten sonra doğrulama seti: `npx tsc --noEmit`, `npm run lint`, `npm test` (web ~1144 test), `cd mobil && npx vitest run` (46 test), `npm run build`, `npm run guvenlik:tara`.
 6. Commit/push yalnızca kullanıcı isteyince. Commit biçimi: `feat(alan): …`, `fix(güvenlik): …` — Türkçe, neden odaklı.
 
 ---
@@ -130,7 +130,7 @@ Pilot/demo işletmeler: KESKİNLEZZETLER, Ege Cunda Balık, Sahne Marin.
 Kural: **kimse sahip olmadığı modülü başkasına veremez.** Modül dağıtımı sadece superadmin/owner.
 
 ### Panel bölümleri (`/admin/…`)
-Özet · geri-bildirimler (liste/detay/CSV) · kirilim (vardiya & masa) · urunler · menu (düzenle/şablonlar/önizle) · duyurular · isletmeler (ayarlar, masalar, QR basımı, çalışma saatleri) · kullanicilar · rezervasyon (masa durumu, kat planı) · vardiya-planlama · vardiyalarim · gorevlerim · izinler · entegrasyonlar · kiyaslama · denetim · profil · sifre · biyerlere (istatistik + kullanıcı buluşmalarını moderasyon) · **superadmin'e özel:** hesaplar, abonelikler, rotalar, sponsorlar (sponsor/push kredisi), plus, sistem (cron sağlığı).
+Özet · **cep** (Cep modu: bekleyen geri bildirimler, bekleyen rezervasyon talepleri, flaş duyuru, bugünün vardiyası) · geri-bildirimler (liste/detay/CSV) · kirilim (vardiya & masa) · urunler · menu (düzenle/şablonlar/önizle) · duyurular · isletmeler (ayarlar, masalar, QR basımı, çalışma saatleri) · kullanicilar · rezervasyon (masa durumu, kat planı) · vardiya-planlama · vardiyalarim · gorevlerim · izinler · entegrasyonlar · kiyaslama · denetim · profil · sifre · biyerlere (istatistik + kullanıcı buluşmalarını moderasyon) · **superadmin'e özel:** hesaplar, abonelikler, rotalar, sponsorlar (sponsor/push kredisi), plus, sistem (cron sağlığı).
 
 ### Panel kapıları
 `requireUser → requireYazma → requireModul → canAccessBusiness`. `panel-kapilari.test.ts` diskteki HER Server Action ve sayfanın bir kapıya ulaştığını yapısal olarak doğrular (muafiyet: giriş, çıkış).
@@ -161,6 +161,7 @@ Kural: **kimse sahip olmadığı modülü başkasına veremez.** Modül dağıt�
 | Açık/kapalı | işletme çalışma saatlerinden | `isletme/calisma-saati.ts` |
 | Rotalar | admin'in tanımladığı durak listeleri; tamamlama takibi | `rota-veri.ts`, `rota-tamamlama.ts` |
 | Davet | davet kodu, +100 puan, kişi başı en çok 20 ödül | `davet.ts` |
+| **Masa rezervasyonu** | Uygulamadan talep: kişi/gün/saat seçilir, masayı sunucu bulur (tek masa, en küçük yeterli olan); talep "bekliyor" açılır, işletme onaylar. En erken 60 dk sonrası, en geç 30 gün; kişi başı 3 açık talep; en çok 12 kişi | `rezervasyon-talebi.ts`, `api/app/rezervasyon` |
 | **Kupon + sadakat** | **KAPALI** (`KUPON_AKTIF=false`, hem `lib/biyerlere/kupon.ts` hem `mobil/src/ozellikler.ts`). Sadakat: 10 ziyarette 1 kahve — kod duruyor | `kupon.ts`, `sadakat.ts` |
 | Sponsor / Push kredisi / Plus | **Yalnızca admin elle açar-kapatır.** Gerçek ödeme YOK, gerçek push teslimi kurulmadı | `sponsorluk.ts`, `biyerlere-plus.ts` |
 | Favoriler, bildirim merkezi, ziyaret geçmişi | var (web + mobil) | `api/app/favoriler`, `bildirimler` |
@@ -175,6 +176,8 @@ Kural: **kimse sahip olmadığı modülü başkasına veremez.** Modül dağıt�
 - **OTP kodları 3 dakika geçerli**, 5 yanlışta yanar, 60 sn yeniden gönderim beklemesi.
 - **Kurtarma numarası** (`AppUser.telefon` + `telefonDogrulandi`, tekil): Profil › Güvenlik'ten eklenir; ekleme/silme mevcut şifre ister; SMS ile doğrulanmadan kaydedilmez. (Mevcut kullanıcıları numara eklemeye zorlamak İSTENMEDİ.)
 - **Hesap silme:** `DELETE /api/app/hesap` + mevcut şifre; cascade silme, anketler kimliksizleşir (SetNull). Mağaza şartı.
+- **Sosyal giriş:** `POST /api/app/sosyal-giris` — Apple/Google kimlik jetonu sunucuda JWKS ile doğrulanır (`iss` + `aud` + imza). Bağ `sub` üzerinden; e-postayla eşleştirme YOK. `APPLE_ISTEMCI_IDLERI` / `GOOGLE_ISTEMCI_IDLERI` boşsa yöntem tamamen kapalı. Sosyal hesapta şifre yok (`sifreBelirlendi=false`): hassas işlemlerde şifre yerine sağlayıcıdan taze jeton isteniyor (`kimlikKanitiDogrula`). Google'ın İSTEMCİ tarafı henüz bağlanmadı.
+- **Bildirim tercihleri:** `GET/PUT /api/app/bildirim-tercihleri` — firsat / favoriDuyuru / rozet. Rezervasyon ve hesap güvenliği kapatılamaz.
 - **Çıkış:** `POST /api/app/cikis` → jeton sunucuda iptal (`IptalEdilenJeton`), sonra istemci temizlenir.
 
 ### `/api/app/*` uç tablosu (`lib/kimlik/api-politika.ts` — TEK KAYNAK)
@@ -188,7 +191,10 @@ Tabloda olmayan uç 404, yanlış metot 405, jetonlu uçta jetonsuz istek 401 (m
 | `/rotalar` | açık | GET |
 | `/etkinlikler` | açık (yazma metotları içeride oturum ister) | GET, POST, PUT, DELETE |
 | `/mekan-etkilesim` | açık | POST (anonim metrik) |
+| `/sosyal-giris` | açık (PUT içeride oturum ister) | GET, POST, PUT |
 | `/ben`, `/profil`, `/cuzdan`, `/bildirimler` | jetonlu | GET |
+| `/rezervasyon` | jetonlu | GET, POST, DELETE |
+| `/bildirim-tercihleri` | jetonlu | GET, PUT |
 | `/favoriler` | jetonlu | GET, POST |
 | `/konum`, `/ziyaret`, `/plus-talep`, `/sifre-degistir`, `/cikis` | jetonlu | POST |
 | `/push` | jetonlu | POST, DELETE |
@@ -255,6 +261,8 @@ Algoritma: **önce satır ekle → say → sınırı aştıysa kendi satırını
 | sifreDogrulama (kullanıcı; şifre değiştir, telefon ekle/sil, hesap sil ORTAK) | 10 / 10 dk |
 | kurtarmaIp | 10 / 10 dk |
 | etkinlikAc | 10 / 60 dk |
+| rezervasyon (kullanıcı) | 10 / 60 dk |
+| sosyalGiris (IP) | 20 / 10 dk |
 | yazma (oturumlu tüm yazma uçları) | 120 / 10 dk |
 
 **Giriş kilidi** (`login-guard.ts`): kullanıcı adı başı 6, IP başı 20 başarısız / pencere. bcrypt'ten ÖNCE deneme hakkı ayrılır (`girisDenemesiAyir`), sonuç sonra işlenir. Başarılı giriş yalnızca kullanıcı adı sayacını sıfırlar, IP'yi değil.
@@ -292,6 +300,7 @@ Algoritma: **önce satır ekle → say → sınırı aştıysa kendi satırını
 | `HTTPS_ZORUNLU` | `1` → http→https 308 + HSTS |
 | `GUVENILIR_IP_BASLIGI` | Vercel dışı barındırmada gerçek IP başlığının adı |
 | `IOS_TEAM_ID`, `ANDROID_SHA256_FINGERPRINTS` | Evrensel bağlantı dosyaları |
+| `APPLE_ISTEMCI_IDLERI`, `GOOGLE_ISTEMCI_IDLERI` | Sosyal girişte kabul edilen `aud` değerleri (virgüllü). Boşsa o yöntem kapalı |
 | `NEXT_PUBLIC_ILETISIM_TEL/EPOSTA`, `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, `SEED_ADMIN_PHONE` | Diğer |
 | Mobil: `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_SITE_DOMAIN`, `APP_ORTAMI` | API adresi, evrensel bağlantı alanı, derleme profili |
 

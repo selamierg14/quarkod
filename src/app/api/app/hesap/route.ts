@@ -5,7 +5,6 @@ import {
   appKullaniciGerekli,
   govdeOku,
   kimlikKanitiDogrula,
-  metin,
 } from "@/lib/kimlik/app-api";
 
 export const dynamic = "force-dynamic";
