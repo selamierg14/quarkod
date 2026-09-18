@@ -15,6 +15,13 @@ export type AppKullanici = {
   puan: number;
   referralCode: string;
   plusUyeMi: boolean;
+  /**
+   * Kullanıcının BİLDİĞİ bir şifresi var mı. Sosyal girişle açılan
+   * hesapta false: hassas işlemlerde şifre yerine sağlayıcıdan taze
+   * jeton isteniyor (bkz. src/kimlik/kanit.ts). İsteğe bağlı çünkü
+   * alanı göndermeyen eski bir sunucu sürümünde "şifreli" varsayılıyor.
+   */
+  sifreBelirlendi?: boolean;
 };
 
 export type GirisYaniti = {

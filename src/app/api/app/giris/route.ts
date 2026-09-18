@@ -79,6 +79,9 @@ export async function POST(request: Request) {
       referralCode: kullanici.referralCode,
       ...(KUPON_AKTIF ? { cuzdandakiKupon } : {}),
       plusUyeMi: plusGecerliMi(kullanici),
+      // Şifreyle giren birinin şifresi var; sosyal hesapla aynı biçimde
+      // dönmesi, istemcinin iki akışı ayırt etmesini gereksiz kılıyor.
+      sifreBelirlendi: true,
     },
   });
 }

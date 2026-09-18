@@ -150,7 +150,13 @@ export async function POST(request: Request) {
       jeton: await appJetonUret(kullanici),
       // Yeni açılan hesap hiçbir zaman Plus üyesi olarak başlamıyor —
       // sorgusuz false (bkz. giris/route.ts'teki gerçek hesaplama).
-      kullanici: { ...kullanici, ...(KUPON_AKTIF ? { cuzdandakiKupon: 0 } : {}), plusUyeMi: false },
+      kullanici: {
+        ...kullanici,
+        ...(KUPON_AKTIF ? { cuzdandakiKupon: 0 } : {}),
+        plusUyeMi: false,
+        // Şifreyle açılan hesapta kullanıcı şifresini biliyor.
+        sifreBelirlendi: true,
+      },
     },
     { status: 201 },
   );

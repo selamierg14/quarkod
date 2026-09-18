@@ -159,6 +159,47 @@ ve şifresini değiştiren kişinin eski oturumu anında düşüyor.
 
 ---
 
+## Sosyal giriş (Apple / Google)
+
+Tüketici tarafında kullanıcı adı + şifrenin yanında ikinci bir giriş yolu
+var: [`lib/kimlik/sosyal-giris.ts`](src/lib/kimlik/sosyal-giris.ts).
+
+Kural tek cümle: **istemcinin gönderdiği hiçbir iddiaya inanılmıyor.**
+Uygulama yalnızca sağlayıcının imzaladığı kimlik jetonunu taşıyor; kimin
+kim olduğuna sunucu, jetonu Apple/Google'ın kendi JWKS'iyle doğrulayarak
+karar veriyor. Üç iddia ayrı ayrı kontrol ediliyor: imza, `iss` ve `aud`.
+`aud` olmadan, başka bir uygulama için alınmış geçerli bir jetonla buradan
+giriş yapılabilirdi.
+
+| | Değer |
+|---|---|
+| Hesap bağı | `AppUser.googleSub` / `appleSub` (tekil) |
+| E-postayla eşleştirme | **YOK** — adres değişebilir, Apple gizli adres verir, doğrulanmamış adresle eşleştirme devralma yoludur |
+| Yapılandırma | `APPLE_ISTEMCI_IDLERI` / `GOOGLE_ISTEMCI_IDLERI` (virgüllü `aud` listesi) |
+| Boşsa | Yöntem tamamen kapalı: uç 401, uygulamada düğme çıkmıyor |
+
+**Şifresiz hesap sorunu ve çözümü.** Sosyal girişle açılan hesabın sahibi
+bir şifre bilmiyor (`AppUser.sifreBelirlendi = false`). "Mevcut şifreni
+gir" diyen üç işlem — şifre belirleme, kurtarma numarası, hesap silme —
+onun için kilitli kalırdı; şifre kontrolünü atlamak ise çalınmış bir
+oturuma hesabı silme yetkisi vermek olurdu. Bu yüzden kanıt, şifre yerine
+**sağlayıcıdan alınan taze bir kimlik jetonu** ve jetonun `sub`u o hesaba
+bağlı olmak zorunda. Tek kapı:
+[`kimlikKanitiDogrula`](src/lib/kimlik/app-api.ts).
+
+## Uygulamadan masa rezervasyonu
+
+Panelin rezervasyon modülü (kat planı, çakışma, durumlar) baştan beri
+vardı; tüketici tarafı
+[`lib/biyerlere/rezervasyon-talebi.ts`](src/lib/biyerlere/rezervasyon-talebi.ts)
+ile bağlandı. Kullanıcı masa SEÇMİYOR: kişi/gün/saat veriyor, gruba yetecek
+en küçük boş masayı sunucu buluyor. Talep `bekliyor` durumunda açılıyor —
+otomatik onay, mekanın haberi olmadan masasının satılması demek olurdu.
+
+Eşzamanlılık: müsaitlik kontrolü ile yazma arasında başka bir talep aynı
+masayı alabilir. Hız sınırındaki kalıbın aynısı uygulanıyor — kayıt önce
+yazılıyor, sonra kendisi hariç çakışma aranıyor, varsa geri alınıyor.
+
 ## İki aşamalı doğrulama (SMS OTP)
 
 Kod üretimi ve doğrulaması [`lib/kimlik/otp.ts`](src/lib/kimlik/otp.ts)'te,

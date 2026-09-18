@@ -7,6 +7,7 @@ import { api } from "../src/api/istemci";
 import { useOturum } from "../src/store/oturum";
 import { Basilabilir } from "../src/bilesenler/Basilabilir";
 import { AnaDugme, EkranBasligi, FormAlani, HataMetni } from "../src/bilesenler/Form";
+import { kanitHazirla, sifreIleMi } from "../src/kimlik/kanit";
 import { onayIste } from "../src/bilesenler/onay";
 
 /**
@@ -89,6 +90,15 @@ function Bolum({ baslik, children }: { baslik: string; children: React.ReactNode
 }
 
 function SifreDegistir({ onDegisti }: { onDegisti: () => void }) {
+  /**
+   * Sosyal girişle açılan hesapta kullanıcı bir şifre BİLMİYOR: "mevcut
+   * şifren" alanı ona dolduramayacağı bir kapı olurdu. Onun yerine
+   * sağlayıcıyla doğrulanıyor ve bu ekran "şifre belirle"ye dönüşüyor
+   * (bkz. src/kimlik/kanit.ts).
+   */
+  const kullanici = useOturum((st) => st.kullanici);
+  const sifreli = sifreIleMi(kullanici);
+
   const [mevcut, setMevcut] = useState("");
   const [yeni, setYeni] = useState("");
   const [tekrar, setTekrar] = useState("");
@@ -100,8 +110,17 @@ function SifreDegistir({ onDegisti }: { onDegisti: () => void }) {
     setHata(null);
     if (yeni !== tekrar) return setHata("Şifreler birbiriyle uyuşmuyor.");
     setBekliyor(true);
+
+    const kanit = await kanitHazirla(kullanici, mevcut);
+    if (!kanit.ok) {
+      setBekliyor(false);
+      // İptal bir hata değil: kullanıcı doğrulamadan vazgeçtiyse ekranda
+      // kırmızı bir satır bırakmıyoruz.
+      return kanit.iptal ? undefined : setHata(kanit.hata);
+    }
+
     const sonuc = await api.post("/api/app/sifre-degistir", {
-      mevcutSifre: mevcut,
+      ...kanit.govde,
       yeniSifre: yeni,
       yeniSifreTekrar: tekrar,
     });
@@ -111,17 +130,24 @@ function SifreDegistir({ onDegisti }: { onDegisti: () => void }) {
   }
 
   return (
-    <Bolum baslik="Şifre değiştir">
-      <FormAlani
-        etiket="Mevcut şifren"
-        value={mevcut}
-        onChangeText={setMevcut}
-        secureTextEntry
-        autoComplete="current-password"
-        textContentType="password"
-        maxLength={128}
-        editable={!bekliyor}
-      />
+    <Bolum baslik={sifreli ? "Şifre değiştir" : "Şifre belirle"}>
+      {sifreli ? (
+        <FormAlani
+          etiket="Mevcut şifren"
+          value={mevcut}
+          onChangeText={setMevcut}
+          secureTextEntry
+          autoComplete="current-password"
+          textContentType="password"
+          maxLength={128}
+          editable={!bekliyor}
+        />
+      ) : (
+        <Text style={yazi.kucuk}>
+          Hesabını Apple ile açtığın için şifren yok. Şifre belirlerken kimliğini
+          Apple ile bir kez daha doğrulayacağız.
+        </Text>
+      )}
       <FormAlani
         etiket="Yeni şifre"
         value={yeni}
@@ -147,10 +173,10 @@ function SifreDegistir({ onDegisti }: { onDegisti: () => void }) {
       />
       <HataMetni mesaj={hata} />
       <AnaDugme
-        metin="Şifreyi değiştir"
-        bekleyenMetin="Değiştiriliyor…"
+        metin={sifreli ? "Şifreyi değiştir" : "Şifreyi belirle"}
+        bekleyenMetin={sifreli ? "Değiştiriliyor…" : "Belirleniyor…"}
         bekliyor={bekliyor}
-        devreDisi={uyusmazlik || !mevcut || !yeni}
+        devreDisi={uyusmazlik || (sifreli && !mevcut) || !yeni}
         onPress={gonder}
       />
     </Bolum>
@@ -165,6 +191,9 @@ function SifreDegistir({ onDegisti }: { onDegisti: () => void }) {
  * → "şifremi unuttum" → hesap gider).
  */
 function KurtarmaNumarasi() {
+  const kullanici = useOturum((st) => st.kullanici);
+  const sifreli = sifreIleMi(kullanici);
+
   const [kayitli, setKayitli] = useState<string | null | undefined>(undefined);
   const [adim, setAdim] = useState<"numara" | "kod">("numara");
   const [duzenle, setDuzenle] = useState(false);
@@ -188,9 +217,16 @@ function KurtarmaNumarasi() {
   async function kodIste() {
     setHata(null);
     setBekliyor(true);
+
+    const kanit = await kanitHazirla(kullanici, mevcut);
+    if (!kanit.ok) {
+      setBekliyor(false);
+      return kanit.iptal ? undefined : setHata(kanit.hata);
+    }
+
     const sonuc = await api.post<{ maskeli: string }>("/api/app/telefon", {
       telefon,
-      mevcutSifre: mevcut,
+      ...kanit.govde,
     });
     setBekliyor(false);
     if (!sonuc.ok) return setHata(sonuc.hata);
@@ -274,21 +310,27 @@ function KurtarmaNumarasi() {
             ipucu="Yalnızca hesap kurtarma için kullanılır."
             editable={!bekliyor}
           />
-          <FormAlani
-            etiket="Mevcut şifren"
-            value={mevcut}
-            onChangeText={setMevcut}
-            secureTextEntry
-            autoComplete="current-password"
-            maxLength={128}
-            editable={!bekliyor}
-          />
+          {sifreli ? (
+            <FormAlani
+              etiket="Mevcut şifren"
+              value={mevcut}
+              onChangeText={setMevcut}
+              secureTextEntry
+              autoComplete="current-password"
+              maxLength={128}
+              editable={!bekliyor}
+            />
+          ) : (
+            <Text style={yazi.kucuk}>
+              Numarayı kaydetmeden önce kimliğini Apple ile doğrulayacağız.
+            </Text>
+          )}
           <HataMetni mesaj={hata} />
           <AnaDugme
             metin="Kod gönder"
             bekleyenMetin="Gönderiliyor…"
             bekliyor={bekliyor}
-            devreDisi={!telefon || !mevcut}
+            devreDisi={!telefon || (sifreli && !mevcut)}
             onPress={kodIste}
           />
         </>
@@ -298,6 +340,9 @@ function KurtarmaNumarasi() {
 }
 
 function HesabiSil({ onSilindi }: { onSilindi: () => void }) {
+  const kullanici = useOturum((st) => st.kullanici);
+  const sifreli = sifreIleMi(kullanici);
+
   const [acik, setAcik] = useState(false);
   const [sifre, setSifre] = useState("");
   const [hata, setHata] = useState<string | null>(null);
@@ -317,7 +362,19 @@ function HesabiSil({ onSilindi }: { onSilindi: () => void }) {
   async function sil() {
     setHata(null);
     setBekliyor(true);
-    const sonuc = await api.delete("/api/app/hesap", { mevcutSifre: sifre });
+
+    /**
+     * Sosyal hesapta kanıt sağlayıcıdan geliyor. Bu olmadan Apple ile
+     * açılan hesap uygulamadan SİLİNEMİYORDU — mağaza kuralı (Apple
+     * 5.1.1.v) bunu şart koşuyor.
+     */
+    const kanit = await kanitHazirla(kullanici, sifre);
+    if (!kanit.ok) {
+      setBekliyor(false);
+      return kanit.iptal ? undefined : setHata(kanit.hata);
+    }
+
+    const sonuc = await api.delete("/api/app/hesap", kanit.govde);
     setBekliyor(false);
     if (!sonuc.ok) return setHata(sonuc.hata);
     onSilindi();
@@ -339,21 +396,27 @@ function HesabiSil({ onSilindi }: { onSilindi: () => void }) {
         </Basilabilir>
       ) : (
         <>
-          <FormAlani
-            etiket="Onaylamak için şifreni yaz"
-            value={sifre}
-            onChangeText={setSifre}
-            secureTextEntry
-            autoComplete="current-password"
-            maxLength={128}
-            editable={!bekliyor}
-          />
+          {sifreli ? (
+            <FormAlani
+              etiket="Onaylamak için şifreni yaz"
+              value={sifre}
+              onChangeText={setSifre}
+              secureTextEntry
+              autoComplete="current-password"
+              maxLength={128}
+              editable={!bekliyor}
+            />
+          ) : (
+            <Text style={yazi.kucuk}>
+              Silmeden önce kimliğini Apple ile doğrulayacağız.
+            </Text>
+          )}
           <HataMetni mesaj={hata} />
           <AnaDugme
             metin="Kalıcı olarak sil"
             bekleyenMetin="Siliniyor…"
             bekliyor={bekliyor}
-            devreDisi={!sifre}
+            devreDisi={sifreli && !sifre}
             tehlikeli
             onPress={() => void onayla()}
           />

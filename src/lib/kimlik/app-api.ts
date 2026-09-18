@@ -30,6 +30,16 @@ export type AppKullanici = {
   referralCode: string;
   /** Biyerlere Plus üyesi mi — bkz. AppUser.plusUyeMi şema yorumu. */
   plusUyeMi: boolean;
+  /**
+   * Kullanıcının BİLDİĞİ bir şifresi var mı (bkz. AppUser.sifreBelirlendi).
+   *
+   * Arayüzün bunu bilmesi ŞART: sosyal girişle açılmış hesapta "mevcut
+   * şifreni gir" alanı gösterilirse kullanıcı hesabını silemez, kurtarma
+   * numarası ekleyemez ve şifre belirleyemez — dolduramayacağı bir alana
+   * takılır. Yalnızca sosyal girişten döndürülseydi bilgi uygulama
+   * kapanınca kaybolurdu; bu yüzden oturumun kendisiyle taşınıyor.
+   */
+  sifreBelirlendi: boolean;
 };
 
 /** Tutarlı hata gövdesi: mobil taraf tek bir biçim beklesin. */
@@ -69,6 +79,7 @@ export async function appKullaniciOku(
       passwordChangedAt: true,
       plusUyeMi: true,
       plusBitis: true,
+      sifreBelirlendi: true,
     },
     }),
     jetonIptalMi(cozulen.jti),
@@ -86,6 +97,7 @@ export async function appKullaniciOku(
     puan: kullanici.puan,
     referralCode: kullanici.referralCode,
     plusUyeMi: plusGecerliMi(kullanici),
+    sifreBelirlendi: kullanici.sifreBelirlendi,
   };
 }
 
