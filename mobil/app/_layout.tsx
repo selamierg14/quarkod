@@ -14,6 +14,7 @@ import {
 } from "@expo-google-fonts/inter";
 import { renkler } from "../src/tasarim";
 import { useOturum } from "../src/store/oturum";
+import { useBildirimYonlendirme } from "../src/push/yonlendirme";
 
 // Fontlar yüklenmeden açılış ekranı kapanmasın: aksi hâlde arayüz bir
 // kare sistem fontuyla çizilip sonra Inter'e atlıyor ve metinler
@@ -30,6 +31,10 @@ export default function KokLayout() {
 
   const hazirla = useOturum((s) => s.hazirla);
   const oturumDurumu = useOturum((s) => s.durum);
+
+  // Kök layout, yönlendirici hazırken çalışan en dış bileşen: bildirimle
+  // açılışta hedef sayfaya buradan gidiliyor.
+  useBildirimYonlendirme();
 
   useEffect(() => {
     void hazirla();

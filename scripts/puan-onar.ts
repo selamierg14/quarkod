@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { createScriptClient } from "./prisma-client";
-import { ROZETLER, hakEdilenRozetler, type ZiyaretOzeti } from "../src/lib/rozet";
-import { ZIYARET_PUANI } from "../src/lib/ziyaret";
+import { ROZETLER, hakEdilenRozetler, type ZiyaretOzeti } from "../src/lib/biyerlere/rozet";
+import { ZIYARET_PUANI } from "../src/lib/biyerlere/ziyaret";
 
 /**
  * Tüketici puanlarını GERÇEK ziyaret geçmişinden yeniden hesaplar.

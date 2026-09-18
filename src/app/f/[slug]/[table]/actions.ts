@@ -1,28 +1,30 @@
 "use server";
 
-import { createHash } from "node:crypto";
 import { headers } from "next/headers";
+import { istemciIp, ipOzeti } from "@/lib/kimlik/istemci-ip";
+import { jetonIptalMi } from "@/lib/kimlik/jeton-iptal";
 import { after } from "next/server";
-import { prisma } from "@/lib/db";
-import { notifyLowRating } from "@/lib/mail";
-import { validateImageDataUrl } from "@/lib/image";
-import { googleYorumLinkiGecerliMi } from "@/lib/google-yorum";
-import { vardiyaHesapla } from "@/lib/vardiya";
-import { foldTr } from "@/lib/text";
-import { detaylariDerle, sorunSecenekleri } from "@/lib/anket-detay";
-import { cevir } from "@/lib/ceviriler";
-import { VARSAYILAN_DIL, gecerliDilMi } from "@/lib/diller";
-import { CONTACT_TYPES, KVKK_VERSION, type ContactType } from "@/lib/kvkk";
-import { getOrCreateVisitorId } from "@/lib/visitor";
-import { hesapAktifMi } from "@/lib/abonelik";
-import { ANKET_KATILIM_PUANI } from "@/lib/ziyaret";
-import { appJetonCoz, appOturumIptalSebebi } from "@/lib/app-oturum";
+import { prisma } from "@/lib/cekirdek/db";
+import { notifyLowRating } from "@/lib/altyapi/mail";
+import { validateImageDataUrl } from "@/lib/isletme/image";
+import { googleYorumLinkiGecerliMi } from "@/lib/isletme/google-yorum";
+import { vardiyaHesapla } from "@/lib/personel/vardiya";
+import { foldTr } from "@/lib/cekirdek/text";
+import { detaylariDerle, sorunSecenekleri } from "@/lib/isletme/anket-detay";
+import { cevir } from "@/lib/cekirdek/ceviriler";
+import { VARSAYILAN_DIL, gecerliDilMi } from "@/lib/cekirdek/diller";
+import { CONTACT_TYPES, KVKK_VERSION, type ContactType } from "@/lib/isletme/kvkk";
+import { getOrCreateVisitorId } from "@/lib/kimlik/visitor";
+import { hesapAktifMi } from "@/lib/isletme/abonelik";
+import { ANKET_KATILIM_PUANI } from "@/lib/biyerlere/ziyaret";
+import { appJetonCoz, appOturumIptalSebebi } from "@/lib/kimlik/app-oturum";
 import {
   DEFAULT_IYS_SOURCE,
   MARKETING_TEXT_VERSION,
   marketingConsentText,
   toRecipient,
-} from "@/lib/iys";
+} from "@/lib/isletme/iys";
+import { alanDogrula } from "@/lib/cekirdek/desenler";
 
 export type SubmitResult =
   | {
@@ -75,11 +77,6 @@ const REPEAT_WINDOW_MINUTES = 30;
 /** Aynı IP'den aynı işletmeye bu pencerede en fazla bu kadar gönderim kabul edilir. */
 const FLOOD_WINDOW_MINUTES = 10;
 const FLOOD_LIMIT = 5;
-
-/** Aynı IP'yi düz metin saklamamak için tek yönlü özet. */
-function hashIp(ip: string): string {
-  return createHash("sha256").update(ip).digest("hex").slice(0, 32);
-}
 
 /** Aynı ziyaretçinin aynı masayı tekrar açması bu süre içinde tek görüntüleme sayılır. */
 const VIEW_DEDUPE_MINUTES = 120;
@@ -220,9 +217,9 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
   }
 
   const headerList = await headers();
-  const forwarded = headerList.get("x-forwarded-for");
-  const ip = forwarded?.split(",")[0]?.trim() || headerList.get("x-real-ip") || "";
-  const ipHash = ip ? hashIp(ip) : null;
+  // Sel koruması IP'ye dayanıyor; güvenilir kaynak seçimi tek yerde.
+  const ip = istemciIp(headerList);
+  const ipHash = ipOzeti(ip);
   const visitorId = await getOrCreateVisitorId();
 
   // 1) Aynı tarayıcı, aynı masa: kısa aralıkta tekrar gönderim.
@@ -295,7 +292,10 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
       error: "İletişim bilgisi bırakmak için aydınlatma metnini onaylamanız gerekiyor.",
     };
   }
-  if (storeContact && contactType === "eposta" && !/^\S+@\S+\.\S+$/.test(rawContact)) {
+  // Desen desenler.ts'ten: aynı e-posta kontrolünün BEŞİNCİ elle yazılmış
+  // kopyasıydı. Bu form kimlik istemiyor (masadaki karekoddan açılıyor),
+  // yani biçim kuralının en gevşek kalmaması gereken yerlerden biri.
+  if (storeContact && contactType === "eposta" && !alanDogrula(rawContact, "eposta", "E-posta").ok) {
     return { ok: false, error: "E-posta adresi geçerli görünmüyor." };
   }
   if (storeContact && contactType === "telefon" && rawContact.replace(/\D/g, "").length < 10) {
@@ -328,11 +328,15 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
   if (appJetonHam) {
     const cozulen = await appJetonCoz(appJetonHam);
     if (cozulen) {
-      const appUser = await prisma.appUser.findUnique({
-        where: { id: cozulen.id },
-        select: { id: true, active: true, passwordChangedAt: true },
-      });
-      if (!appOturumIptalSebebi(appUser, cozulen.issuedAt)) {
+      const [appUser, iptal] = await Promise.all([
+        prisma.appUser.findUnique({
+          where: { id: cozulen.id },
+          select: { id: true, active: true, passwordChangedAt: true },
+        }),
+        jetonIptalMi(cozulen.jti),
+      ]);
+      // Çıkış yapılmış bir jetonla yazılan anket, o kişinin adına bağlanmamalı.
+      if (!iptal && !appOturumIptalSebebi(appUser, cozulen.issuedAt)) {
         appUserId = appUser!.id;
       }
     }
@@ -399,7 +403,7 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
             consentAt: now,
             textVersion: MARKETING_TEXT_VERSION,
             consentText: gosterilenMetin,
-            ipAddress: ip || null,
+            ipAddress: ip && ip !== "guvenilmez" ? ip : null,
             ipHash,
             feedbackId: feedback.id,
             reportedAt: null,
@@ -416,7 +420,7 @@ export async function submitFeedback(input: SurveyInput): Promise<SubmitResult> 
             consentAt: now,
             textVersion: MARKETING_TEXT_VERSION,
             consentText: gosterilenMetin,
-            ipAddress: ip || null,
+            ipAddress: ip && ip !== "guvenilmez" ? ip : null,
             ipHash,
           },
         })

@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { aktifMi, grupAktifMi, type IkonAdi, type NavGrup } from "@/lib/panel";
-import { APP_VERSION } from "@/lib/constants";
+import { aktifMi, grupAktifMi, type IkonAdi, type NavGrup } from "@/lib/kimlik/panel";
+import { APP_VERSION } from "@/lib/cekirdek/constants";
 import { BildirimZili } from "./BildirimZili";
 import { ProfilAvatarButton } from "./ProfilAvatarButton";
 import { CikisButonu } from "./CikisButonu";
@@ -309,6 +309,12 @@ function Ikon({ ad }: { ad: IkonAdi }) {
       return (
         <svg viewBox="0 0 24 24" className={ortak} {...p}>
           <path d="M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-3H4zM14 7h6V4h-6z" />
+        </svg>
+      );
+    case "telefon":
+      return (
+        <svg viewBox="0 0 24 24" className={ortak} {...p}>
+          <path d="M7 3h10a1 1 0 011 1v16a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1zM11 18h2" />
         </svg>
       );
     case "mesaj":

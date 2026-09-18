@@ -10,7 +10,7 @@ import {
   MAX_RAW_UPLOAD_BYTES,
   MENU_MAX_DIM,
   type ImageKind,
-} from "@/lib/image";
+} from "@/lib/isletme/image";
 
 /**
  * Görsel yükleme alanı.

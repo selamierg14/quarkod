@@ -1,13 +1,13 @@
 import { Clock, DoorOpen, MapPin } from "lucide-react";
-import { requireAnketErisim, visibleBusinesses } from "@/lib/auth";
-import { getAnketHunisi, getDoldurmaSuresi, getShiftBreakdown, getTableBreakdown } from "@/lib/stats";
-import { huniYuzdeleriHesapla } from "@/lib/huni";
-import { masaBaskinliginiTespitEt } from "@/lib/masa-baskinlik";
-import { prisma } from "@/lib/db";
+import { requireAnketErisim, visibleBusinesses } from "@/lib/kimlik/auth";
+import { getAnketHunisi, getDoldurmaSuresi, getShiftBreakdown, getTableBreakdown } from "@/lib/rapor/stats";
+import { huniYuzdeleriHesapla } from "@/lib/rapor/huni";
+import { masaBaskinliginiTespitEt } from "@/lib/rapor/masa-baskinlik";
+import { prisma } from "@/lib/cekirdek/db";
 import { EmptyState, SectionCard } from "@/components/ui";
 import { RaporSekmeleri } from "@/components/RaporSekmeleri";
 import { PeriyotFiltre } from "@/components/PeriyotFiltre";
-import { gunEkle, gunBaslangici } from "@/lib/gun";
+import { gunEkle, gunBaslangici } from "@/lib/cekirdek/gun";
 
 function daysAgo(days: number): Date {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000);

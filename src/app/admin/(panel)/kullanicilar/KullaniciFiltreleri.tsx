@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Search, X } from "lucide-react";
-import { ROL_ADLARI } from "@/lib/constants";
+import { ROL_ADLARI } from "@/lib/cekirdek/constants";
 import { buttonClass } from "@/components/ui";
 
 const ALAN =

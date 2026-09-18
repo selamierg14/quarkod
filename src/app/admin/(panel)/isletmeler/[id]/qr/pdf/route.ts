@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
-import { canAccessBusiness, requireUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { appUrl, qrCardText } from "@/lib/constants";
-import { qrPdfUret } from "@/lib/qr-pdf";
-import { masaSirala } from "@/lib/masa";
+import { canAccessBusiness, requireUser } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { appUrl, qrCardText } from "@/lib/cekirdek/constants";
+import { qrPdfUret } from "@/lib/isletme/qr-pdf";
+import { masaSirala } from "@/lib/isletme/masa";
 
 /**
  * Matbaaya gönderilecek toplu QR PDF'i.

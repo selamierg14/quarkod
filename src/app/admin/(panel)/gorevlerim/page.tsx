@@ -1,11 +1,11 @@
 import { ClipboardCheck, Moon, ScrollText, Square, Sunrise } from "lucide-react";
 import Link from "next/link";
-import { requireUser, visibleBusinesses } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { requireUser, visibleBusinesses } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
 import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
-import { SHIFTS } from "@/lib/constants";
-import { gunBaslangici, gunEkle } from "@/lib/gun";
-import { etkinVardiyalar, vardiyaHesapla } from "@/lib/vardiya";
+import { SHIFTS } from "@/lib/cekirdek/constants";
+import { gunBaslangici, gunEkle } from "@/lib/cekirdek/gun";
+import { etkinVardiyalar, vardiyaHesapla } from "@/lib/personel/vardiya";
 import { IsletmeSecici } from "../menu/MenuUst";
 import { GorevKutusu, ShiftNotuFormu } from "./GorevForms";
 

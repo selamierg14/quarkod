@@ -1,15 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canAccessBusiness, requirePersonelYonetimi, requireYazma } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { gunAdi, gunBaslangici, gunEkle, gunGirdisi, haftaBaslangici } from "@/lib/gun";
-import { etkinVardiyalar, gecerliVardiyaMi } from "@/lib/vardiya";
-import { csvAyristir, tabloyuCizelgeyeCevir } from "@/lib/vardiya-tablo";
-import { izinKumesiKur, izinliMi } from "@/lib/izin";
-import { denetimYaz } from "@/lib/denetim";
-import { bildirimGonder } from "@/lib/bildirim";
-import { SHIFTS, type Shift } from "@/lib/constants";
+import { canAccessBusiness, requirePersonelYonetimi, requireYazma } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { gunAdi, gunBaslangici, gunEkle, gunGirdisi, haftaBaslangici } from "@/lib/cekirdek/gun";
+import { etkinVardiyalar, gecerliVardiyaMi } from "@/lib/personel/vardiya";
+import { csvAyristir, tabloyuCizelgeyeCevir } from "@/lib/personel/vardiya-tablo";
+import { izinKumesiKur, izinliMi } from "@/lib/isletme/izin";
+import { denetimYaz } from "@/lib/rapor/denetim";
+import { bildirimGonder } from "@/lib/altyapi/bildirim";
+import { SHIFTS, type Shift } from "@/lib/cekirdek/constants";
 
 export async function vardiyaAta(formData: FormData): Promise<void> {
   const actor = await requirePersonelYonetimi();

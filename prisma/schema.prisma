@@ -156,14 +156,25 @@ model Business {
   /// Mekanın haritadaki yeri. İkisi birden dolu ya da ikisi birden boş
   /// olur (bkz. lib/mekan.ts, koordinatCoz). Genelde işletmenin zaten
   /// yapıştırdığı Google Haritalar bağlantısından çıkarılıyor.
-  latitude      Float?
-  longitude     Float?
+  latitude         Float?
+  longitude        Float?
   /// "ucuz" | "orta" | "pahali" — bütçe segmenti (bkz. FIYAT_SEGMENTLERI).
-  priceSegment  String?
+  priceSegment     String?
   /// Mekan özellikleri, virgülle ayrılmış sabit anahtarlar:
   /// "priz,bahce,wifi" (bkz. MEKAN_OZELLIKLERI). Menüdeki `tags`
   /// alanıyla karıştırılmamalı — o ÜRÜNÜN, bu MEKANIN özelliği.
   mekanOzellikleri String?
+
+  /// Haftalık çalışma saatleri: "pazartesi:09:00-23:00,cumartesi:20:00-02:00".
+  /// Listede olmayan gün KAPALI sayılır (bkz. lib/isletme/calisma-saati.ts).
+  ///
+  /// Boş olması "kapalı" DEĞİL "bilinmiyor" demek — arayüz bu ikisini
+  /// ayırıyor, çünkü "kapalı" yazıp yanılmak kullanıcıyı mekandan
+  /// vazgeçirir.
+  ///
+  /// Gece yarısını geçen kapanış destekleniyor (kapanış < açılış ise
+  /// ertesi gün): bir bar için "20:00-02:00" istisna değil kural.
+  calismaSaatleri String?
 
   /// Vardiya planlaması ve otomatik etiketleme için: hangi vardiyalar
   /// kullanılıyor ve saat kaçta başlıyor. Sabit üçlü (sabah/akşam/gece) her
@@ -197,32 +208,43 @@ model Business {
   /// vermesini önlüyor.
   biyerlerePlusOrtagi Boolean @default(false)
 
+  /// Biyerlere uygulamasından masa rezervasyonu alınsın mı.
+  ///
+  /// Rezervasyon MODÜLÜ açık olsa bile varsayılan KAPALI ve bu bilinçli:
+  /// uygulamadan gelen talep masayı otomatik seçiyor (bkz.
+  /// lib/biyerlere/rezervasyon-talebi.ts), yani kat planındaki masa
+  /// kapasiteleri ve çalışma saatleri girilmeden açılırsa sistem iki
+  /// kişilik gruba depoyu verebilir. Anahtarı işletme, hazır olduğunda
+  /// kendisi açıyor.
+  rezervasyonAcik Boolean @default(false)
+
   createdAt DateTime @default(now())
 
-  account              Account               @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  categories           CategoryTemplate[]
-  tables               Table[]
-  bolgeler             Zone[]
-  rezervasyonlar       Rezervasyon[]
-  feedbacks            Feedback[]
-  users                User[]
-  coupons              Coupon[]
-  surveyViews          SurveyView[]
-  consents             MarketingConsent[]
-  menuCategories       MenuCategory[]
-  menuItems            MenuItem[]
-  itemRatings          ItemRating[]
-  bolgeMudurleri       UserBusiness[]
-  shiftAssignments     ShiftAssignment[]
-  shiftNotes           ShiftNote[]
-  leaveRequests        LeaveRequest[]
-  checklistItems       ChecklistItem[]
-  checklistCompletions ChecklistCompletion[]
-  duyurular            Duyuru[]
-  appVisits            AppVisit[]
-  favorileyenler       AppFavorite[]
-  rotaDuraklari        RotaDurak[]
-  etkilesimler         MekanEtkilesim[]
+  account               Account               @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  categories            CategoryTemplate[]
+  tables                Table[]
+  bolgeler              Zone[]
+  rezervasyonlar        Rezervasyon[]
+  feedbacks             Feedback[]
+  users                 User[]
+  coupons               Coupon[]
+  surveyViews           SurveyView[]
+  consents              MarketingConsent[]
+  menuCategories        MenuCategory[]
+  menuItems             MenuItem[]
+  itemRatings           ItemRating[]
+  bolgeMudurleri        UserBusiness[]
+  shiftAssignments      ShiftAssignment[]
+  shiftNotes            ShiftNote[]
+  leaveRequests         LeaveRequest[]
+  checklistItems        ChecklistItem[]
+  checklistCompletions  ChecklistCompletion[]
+  duyurular             Duyuru[]
+  appVisits             AppVisit[]
+  favorileyenler        AppFavorite[]
+  rotaDuraklari         RotaDurak[]
+  kullaniciEtkinlikleri AppEtkinlik[]
+  etkilesimler          MekanEtkilesim[]
 
   @@index([accountId])
   @@map("businesses")
@@ -360,8 +382,8 @@ model LeaveRequest {
   /// "yillik" | "rapor" | "ucretsiz" | "musait_degil"
   /// Ayrım rapor için önemli: yıllık izin planlanır, rapor sonradan girilir,
   /// "müsait değil" ise resmi bir izin değil (ör. okul günü).
-  tur       String  @default("yillik")
-  aciklama  String?
+  tur      String  @default("yillik")
+  aciklama String?
 
   /// "bekliyor" | "onaylandi" | "reddedildi"
   status      String    @default("bekliyor")
@@ -597,14 +619,27 @@ model Rezervasyon {
 
   /// Kaydı açan panel kullanıcısı (silinirse rezervasyon kalır).
   olusturanId String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
+  /// Talebi uygulamadan gönderen tüketici (kanal = "biyerlere").
+  ///
+  /// SetNull: hesabını silen kullanıcının rezervasyonu işletmenin
+  /// operasyon kaydı olarak duruyor — "kaç kişi gelmedi" sorusu iz
+  /// kalmadan cevaplanamıyor. Kişisel alanlar (ad, telefon) hesap
+  /// silinirken ayrıca temizleniyor ve gelecek tarihli kayıtlar iptal
+  /// ediliyor (bkz. api/app/hesap/route.ts): silinen hesabın adına masa
+  /// tutulmaya devam etmesi, hem işletmeyi hem misafiri boşa bekletir.
+  appUserId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   business Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  appUser  AppUser?          @relation(fields: [appUserId], references: [id], onDelete: SetNull)
   masalar  RezervasyonMasa[]
 
   @@index([businessId, baslangic])
   @@index([businessId, durum])
+  @@index([appUserId, baslangic])
   @@map("rezervasyonlar")
 }
 
@@ -669,8 +704,8 @@ model Feedback {
   /// İç notu en son yazan/değiştiren kişi ve an. Not güncellenmediyse
   /// (yalnızca durum değiştiyse) bu ikisi dokunulmadan kalır — "kim
   /// yazdı" sorusu ancak metin gerçekten değiştiğinde anlamlı.
-  internalNoteBy   String?
-  internalNoteAt   DateTime?
+  internalNoteBy  String?
+  internalNoteAt  DateTime?
   /// Durumun en son değiştiği an.
   statusChangedAt DateTime?
   /// "cozuldu" durumuna ilk geçiş anı — yanıt süresi bundan hesaplanır.
@@ -773,13 +808,13 @@ model MenuItem {
   // yumuşak hâli olurdu.
 
   /// Temel bileşenler (hammaddeler), müşterinin anlayacağı düz metin.
-  icindekiler    String?
+  icindekiler        String?
   /// Porsiyon başına enerji, kilokalori.
-  kaloriKcal     Int?
+  kaloriKcal         Int?
   /// Majör alerjenler, virgülle ayrılmış sabit anahtarlar (bkz. lib/menu.ts).
-  alerjenler     String?
+  alerjenler         String?
   /// Alkol / domuz türevi katkı beyanı, virgülle ayrılmış sabit anahtarlar.
-  ozelBilesenler String?
+  ozelBilesenler     String?
   /// Yukarıdaki dört alanı işletme kendisi gözden geçirdi mi?
   ///
   /// Şablon uygulandığında ürünler TİPİK değerlerle geliyor (bkz.
@@ -846,7 +881,14 @@ model User {
   username     String  @unique
   /// Bildirim ve iletişim için; giriş kimliği değil.
   email        String  @unique
-  /// 2FA kodunun gideceği numara (+905XXXXXXXXX). Yoksa 2FA uygulanamaz.
+  /// BİRİNCİL numara (+905XXXXXXXXX) — doğrulama kodu varsayılan olarak
+  /// buraya gider. Yoksa 2FA uygulanamaz ve kullanıcı giriş yapamaz.
+  ///
+  /// Yedek numaralar ayrı tabloda (UserPhone): kullanıcı telefonunu
+  /// kaybettiğinde ya da hat çekmediğinde kodu başka numarasına
+  /// isteyebilsin diye. Birincilin burada kalması bilinçli — oturum
+  /// jetonu, panel listeleri ve tohumlama hep bu alanı okuyor ve
+  /// hepsini tabloya taşımak, kazancı olmayan geniş bir göç olurdu.
   phone        String?
   passwordHash String
   /// "superadmin" (platformu işleten biz — tüm hesaplar)
@@ -890,6 +932,7 @@ model User {
   account              Account?              @relation(fields: [accountId], references: [id], onDelete: Cascade)
   business             Business?             @relation(fields: [businessId], references: [id], onDelete: SetNull)
   otpCodes             OtpCode[]
+  telefonlar           UserPhone[]
   businesses           UserBusiness[]
   shiftAssignments     ShiftAssignment[]
   shiftNotes           ShiftNote[]
@@ -929,12 +972,51 @@ model UserBusiness {
 ///
 /// Kod düz metin saklanmaz — şifre gibi hash'lenir. Veritabanını gören biri
 /// aktif kodları okuyup başkasının hesabına giremesin diye.
+/// Kullanıcının YEDEK cep numaraları (birincil `User.phone` alanında).
+///
+/// Neden var: iki aşamalı doğrulama açıkken kod gönderilemeyen hesap giriş
+/// yapamıyor. Tek numaraya bağlı olmak, telefonunu kaybeden ya da hattı
+/// çekmeyen kullanıcıyı tamamen dışarıda bırakıyordu — yedek numara bu
+/// kilidin çıkış kapısı.
+///
+/// Saha personeli (garson) yedek numara EKLEYEMEZ: kural
+/// src/lib/kimlik/telefonlar.ts'te ve hem sunucu hem arayüz oradan okuyor.
+model UserPhone {
+  id     String @id @default(cuid())
+  userId String
+  /// Normalleştirilmiş biçim: +905XXXXXXXXX.
+  phone  String
+  /// Görüntüleme ve seçim sırası; küçük olan önce.
+  sira   Int    @default(0)
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Aynı numara bir kullanıcıya iki kez eklenemez.
+  @@unique([userId, phone])
+  @@index([userId])
+  @@map("user_phones")
+}
+
 model OtpCode {
   id       String @id @default(cuid())
   userId   String
   /// "giris" | "sifre"
   purpose  String
   codeHash String
+  /// Kodun GÖNDERİLDİĞİ numara (+905XXXXXXXXX).
+  ///
+  /// Yeniden gönderim bekleme süresi bu alana dayanıyor: aynı numaraya art
+  /// arda kod istemek SMS bombardımanı, BAŞKA bir numaraya istemek ise
+  /// meşru bir eylem — kullanıcı ilk numarasına ulaşamadığı için yedeğine
+  /// geçiyor. İkisini ayırt edemeden tek bir bekleme süresi uygulamak,
+  /// yedek numara özelliğini kullanılamaz kılıyordu.
+  ///
+  /// Eski kayıtlarda null; bekleme kontrolü null'ı "bilinmiyor" sayıp
+  /// temkinli davranıyor (bekletiyor).
+
+  phone String?
 
   /// Yanlış deneme sayısı; eşiği aşınca kod yakılır.
   attempts  Int       @default(0)
@@ -970,7 +1052,7 @@ model Coupon {
 
   /// Kuponun ne zaman ve kim tarafından yakıldığı — denetim izi.
   /// `used` tek başına "ne zaman" sorusunu cevaplamıyordu.
-  usedAt     DateTime?
+  usedAt       DateTime?
   /// Kuponu kasada doğrulayan panel kullanıcısı.
   usedByUserId String?
 
@@ -988,17 +1070,17 @@ model Coupon {
 /// QR okutup anket ekranını açanlar. Gönderilenlerle oranlanınca tamamlama
 /// oranı çıkar: "kaç kişi okuttu, kaçı bitirdi".
 model SurveyView {
-  id         String   @id @default(cuid())
-  businessId String
-  tableId    String?
-  visitorId  String?
+  id            String   @id @default(cuid())
+  businessId    String
+  tableId       String?
+  visitorId     String?
   /// Müşteri en az bir yıldıza dokundu mu — anketin geri kalanı (kategori,
   /// ürün, yorum) bu andan sonra açılıyor. Sayfayı görüp hiç dokunmadan
   /// çıkanla, yıldız verip formu terk edeni ayırt etmek için: ilki "ilgi
   /// çekmedi", ikincisi "anket çok uzun/rahatsız edici" demek — ikisinin
   /// çözümü farklı.
-  yildizVerildi Boolean @default(false)
-  createdAt  DateTime @default(now())
+  yildizVerildi Boolean  @default(false)
+  createdAt     DateTime @default(now())
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   table    Table?   @relation(fields: [tableId], references: [id], onDelete: SetNull)
@@ -1010,6 +1092,30 @@ model SurveyView {
 }
 
 /// Admin giriş denemeleri — kaba kuvvet saldırısını yavaşlatmak için.
+/// SUNUCU TARAFINDA İPTAL EDİLMİŞ JETONLAR.
+///
+/// Jetonlar imzalı ve durumsuz (JWT): sunucu bir jetonu ancak süresi
+/// dolunca "bilmez" hâle getirebiliyordu. Çıkış yapmak yalnızca istemcideki
+/// kopyayı siliyordu; çalınmış bir kopya tüketicide 30 gün, panelde 12 saat
+/// geçerli kalıyordu (canlı doğrulandı).
+///
+/// Her jeton benzersiz bir `jti` taşıyor; çıkışta o kimlik buraya yazılıyor
+/// ve her istekte bakılıyor. Satır jetonun kendi bitiş anına kadar
+/// tutuluyor — ondan sonra jeton zaten geçersiz ve satırın işi bitiyor
+/// (günlük temizlik: api/cron/kvkk-temizle).
+///
+/// Tek kullanımlık şifre sıfırlama biletleri de aynı tabloyu kullanıyor:
+/// kullanıldığı an iptal ediliyor.
+model IptalEdilenJeton {
+  jti       String   @id
+  /// Jetonun kendi `exp` anı — bu andan sonra satır silinebilir.
+  bitis     DateTime
+  createdAt DateTime @default(now())
+
+  @@index([bitis])
+  @@map("iptal_edilen_jetonlar")
+}
+
 model LoginAttempt {
   id        String   @id @default(cuid())
   email     String
@@ -1091,7 +1197,7 @@ model MarketingConsent {
 /// olaydan doğuyor (bkz. lib/bildirim.ts) ama biri "şimdi haber ver", diğeri
 /// "her zaman görülebilir kalsın" sorusuna cevap veriyor.
 model PanelNotification {
-  id    String @id @default(cuid())
+  id     String @id @default(cuid())
   userId String
 
   /// "vardiya.atandi" | "izin.talep" | "izin.karar" — bkz. lib/bildirim.ts.
@@ -1144,11 +1250,11 @@ model Notification {
 /// kullanıcının birden fazla cihazı (telefon + masaüstü) olabileceği için
 /// userId değil endpoint tekil — bir cihaz çıkarsa yalnızca o satır silinir.
 model PushSubscription {
-  id        String   @id @default(cuid())
-  userId    String
-  endpoint  String   @unique
-  p256dh    String
-  auth      String
+  id             String    @id @default(cuid())
+  userId         String
+  endpoint       String    @unique
+  p256dh         String
+  auth           String
   /// Abonelik neden kapandı: kullanıcı "Kapat" dedi, çıkış yaptı ya da
   /// push servisi cihazın artık var olmadığını bildirdi (404/410).
   /// Satır silinmiyor: "bildirim gelmiyor" şikayetinde aboneliğin hiç
@@ -1200,6 +1306,23 @@ model AppUser {
   /// Kaşif puanı. Rozet eşikleri ve seviye bundan hesaplanıyor.
   puan Int @default(0)
 
+  /// KURTARMA KANALI — +905XXXXXXXXX biçiminde, DOĞRULANMIŞ numara.
+  ///
+  /// Bu alan olmadan şifresini unutan tüketici hesabını KALICI olarak
+  /// kaybediyordu: "şifremi unuttum" akışı yazılamıyordu, destek de
+  /// yardım edemiyordu çünkü kişinin o hesabın sahibi olduğunu
+  /// doğrulayacak hiçbir bilgi yoktu. Puanlar, rozetler, ziyaret geçmişi
+  /// ve favoriler o hesapla birlikte gidiyordu.
+  ///
+  /// TEKİL: bir numara tek hesaba bağlanabilir. Aksi halde biri başkasının
+  /// numarasını kendi hesabına ekleyip o numaraya gelen kodla iki hesabı
+  /// da kurtarabilirdi.
+  telefon           String?   @unique
+  /// Numaranın SMS koduyla doğrulandığı an. Null ise kurtarma için
+  /// KULLANILMAZ — yazım hatası olan bir numara, hiç numara olmamasından
+  /// farksız; üstelik "kurtarma kanalım var" diye yanlış güven veriyor.
+  telefonDogrulandi DateTime?
+
   /// Arkadaş davet kodu — kayıtta üretilir, hiç değişmez. Kullanıcı adından
   /// ayrı bir alan olmasının sebebi: kullanıcı adı değişebilir hâle
   /// gelirse (ileride) paylaşılmış eski linkler kırılmasın.
@@ -1229,17 +1352,57 @@ model AppUser {
   plusUyeMi Boolean   @default(false)
   plusBitis DateTime?
 
+  /// SOSYAL GİRİŞ BAĞLARI — sağlayıcıdaki kalıcı kullanıcı kimliği (`sub`).
+  ///
+  /// E-postayla değil `sub` ile bağlanıyor: e-posta değişebiliyor, Apple
+  /// gizli yönlendirme adresi verebiliyor ve doğrulanmamış bir e-postayla
+  /// eşleştirme yapmak, başkasının hesabını devralmanın en kolay yolu
+  /// olurdu. `sub` ise sağlayıcı nezdinde kalıcı ve tekil.
+  ///
+  /// TEKİL: bir Google/Apple hesabı tek bir Biyerlere hesabına bağlanır.
+  googleSub String? @unique
+  appleSub  String? @unique
+
+  /// Kullanıcının BİLDİĞİ bir şifresi var mı.
+  ///
+  /// Sosyal girişle açılan hesaba rastgele bir şifre yazılıyor (alan
+  /// zorunlu) ama kullanıcı onu bilmiyor. Bu bayrak olmadan, "mevcut
+  /// şifreni gir" diyen hassas işlemler (hesap silme, kurtarma numarası)
+  /// o kullanıcı için sonsuza kadar kilitli kalırdı. Bayrak kapalıyken
+  /// kimlik kanıtı olarak sağlayıcıdan TAZE bir kimlik jetonu isteniyor
+  /// (bkz. lib/kimlik/app-api.ts, kimlikKanitiDogrula).
+  sifreBelirlendi Boolean @default(true)
+
+  /// BİLDİRİM TERCİHLERİ — kategori bazlı (bkz. lib/biyerlere/bildirim-tercihi.ts).
+  ///
+  /// Tek bir aç/kapa anahtarı vardı; ilgisiz iki bildirim alan kullanıcı
+  /// onu kapatınca rozet ve favori mekan duyurusu dahil her şey kesiliyordu.
+  /// Ayrı sütunlar, ayrı tablo yerine: üç boolean için junction tablo
+  /// açmak her okumada bir join daha demek ve tercih HER push
+  /// gönderiminde okunuyor.
+  ///
+  /// Rezervasyon durumu bilerek YOK: kullanıcının kendi başlattığı işin
+  /// sonucu kapatılabilir olsaydı, kişi onaysız rezervasyonla mekana
+  /// gider ve kapıda kalırdı.
+  bildirimFirsat       Boolean @default(true)
+  bildirimFavoriDuyuru Boolean @default(true)
+  bildirimRozet        Boolean @default(true)
+
   createdAt DateTime @default(now())
 
-  referredBy AppUser?   @relation("Davetler", fields: [referredById], references: [id], onDelete: SetNull)
-  davetEttikleri AppUser[] @relation("Davetler")
-  ziyaretler AppVisit[]
-  kuponlar   Coupon[]
-  rozetler   AppBadge[]
-  yorumlar   Feedback[]
-  favoriler  AppFavorite[]
+  referredBy        AppUser?              @relation("Davetler", fields: [referredById], references: [id], onDelete: SetNull)
+  davetEttikleri    AppUser[]             @relation("Davetler")
+  ziyaretler        AppVisit[]
+  kuponlar          Coupon[]
+  rozetler          AppBadge[]
+  yorumlar          Feedback[]
+  favoriler         AppFavorite[]
   rotaTamamlamalari RotaTamamlama[]
   pushAbonelikleri  AppPushSubscription[]
+  otpKodlari        AppOtpCode[]
+  etkinlikleri      AppEtkinlik[]
+  etkinlikIlgileri  AppEtkinlikIlgi[]
+  rezervasyonlari   Rezervasyon[]
 
   @@map("app_users")
 }
@@ -1269,13 +1432,13 @@ model AppFavorite {
 /// ("Kadıköy 5 Kafe Turu" gibi). Birden çok kiracının işletmesini
 /// kapsadığı için hesap bazlı değil, superadmin tarafından kuruluyor.
 model Rota {
-  id         String   @id @default(cuid())
-  slug       String   @unique
-  ad         String
-  aciklama   String?
-  gorselUrl  String?
-  aktif      Boolean  @default(true)
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  ad        String
+  aciklama  String?
+  gorselUrl String?
+  aktif     Boolean  @default(true)
+  createdAt DateTime @default(now())
 
   duraklar     RotaDurak[]
   tamamlamalar RotaTamamlama[]
@@ -1321,8 +1484,8 @@ model RotaTamamlama {
 /// bu ise `AppUser`a (tüketici) bağlı — iki dünya burada da birbirine
 /// karışmıyor (aynı ayrım Bearer/çerez oturumlarında da var).
 model AppPushSubscription {
-  id             String    @id @default(cuid())
-  appUserId      String
+  id        String @id @default(cuid())
+  appUserId String
 
   /// Native uygulamanın Expo push jetonu ("ExponentPushToken[...]").
   ///
@@ -1331,15 +1494,15 @@ model AppPushSubscription {
   /// yer native uygulama. Web alanları silinmedi çünkü tarayıcı
   /// aboneliği ileride geri gelebilir — ikisinden HANGİSİ doluysa
   /// bildirim o yoldan gidiyor.
-  expoToken      String?   @unique
+  expoToken String? @unique
   /// "ios" | "android" — hangi cihazdan geldiği, teslim sorunlarını
   /// ayıklarken tek ipucu.
-  platform       String?
+  platform  String?
 
   /// Web Push aboneliği (tarayıcı). Native jetonla dolduruluyorsa boş.
-  endpoint       String?   @unique
-  p256dh         String?
-  auth           String?
+  endpoint String? @unique
+  p256dh   String?
+  auth     String?
 
   /// Cihaz jetonu geçersizleştiğinde (uygulama silindi, izin kapatıldı)
   /// kayıt SİLİNMİYOR, kapatılıyor: aynı kullanıcı yeniden izin
@@ -1363,8 +1526,39 @@ model AppPushSubscription {
 ///
 /// Aynı mekanda 4 saatte bir sayılıyor; masada oturup arka arkaya QR
 /// okutarak puan biriktirmek işe yaramasın diye.
+/// Tüketici tarafının tek kullanımlık SMS kodları.
+///
+/// Panelin `OtpCode` tablosundan AYRI: iki kullanıcı dünyası ayrı tablolar
+/// (`users` / `app_users`) ve tek bir OTP tablosuna iki farklı yabancı
+/// anahtar koymak "ikisinden tam biri dolu" kuralını veritabanında değil
+/// kodda doğrulamak demekti.
+///
+/// MANTIK PAYLAŞILIYOR: kod üretimi, süre, deneme sayacı ve sayacın atomik
+/// artırılması lib/kimlik/otp.ts'te TEK yerde — depo dışarıdan veriliyor.
+/// İki kopya olsaydı biri düzeltilip diğeri unutulduğunda, unutulanda
+/// altı haneli kod sınırsız denenebilir kalırdı.
+model AppOtpCode {
+  id        String  @id @default(cuid())
+  appUserId String
+  /// "sifre" (kurtarma) | "telefon" (numara doğrulama)
+  purpose   String
+  codeHash  String
+  /// Kodun gönderildiği numara — bekleme süresi numara başına uygulanıyor.
+  phone     String?
+
+  attempts  Int       @default(0)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  appUser AppUser @relation(fields: [appUserId], references: [id], onDelete: Cascade)
+
+  @@index([appUserId, purpose, createdAt])
+  @@map("app_otp_codes")
+}
+
 model AppVisit {
-  id         String @id @default(cuid())
+  id         String  @id @default(cuid())
   appUserId  String
   businessId String
   /// Hangi masadan okutuldu. Masa silinirse ziyaret kaydı durur.
@@ -1395,6 +1589,74 @@ model AppVisit {
 /// değişirse eski kayıtlar geri alınmıyor — kazanılmış bir rozeti geri
 /// almak, kullanıcının uygulamaya güvenini kural değişikliğinden daha
 /// çok sarsar.
+/// KULLANICI ETKİNLİĞİ — "şu saatte şurada şu var, gelen gelsin".
+///
+/// İşletmenin `Duyuru`sundan AYRI bir tablo ve bu bilinçli. İkisi
+/// yüzeyde benziyor (başlık, açıklama, saat) ama kaynakları ve
+/// güvenilirlikleri farklı: duyuruyu mekanın sahibi yazıyor ve mekan
+/// adına söz veriyor, etkinliği bir müşteri açıyor ve yalnızca kendi
+/// adına konuşuyor. Tek tabloda birleştirmek, "mekan böyle diyor" ile
+/// "bir kullanıcı böyle diyor" ayrımını kaybetmek olurdu — o ayrım
+/// kaybolduğunda mekan, hiç haberi olmadığı bir sözün altında kalır.
+model AppEtkinlik {
+  id         String @id @default(cuid())
+  /// Etkinliği açan kullanıcı. Hesap silinirse etkinlik de gider.
+  appUserId  String
+  /// Nerede. Mekan bağı ZORUNLU: yeri belli olmayan bir buluşma çağrısı
+  /// ne haritada ne de mekan sayfasında gösterilebilir.
+  businessId String
+
+  baslik   String
+  aciklama String?
+
+  /// Buluşma anı. Geçmiş bir tarih kabul edilmiyor (bkz. lib/etkinlik.ts).
+  baslangic DateTime
+
+  /// Açan kişi vazgeçtiğinde işaretleniyor. Satır SİLİNMİYOR: ilgi
+  /// gösterenler etkinliğin iptal edildiğini görebilmeli, listeden
+  /// sessizce kaybolması "ben mi yanlış hatırlıyorum" hissi veriyor.
+  iptalEdildi DateTime?
+
+  /// Moderasyon izi — panelden kaldırıldıysa dolu. `iptalEdildi`den ayrı
+  /// tutuluyor ki "kullanıcı vazgeçti" ile "kurallara aykırıydı"
+  /// karıştırılmasın; ikisi farklı sorulara cevap veriyor.
+  kaldirildi     DateTime?
+  kaldirmaSebebi String?
+
+  createdAt DateTime @default(now())
+
+  appUser  AppUser           @relation(fields: [appUserId], references: [id], onDelete: Cascade)
+  business Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  ilgiler  AppEtkinlikIlgi[]
+
+  /// Liste sorgusu hep "yaklaşan, kaldırılmamış etkinlikler" biçiminde.
+  @@index([baslangic])
+  @@index([businessId, baslangic])
+  @@index([appUserId])
+  @@map("app_etkinlikler")
+}
+
+/// "İlgileniyorum" işareti.
+///
+/// Katılım TAAHHÜDÜ DEĞİL ve olmamalı: kontenjan, bilet ya da onay
+/// mekaniği kurmak, kimsenin altından kalkamayacağı bir söz üretiyordu
+/// (gelmeyen kullanıcı, boş kalan masa, kızgın işletmeci). İşaret
+/// yalnızca "ilgi çekti mi" sorusunu cevaplıyor.
+model AppEtkinlikIlgi {
+  id            String   @id @default(cuid())
+  appEtkinlikId String
+  appUserId     String
+  createdAt     DateTime @default(now())
+
+  etkinlik AppEtkinlik @relation(fields: [appEtkinlikId], references: [id], onDelete: Cascade)
+  appUser  AppUser     @relation(fields: [appUserId], references: [id], onDelete: Cascade)
+
+  /// Bir kişi bir etkinliğe bir kez ilgi gösterebilir.
+  @@unique([appEtkinlikId, appUserId])
+  @@index([appUserId])
+  @@map("app_etkinlik_ilgileri")
+}
+
 model AppBadge {
   id        String   @id @default(cuid())
   appUserId String

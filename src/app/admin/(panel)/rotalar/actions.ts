@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireSuperadmin } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { denetimYaz } from "@/lib/denetim";
-import { slugIleOlustur } from "@/lib/slug";
+import { requireSuperadmin } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { denetimYaz } from "@/lib/rapor/denetim";
+import { slugIleOlustur } from "@/lib/cekirdek/slug";
+import { alanDogrula } from "@/lib/cekirdek/desenler";
+import { ilkHata } from "@/lib/cekirdek/girdi";
 
 export type RotaFormState = { error?: string; saved?: string };
 
@@ -25,9 +27,15 @@ export async function rotaEkle(
 ): Promise<RotaFormState> {
   const actor = await requireSuperadmin();
 
-  const ad = String(formData.get("ad") ?? "").trim();
-  const aciklama = String(formData.get("aciklama") ?? "").trim();
-  if (!ad) return { error: "Rota adı gerekli." };
+  const adSonuc = alanDogrula(formData.get("ad"), "isletmeAdi", "Rota adı");
+  const aciklamaSonuc = alanDogrula(formData.get("aciklama"), "aciklama", "Açıklama", {
+    zorunlu: false,
+  });
+  const hata = ilkHata(adSonuc, aciklamaSonuc);
+  if (hata) return { error: hata };
+
+  const ad = adSonuc.ok ? adSonuc.deger : "";
+  const aciklama = aciklamaSonuc.ok ? aciklamaSonuc.deger : "";
 
   const rota = await slugIleOlustur(ad, (slug) =>
     prisma.rota.create({

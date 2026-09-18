@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { ChevronDown, CopyPlus, TriangleAlert } from "lucide-react";
 import { gecenHaftayiKopyala, type HaftaKopyaState } from "./actions";
-import { uyarilariGrupla, type VardiyaUyarisi } from "@/lib/vardiya-uyari";
+import { uyarilariGrupla, type VardiyaUyarisi } from "@/lib/personel/vardiya-uyari";
 
 /**
  * Hafta üstü araç şeridi: geçen haftayı kopyalama ve çizelge uyarıları.
@@ -51,7 +51,7 @@ export function HaftaAraclari({
           Var olan atamalara dokunmaz; izinli günleri atlar.
         </span>
         {state.error ? (
-          <span className="rounded-chip bg-danger-soft px-3 py-1.5 text-caption text-danger-ink">
+          <span className="rounded-chip bg-danger-soft px-3 py-1.5 text-caption text-danger-ink" role="alert">
             {state.error}
           </span>
         ) : null}

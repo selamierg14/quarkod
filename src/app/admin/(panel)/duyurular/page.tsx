@@ -1,6 +1,6 @@
 import { Megaphone } from "lucide-react";
-import { requireMenuErisim, visibleBusinesses } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { requireMenuErisim, visibleBusinesses } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
 import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
 import { IsletmeSecici } from "../menu/MenuUst";
 import { DuyuruSatiri, NewDuyuruForm } from "./DuyuruForms";

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { SITE_ACIKLAMA, SITE_ADI, siteUrl } from "@/lib/site";
+import { SITE_ACIKLAMA, SITE_ADI, siteUrl } from "@/lib/cekirdek/site";
 import "./globals.css";
 
 const geistSans = Geist({

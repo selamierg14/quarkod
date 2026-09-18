@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { addTables, toggleTable, tumMasalariAc, tumMasalariKapat, type FormState } from "../actions";
+import { GonderDugmesi } from "@/components/ui";
 
 type TableRow = {
   id: string;
@@ -39,23 +40,21 @@ export function TableManager({
           {acikSayisi > 0 ? (
             <form action={tumMasalariKapat}>
               <input type="hidden" name="businessId" value={businessId} />
-              <button
-                type="submit"
+              <GonderDugmesi
                 className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas"
-              >
+      >
                 Tümünü kapat
-              </button>
+              </GonderDugmesi>
             </form>
           ) : null}
           {kapaliSayisi > 0 ? (
             <form action={tumMasalariAc}>
               <input type="hidden" name="businessId" value={businessId} />
-              <button
-                type="submit"
+              <GonderDugmesi
                 className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas"
-              >
+      >
                 Tümünü aç
-              </button>
+              </GonderDugmesi>
             </form>
           ) : null}
         </div>
@@ -65,8 +64,7 @@ export function TableManager({
         {tables.map((table) => (
           <form key={table.id} action={toggleTable}>
             <input type="hidden" name="tableId" value={table.id} />
-            <button
-              type="submit"
+            <GonderDugmesi
               title={table.active ? "Kapat" : "Aç"}
               className={`
                 rounded-chip px-3 py-1.5 text-small ring-1 transition
@@ -76,9 +74,9 @@ export function TableManager({
                     : "bg-sunken text-ink-faint line-through ring-line"
                 }
               `}
-            >
+      >
               {table.isEntrance ? "Giriş" : table.tableNumber}
-            </button>
+            </GonderDugmesi>
           </form>
         ))}
         {tables.length === 0 ? (
@@ -115,7 +113,7 @@ export function TableManager({
       </form>
 
       {state.error ? (
-        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
+        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
           {state.error}
         </p>
       ) : null}

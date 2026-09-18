@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { rotaGetir } from "@/lib/rota-veri";
+import { rotaGetir } from "@/lib/biyerlere/rota-veri";
 import { RotaDetayIcerik } from "./RotaDetayIcerik";
 
 export const dynamic = "force-dynamic";

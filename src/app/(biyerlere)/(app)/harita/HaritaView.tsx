@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import type { MekanOzet } from "@/lib/kesfet-veri";
-import { EN_BUYUK_YARICAP_METRE } from "@/lib/kesfet";
+import type { MekanOzet } from "@/lib/biyerlere/kesfet-veri";
+import { EN_BUYUK_YARICAP_METRE } from "@/lib/biyerlere/kesfet";
 import { appGet } from "../../lib/api-istemci";
 import { useKonum } from "../../lib/konum";
 

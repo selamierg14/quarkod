@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
-import { twoFactorEnabled } from "@/lib/otp";
+import { getSession } from "@/lib/kimlik/auth";
+import { twoFactorEnabled } from "@/lib/kimlik/otp";
 import { LoginForm } from "./LoginForm";
 
 export const dynamic = "force-dynamic";

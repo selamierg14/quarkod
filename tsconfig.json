@@ -30,5 +30,13 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    // Mobil uygulama AYRI bir proje: kendi tsconfig'i, kendi bağımlılıkları
+    // ve CI'da kendi işi var. Kök `include` deseni ("**/*.ts") onu da
+    // süpürüyordu; yerelde mobil bağımlılıkları kurulu olduğu için sorun
+    // görünmüyor ama temiz bir ortamda (CI) "Cannot find module
+    // 'react-native'" diye yüzlerce hata veriyordu.
+    "mobil"
+  ]
 }

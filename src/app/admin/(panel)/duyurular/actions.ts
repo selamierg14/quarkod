@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canAccessBusiness, requireMenuErisim, requireYazma, visibleBusinesses } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { validateImageDataUrl } from "@/lib/image";
-import { denetimYaz } from "@/lib/denetim";
+import { canAccessBusiness, requireMenuErisim, requireYazma, visibleBusinesses } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { validateImageDataUrl } from "@/lib/isletme/image";
+import { denetimYaz } from "@/lib/rapor/denetim";
+import { alanDogrula } from "@/lib/cekirdek/desenler";
+import { ilkHata } from "@/lib/cekirdek/girdi";
 
 export type DuyuruFormState = { error?: string; saved?: string };
 
@@ -22,8 +24,13 @@ export async function duyuruEkle(
   await requireYazma();
 
   const businessId = String(formData.get("businessId") ?? "");
-  const baslik = String(formData.get("baslik") ?? "").trim();
-  const aciklama = String(formData.get("aciklama") ?? "").trim();
+  const baslikSonuc = alanDogrula(formData.get("baslik"), "kisaBaslik", "Başlık");
+  const aciklamaSonuc = alanDogrula(formData.get("aciklama"), "aciklama", "Açıklama", {
+    zorunlu: false,
+  });
+  const alanHatasi = ilkHata(baslikSonuc, aciklamaSonuc);
+  const baslik = baslikSonuc.ok ? baslikSonuc.deger : "";
+  const aciklama = aciklamaSonuc.ok ? aciklamaSonuc.deger : "";
   const imageUrl = String(formData.get("imageUrl") ?? "");
   const baslangic = tarihParse(String(formData.get("baslangic") ?? ""));
   const bitis = tarihParse(String(formData.get("bitis") ?? ""));
@@ -32,7 +39,7 @@ export async function duyuruEkle(
   if (!(await canAccessBusiness(actor, businessId))) {
     return { error: "Bu işletmeye yetkiniz yok." };
   }
-  if (!baslik) return { error: "Başlık gerekli." };
+  if (alanHatasi) return { error: alanHatasi };
   if (baslangic && bitis && baslangic > bitis) {
     return { error: "Başlangıç, bitişten sonra olamaz." };
   }
@@ -106,13 +113,18 @@ export async function duyuruDuzenle(
     return { error: "Bu işletmeye yetkiniz yok." };
   }
 
-  const baslik = String(formData.get("baslik") ?? "").trim();
-  const aciklama = String(formData.get("aciklama") ?? "").trim();
+  const baslikSonuc = alanDogrula(formData.get("baslik"), "kisaBaslik", "Başlık");
+  const aciklamaSonuc = alanDogrula(formData.get("aciklama"), "aciklama", "Açıklama", {
+    zorunlu: false,
+  });
+  const alanHatasi = ilkHata(baslikSonuc, aciklamaSonuc);
+  const baslik = baslikSonuc.ok ? baslikSonuc.deger : "";
+  const aciklama = aciklamaSonuc.ok ? aciklamaSonuc.deger : "";
   const imageUrl = String(formData.get("imageUrl") ?? "");
   const baslangic = tarihParse(String(formData.get("baslangic") ?? ""));
   const bitis = tarihParse(String(formData.get("bitis") ?? ""));
 
-  if (!baslik) return { error: "Başlık gerekli." };
+  if (alanHatasi) return { error: alanHatasi };
   if (baslangic && bitis && baslangic > bitis) {
     return { error: "Başlangıç, bitişten sonra olamaz." };
   }

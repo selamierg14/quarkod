@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { prisma } from "@/lib/db";
-import type { SessionUser } from "@/lib/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import type { SessionUser } from "@/lib/kimlik/auth";
 
 type Adim = { baslik: string; tamam: boolean; href: string; aksiyon: string };
 

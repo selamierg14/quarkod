@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef } from "react";
 import { useToast } from "@/components/ui";
-import { FIYAT_SEGMENTLERI, MEKAN_OZELLIKLERI, ozellikleriCoz } from "@/lib/mekan";
+import { FIYAT_SEGMENTLERI, MEKAN_OZELLIKLERI, ozellikleriCoz } from "@/lib/biyerlere/mekan";
 import { updateBiyerlereSettings, type BiyerlereFormState } from "./actions";
 
 const INPUT =
@@ -154,7 +154,7 @@ export function BiyerlereForm({ business }: { business: Business }) {
       </button>
 
       {state.error ? (
-        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
+        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
           {state.error}
         </p>
       ) : null}

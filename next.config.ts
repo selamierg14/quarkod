@@ -24,12 +24,40 @@ import type { NextConfig } from "next";
 const ORTAK_BASLIKLAR = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  // Kamera/mikrofon/konum bu üründe hiç kullanılmıyor; açık bırakmanın
-  // hiçbir faydası yok, kapatmanın maliyeti sıfır.
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  // HSTS: tarayıcı bir kez HTTPS ile geldikten sonra bir daha düz HTTP
+  // denemiyor — yönlendirmeyi bekleyen ilk isteğin araya girilme (SSL
+  // stripping) penceresi böylece kapanıyor.
+  //
+  // YALNIZCA `HTTPS_ZORUNLU=1` iken gönderiliyor. Sertifika takılmadan bu
+  // başlığı yollamak, tarayıcıya "bu alan adına artık sadece HTTPS ile
+  // gel" demek olurdu ve site erişilemez hâle gelirdi — üstelik
+  // `max-age` boyunca geri alınamaz. Sertifika hazır olunca ortam
+  // değişkenini açmak yeterli; kod değişmiyor.
+  ...(process.env.HTTPS_ZORUNLU === "1"
+    ? [
+        {
+          key: "Strict-Transport-Security",
+          // Bir yıl + alt alan adları. `preload` bilerek YOK: listeye
+          // girmek kolay, çıkmak aylar sürüyor.
+          value: "max-age=31536000; includeSubDomains",
+        },
+      ]
+    : []),
+  // Kamera ve mikrofon web'de hiç kullanılmıyor; kapalı.
+  //
+  // KONUM `self`: önceden `geolocation=()` yazıyordu ve bu, Biyerlere web
+  // sürümünün "Konumu aç" özelliğini TARAYICI DÜZEYİNDE kapatıyordu — izin
+  // penceresi bile açılmıyor, "permissions policy ile kapatıldı" hatası
+  // dönüyordu (canlı doğrulandı). `self`, konumu yalnızca kendi
+  // sayfalarımıza açıyor; gömülü üçüncü taraf çerçeveler hâlâ isteyemiyor.
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(self)" },
 ];
 
 const nextConfig: NextConfig = {
+  // `X-Powered-By: Next.js` sürüm/çatı bilgisini her yanıtta dışarı
+  // veriyordu; saldırgana hangi bilinen açıkları deneyeceğini söylemenin
+  // hiçbir faydası yok.
+  poweredByHeader: false,
   experimental: {
     serverActions: {
       // Vardiya çizelgesi Excel içe aktarımı 1 MB'a kadar dosya kabul
@@ -49,8 +77,21 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: ORTAK_BASLIKLAR,
       },
+      /**
+       * ÇERÇEVEYE GÖMÜLME YASAĞI — /f/* (masadaki anket) DIŞINDAKİ HER ŞEY.
+       *
+       * Önceden yalnızca /admin korunuyordu. Biyerlere sayfaları — hesap
+       * silme, şifre değiştirme, favori — başka bir sitenin görünmez
+       * çerçevesine gömülüp kullanıcıya fark ettirmeden tıklatılabiliyordu
+       * (clickjacking). Canlı doğrulandı: /profil/sifre çerçeve başlığı
+       * taşımıyordu.
+       *
+       * Negatif ileri bakış (`(?!f/)`), anket sayfalarını bilerek dışarıda
+       * bırakıyor: onlar aşağıdaki kuralla kendi alan adımızdan
+       * çerçevelenebiliyor (panel önizlemesi).
+       */
       {
-        source: "/admin/:path*",
+        source: "/((?!f/).*)",
         headers: [
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },

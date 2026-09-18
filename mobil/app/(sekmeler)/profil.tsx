@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -6,6 +6,7 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { renkler, yazi, bosluk, yaricap, isima, SEKME_YUKSEKLIGI } from "../../src/tasarim";
+import { TARA_DUGMESI_PAYI } from "../../src/bilesenler/TaraDugmesi";
 import { useVeri } from "../../src/api/useVeri";
 import type { ProfilYaniti } from "../../src/api/tipler";
 import { useOturum } from "../../src/store/oturum";
@@ -16,6 +17,9 @@ import { RozetVitrini } from "../../src/ozellikler/profil/RozetVitrini";
 import { IstatistikSeridi } from "../../src/ozellikler/profil/IstatistikSeridi";
 import { DavetKarti } from "../../src/ozellikler/profil/DavetKarti";
 import { BildirimAnahtari } from "../../src/ozellikler/profil/BildirimAnahtari";
+import { FavoriSeridi } from "../../src/ozellikler/profil/FavoriSeridi";
+import { ZiyaretGecmisi } from "../../src/ozellikler/profil/ZiyaretGecmisi";
+import { useFavoriler } from "../../src/store/favoriler";
 
 const SEVIYE_ADLARI: Record<number, string> = {
   1: "Meraklı",
@@ -42,11 +46,19 @@ export default function ProfilEkrani() {
     etkin: oturum.durum === "girisli",
   });
 
-  // Profil ekranı iki kaynağı birden tazeliyor: ekranın kendi verisi ve
-  // üstteki oturum (puan rozeti başka ekranlarda da okunuyor).
+  const favoriler = useFavoriler((s) => s.mekanlar);
+  const favorileriYukle = useFavoriler((s) => s.yukle);
+
+  useEffect(() => {
+    if (oturum.durum === "girisli") void favorileriYukle();
+  }, [oturum.durum, favorileriYukle]);
+
+  // Profil ekranı üç kaynağı birden tazeliyor: ekranın kendi verisi,
+  // üstteki oturum (puan rozeti başka ekranlarda da okunuyor) ve favori
+  // listesi — başka bir ekrandan favorilenen mekan burada görünsün.
   const yenile = useCallback(async () => {
-    await Promise.all([veriYenile(), oturum.yenile()]);
-  }, [veriYenile, oturum]);
+    await Promise.all([veriYenile(), oturum.yenile(), favorileriYukle()]);
+  }, [veriYenile, oturum, favorileriYukle]);
 
   if (oturum.durum === "cikisli") {
     return (
@@ -71,7 +83,7 @@ export default function ProfilEkrani() {
       contentContainerStyle={{
         paddingTop: guvenliAlan.top + bosluk.l,
         paddingHorizontal: bosluk.xl,
-        paddingBottom: SEKME_YUKSEKLIGI + guvenliAlan.bottom + bosluk.xxl,
+        paddingBottom: SEKME_YUKSEKLIGI + guvenliAlan.bottom + TARA_DUGMESI_PAYI,
         gap: bosluk.xl,
       }}
       showsVerticalScrollIndicator={false}
@@ -96,6 +108,71 @@ export default function ProfilEkrani() {
           />
 
           <BildirimAnahtari />
+
+          {/* Kategori bazlı tercihler ayrı bir ekranda: üstteki kart
+              CİHAZ iznini (bildirim alabiliyor muyuz) sorar, burası
+              "hangilerini istiyorum" sorusunu. İkisini tek karta
+              sıkıştırmak, izni kapatmakla kategoriyi kapatmayı
+              karıştırmak olurdu. */}
+          <Basilabilir
+            onPress={() => router.push("/bildirim-tercihleri")}
+            style={stiller.ayarSatiri}
+            olcek={0.985}
+            accessibilityRole="button"
+            accessibilityLabel="Bildirim tercihleri"
+          >
+            <Text style={{ fontSize: 18 }}>🔔</Text>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={yazi.kartBasligi}>Bildirim tercihleri</Text>
+              <Text style={yazi.kucuk} numberOfLines={1}>
+                Fırsatlar, favori mekanlar, rozetler
+              </Text>
+            </View>
+            <Text style={stiller.ok}>›</Text>
+          </Basilabilir>
+
+          {/* Rezervasyonlar profilde: talep mekanın onayını beklediği
+              için kullanıcı "onaylandı mı" diye geri dönüyor ve bunun
+              sabit bir adresi olmalı. */}
+          <Basilabilir
+            onPress={() => router.push("/rezervasyonlarim")}
+            style={stiller.ayarSatiri}
+            olcek={0.985}
+            accessibilityRole="button"
+            accessibilityLabel="Rezervasyonlarım"
+          >
+            <Text style={{ fontSize: 18 }}>🍽️</Text>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={yazi.kartBasligi}>Rezervasyonlarım</Text>
+              <Text style={yazi.kucuk} numberOfLines={1}>
+                Yaklaşan ve geçmiş masa rezervasyonların
+              </Text>
+            </View>
+            <Text style={stiller.ok}>›</Text>
+          </Basilabilir>
+
+          {/* Hesap güvenliği: şifre, kurtarma numarası, hesap silme. Sık
+              gidilen bir yer değil ama ARANDIĞINDA bulunabilmeli. */}
+          <Basilabilir
+            onPress={() => router.push("/guvenlik")}
+            style={stiller.ayarSatiri}
+            olcek={0.985}
+            accessibilityRole="button"
+            accessibilityLabel="Hesap güvenliği"
+          >
+            <Text style={{ fontSize: 18 }}>🔐</Text>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={yazi.kartBasligi}>Hesap güvenliği</Text>
+              <Text style={yazi.kucuk} numberOfLines={1}>
+                Şifre, kurtarma numarası, hesabı silme
+              </Text>
+            </View>
+            <Text style={stiller.ok}>›</Text>
+          </Basilabilir>
+
+          {favoriler ? <FavoriSeridi mekanlar={favoriler} /> : null}
+
+          <ZiyaretGecmisi ziyaretler={veri.sonZiyaretler} />
 
           <DavetKarti
             davetKodu={veri.kullanici.referralCode}
@@ -249,4 +326,15 @@ const stiller = StyleSheet.create({
     backgroundColor: renkler.katman,
   },
   ilerlemeMetni: { ...yazi.kucuk, textAlign: "center" },
+  ayarSatiri: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: bosluk.m,
+    padding: bosluk.m,
+    borderRadius: yaricap.l,
+    backgroundColor: renkler.katman,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: renkler.cizgi,
+  },
+  ok: { fontSize: 20, color: renkler.metin.soluk },
 });

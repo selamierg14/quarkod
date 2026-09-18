@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { QrIsareti } from "@/lib/og-isaret";
+import { QrIsareti } from "@/lib/rapor/og-isaret";
 
 /** Tarayıcı sekmesi ve manifest ikonu — favicon.ico'nun yüksek çözünürlüklü hâli. */
 export const size = { width: 512, height: 512 };

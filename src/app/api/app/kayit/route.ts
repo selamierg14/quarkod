@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { hashPassword } from "@/lib/auth";
-import { sifreSorunu } from "@/lib/sifre";
-import { usernameProblem } from "@/lib/username";
-import { appJetonUret } from "@/lib/app-oturum";
-import { apiHata, govdeOku, metin } from "@/lib/app-api";
-import { DAVET_ODULU_PUAN, davetKoduBicimiGecerliMi, davetKoduUret } from "@/lib/davet";
+import { prisma } from "@/lib/cekirdek/db";
+import { hashPassword } from "@/lib/kimlik/auth";
+import { sifreSorunu } from "@/lib/kimlik/sifre";
+import { usernameProblem } from "@/lib/kimlik/username";
+import { appJetonUret } from "@/lib/kimlik/app-oturum";
+import { apiHata, govdeOku, metin } from "@/lib/kimlik/app-api";
+import { SINIRLAR, hizSiniriMesaji, hizSiniriUygula } from "@/lib/kimlik/hiz-siniri";
+import {
+  DAVET_ODULU_PUAN,
+  davetKoduBicimiGecerliMi,
+  davetKoduUret,
+  davetOduluVerilirMi,
+} from "@/lib/biyerlere/davet";
+import { KUPON_AKTIF } from "@/lib/biyerlere/kupon";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +28,12 @@ export const dynamic = "force-dynamic";
  * şifre uygulamada reddediliyor" gibi açıklanamaz farklar üretirdi.
  */
 export async function POST(request: Request) {
+  // Hız sınırı EN BAŞTA: gövde ayrıştırmak ve şifre karması hesaplamak
+  // (bcrypt, bilerek yavaş) sunucuya yük bindiriyor — sınırı bu işlerden
+  // sonra uygulamak, saldırganın masrafı zaten yaptırmasına izin verirdi.
+  const kota = await hizSiniriUygula(SINIRLAR.kayit);
+  if (!kota.izin) return apiHata(hizSiniriMesaji(kota), 429);
+
   const govde = await govdeOku(request);
   if (!govde) return apiHata("Geçersiz istek gövdesi.", 400);
 
@@ -55,6 +68,19 @@ export async function POST(request: Request) {
       : null;
   const gecerliDavet = davetEden?.active ? davetEden : null;
 
+  // Ödül kotası: kayıt ucu herkese açık, kendi koduyla seri hesap açan
+  // biri sınırsız puan toplayabiliyordu (bkz. lib/davet.ts,
+  // EN_COK_DAVET_ODULU). Kota dolduysa kayıt yine açılıyor, yalnızca ödül
+  // verilmiyor.
+  // KOTA SAYIMI İŞLEMİN İÇİNDE (aşağıda). Burada okunsaydı, aynı davet
+  // koduyla eşzamanlı açılan kayıtların hepsi aynı sayıyı görüp hepsi
+  // ödül alırdı — yani kotayı aşmanın yolu, tam da kotanın engellemeye
+  // çalıştığı şeyi (seri hesap açma) paralel yapmak olurdu.
+  //
+  // Hız sınırındaki benzer gevşeklik bilinçli olarak bırakıldı (bkz.
+  // lib/kimlik/hiz-siniri.ts): orada küçük bir aşım kabul edilebilir,
+  // burada ödül tavanı sert bir kural.
+
   // Kod üretim + tekillik: çakışma pratikte hemen hemen imkansız (6 haneli,
   // 33^6 ≈ 1.29 milyar kombinasyon) ama küçük bir olasılık için birkaç
   // deneme hakkı bırakılıyor. Hangi alanın çakıştığını ayırt ediyoruz:
@@ -64,32 +90,46 @@ export async function POST(request: Request) {
   let kullanici;
   for (let deneme = 0; deneme < 5; deneme++) {
     try {
-      kullanici = await prisma.$transaction(async (tx) => {
-        const yeni = await tx.appUser.create({
-          data: {
-            username,
-            name,
-            passwordHash: await hashPassword(sifre),
-            passwordChangedAt: new Date(),
-            referralCode: davetKoduUret(),
-            referredById: gecerliDavet?.id ?? null,
-            // Davetle gelen kişi "hoş geldin" puanıyla başlar.
-            puan: gecerliDavet ? DAVET_ODULU_PUAN : 0,
-          },
-          select: { id: true, username: true, name: true, puan: true, referralCode: true },
-        });
+      kullanici = await prisma.$transaction(
+        async (tx) => {
+          const odulVerilecek = gecerliDavet
+            ? davetOduluVerilirMi(
+                await tx.appUser.count({ where: { referredById: gecerliDavet.id } }),
+              )
+            : false;
 
-        if (gecerliDavet) {
-          await tx.appUser.update({
-            where: { id: gecerliDavet.id },
-            data: { puan: { increment: DAVET_ODULU_PUAN } },
+          const yeni = await tx.appUser.create({
+            data: {
+              username,
+              name,
+              passwordHash: await hashPassword(sifre),
+              passwordChangedAt: new Date(),
+              referralCode: davetKoduUret(),
+              referredById: gecerliDavet?.id ?? null,
+              // Davetle gelen kişi "hoş geldin" puanıyla başlar.
+              puan: odulVerilecek ? DAVET_ODULU_PUAN : 0,
+            },
+            select: { id: true, username: true, name: true, puan: true, referralCode: true },
           });
-        }
 
-        return yeni;
-      });
+          if (gecerliDavet && odulVerilecek) {
+            await tx.appUser.update({
+              where: { id: gecerliDavet.id },
+              data: { puan: { increment: DAVET_ODULU_PUAN } },
+            });
+          }
+
+          return yeni;
+        },
+        { isolationLevel: "Serializable" },
+      );
       break;
     } catch (error) {
+      // P2034: serileştirme çakışması — aynı davet koduyla eşzamanlı bir
+      // kayıt araya girdi. Döngü zaten yeniden deniyor; ikinci turda kota
+      // sayımı güncel değeri görüyor.
+      if ((error as { code?: string }).code === "P2034") continue;
+
       const alan = (error as { meta?: { target?: string[] } })?.meta?.target;
       if (alan?.includes("username")) {
         // Ön kontrol ile INSERT arasında başka bir istek aynı adı almış.
@@ -110,7 +150,13 @@ export async function POST(request: Request) {
       jeton: await appJetonUret(kullanici),
       // Yeni açılan hesap hiçbir zaman Plus üyesi olarak başlamıyor —
       // sorgusuz false (bkz. giris/route.ts'teki gerçek hesaplama).
-      kullanici: { ...kullanici, cuzdandakiKupon: 0, plusUyeMi: false },
+      kullanici: {
+        ...kullanici,
+        ...(KUPON_AKTIF ? { cuzdandakiKupon: 0 } : {}),
+        plusUyeMi: false,
+        // Şifreyle açılan hesapta kullanıcı şifresini biliyor.
+        sifreBelirlendi: true,
+      },
     },
     { status: 201 },
   );

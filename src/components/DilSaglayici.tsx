@@ -2,14 +2,14 @@
 
 import { createContext, useCallback, useContext, useEffect, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
-import { cevir, type MetinAnahtari } from "@/lib/ceviriler";
+import { cevir, type MetinAnahtari } from "@/lib/cekirdek/ceviriler";
 import {
   VARSAYILAN_DIL,
   dilAlgila,
   dilYonu,
   gecerliDilMi,
   type Dil,
-} from "@/lib/diller";
+} from "@/lib/cekirdek/diller";
 
 /**
  * Müşteri ekranlarının dil durumu.

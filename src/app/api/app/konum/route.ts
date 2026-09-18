@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { gecerliKoordinatMi } from "@/lib/mekan";
-import { apiHata, appKullaniciGerekli, govdeOku } from "@/lib/app-api";
+import { prisma } from "@/lib/cekirdek/db";
+import { gecerliKoordinatMi } from "@/lib/biyerlere/mekan";
+import { apiHata, appKullaniciGerekli, govdeOku } from "@/lib/kimlik/app-api";
 
 export const dynamic = "force-dynamic";
 

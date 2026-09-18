@@ -1,9 +1,9 @@
 import { Sparkles } from "lucide-react";
-import { requireSuperadmin } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { requireSuperadmin } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
 import { PageHeader, SectionCard } from "@/components/ui";
-import { gunGirdisi, haftaBaslangici } from "@/lib/gun";
-import { sponsorMu } from "@/lib/sponsorluk";
+import { gunGirdisi, haftaBaslangici } from "@/lib/cekirdek/gun";
+import { sponsorMu } from "@/lib/biyerlere/sponsorluk";
 import { krediEkle, sponsorKaldir, sponsorYap } from "./actions";
 
 export const dynamic = "force-dynamic";

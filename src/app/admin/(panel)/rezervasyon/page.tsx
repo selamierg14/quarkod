@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { CalendarClock } from "lucide-react";
-import { requireRezervasyonErisim, visibleBusinesses } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { requireRezervasyonErisim, visibleBusinesses } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
 import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
-import { masaDurumu, type MevcutRezervasyon } from "@/lib/rezervasyon";
+import { masaDurumu, type MevcutRezervasyon } from "@/lib/isletme/rezervasyon";
 import { IsletmeSecici } from "../menu/MenuUst";
 import { KatPlani, type PlanMasasi } from "./KatPlani";
 import { RezervasyonForm } from "./RezervasyonForm";
 import { RezervasyonListesi, type ListeKaydi } from "./RezervasyonListesi";
+import { UygulamaAnahtari } from "./UygulamaAnahtari";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +54,7 @@ export default async function RezervasyonPage({
     : bugununMetni();
   const { bas, bit } = gununSiniri(tarih);
 
-  const [masalar, kayitlar] = await Promise.all([
+  const [masalar, kayitlar, bekleyenSayisi, isletme] = await Promise.all([
     prisma.table.findMany({
       where: { businessId: secili.id },
       orderBy: { tableNumber: "asc" },
@@ -83,6 +84,21 @@ export default async function RezervasyonPage({
         kanal: true,
         masalar: { select: { masa: { select: { id: true, tableNumber: true } } } },
       },
+    }),
+    // Bekleyen talepler GÜNE BAĞLI DEĞİL: uygulamadan gelen bir istek
+    // üç hafta sonrası için olabilir ve o gün ekranda açık olmadığı
+    // sürece hiç görünmezdi.
+    prisma.rezervasyon.count({
+      where: {
+        businessId: secili.id,
+        kanal: "biyerlere",
+        durum: "bekliyor",
+        baslangic: { gte: new Date() },
+      },
+    }),
+    prisma.business.findUnique({
+      where: { id: secili.id },
+      select: { rezervasyonAcik: true },
     }),
   ]);
 
@@ -140,6 +156,17 @@ export default async function RezervasyonPage({
       {businesses.length > 1 ? (
         <IsletmeSecici businesses={businesses} seciliId={secili.id} taban="/admin/rezervasyon" />
       ) : null}
+
+      <SectionCard
+        title="Biyerlere uygulaması"
+        description="Müşteri telefonundan masa ayırtabilsin mi."
+      >
+        <UygulamaAnahtari
+          businessId={secili.id}
+          acik={isletme?.rezervasyonAcik ?? false}
+          bekleyenSayisi={bekleyenSayisi}
+        />
+      </SectionCard>
 
       <SectionCard title="Gün seçimi">
         <form method="get" className="flex flex-wrap items-end gap-3">

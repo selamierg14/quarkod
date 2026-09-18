@@ -1,11 +1,17 @@
 import Link from "next/link";
 import { Card, CardHeader } from "@/components/ui";
-import type { BiyerlereIstatistik } from "@/lib/biyerlere-istatistik";
+import type { BiyerlereIstatistik } from "@/lib/biyerlere/biyerlere-istatistik";
+import { KUPON_AKTIF } from "@/lib/biyerlere/kupon";
 
 const SATIRLAR = (i: BiyerlereIstatistik) => [
   { emoji: "👁️", etiket: "görüntülenme", deger: i.goruntuleme },
   { emoji: "📍", etiket: "yol tarifi tıklaması", deger: i.yolTarifi },
-  { emoji: "🎟️", etiket: "kupon kullanıldı", deger: i.kuponKullanildi },
+  // Kupon kapalıyken satır hiç çizilmiyor: hep 0 gösteren bir sayaç,
+  // işletmeye "kimse kuponunu kullanmıyor" dedirtirdi (bkz.
+  // lib/biyerlere/kupon.ts).
+  ...(KUPON_AKTIF
+    ? [{ emoji: "🎟️", etiket: "kupon kullanıldı", deger: i.kuponKullanildi }]
+    : []),
   { emoji: "⭐", etiket: "yeni puan verildi", deger: i.puanVerildi },
 ];
 

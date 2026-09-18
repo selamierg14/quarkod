@@ -1,6 +1,11 @@
 import { create } from "zustand";
 import { api, jetonDeposu } from "../api/istemci";
+import { useFavoriler } from "./favoriler";
+import { useBildirimler } from "./bildirimler";
+import { onbellegiTemizle } from "../api/onbellek";
+import { buCihazinAboneliginiKapat } from "../push/bildirim";
 import type { AppKullanici, GirisYaniti } from "../api/tipler";
+import type { Saglayici } from "../kimlik/sosyal";
 
 /**
  * Oturum durumu.
@@ -22,6 +27,12 @@ type OturumStore = {
   kullanici: AppKullanici | null;
   hazirla: () => Promise<void>;
   girisYap: (username: string, sifre: string) => Promise<{ ok: boolean; hata?: string }>;
+  /** Apple/Google ile giriş — jeton sağlayıcıdan alınmış olarak gelir. */
+  sosyalGiris: (
+    saglayici: Saglayici,
+    jeton: string,
+    ad?: string | null,
+  ) => Promise<{ ok: boolean; hata?: string }>;
   kayitOl: (
     ad: string,
     username: string,
@@ -46,15 +57,59 @@ export const useOturum = create<OturumStore>((set) => ({
     // Jeton duruyor diye oturum geçerli sayılmıyor: hesap askıya alınmış
     // ya da şifre değişmiş olabilir — kararı sunucu veriyor.
     const sonuc = await api.get<{ kullanici: AppKullanici }>("/api/app/ben");
-    if (sonuc.ok) set({ durum: "girisli", kullanici: sonuc.veri.kullanici });
-    else {
-      await jetonDeposu.sil();
-      set({ durum: "cikisli", kullanici: null });
+    if (sonuc.ok) {
+      set({ durum: "girisli", kullanici: sonuc.veri.kullanici });
+      return;
     }
+
+    /**
+     * JETON YALNIZCA SUNUCU "BU KİMLİK GEÇERSİZ" DEDİĞİNDE siliniyor.
+     *
+     * Önceden her başarısız yanıt jetonu siliyordu ve buna ağ hatası da
+     * dahildi. Sonuç: metroda ya da çekmeyen bir yerde uygulamayı açan
+     * kullanıcı çıkış yapmış oluyor, geri girmek için şifresini yeniden
+     * yazmak zorunda kalıyordu. Sunucu bakımdayken (5xx) de aynı şey
+     * oluyordu; oysa 500, kullanıcının kimliğiyle ilgili hiçbir şey
+     * söylemiyor. Tarayıcıda sunucu durdurularak doğrulanmıştı.
+     *
+     * `durum: 0` "istek hiç ulaşmadı" demek. Bu durumlarda jeton elde
+     * tutuluyor ve oturum AÇIK kabul ediliyor: jeton zaten imzalı ve
+     * süreli, ağ dönünce ilk istekte gerçek karar veriliyor. Kullanıcı
+     * bilgisi null kalıyor — eldeki veri eski, uydurulmuyor.
+     */
+    const kimlikReddi = sonuc.durum === 401 || sonuc.durum === 403;
+    if (!kimlikReddi) {
+      set({ durum: "girisli", kullanici: null });
+      return;
+    }
+
+    await jetonDeposu.sil();
+    useFavoriler.getState().temizle();
+    useBildirimler.getState().temizle();
+    void onbellegiTemizle();
+    set({ durum: "cikisli", kullanici: null });
   },
 
   girisYap: async (username, sifre) => {
     const sonuc = await api.acikPost<GirisYaniti>("/api/app/giris", { username, sifre });
+    if (!sonuc.ok) return { ok: false, hata: sonuc.hata };
+    await jetonDeposu.yaz(sonuc.veri.jeton);
+    set({ durum: "girisli", kullanici: sonuc.veri.kullanici });
+    return { ok: true };
+  },
+
+  /**
+   * Sunucu kimliği jetondan çözüyor; burada yapılan tek şey yanıtı
+   * şifreli girişle AYNI şekilde işlemek (jetonu yaz, kullanıcıyı kur).
+   * İki akışın sonrasının aynı olması, oturum mantığının tek yerde
+   * kalmasını sağlıyor.
+   */
+  sosyalGiris: async (saglayici, jeton, ad) => {
+    const sonuc = await api.acikPost<GirisYaniti>("/api/app/sosyal-giris", {
+      saglayici,
+      jeton,
+      ad: ad ?? undefined,
+    });
     if (!sonuc.ok) return { ok: false, hata: sonuc.hata };
     await jetonDeposu.yaz(sonuc.veri.jeton);
     set({ durum: "girisli", kullanici: sonuc.veri.kullanici });
@@ -75,7 +130,28 @@ export const useOturum = create<OturumStore>((set) => ({
   },
 
   cikisYap: async () => {
+    // Jeton silinmeden ÖNCE: iki uç da kimlik istiyor.
+    await buCihazinAboneliginiKapat();
+    /**
+     * Jetonu SUNUCUDA da iptal et. Yalnızca yerel kopyayı silmek, jetonun
+     * başka bir yerde duran kopyasını (yedek, ele geçirilmiş cihaz) 30 gün
+     * geçerli bırakıyordu.
+     *
+     * En fazla 3 saniye bekleniyor: çevrimdışıyken ya da yavaş ağda çıkış
+     * düğmesi takılı kalmamalı. Ulaşılamazsa jeton kendi süresiyle ölür.
+     */
+    await Promise.race([
+      api.post("/api/app/cikis").catch(() => null),
+      new Promise((coz) => setTimeout(coz, 3000)),
+    ]);
     await jetonDeposu.sil();
+    // Kişiye bağlı yanıtlar (profil, favoriler) diskte kalmasın.
+    void onbellegiTemizle();
+    // Kişiye bağlı ne varsa birlikte düşüyor: aynı telefonda ikinci bir
+    // kullanıcı giriş yaptığında bir öncekinin favorileri ekranda
+    // kalmamalı.
+    useFavoriler.getState().temizle();
+    useBildirimler.getState().temizle();
     set({ durum: "cikisli", kullanici: null });
   },
 
