@@ -383,3 +383,52 @@ export async function rezervasyonDurumDegistir(
   revalidatePath(YOL);
   return { saved: "Durum güncellendi." };
 }
+
+/**
+ * Uygulamadan rezervasyon alma anahtarı.
+ *
+ * Varsayılan KAPALI ve açması bilinçli olarak işletmenin elinde: talep
+ * geldiğinde masayı sistem otomatik seçiyor (bkz.
+ * lib/biyerlere/rezervasyon-talebi.ts). Masa kapasiteleri ve çalışma
+ * saatleri girilmemiş bir mekanda bu seçim anlamsız sonuçlar üretir —
+ * iki kişilik gruba depo masasını verip müşteriyi karşılamak, özelliğin
+ * hiç olmamasından kötü.
+ */
+export async function uygulamaRezervasyonuAyarla(
+  _prev: RezervasyonFormState,
+  formData: FormData,
+): Promise<RezervasyonFormState> {
+  const businessId = metin(formData, "businessId");
+  const actor = await yetkiliMi(businessId);
+  if (!actor) return { error: "Bu işletmeye yetkiniz yok." };
+
+  const acik = metin(formData, "acik") === "1";
+
+  if (acik) {
+    // Kapasitesi tanımlı tek bir masa bile yoksa anahtarı açmak boş bir
+    // saat listesi demek: kullanıcı "Masa ayırt"a dokunup hiçbir şey
+    // bulamaz ve bir daha denemez.
+    const masaSayisi = await prisma.table.count({ where: { businessId, active: true } });
+    if (masaSayisi === 0) {
+      return { error: "Önce kat planında en az bir aktif masa tanımlayın." };
+    }
+  }
+
+  await prisma.business.update({
+    where: { id: businessId },
+    data: { rezervasyonAcik: acik },
+  });
+
+  await denetimYaz(actor, "rezervasyon.uygulamaAyari", {
+    entity: "business",
+    entityId: businessId,
+    detail: acik ? "Uygulamadan rezervasyon açıldı" : "Uygulamadan rezervasyon kapatıldı",
+  });
+
+  revalidatePath(YOL);
+  return {
+    saved: acik
+      ? "Biyerlere kullanıcıları artık bu mekandan masa ayırtabilir."
+      : "Uygulamadan rezervasyon kapatıldı.",
+  };
+}

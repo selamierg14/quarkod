@@ -8,6 +8,7 @@ import { prisma } from "@/lib/cekirdek/db";
 import { FavoriButonu } from "./FavoriButonu";
 import { YolTarifiButonu } from "./YolTarifiButonu";
 import { PlusHakkiKutusu } from "./PlusHakkiKutusu";
+import { RezervasyonKutusu } from "./RezervasyonKutusu";
 import { AcikRozeti } from "../../../components/AcikRozeti";
 
 export const dynamic = "force-dynamic";
@@ -171,6 +172,8 @@ export default async function MekanDetayPage({
             />
           ) : null}
         </div>
+
+        {mekan.rezervasyonAcik ? <RezervasyonKutusu slug={mekan.slug} /> : null}
 
         {mekan.biyerlerePlusOrtagi ? <PlusHakkiKutusu businessId={mekan.id} /> : null}
 

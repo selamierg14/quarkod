@@ -81,6 +81,14 @@ function Satir({ businessId, kayit }: { businessId: string; kayit: ListeKaydi })
             >
               {REZERVASYON_DURUMLARI[kayit.durum as RezervasyonDurumu] ?? kayit.durum}
             </span>
+            {/* Kanal yalnızca uygulamada gösteriliyor: panelden girilen
+                kayıtta "Panelden" yazmak her satıra gürültü eklerdi,
+                oysa "uygulamadan geldi, onay bekliyor" bir eylem çağrısı. */}
+            {kayit.kanal === "biyerlere" ? (
+              <span className="rounded-chip bg-brand-soft px-2 py-0.5 text-caption text-brand">
+                Uygulamadan
+              </span>
+            ) : null}
           </div>
           <span className="text-small text-ink-soft">
             {saat(bas)} – {saat(bit)} · {kayit.kisiSayisi} kişi ·{" "}

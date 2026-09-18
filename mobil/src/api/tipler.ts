@@ -218,6 +218,8 @@ export type MekanDetay = MekanOzet & {
   };
   telefon: string | null;
   biyerlerePlusOrtagi: boolean;
+  /** Uygulamadan masa ayırtılabiliyor mu (işletme anahtarı + tanımlı masa). */
+  rezervasyonAcik: boolean;
   menu: {
     fiyatGuncelleme: string | null;
     bolumler: { id: string; ad: string; urunler: MekanUrunu[] }[];
@@ -257,3 +259,28 @@ export type ZiyaretYaniti = {
   tamamlananRotalar: { id: string; ad: string; slug: string }[];
   rotaTamamlamaPuani: number;
 };
+
+/** `/api/app/rezervasyon?mekan=…` — bir günün müsait saatleri. */
+export type MusaitlikYaniti = {
+  mekan: { slug: string; ad: string; telefon: string | null };
+  tarih: string;
+  enGecGun: number;
+  sureDakika: number;
+  saatler: { etiket: string; baslangic: string }[];
+};
+
+/** `/api/app/rezervasyon` — kullanıcının kendi rezervasyonları. */
+export type RezervasyonKaydi = {
+  id: string;
+  baslangic: string;
+  bitis: string;
+  kisiSayisi: number;
+  durum: string;
+  durumMetni: string;
+  not: string | null;
+  gecmisMi: boolean;
+  iptalEdilebilir: boolean;
+  mekan: { id: string; slug: string; ad: string; logoUrl: string | null; telefon: string | null };
+};
+
+export type RezervasyonListesiYaniti = { rezervasyonlar: RezervasyonKaydi[] };

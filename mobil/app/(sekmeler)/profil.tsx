@@ -109,6 +109,26 @@ export default function ProfilEkrani() {
 
           <BildirimAnahtari />
 
+          {/* Rezervasyonlar profilde: talep mekanın onayını beklediği
+              için kullanıcı "onaylandı mı" diye geri dönüyor ve bunun
+              sabit bir adresi olmalı. */}
+          <Basilabilir
+            onPress={() => router.push("/rezervasyonlarim")}
+            style={stiller.ayarSatiri}
+            olcek={0.985}
+            accessibilityRole="button"
+            accessibilityLabel="Rezervasyonlarım"
+          >
+            <Text style={{ fontSize: 18 }}>🍽️</Text>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={yazi.kartBasligi}>Rezervasyonlarım</Text>
+              <Text style={yazi.kucuk} numberOfLines={1}>
+                Yaklaşan ve geçmiş masa rezervasyonların
+              </Text>
+            </View>
+            <Text style={stiller.ok}>›</Text>
+          </Basilabilir>
+
           {/* Hesap güvenliği: şifre, kurtarma numarası, hesap silme. Sık
               gidilen bir yer değil ama ARANDIĞINDA bulunabilmeli. */}
           <Basilabilir

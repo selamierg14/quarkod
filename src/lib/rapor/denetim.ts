@@ -32,6 +32,7 @@ export type DenetimEylemi =
   | "rezervasyon.olustur"
   | "rezervasyon.guncelle"
   | "rezervasyon.durum"
+  | "rezervasyon.uygulamaAyari"
   | "business.vardiya"
   | "business.izin"
   | "user.create"
@@ -67,6 +68,7 @@ export const EYLEM_METNI: Record<DenetimEylemi, string> = {
   "rezervasyon.olustur": "Rezervasyon oluşturuldu",
   "rezervasyon.guncelle": "Rezervasyon güncellendi",
   "rezervasyon.durum": "Rezervasyon durumu",
+  "rezervasyon.uygulamaAyari": "Uygulamadan rezervasyon ayarı",
   "business.flasIndirim": "Flaş indirim",
   "biyerlere.etkinlik.kaldir": "Buluşma kaldırıldı",
   "business.vardiya": "Vardiya çizelgesi",

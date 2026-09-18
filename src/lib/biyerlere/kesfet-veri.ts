@@ -30,7 +30,7 @@ import {
  *   3. Sahibi aktif (askıya alınmış tek sahibi olan işletme görünmemeli).
  */
 
-const GORUNURLUK_KOSULU = (simdi: Date) => ({
+export const GORUNURLUK_KOSULU = (simdi: Date) => ({
   active: true,
   OR: [{ expiresAt: null }, { expiresAt: { gt: simdi } }],
   users: {
@@ -306,6 +306,15 @@ export type MekanDetay = MekanOzet & {
   /** Biyerlere Plus üyelerine günde bir ücretsiz kahve veren anlaşmalı mekan mı. */
   biyerlerePlusOrtagi: boolean;
   /**
+   * Uygulamadan masa ayırtılabiliyor mu.
+   *
+   * İşletme anahtarı (Business.rezervasyonAcik) tek başına yetmiyor:
+   * kat planında hiç masa yoksa müsait saat listesi de boş çıkar ve
+   * kullanıcı "Masa ayırt" düğmesine dokunup boş bir ekranla karşılaşır.
+   * O yüzden karar burada, veriyle birlikte veriliyor.
+   */
+  rezervasyonAcik: boolean;
+  /**
    * %100 doğrulanmış masa yorumları — yalnızca anketi dolduran kişi AYNI
    * ANDA Biyerlere'ye de girişliyse (bkz. Feedback.appUserId, lib/davet.ts
    * DEĞİL, submitFeedback'teki appJeton bağlantısı). Girişsiz bırakılan
@@ -421,7 +430,8 @@ export async function mekanDetayGetir(slug: string): Promise<MekanDetay | null> 
           },
         },
       },
-      _count: { select: { feedbacks: true } },
+      rezervasyonAcik: true,
+      _count: { select: { feedbacks: true, tables: { where: { active: true } } } },
     },
   });
   if (!mekan) return null;
@@ -480,6 +490,7 @@ export async function mekanDetayGetir(slug: string): Promise<MekanDetay | null> 
     },
     telefon: mekan.phone,
     biyerlerePlusOrtagi: mekan.biyerlerePlusOrtagi,
+    rezervasyonAcik: mekan.rezervasyonAcik && mekan._count.tables > 0,
     etkinlikler: mekan.duyurular
       .filter((d) => duyuruAktifMi(d))
       .map((d) => ({

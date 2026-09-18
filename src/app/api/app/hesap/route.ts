@@ -46,6 +46,30 @@ export async function DELETE(request: Request) {
   if (!sifre.ok) return sifre.yanit;
 
   /**
+   * REZERVASYONLAR önce elden geçiyor — şemada bağ SetNull olduğu için
+   * kayıt işletmede kalıyor ("kaç kişi gelmedi" sorusunun izi), ama iki
+   * şey düzeltilmeden bırakılamaz:
+   *
+   *   - Gelecek tarihli kayıt İPTAL ediliyor: silinen hesabın adına masa
+   *     tutulmaya devam etmesi hem işletmeyi hem de gelmeyecek misafiri
+   *     boşa bekletir.
+   *   - Ad ve telefon TEMİZLENİYOR: silme hakkının kapsamı bu. Geçmiş
+   *     kayıtlar kimliksiz birer satır olarak kalıyor.
+   */
+  await prisma.rezervasyon.updateMany({
+    where: {
+      appUserId: oturum.kullanici.id,
+      baslangic: { gte: new Date() },
+      durum: { in: ["bekliyor", "onaylandi"] },
+    },
+    data: { durum: "iptal" },
+  });
+  await prisma.rezervasyon.updateMany({
+    where: { appUserId: oturum.kullanici.id },
+    data: { misafirAdi: "Silinen hesap", telefon: null, not: null },
+  });
+
+  /**
    * `deleteMany`, `delete` değil: iki cihazdan aynı anda basıldığında
    * ikinci istek "kayıt yok" istisnasıyla 500'e düşmesin, sessizce 0
    * satır silsin. Kullanıcının istediği sonuç ikisinde de aynı.

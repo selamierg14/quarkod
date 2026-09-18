@@ -264,6 +264,22 @@ export default function MekanEkrani() {
                 onPress={() => void Linking.openURL(mekan.instagram!)}
               />
             ) : null}
+            {/* Masa ayırtma yalnızca mekan gerçekten rezervasyon
+                alıyorsa çıkıyor: her mekanda görünen ama yarısında
+                "burası rezervasyon almıyor" diyen bir düğme, düğmeye
+                olan güveni bitirir. */}
+            {mekan.rezervasyonAcik ? (
+              <AksiyonDugmesi
+                etiket="Masa ayırt"
+                yol="M4 10h16M6 10V7a2 2 0 012-2h8a2 2 0 012 2v3M5 10v9M19 10v9M5 15h14"
+                onPress={() =>
+                  router.push({
+                    pathname: "/rezervasyon",
+                    params: { slug: mekan.slug, mekanAd: mekan.ad },
+                  })
+                }
+              />
+            ) : null}
             {/* Buluşma açma akışı HER ZAMAN bir mekan sayfasından
                 başlıyor: "nerede buluşalım" kararı zaten burada veriliyor,
                 formun içinde 52 mekanlık bir seçiciyle tekrar sorulmuyor. */}

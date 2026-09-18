@@ -95,6 +95,13 @@ export const API_POLITIKALARI: Record<string, ApiPolitikasi> = {
   "/push": { erisim: "jetonlu", metotlar: ["POST", "DELETE"] },
   "/ziyaret": { erisim: "jetonlu", metotlar: ["POST"] },
   "/plus-talep": { erisim: "jetonlu", metotlar: ["POST"] },
+  /**
+   * Masa rezervasyonu: müsait saatler + kendi listesi (GET), talep (POST),
+   * iptal (DELETE). Müsaitlik de jeton istiyor çünkü rezervasyon zaten
+   * girişsiz yapılamıyor; açık bırakmak yalnızca mekanın doluluk takvimini
+   * kimliksiz taranabilir hale getirirdi.
+   */
+  "/rezervasyon": { erisim: "jetonlu", metotlar: ["GET", "POST", "DELETE"] },
   /** Kurtarma numarası ekleme/doğrulama/kaldırma — oturum şart. */
   "/telefon": { erisim: "jetonlu", metotlar: ["GET", "POST", "PUT", "DELETE"] },
   /**

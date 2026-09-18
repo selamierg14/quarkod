@@ -22,7 +22,8 @@ export type BildirimTuru =
   | "vardiya.degisim.talep"
   | "vardiya.degisim.karar"
   | "izin.talep"
-  | "izin.karar";
+  | "izin.karar"
+  | "rezervasyon.talep";
 
 export async function bildirimGonder(
   userIds: string[],

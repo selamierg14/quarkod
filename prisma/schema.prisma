@@ -208,6 +208,16 @@ model Business {
   /// vermesini önlüyor.
   biyerlerePlusOrtagi Boolean @default(false)
 
+  /// Biyerlere uygulamasından masa rezervasyonu alınsın mı.
+  ///
+  /// Rezervasyon MODÜLÜ açık olsa bile varsayılan KAPALI ve bu bilinçli:
+  /// uygulamadan gelen talep masayı otomatik seçiyor (bkz.
+  /// lib/biyerlere/rezervasyon-talebi.ts), yani kat planındaki masa
+  /// kapasiteleri ve çalışma saatleri girilmeden açılırsa sistem iki
+  /// kişilik gruba depoyu verebilir. Anahtarı işletme, hazır olduğunda
+  /// kendisi açıyor.
+  rezervasyonAcik Boolean @default(false)
+
   createdAt DateTime @default(now())
 
   account               Account               @relation(fields: [accountId], references: [id], onDelete: Cascade)
@@ -609,14 +619,27 @@ model Rezervasyon {
 
   /// Kaydı açan panel kullanıcısı (silinirse rezervasyon kalır).
   olusturanId String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
+  /// Talebi uygulamadan gönderen tüketici (kanal = "biyerlere").
+  ///
+  /// SetNull: hesabını silen kullanıcının rezervasyonu işletmenin
+  /// operasyon kaydı olarak duruyor — "kaç kişi gelmedi" sorusu iz
+  /// kalmadan cevaplanamıyor. Kişisel alanlar (ad, telefon) hesap
+  /// silinirken ayrıca temizleniyor ve gelecek tarihli kayıtlar iptal
+  /// ediliyor (bkz. api/app/hesap/route.ts): silinen hesabın adına masa
+  /// tutulmaya devam etmesi, hem işletmeyi hem misafiri boşa bekletir.
+  appUserId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   business Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  appUser  AppUser?          @relation(fields: [appUserId], references: [id], onDelete: SetNull)
   masalar  RezervasyonMasa[]
 
   @@index([businessId, baslangic])
   @@index([businessId, durum])
+  @@index([appUserId, baslangic])
   @@map("rezervasyonlar")
 }
 
@@ -1343,6 +1366,7 @@ model AppUser {
   otpKodlari        AppOtpCode[]
   etkinlikleri      AppEtkinlik[]
   etkinlikIlgileri  AppEtkinlikIlgi[]
+  rezervasyonlari   Rezervasyon[]
 
   @@map("app_users")
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Heart, KeyRound, LogOut, Share2 } from "lucide-react";
+import { CalendarClock, ChevronRight, Heart, KeyRound, LogOut, Share2 } from "lucide-react";
 import { appAuthGet } from "../../lib/api-istemci";
 import { useOturum } from "../../lib/OturumSaglayici";
 import { KartListesiIskeleti } from "../../components/Skeleton";
@@ -223,6 +223,17 @@ export function ProfilIcerik() {
           </div>
         </div>
       ) : null}
+
+      {/* Rezervasyonlar: talep mekanın onayını beklediği için kullanıcı
+          "onaylandı mı" diye geri dönüyor; sabit bir adresi olmalı. */}
+      <Link
+        href="/rezervasyonlarim"
+        className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#24262E]/85 px-4 py-3.5 transition active:scale-[0.99] duration-150 ease-out"
+      >
+        <CalendarClock className="h-[18px] w-[18px] shrink-0 text-gray-400" aria-hidden="true" />
+        <span className="flex-1 text-small font-medium text-white">Rezervasyonlarım</span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />
+      </Link>
 
       {/**
        * Hesap güvenliği — şifre değiştirme ve kurtarma numarası. Tek satır,

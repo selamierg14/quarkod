@@ -89,6 +89,14 @@ export const SINIRLAR = {
    * kotasıyla başlıyor, her istek birine SMS demek.
    */
   kurtarmaIp: { kanal: "kurtarma-ip", adet: 10, dakika: 10 },
+  /**
+   * Uygulamadan rezervasyon talebi — kullanıcı başına.
+   *
+   * Sınır pahalı bir işlemden değil, MASA TUTMAKTAN koruyor: her talep
+   * bir masayı "bekliyor" durumunda meşgul ediyor ve mekanın akşamını
+   * birkaç saniyede doldurmak mümkün olurdu.
+   */
+  rezervasyon: { kanal: "rezervasyon", adet: 10, dakika: 60 },
   /** Buluşma açma — kullanıcı başına. */
   etkinlikAc: { kanal: "etkinlik-ac", adet: 10, dakika: 60 },
   /**
