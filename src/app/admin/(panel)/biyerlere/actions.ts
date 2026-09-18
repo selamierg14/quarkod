@@ -203,6 +203,11 @@ async function yakindakilereBildir(
         select: {
           id: true,
           active: true,
+          // Kullanıcı "yakınımdaki fırsatlar"ı kapattıysa bu bildirim ona
+          // gitmiyor (bkz. lib/biyerlere/bildirim-tercihi.ts). Kapatanı
+          // yok saymak, tek anahtarla HER ŞEYİ kapattırmanın en hızlı
+          // yoluydu — ve kapatılan kanal, işletmeye satılan kanal.
+          bildirimFirsat: true,
           sonBilinenEnlem: true,
           sonBilinenBoylam: true,
           sonKonumGuncelleme: true,
@@ -212,7 +217,7 @@ async function yakindakilereBildir(
   });
 
   const hedefler: PushHedefi[] = abonelikler
-    .filter((a) => a.appUser.active)
+    .filter((a) => a.appUser.active && a.appUser.bildirimFirsat)
     .map((a) => ({
       appUserId: a.appUser.id,
       jeton: a.expoToken!,

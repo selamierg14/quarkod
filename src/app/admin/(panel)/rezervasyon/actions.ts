@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { canAccessBusiness, requireRezervasyonErisim, requireYazma } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
 import { denetimYaz } from "@/lib/rapor/denetim";
+import { rezervasyonSonucunuBildir } from "@/lib/biyerlere/rezervasyon-kullanici-bildirimi";
 import {
   cakismaBul,
   gecerliDurumMu,
@@ -373,6 +374,10 @@ export async function rezervasyonDurumDegistir(
     where: { id: rezervasyonId },
     data: { durum: durumHam },
   });
+
+  // Uygulamadan gelen talebin sahibine sonucu bildir. Personel "onayladım"
+  // dediğinde müşterinin bunu öğrenmesinin başka bir yolu yok.
+  await rezervasyonSonucunuBildir(rezervasyonId);
 
   await denetimYaz(actor, "rezervasyon.durum", {
     entity: "business",

@@ -96,6 +96,11 @@ export const API_POLITIKALARI: Record<string, ApiPolitikasi> = {
   "/ziyaret": { erisim: "jetonlu", metotlar: ["POST"] },
   "/plus-talep": { erisim: "jetonlu", metotlar: ["POST"] },
   /**
+   * Bildirim tercihleri — hangi kategoriden bildirim istiyor
+   * (bkz. lib/biyerlere/bildirim-tercihi.ts).
+   */
+  "/bildirim-tercihleri": { erisim: "jetonlu", metotlar: ["GET", "PUT"] },
+  /**
    * Masa rezervasyonu: müsait saatler + kendi listesi (GET), talep (POST),
    * iptal (DELETE). Müsaitlik de jeton istiyor çünkü rezervasyon zaten
    * girişsiz yapılamıyor; açık bırakmak yalnızca mekanın doluluk takvimini

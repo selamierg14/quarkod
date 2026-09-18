@@ -109,6 +109,28 @@ export default function ProfilEkrani() {
 
           <BildirimAnahtari />
 
+          {/* Kategori bazlı tercihler ayrı bir ekranda: üstteki kart
+              CİHAZ iznini (bildirim alabiliyor muyuz) sorar, burası
+              "hangilerini istiyorum" sorusunu. İkisini tek karta
+              sıkıştırmak, izni kapatmakla kategoriyi kapatmayı
+              karıştırmak olurdu. */}
+          <Basilabilir
+            onPress={() => router.push("/bildirim-tercihleri")}
+            style={stiller.ayarSatiri}
+            olcek={0.985}
+            accessibilityRole="button"
+            accessibilityLabel="Bildirim tercihleri"
+          >
+            <Text style={{ fontSize: 18 }}>🔔</Text>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={yazi.kartBasligi}>Bildirim tercihleri</Text>
+              <Text style={yazi.kucuk} numberOfLines={1}>
+                Fırsatlar, favori mekanlar, rozetler
+              </Text>
+            </View>
+            <Text style={stiller.ok}>›</Text>
+          </Basilabilir>
+
           {/* Rezervasyonlar profilde: talep mekanın onayını beklediği
               için kullanıcı "onaylandı mı" diye geri dönüyor ve bunun
               sabit bir adresi olmalı. */}

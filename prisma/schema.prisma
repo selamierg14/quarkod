@@ -1352,6 +1352,21 @@ model AppUser {
   plusUyeMi Boolean   @default(false)
   plusBitis DateTime?
 
+  /// BİLDİRİM TERCİHLERİ — kategori bazlı (bkz. lib/biyerlere/bildirim-tercihi.ts).
+  ///
+  /// Tek bir aç/kapa anahtarı vardı; ilgisiz iki bildirim alan kullanıcı
+  /// onu kapatınca rozet ve favori mekan duyurusu dahil her şey kesiliyordu.
+  /// Ayrı sütunlar, ayrı tablo yerine: üç boolean için junction tablo
+  /// açmak her okumada bir join daha demek ve tercih HER push
+  /// gönderiminde okunuyor.
+  ///
+  /// Rezervasyon durumu bilerek YOK: kullanıcının kendi başlattığı işin
+  /// sonucu kapatılabilir olsaydı, kişi onaysız rezervasyonla mekana
+  /// gider ve kapıda kalırdı.
+  bildirimFirsat       Boolean @default(true)
+  bildirimFavoriDuyuru Boolean @default(true)
+  bildirimRozet        Boolean @default(true)
+
   createdAt DateTime @default(now())
 
   referredBy        AppUser?              @relation("Davetler", fields: [referredById], references: [id], onDelete: SetNull)
