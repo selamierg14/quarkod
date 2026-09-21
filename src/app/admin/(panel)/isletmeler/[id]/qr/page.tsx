@@ -4,6 +4,7 @@ import { canAccessBusiness, requireUser } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
 import { appUrl, qrCardText } from "@/lib/cekirdek/constants";
 import { PrintButton } from "./PrintButton";
+import { EN_COK_KOPYA, girisKartiVarMi, kopyaCoz, kopyalariYay } from "@/lib/isletme/qr-kopya";
 import { masaSirala } from "@/lib/isletme/masa";
 import { IsletmeUst } from "../IsletmeUst";
 
@@ -13,11 +14,14 @@ export const metadata = { title: "QR kodları" };
 
 export default async function QrPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ kopya?: string }>;
 }) {
   const user = await requireUser();
   const { id } = await params;
+  const kopya = kopyaCoz((await searchParams).kopya);
   if (!await canAccessBusiness(user, id)) notFound();
 
   const business = await prisma.business.findUnique({
@@ -51,9 +55,21 @@ export default async function QrPage({
         fileName: `${business.slug}-${table.tableNumber}.png`,
         url,
         dataUrl,
+        girisMi: table.isEntrance,
       };
     }),
   );
+
+  /**
+   * Giriş (ortak) QR'ı istenen kadar çoğaltılıyor — hepsi AYNI kod.
+   * Masa QR'ları benzersiz olduğu için onlara dokunulmuyor
+   * (bkz. lib/isletme/qr-kopya.ts).
+   */
+  const basilacak = kopyalariYay(codes, kopya, (kart, sira, toplam) => ({
+    ...kart,
+    id: `${kart.id}-${sira}`,
+    label: `${kart.label} (${sira}/${toplam})`,
+  }));
 
   return (
     <div className="flex flex-col gap-5">
@@ -63,15 +79,49 @@ export default async function QrPage({
 
       <div className="print-hidden flex flex-wrap items-center justify-between gap-3 rounded-control bg-gradient-to-r from-accent-50 to-transparent px-5 py-4 ring-1 ring-accent-100">
         <p className="text-small text-ink-soft">
-          <strong className="text-ink">{codes.length} QR kodu</strong> hazır —
+          <strong className="text-ink">{basilacak.length} QR kodu</strong> hazır —
           renkleri işletmenin marka renginden alınıyor. Matbaaya vereceksen
           PDF&apos;i indir; kendin basacaksan yazdırmaya bas.
         </p>
         <div className="flex flex-wrap items-center gap-2">
+          {/* ORTAK QR'IN KOPYA SAYISI.
+              Giriş QR'ı mekanda tek adresi gösteriyor ama fiziksel olarak
+              birden çok yere asılıyor (kapı, kasa, masalar). Eskiden çıktıda
+              bir tane vardı ve "şunu 30 kez basın" demek matbaacının elle
+              yapacağı bir işti. Sayı adreste taşınıyor ki PDF bağlantısı da
+              aynı sayıyı götürsün. */}
+          {girisKartiVarMi(codes) ? (
+            <form method="get" className="flex items-center gap-1.5">
+              <label
+                htmlFor="kopya"
+                className="text-small text-ink-soft"
+                title="Yalnızca ortak (giriş) QR'ı çoğaltılır; masa QR'ları benzersizdir."
+              >
+                Ortak QR kopyası
+              </label>
+              <input
+                id="kopya"
+                name="kopya"
+                type="number"
+                min={1}
+                max={EN_COK_KOPYA}
+                step={1}
+                defaultValue={kopya}
+                className="h-10 w-20 rounded-control border border-line bg-surface px-2 text-small text-ink"
+              />
+              <button
+                type="submit"
+                className="h-10 rounded-control border border-line px-3 text-small font-medium text-ink hover:bg-canvas"
+              >
+                Çoğalt
+              </button>
+            </form>
+          ) : null}
+
           {/* Matbaaya gidecek dosya: A4 ızgara, kesim kılavuzlu, QR'lar
               vektörel. Tek tek PNG indirip Word'de dizme işini bitiriyor. */}
           <a
-            href={`/admin/isletmeler/${business.id}/qr/pdf`}
+            href={`/admin/isletmeler/${business.id}/qr/pdf${kopya > 1 ? `?kopya=${kopya}` : ""}`}
             className="rounded-control bg-gradient-to-r from-accent-600 to-accent-700 px-4 py-2.5 text-small font-semibold text-white shadow-card transition hover:brightness-110"
           >
             Matbaa PDF&apos;i indir
@@ -94,7 +144,7 @@ export default async function QrPage({
         </p>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 print:grid-cols-3 print:gap-0">
-          {codes.map((code) => (
+          {basilacak.map((code) => (
             <div
               key={code.id}
               className="print-break flex flex-col items-center rounded-control bg-surface p-4 text-center ring-1 ring-line print:rounded-none print:p-5 print:ring-0 print:outline print:outline-1 print:outline-dashed print:outline-slate-300"

@@ -18,6 +18,14 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Vardiya & masa" };
 
 const PERIODS = [
+  /**
+   * "Son 1 gün" = DÜNDEN BERİ, yani bugünün servisi.
+   *
+   * Diğer üç aralık eğilim içindir ("akşam vardiyası geriliyor mu");
+   * bu ise bugünün cevabı: sabah gelen düşük puan, 7 günlük ortalamanın
+   * içinde kaybolup görünmez oluyordu.
+   */
+  { days: 1, label: "Son 1 gün" },
   { days: 7, label: "Son 7 gün" },
   { days: 30, label: "Son 30 gün" },
   { days: 90, label: "Son 90 gün" },
