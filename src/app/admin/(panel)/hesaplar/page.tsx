@@ -1,8 +1,9 @@
 import { ChevronDown, FolderOpen, Settings2 } from "lucide-react";
 import { requireSuperadmin } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
+import { aralikMetni, cubukGosterilsinMi, sayfaDurumu, toplamSayfa } from "@/lib/cekirdek/sayfalama";
 import { getActiveAccountId } from "@/lib/kimlik/impersonation";
-import { PageHeader, formatDateTime } from "@/components/ui";
+import { PageHeader, Pagination, formatDateTime } from "@/components/ui";
 import { BUSINESS_TYPES, type BusinessType, ROL_ADLARI } from "@/lib/cekirdek/constants";
 import {
   EnterAccountButton,
@@ -25,13 +26,28 @@ export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Hesaplar" };
 
-export default async function AccountsPage() {
+export default async function AccountsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sayfa?: string; boyut?: string }>;
+}) {
   const user = await requireSuperadmin();
+  const sorgu = await searchParams;
   const aktifHesap = await getActiveAccountId(user);
+
+  /**
+   * Sayfalanıyor çünkü her satır ÜÇ seviyeyi birden getiriyor (hesap →
+   * işletmeler → kullanıcılar): elli hesaplık bir kurulumda tek sorgu
+   * binlerce satır demekti.
+   */
+  const toplam = await prisma.account.count();
+  const durum = sayfaDurumu(sorgu, toplam);
 
   // Hiyerarşi tek sorguda: hesap → işletmeleri → o işletmenin sorumluları.
   const accounts = await prisma.account.findMany({
     orderBy: { createdAt: "desc" },
+    skip: durum.skip,
+    take: durum.take,
     include: {
       businesses: {
         orderBy: { createdAt: "asc" },
@@ -233,6 +249,22 @@ export default async function AccountsPage() {
           );
         })}
       </ul>
+
+      {cubukGosterilsinMi(toplam, durum.boyut) ? (
+        <Pagination
+          sayfa={durum.sayfa}
+          toplamSayfa={toplamSayfa(toplam, durum.boyut)}
+          toplamKayit={toplam}
+          boyut={durum.boyut}
+          aralik={aralikMetni(durum, toplam)}
+          href={(s) =>
+            `/admin/hesaplar?${new URLSearchParams({
+              ...(durum.boyut !== 10 ? { boyut: String(durum.boyut) } : {}),
+              sayfa: String(s),
+            }).toString()}`
+          }
+        />
+      ) : null}
 
       <NewAccountForm />
     </div>

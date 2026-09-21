@@ -2,7 +2,8 @@ import { MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { requireAnketErisim, visibleBusinesses } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
-import { EmptyState, StatusBadge, Stars, formatDateTime } from "@/components/ui";
+import { aralikMetni, cubukGosterilsinMi, sayfaDurumu, toplamSayfa } from "@/lib/cekirdek/sayfalama";
+import { EmptyState, Pagination, StatusBadge, Stars, formatDateTime } from "@/components/ui";
 import { RaporSekmeleri } from "@/components/RaporSekmeleri";
 import { buildFeedbackWhere, type FeedbackQuery } from "@/lib/isletme/feedback-filters";
 import { FilterBar } from "./FilterBar";
@@ -11,7 +12,6 @@ export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Geri bildirimler" };
 
-const PAGE_SIZE = 30;
 
 export default async function FeedbackListPage({
   searchParams,
@@ -27,26 +27,27 @@ export default async function FeedbackListPage({
   // kimliği yazarak kapsam dışına çıkamaz.
   const where = buildFeedbackWhere(query, allowedIds);
 
-  const page = Math.max(1, Number(query.sayfa ?? 1) || 1);
+  const total = await prisma.feedback.count({ where });
+  // Sayfa boyutu kullanıcının (varsayılan 10); eskiden 30'a sabitti.
+  const durum = sayfaDurumu(query, total);
 
-  const [total, feedbacks] = await Promise.all([
-    prisma.feedback.count({ where }),
-    prisma.feedback.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
-      include: { business: true, table: true },
-    }),
-  ]);
+  const feedbacks = await prisma.feedback.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    skip: durum.skip,
+    take: durum.take,
+    include: { business: true, table: true },
+  });
 
-  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const pageCount = toplamSayfa(total, durum.boyut);
 
   function pageHref(target: number) {
     const next = new URLSearchParams(
       Object.entries(query).filter(([, v]) => v) as [string, string][],
     );
     next.set("sayfa", String(target));
+    // Boyut seçimi sayfa değişince korunuyor.
+    if (durum.boyut !== 10) next.set("boyut", String(durum.boyut));
     return `/admin/geri-bildirimler?${next.toString()}`;
   }
 
@@ -180,28 +181,18 @@ export default async function FeedbackListPage({
         </div>
       )}
 
-      {pageCount > 1 ? (
-        <div className="flex items-center justify-center gap-2 text-small">
-          {page > 1 ? (
-            <Link
-              href={pageHref(page - 1)}
-              className="rounded-chip border border-line px-3 py-1.5 hover:bg-surface"
-            >
-              ← Önceki
-            </Link>
-          ) : null}
-          <span className="text-ink-muted">
-            {page} / {pageCount}
-          </span>
-          {page < pageCount ? (
-            <Link
-              href={pageHref(page + 1)}
-              className="rounded-chip border border-line px-3 py-1.5 hover:bg-surface"
-            >
-              Sonraki →
-            </Link>
-          ) : null}
-        </div>
+      {/* Elle yazılmış önceki/sonraki bloğu ortak bileşene alındı:
+          sayfa boyutu seçici de onunla birlikte geliyor ve panelin
+          tamamında aynı çubuk duruyor. */}
+      {cubukGosterilsinMi(total, durum.boyut) ? (
+        <Pagination
+          sayfa={durum.sayfa}
+          toplamSayfa={pageCount}
+          toplamKayit={total}
+          boyut={durum.boyut}
+          aralik={aralikMetni(durum, total)}
+          href={pageHref}
+        />
       ) : null}
     </div>
   );

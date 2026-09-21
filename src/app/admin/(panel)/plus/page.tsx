@@ -1,7 +1,8 @@
 import { Crown } from "lucide-react";
 import { requireSuperadmin } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
-import { PageHeader, SectionCard } from "@/components/ui";
+import { PageHeader, Pagination, SectionCard } from "@/components/ui";
+import { aralikMetni, cubukGosterilsinMi, sayfaDurumu, toplamSayfa } from "@/lib/cekirdek/sayfalama";
 import { plusGecerliMi } from "@/lib/biyerlere/biyerlere-plus";
 import { PlusKaldirButonu, PlusYapForm } from "./PlusForms";
 
@@ -16,23 +17,30 @@ export const metadata = { title: "Biyerlere Plus" };
 export default async function PlusPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ara?: string }>;
+  searchParams: Promise<{ ara?: string; sayfa?: string; boyut?: string }>;
 }) {
   await requireSuperadmin();
-  const { ara } = await searchParams;
-  const arama = (ara ?? "").trim();
+  const sorgu = await searchParams;
+  const arama = (sorgu.ara ?? "").trim();
+
+  const kosul = arama
+    ? {
+        OR: [
+          { username: { contains: arama, mode: "insensitive" as const } },
+          { name: { contains: arama, mode: "insensitive" as const } },
+        ],
+      }
+    : { plusUyeMi: true };
+
+  // Eskiden sabit 30 kayıt: 31. Plus üyesi hiçbir ekranda görünmüyordu.
+  const toplam = await prisma.appUser.count({ where: kosul });
+  const durum = sayfaDurumu(sorgu, toplam);
 
   const kullanicilar = await prisma.appUser.findMany({
-    where: arama
-      ? {
-          OR: [
-            { username: { contains: arama, mode: "insensitive" } },
-            { name: { contains: arama, mode: "insensitive" } },
-          ],
-        }
-      : { plusUyeMi: true },
+    where: kosul,
     orderBy: { createdAt: "desc" },
-    take: 30,
+    skip: durum.skip,
+    take: durum.take,
     select: { id: true, username: true, name: true, plusUyeMi: true, plusBitis: true },
   });
 
@@ -105,6 +113,23 @@ export default async function PlusPage({
             })}
           </ul>
         )}
+
+      {cubukGosterilsinMi(toplam, durum.boyut) ? (
+        <Pagination
+          sayfa={durum.sayfa}
+          toplamSayfa={toplamSayfa(toplam, durum.boyut)}
+          toplamKayit={toplam}
+          boyut={durum.boyut}
+          aralik={aralikMetni(durum, toplam)}
+          href={(s) =>
+            `/admin/plus?${new URLSearchParams({
+              ...(arama ? { ara: arama } : {}),
+              ...(durum.boyut !== 10 ? { boyut: String(durum.boyut) } : {}),
+              sayfa: String(s),
+            }).toString()}`
+          }
+        />
+      ) : null}
       </SectionCard>
     </div>
   );

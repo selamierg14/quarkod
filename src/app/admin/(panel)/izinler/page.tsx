@@ -1,7 +1,8 @@
 import { Mail } from "lucide-react";
 import { allowedBusinessIds, requireModul, requireTenantOwner } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
-import { EmptyState, PageHeader, formatDateTime } from "@/components/ui";
+import { EmptyState, PageHeader, Pagination, formatDateTime } from "@/components/ui";
+import { aralikMetni, cubukGosterilsinMi, sayfaDurumu, toplamSayfa } from "@/lib/cekirdek/sayfalama";
 import { IYS_CHANNELS, type IysChannel } from "@/lib/isletme/iys";
 import { MarkReportedForm } from "./MarkReportedForm";
 
@@ -9,24 +10,37 @@ export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Pazarlama izinleri" };
 
-export default async function ConsentsPage() {
+export default async function ConsentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sayfa?: string; boyut?: string }>;
+}) {
   const user = await requireTenantOwner();
+  const sorgu = await searchParams;
   // Menüde gizlemek yetmez: modülü kapalı bir hesabın sahibi adresi elle
   // yazarak buraya girebiliyordu.
   await requireModul("pazarlama");
   const ids = await allowedBusinessIds(user);
 
-  const [consents, bekleyen] = await Promise.all([
-    prisma.marketingConsent.findMany({
-      where: { businessId: { in: ids } },
-      orderBy: [{ reportedAt: "asc" }, { consentAt: "desc" }],
-      include: { business: { select: { name: true, brandColor: true } } },
-      take: 500,
-    }),
-    prisma.marketingConsent.count({
-      where: { businessId: { in: ids }, reportedAt: null },
-    }),
+  const kosul = { businessId: { in: ids } };
+
+  /**
+   * Eskiden tek seferde 500 satır çekiliyor ve tamamı ekrana basılıyordu;
+   * 500'üncüden sonrası ise hiç görünmüyordu — yani hem ağır hem eksikti.
+   */
+  const [toplam, bekleyen] = await Promise.all([
+    prisma.marketingConsent.count({ where: kosul }),
+    prisma.marketingConsent.count({ where: { ...kosul, reportedAt: null } }),
   ]);
+  const durum = sayfaDurumu(sorgu, toplam);
+
+  const consents = await prisma.marketingConsent.findMany({
+    where: kosul,
+    orderBy: [{ reportedAt: "asc" }, { consentAt: "desc" }],
+    include: { business: { select: { name: true, brandColor: true } } },
+    skip: durum.skip,
+    take: durum.take,
+  });
 
   return (
     <div className="flex flex-col gap-5">
@@ -152,6 +166,22 @@ export default async function ConsentsPage() {
           </table>
         </div>
       )}
+
+      {cubukGosterilsinMi(toplam, durum.boyut) ? (
+        <Pagination
+          sayfa={durum.sayfa}
+          toplamSayfa={toplamSayfa(toplam, durum.boyut)}
+          toplamKayit={toplam}
+          boyut={durum.boyut}
+          aralik={aralikMetni(durum, toplam)}
+          href={(s) =>
+            `/admin/izinler?${new URLSearchParams({
+              ...(durum.boyut !== 10 ? { boyut: String(durum.boyut) } : {}),
+              sayfa: String(s),
+            }).toString()}`
+          }
+        />
+      ) : null}
 
       <p className="text-caption text-ink-faint">
         Dosyanın sütun adları İYS alan adlarıyla birebir aynıdır: recipient,

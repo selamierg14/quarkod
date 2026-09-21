@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { KeyRound, Pencil, User as UserIcon, Users } from "lucide-react";
 import { prisma } from "@/lib/cekirdek/db";
+import { aralikMetni, cubukGosterilsinMi, sayfaDurumu, toplamSayfa } from "@/lib/cekirdek/sayfalama";
 import {
   actingAccountId,
   requireKullaniciYonetimi,
@@ -11,7 +12,7 @@ import { ResetPasswordForm, ToggleUserButton } from "./UserForms";
 import { SEED_SIFRESI } from "./sabitler";
 import { ROL_ADLARI } from "@/lib/cekirdek/constants";
 import { acilabilirRoller } from "@/lib/kimlik/panel";
-import { Alert, ButtonLink, EmptyState, PageHeader } from "@/components/ui";
+import { Alert, ButtonLink, EmptyState, PageHeader, Pagination } from "@/components/ui";
 import { KullaniciFiltreleri } from "./KullaniciFiltreleri";
 
 export const dynamic = "force-dynamic";
@@ -63,8 +64,12 @@ export default async function UsersPage({
 
   // Süzme veritabanında: onlarca işletmeli bir hesapta bütün kullanıcıları
   // çekip bellekte elemek hem yavaş hem gereksiz.
-  const users = await prisma.user.findMany({
-    where: {
+  /**
+   * Liste eskiden SINIRSIZ çekiliyordu: elli işletmeli bir hesapta tek
+   * sayfada yüzlerce satır, her biri için ayrıca bcrypt karşılaştırması
+   * (aşağıdaki "varsayılan şifre" işareti) demekti.
+   */
+  const kullaniciKosulu = {
       ...(await userScope(owner)),
       ...(filtreler.q
         ? {
@@ -88,8 +93,16 @@ export default async function UsersPage({
           }
         : {}),
       ...(filtreler.hesap ? { accountId: filtreler.hesap } : {}),
-    },
+  };
+
+  const toplam = await prisma.user.count({ where: kullaniciKosulu });
+  const durum = sayfaDurumu({ sayfa: tek("sayfa"), boyut: tek("boyut") }, toplam);
+
+  const users = await prisma.user.findMany({
+    where: kullaniciKosulu,
     orderBy: [{ role: "asc" }, { name: "asc" }],
+    skip: durum.skip,
+    take: durum.take,
     include: {
       business: true,
       businesses: { include: { business: true } },
@@ -104,7 +117,26 @@ export default async function UsersPage({
       async (user) => [user.id, await bcrypt.compare(SEED_SIFRESI, user.passwordHash)] as const,
     ),
   );
+  /** Süzgeçleri koruyarak sayfa numarasını değiştiren adres. */
+  function sayfaAdresi(hedef: number): string {
+    const p = new URLSearchParams();
+    for (const [ad, deger] of Object.entries(filtreler)) {
+      if (deger) p.set(ad, deger);
+    }
+    if (durum.boyut !== 10) p.set("boyut", String(durum.boyut));
+    p.set("sayfa", String(hedef));
+    return `/admin/kullanicilar?${p.toString()}`;
+  }
+
   const usingSeed = new Map(seedFlags);
+  /**
+   * Uyarı BU SAYFADAKİ kaçının kurulum şifresini kullandığını söylüyor.
+   *
+   * Liste sayfalandıktan sonra "hesabın tamamında kaç tane" sorusunu
+   * cevaplamak, her sayfa açılışında bütün kullanıcıların şifresini
+   * bcrypt ile karşılaştırmak demekti — sayfalamanın kaldırdığı yükün ta
+   * kendisi. Metin de buna göre yazıldı.
+   */
   const seedCount = seedFlags.filter(([, flag]) => flag).length;
 
   return (
@@ -130,7 +162,10 @@ export default async function UsersPage({
       />
 
       {seedCount > 0 ? (
-        <Alert tone="uyari" baslik={`${seedCount} hesap hâlâ kurulum şifresini kullanıyor`}>
+        <Alert
+          tone="uyari"
+          baslik={`Bu sayfadaki ${seedCount} hesap hâlâ kurulum şifresini kullanıyor`}
+        >
           Sisteme gerçek veri girmeden önce <code>degistir123</code> şifresini
           değiştirin.
         </Alert>
@@ -263,6 +298,17 @@ export default async function UsersPage({
           </table>
         </div>
       )}
+
+      {cubukGosterilsinMi(toplam, durum.boyut) ? (
+        <Pagination
+          sayfa={durum.sayfa}
+          toplamSayfa={toplamSayfa(toplam, durum.boyut)}
+          toplamKayit={toplam}
+          boyut={durum.boyut}
+          aralik={aralikMetni(durum, toplam)}
+          href={(s) => sayfaAdresi(s)}
+        />
+      ) : null}
 
       <p className="text-caption text-ink-faint">
         <KeyRound className="mr-1 inline h-3 w-3" aria-hidden="true" />

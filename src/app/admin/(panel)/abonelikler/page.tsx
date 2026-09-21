@@ -2,7 +2,8 @@ import { requireSuperadmin } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
 import { abonelikKademe, kalanGun, type AbonelikKademe } from "@/lib/isletme/abonelik";
 import { formatPrice } from "@/lib/isletme/menu";
-import { formatDateTime, PageHeader } from "@/components/ui";
+import { formatDateTime, PageHeader, Pagination } from "@/components/ui";
+import { aralikMetni, cubukGosterilsinMi, sayfaDurumu, toplamSayfa } from "@/lib/cekirdek/sayfalama";
 import { PaymentForm } from "./PaymentForm";
 
 export const dynamic = "force-dynamic";
@@ -16,12 +17,22 @@ const GRUPLAR: { kademe: AbonelikKademe; baslik: string; renk: string }[] = [
   { kademe: "yakin", baslik: "Yaklaşıyor (14 gün)", renk: "text-warning-ink" },
 ];
 
-export default async function AboneliklerPage() {
+export default async function AboneliklerPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sayfa?: string; boyut?: string }>;
+}) {
   await requireSuperadmin();
+  const sorgu = await searchParams;
+
+  const toplamHesap = await prisma.account.count({ where: { active: true } });
+  const durum = sayfaDurumu(sorgu, toplamHesap);
 
   const hesaplar = await prisma.account.findMany({
     where: { active: true },
     orderBy: { expiresAt: "asc" },
+    skip: durum.skip,
+    take: durum.take,
     select: {
       id: true,
       name: true,
@@ -126,6 +137,22 @@ export default async function AboneliklerPage() {
           );
         })
       )}
+
+      {cubukGosterilsinMi(toplamHesap, durum.boyut) ? (
+        <Pagination
+          sayfa={durum.sayfa}
+          toplamSayfa={toplamSayfa(toplamHesap, durum.boyut)}
+          toplamKayit={toplamHesap}
+          boyut={durum.boyut}
+          aralik={aralikMetni(durum, toplamHesap)}
+          href={(s) =>
+            `/admin/abonelikler?${new URLSearchParams({
+              ...(durum.boyut !== 10 ? { boyut: String(durum.boyut) } : {}),
+              sayfa: String(s),
+            }).toString()}`
+          }
+        />
+      ) : null}
     </div>
   );
 }

@@ -1,7 +1,8 @@
 import { Sparkles } from "lucide-react";
 import { requireSuperadmin } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
-import { PageHeader, SectionCard } from "@/components/ui";
+import { PageHeader, Pagination, SectionCard } from "@/components/ui";
+import { aralikMetni, cubukGosterilsinMi, sayfaDurumu, toplamSayfa } from "@/lib/cekirdek/sayfalama";
 import { gunGirdisi, haftaBaslangici } from "@/lib/cekirdek/gun";
 import { sponsorMu } from "@/lib/biyerlere/sponsorluk";
 import { krediEkle, sponsorKaldir, sponsorYap } from "./actions";
@@ -19,12 +20,24 @@ export const metadata = { title: "Sponsorlar" };
  * bir hak (bkz. hesaplar/actions.ts'teki ödeme kaydı ile aynı ilke — gerçek
  * bir ödeme sağlayıcısı entegre edilmedi, kredi burada elle tanımlanıyor).
  */
-export default async function SponsorlarPage() {
+export default async function SponsorlarPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sayfa?: string; boyut?: string }>;
+}) {
   await requireSuperadmin();
+  const sorgu = await searchParams;
   const simdi = new Date();
+
+  // Platformdaki TÜM işletmeler listeleniyordu; elli mekanda tek ekranda
+  // elli satır ve elli form demekti.
+  const toplam = await prisma.business.count();
+  const durum = sayfaDurumu(sorgu, toplam);
 
   const isletmeler = await prisma.business.findMany({
     orderBy: { name: "asc" },
+    skip: durum.skip,
+    take: durum.take,
     select: { id: true, name: true, sponsorHaftasi: true, pushKredisi: true },
   });
 
@@ -98,6 +111,22 @@ export default async function SponsorlarPage() {
             </tbody>
           </table>
         </div>
+
+      {cubukGosterilsinMi(toplam, durum.boyut) ? (
+        <Pagination
+          sayfa={durum.sayfa}
+          toplamSayfa={toplamSayfa(toplam, durum.boyut)}
+          toplamKayit={toplam}
+          boyut={durum.boyut}
+          aralik={aralikMetni(durum, toplam)}
+          href={(s) =>
+            `/admin/sponsorlar?${new URLSearchParams({
+              ...(durum.boyut !== 10 ? { boyut: String(durum.boyut) } : {}),
+              sayfa: String(s),
+            }).toString()}`
+          }
+        />
+      ) : null}
       </SectionCard>
     </div>
   );

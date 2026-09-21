@@ -2,7 +2,8 @@ import Link from "next/link";
 import { CalendarClock } from "lucide-react";
 import { requireRezervasyonErisim, visibleBusinesses } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
-import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
+import { EmptyState, PageHeader, Pagination, SectionCard } from "@/components/ui";
+import { aralikMetni, cubukGosterilsinMi, sayfaDurumu, toplamSayfa } from "@/lib/cekirdek/sayfalama";
 import { masaDurumu, type MevcutRezervasyon } from "@/lib/isletme/rezervasyon";
 import { IsletmeSecici } from "../menu/MenuUst";
 import { KatPlani, type PlanMasasi } from "./KatPlani";
@@ -38,7 +39,7 @@ function bugununMetni(): string {
 export default async function RezervasyonPage({
   searchParams,
 }: {
-  searchParams: Promise<{ isletme?: string; tarih?: string }>;
+  searchParams: Promise<{ isletme?: string; tarih?: string; sayfa?: string; boyut?: string }>;
 }) {
   const user = await requireRezervasyonErisim();
   const businesses = await visibleBusinesses(user);
@@ -54,7 +55,21 @@ export default async function RezervasyonPage({
     : bugununMetni();
   const { bas, bit } = gununSiniri(tarih);
 
-  const [masalar, kayitlar, bekleyenSayisi, isletme] = await Promise.all([
+  const toplamRezervasyon = await prisma.rezervasyon.count({
+    where: { businessId: secili.id, baslangic: { gte: bas, lt: bit } },
+  });
+  const durum = sayfaDurumu(query, toplamRezervasyon);
+
+  /**
+   * KROKİ TÜM GÜNÜ GÖRMEK ZORUNDA.
+   *
+   * Liste sayfalandıktan sonra masa renklerini sayfadaki kayıtlardan
+   * hesaplamak, ikinci sayfadaki bir rezervasyonun masasını BOŞ
+   * göstermek demekti — yani planın söylediği tek şey yanlış olurdu.
+   * Bu yüzden kroki ayrı ve hafif bir sorgudan besleniyor (yalnızca
+   * saat, durum ve masa kimlikleri).
+   */
+  const [masalar, gununTumKayitlari, kayitlar, bekleyenSayisi, isletme] = await Promise.all([
     prisma.table.findMany({
       where: { businessId: secili.id },
       orderBy: { tableNumber: "asc" },
@@ -71,7 +86,24 @@ export default async function RezervasyonPage({
     }),
     prisma.rezervasyon.findMany({
       where: { businessId: secili.id, baslangic: { gte: bas, lt: bit } },
+      select: {
+        id: true,
+        baslangic: true,
+        bitis: true,
+        durum: true,
+        masalar: { select: { tableId: true } },
+      },
+    }),
+    prisma.rezervasyon.findMany({
+      where: { businessId: secili.id, baslangic: { gte: bas, lt: bit } },
       orderBy: { baslangic: "asc" },
+      /**
+       * Gün listesi de sayfalanıyor. Kat planı (üstteki kroki) TÜM
+       * masaları gösterdiği için günün doluluğu yine tek bakışta
+       * görünüyor; buradaki sayfalama yalnızca kayıt listesini böler.
+       */
+      skip: durum.skip,
+      take: durum.take,
       select: {
         id: true,
         misafirAdi: true,
@@ -106,17 +138,17 @@ export default async function RezervasyonPage({
 
   // Masa başına o günün kayıtları — durum rengi bundan hesaplanıyor.
   const masayaGore = new Map<string, MevcutRezervasyon[]>();
-  for (const kayit of kayitlar) {
+  for (const kayit of gununTumKayitlari) {
     for (const bag of kayit.masalar) {
-      const liste = masayaGore.get(bag.masa.id) ?? [];
+      const liste = masayaGore.get(bag.tableId) ?? [];
       liste.push({
         id: kayit.id,
         baslangic: kayit.baslangic,
         bitis: kayit.bitis,
         durum: kayit.durum,
-        masaIdleri: kayit.masalar.map((m) => m.masa.id),
+        masaIdleri: kayit.masalar.map((m) => m.tableId),
       });
-      masayaGore.set(bag.masa.id, liste);
+      masayaGore.set(bag.tableId, liste);
     }
   }
 
@@ -204,8 +236,28 @@ export default async function RezervasyonPage({
         <KatPlani businessId={secili.id} masalar={planMasalari} />
       </SectionCard>
 
-      <SectionCard title={`${tarih} rezervasyonları (${listeKayitlari.length})`}>
+      <SectionCard title={`${tarih} rezervasyonları (${toplamRezervasyon})`}>
         <RezervasyonListesi businessId={secili.id} kayitlar={listeKayitlari} />
+
+        {cubukGosterilsinMi(toplamRezervasyon, durum.boyut) ? (
+          <div className="mt-3">
+            <Pagination
+              sayfa={durum.sayfa}
+              toplamSayfa={toplamSayfa(toplamRezervasyon, durum.boyut)}
+              toplamKayit={toplamRezervasyon}
+              boyut={durum.boyut}
+              aralik={aralikMetni(durum, toplamRezervasyon)}
+              href={(s) =>
+                `/admin/rezervasyon?${new URLSearchParams({
+                  ...(query.isletme ? { isletme: query.isletme } : {}),
+                  tarih,
+                  ...(durum.boyut !== 10 ? { boyut: String(durum.boyut) } : {}),
+                  sayfa: String(s),
+                }).toString()}`
+              }
+            />
+          </div>
+        ) : null}
       </SectionCard>
 
       <SectionCard
