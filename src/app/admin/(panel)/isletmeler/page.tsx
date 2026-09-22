@@ -1,6 +1,6 @@
 import { Store } from "lucide-react";
 import Link from "next/link";
-import { actingAccountId, requireUser, visibleBusinesses } from "@/lib/kimlik/auth";
+import { actingAccountId, requireIsletmeSayfasi, visibleBusinesses } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
 import { BUSINESS_TYPES, type BusinessType } from "@/lib/cekirdek/constants";
 import { EmptyState, PageHeader, Pagination } from "@/components/ui";
@@ -17,7 +17,7 @@ export default async function BusinessListPage({
 }: {
   searchParams: Promise<{ sayfa?: string; boyut?: string }>;
 }) {
-  const user = await requireUser();
+  const user = await requireIsletmeSayfasi();
   const sorgu = await searchParams;
   const tumIsletmeler = await visibleBusinesses(user);
 

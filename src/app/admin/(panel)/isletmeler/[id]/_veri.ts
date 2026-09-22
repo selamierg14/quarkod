@@ -1,6 +1,6 @@
 import "server-only";
 import { notFound } from "next/navigation";
-import { canAccessBusiness, requireUser } from "@/lib/kimlik/auth";
+import { canAccessBusiness, requireIsletmeSayfasi } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
 
 /**
@@ -10,7 +10,12 @@ import { prisma } from "@/lib/cekirdek/db";
  * sekme eklendiğinde yetkiyi eklemeyi unutma riskini ortadan kaldırıyor.
  */
 export async function isletmeyiYukle(id: string) {
-  const user = await requireUser();
+  /**
+   * `requireUser` DEĞİL: menüde gizli olması yetmiyordu, garson adres
+   * çubuğundan bu sekmeleri açıp ayarları kaydedebiliyordu (canlı
+   * doğrulandı — denetim kaydına `business.update / garson` düştü).
+   */
+  const user = await requireIsletmeSayfasi();
   if (!(await canAccessBusiness(user, id))) notFound();
 
   const business = await prisma.business.findUnique({

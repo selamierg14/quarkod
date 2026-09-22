@@ -10,6 +10,7 @@ import {
   hashPassword,
   requireOwner,
   requireYazma,
+  requireIsletmeYonetimi,
 } from "@/lib/kimlik/auth";
 import { denetimYaz } from "@/lib/rapor/denetim";
 import { secenekleriAyristir, secenekleriBirlestir } from "@/lib/isletme/anket-detay";
@@ -210,7 +211,7 @@ export async function updateBusiness(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const user = await requireYazma();
+  const user = await requireIsletmeYonetimi();
   const id = String(formData.get("id") ?? "");
 
   if (!await canAccessBusiness(user, id)) return { error: "Yetkiniz yok." };
@@ -393,7 +394,7 @@ export async function addCategory(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const user = await requireYazma();
+  const user = await requireIsletmeYonetimi();
   const businessId = String(formData.get("businessId") ?? "");
   const adSonuc = alanDogrula(formData.get("name"), "kisaBaslik", "Kategori adı");
 
@@ -436,7 +437,7 @@ export async function addCategory(
  * kapatmak doğru yol.
  */
 export async function updateCategoryProblems(formData: FormData) {
-  const user = await requireYazma();
+  const user = await requireIsletmeYonetimi();
   const id = String(formData.get("categoryId") ?? "");
 
   const category = await prisma.categoryTemplate.findUnique({ where: { id } });
@@ -458,7 +459,7 @@ export async function updateCategoryProblems(formData: FormData) {
 }
 
 export async function toggleCategory(formData: FormData) {
-  const user = await requireYazma();
+  const user = await requireIsletmeYonetimi();
   const id = String(formData.get("categoryId") ?? "");
 
   const category = await prisma.categoryTemplate.findUnique({ where: { id } });
@@ -473,7 +474,7 @@ export async function toggleCategory(formData: FormData) {
 }
 
 export async function moveCategory(formData: FormData) {
-  const user = await requireYazma();
+  const user = await requireIsletmeYonetimi();
   const id = String(formData.get("categoryId") ?? "");
   const direction = String(formData.get("direction") ?? "");
 
@@ -511,7 +512,7 @@ export async function addTables(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const user = await requireYazma();
+  const user = await requireIsletmeYonetimi();
   const businessId = String(formData.get("businessId") ?? "");
   if (!await canAccessBusiness(user, businessId)) return { error: "Yetkiniz yok." };
 
@@ -611,7 +612,7 @@ export async function addTables(
  * tolere ediyor, ayrı bir veri modeli gerekmiyor.
  */
 export async function tekQrOlustur(formData: FormData): Promise<void> {
-  const user = await requireYazma();
+  const user = await requireIsletmeYonetimi();
   const businessId = String(formData.get("businessId") ?? "");
   if (!(await canAccessBusiness(user, businessId))) return;
 
@@ -645,7 +646,7 @@ export async function tekQrOlustur(formData: FormData): Promise<void> {
 }
 
 export async function toggleTable(formData: FormData) {
-  const user = await requireYazma();
+  const user = await requireIsletmeYonetimi();
   const id = String(formData.get("tableId") ?? "");
 
   const table = await prisma.table.findUnique({ where: { id } });
@@ -669,7 +670,7 @@ export async function toggleTable(formData: FormData) {
  * dönüş de mümkün olsun diye (bkz. tumMasalariAc).
  */
 export async function tumMasalariKapat(formData: FormData): Promise<void> {
-  const user = await requireYazma();
+  const user = await requireIsletmeYonetimi();
   const businessId = String(formData.get("businessId") ?? "");
   if (!(await canAccessBusiness(user, businessId))) return;
 
@@ -689,7 +690,7 @@ export async function tumMasalariKapat(formData: FormData): Promise<void> {
 
 /** Toplu kapatmanın tersi: kapalı masaya özel QR'ların hepsini açar. */
 export async function tumMasalariAc(formData: FormData): Promise<void> {
-  const user = await requireYazma();
+  const user = await requireIsletmeYonetimi();
   const businessId = String(formData.get("businessId") ?? "");
   if (!(await canAccessBusiness(user, businessId))) return;
 
@@ -726,7 +727,7 @@ export async function ayarlariKopyala(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const user = await requireYazma();
+  const user = await requireIsletmeYonetimi();
   const kaynakId = String(formData.get("businessId") ?? "");
   const hedefIdler = formData.getAll("hedefIds").map(String).filter(Boolean);
 

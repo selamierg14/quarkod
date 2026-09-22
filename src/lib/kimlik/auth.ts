@@ -10,6 +10,7 @@ import {
   SESSION_COOKIE,
   SESSION_MAX_AGE,
   createSessionToken,
+  isletmeAyariDegistirebilirMi,
   sessionRevokedReason,
   verifySessionToken,
   yazabilirMi,
@@ -172,6 +173,28 @@ export async function requireYazma(): Promise<SessionUser> {
   const user = await requireUser();
   const engel = await yazmaEngeli(user);
   if (engel) throw new Error(engel);
+  return user;
+}
+
+/**
+ * İŞLETME AYARLARI KAPISI — garsonu dışarıda bırakır.
+ *
+ * `requireYazma` + `canAccessBusiness` ikilisi yetmiyordu: ikisi de
+ * garson için geçiyor ve menüde gizlenen ayar sayfası adres çubuğundan
+ * açılıp kaydedilebiliyordu (bkz. isletmeAyariDegistirebilirMi).
+ */
+export async function requireIsletmeYonetimi(): Promise<SessionUser> {
+  const user = await requireYazma();
+  if (!isletmeAyariDegistirebilirMi(user.role)) {
+    throw new Error("İşletme ayarlarını değiştirme yetkiniz yok.");
+  }
+  return user;
+}
+
+/** Sayfa tarafı: yetkisiz rol ayar ekranlarını hiç görmesin. */
+export async function requireIsletmeSayfasi(): Promise<SessionUser> {
+  const user = await requireUser();
+  if (!isletmeAyariDegistirebilirMi(user.role)) redirect("/admin");
   return user;
 }
 

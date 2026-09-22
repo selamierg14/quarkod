@@ -6,6 +6,8 @@ import {
   sessionRevokedReason,
   verifySessionToken,
   type SessionCheck,
+  isletmeAyariDegistirebilirMi,
+  yazabilirMi,
 } from "./session-token";
 
 /**
@@ -113,5 +115,29 @@ describe("jeton rolleri", () => {
   it("tanımsız rolü reddeder", () => {
     expect(gecerliRolMu("kasiyer")).toBe(false);
     expect(gecerliRolMu("viewer")).toBe(false);
+  });
+});
+
+describe("isletmeAyariDegistirebilirMi", () => {
+  it("garson işletme ayarlarını değiştiremiyor", () => {
+    expect(isletmeAyariDegistirebilirMi("garson")).toBe(false);
+  });
+
+  it("yönetim rolleri değiştirebiliyor", () => {
+    for (const rol of ["superadmin", "owner", "bolge", "manager"] as const) {
+      expect(isletmeAyariDegistirebilirMi(rol)).toBe(true);
+    }
+  });
+
+  /**
+   * `yazabilirMi` bu soruyu CEVAPLAMIYOR ve ayrı durmasının sebebi bu:
+   * salt okunur listesi boş olduğu için garsona da "yazabilir" diyor,
+   * dolayısıyla işletme ayarlarının tek koruması olamaz. Canlı denetimde
+   * garson, menüde gizli olan ayar sayfasını adresten açıp Google yorum
+   * linkini ve bildirim eşiğini kaydedebiliyordu.
+   */
+  it("yazabilirMi tek başına yeterli değil — ikisi farklı soru", () => {
+    expect(yazabilirMi("garson")).toBe(true);
+    expect(isletmeAyariDegistirebilirMi("garson")).toBe(false);
   });
 });

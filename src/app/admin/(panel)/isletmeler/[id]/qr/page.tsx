@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
-import { canAccessBusiness, requireUser } from "@/lib/kimlik/auth";
+import { canAccessBusiness, requireIsletmeSayfasi } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
 import { appUrl, qrCardText } from "@/lib/cekirdek/constants";
 import { PrintButton } from "./PrintButton";
@@ -19,7 +19,7 @@ export default async function QrPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ kopya?: string }>;
 }) {
-  const user = await requireUser();
+  const user = await requireIsletmeSayfasi();
   const { id } = await params;
   const kopya = kopyaCoz((await searchParams).kopya);
   if (!await canAccessBusiness(user, id)) notFound();

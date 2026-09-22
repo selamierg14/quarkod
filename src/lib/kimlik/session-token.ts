@@ -58,6 +58,30 @@ export function yazabilirMi(role: Role): boolean {
   return !SALT_OKUNUR_ROLLER.includes(role);
 }
 
+/**
+ * İşletmenin KENDİ AYARLARINI değiştirebilen roller.
+ *
+ * `yazabilirMi` yetmiyor: o "bu hesap salt okunur mu" sorusunu soruyor ve
+ * listesi boş olduğu için garsona da evet diyordu. İşletme ayarları
+ * (Google yorum linki, bildirim eşiği, çalışma saatleri, masa/QR listesi,
+ * anket kategorileri) ise operasyon değil YÖNETİM kararı.
+ *
+ * Canlı denetimde şu bulundu: menüde gizli olmasına rağmen garson
+ * `/admin/isletmeler/<id>` adresini elle yazıp ayarları kaydedebiliyordu.
+ * İkisi de sessiz ve pahalı:
+ *
+ *   - Bildirim eşiğini 1'e çekmek, patrona giden düşük puan uyarılarını
+ *     susturuyor (şikayeti gizlemenin en kolay yolu).
+ *   - Google yorum linkini değiştirmek, 5 yıldız veren her müşteriyi
+ *     başka bir sayfaya yönlendiriyor.
+ *
+ * Garson dışındaki roller geçiyor: bölge müdürü ve işletme sorumlusu
+ * zaten kendi işletmesinin ayarlarından sorumlu.
+ */
+export function isletmeAyariDegistirebilirMi(role: Role): boolean {
+  return role !== "garson";
+}
+
 export type SessionUser = {
   id: string;
   name: string;

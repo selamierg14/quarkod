@@ -50,6 +50,11 @@ const KAPILAR = [
   "requireKesfetErisim",
   "requireRezervasyonErisim",
   "requireKullaniciYonetimi",
+  // İşletme ayarları: garsonu dışarıda bırakan rol kapısı. `requireYazma`
+  // bu soruyu cevaplamıyordu (salt okunur listesi boş) ve garson menüde
+  // gizli olan ayar sayfasını adresten açıp kaydedebiliyordu.
+  "requireIsletmeYonetimi",
+  "requireIsletmeSayfasi",
   "getSession",
 ];
 
