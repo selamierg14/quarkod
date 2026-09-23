@@ -33,6 +33,9 @@ export type DenetimEylemi =
   | "rezervasyon.guncelle"
   | "rezervasyon.durum"
   | "rezervasyon.uygulamaAyari"
+  | "mesai.qr"
+  | "mesai.ip"
+  | "mesai.duzelt"
   | "business.vardiya"
   | "business.izin"
   | "user.create"
@@ -69,6 +72,9 @@ export const EYLEM_METNI: Record<DenetimEylemi, string> = {
   "rezervasyon.guncelle": "Rezervasyon güncellendi",
   "rezervasyon.durum": "Rezervasyon durumu",
   "rezervasyon.uygulamaAyari": "Uygulamadan rezervasyon ayarı",
+  "mesai.qr": "Mesai QR kodu",
+  "mesai.ip": "Mesai IP ayarı",
+  "mesai.duzelt": "Mesai kaydı düzeltildi",
   "business.flasIndirim": "Flaş indirim",
   "biyerlere.etkinlik.kaldir": "Buluşma kaldırıldı",
   "business.vardiya": "Vardiya çizelgesi",

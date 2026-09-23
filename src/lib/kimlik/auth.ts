@@ -300,6 +300,17 @@ export async function requirePersonelYonetimi(): Promise<SessionUser> {
   return requireModul("personel");
 }
 
+/**
+ * Mesai takibi — personelin QR ile giriş/çıkış yaptığı modül.
+ *
+ * `personel` modülünden AYRI satılıyor: vardiya planlamak isteyen her
+ * işletme mesai takibi istemiyor (ve tersi). Modülü olmayan hesapta
+ * QR hiç üretilmiyor, okutma adresi de 404.
+ */
+export async function requireMesaiErisim(): Promise<SessionUser> {
+  return requireModul("mesai");
+}
+
 /** Biyerlere (B2C keşfet) ayar sayfası — bkz. app/admin/(panel)/biyerlere. */
 export async function requireKesfetErisim(): Promise<SessionUser> {
   return requireModul("kesfet");

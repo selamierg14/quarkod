@@ -126,11 +126,11 @@ Pilot/demo işletmeler: KESKİNLEZZETLER, Ege Cunda Balık, Sahne Marin.
 **Kiracı izolasyonu** `lib/kimlik/tenancy.ts`: kapsam hesaplanamazsa boş `where` DEĞİL, `IMPOSSIBLE_ID` konur. Başka kiracının kimliği → 404.
 
 ### Modüller (`lib/kimlik/moduller.ts`) — hesap bazında satılır
-`anket` (QR değerlendirme), `menu` (QR menü), `iys`, `pazarlama`, `personel` (vardiya), `kesfet` (Biyerlere'de görünme), `rezervasyon`.
+`anket` (QR değerlendirme), `menu` (QR menü), `iys`, `pazarlama`, `personel` (vardiya), `kesfet` (Biyerlere'de görünme), `rezervasyon`, `mesai` (personel giriş/çıkış takibi).
 Kural: **kimse sahip olmadığı modülü başkasına veremez.** Modül dağıtımı sadece superadmin/owner.
 
 ### Panel bölümleri (`/admin/…`)
-Özet · **cep** (Cep modu: bekleyen geri bildirimler, bekleyen rezervasyon talepleri, flaş duyuru, bugünün vardiyası) · geri-bildirimler (liste/detay/CSV) · kirilim (vardiya & masa) · urunler · menu (düzenle/şablonlar/önizle) · duyurular · isletmeler (ayarlar, masalar, QR basımı, çalışma saatleri) · kullanicilar · rezervasyon (masa durumu, kat planı) · vardiya-planlama · vardiyalarim · gorevlerim · izinler · entegrasyonlar · kiyaslama · denetim · profil · sifre · biyerlere (istatistik + kullanıcı buluşmalarını moderasyon) · **superadmin'e özel:** hesaplar, abonelikler, rotalar, sponsorlar (sponsor/push kredisi), plus, sistem (cron sağlığı).
+Özet · **mesai** (Mesai takibi: QR + IP kısıtlı personel giriş/çıkışı, günlük rapor, CSV) · **cep** (Cep modu: bekleyen geri bildirimler, bekleyen rezervasyon talepleri, flaş duyuru, bugünün vardiyası) · geri-bildirimler (liste/detay/CSV) · kirilim (vardiya & masa) · urunler · menu (düzenle/şablonlar/önizle) · duyurular · isletmeler (ayarlar, masalar, QR basımı, çalışma saatleri) · kullanicilar · rezervasyon (masa durumu, kat planı) · vardiya-planlama · vardiyalarim · gorevlerim · izinler · entegrasyonlar · kiyaslama · denetim · profil · sifre · biyerlere (istatistik + kullanıcı buluşmalarını moderasyon) · **superadmin'e özel:** hesaplar, abonelikler, rotalar, sponsorlar (sponsor/push kredisi), plus, sistem (cron sağlığı).
 
 ### Panel kapıları
 `requireUser → requireYazma → requireModul → canAccessBusiness`. `panel-kapilari.test.ts` diskteki HER Server Action ve sayfanın bir kapıya ulaştığını yapısal olarak doğrular (muafiyet: giriş, çıkış).

@@ -200,6 +200,31 @@ Eşzamanlılık: müsaitlik kontrolü ile yazma arasında başka bir talep aynı
 masayı alabilir. Hız sınırındaki kalıbın aynısı uygulanıyor — kayıt önce
 yazılıyor, sonra kendisi hariç çakışma aranıyor, varsa geri alınıyor.
 
+## Personel mesai takibi
+
+Mekana asılan karekodu personel kendi telefonundan okutuyor; açık kaydı
+yoksa GİRİŞ, varsa ÇIKIŞ açılıyor (tek düğme, iki anlam). Kurallar
+[`lib/personel/mesai.ts`](src/lib/personel/mesai.ts) içinde, saf ve
+testli.
+
+**Tek koruma IP.** QR bir kâğıt: fotoğrafı çekilip evden okutulabilir.
+Bunu engelleyen tek şey isteğin işletmenin ağından çıkması, dolayısıyla
+IP listesi boşken sistem hiç çalışmıyor — korumasız bir mesai kaydı, hiç
+kayıt olmamasından kötü çünkü sayılar doğru sanılıyor. IP'yi yönetici
+"Bu ağdan kaydet" düğmesiyle mekandayken öğretiyor; nokta ile biten
+değer blok kabul ediyor (`85.105.11.`) çünkü kafelerin IP'si dinamik.
+
+**Uydurma saat yok.** Çıkış okutulmadıysa kayıt açık kalıyor ve rapor
+"çıkış yapmadı" diyor; planı olup hiç okutmayan "giriş yapmadı" olarak
+görünüyor. Otomatik kapatma, bordroya sessizce yanlış veri yazmanın en
+kolay yolu olurdu; düzeltmeyi yönetici iz bırakarak yapıyor.
+
+| Katman | Kural |
+|---|---|
+| Veritabanı | `mesai_tek_acik_kayit` kısmi tekil indeksi — bir kişinin en fazla bir açık kaydı olur |
+| Uygulama | 60 saniyelik pencere: çift okutma girişi hemen kapatmıyor |
+| KVKK | Ham IP saklanmıyor, yalnızca karması (`girisIpKarmasi`) |
+
 ## İki aşamalı doğrulama (SMS OTP)
 
 Kod üretimi ve doğrulaması [`lib/kimlik/otp.ts`](src/lib/kimlik/otp.ts)'te,

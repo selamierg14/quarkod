@@ -208,6 +208,20 @@ model Business {
   /// vermesini önlüyor.
   biyerlerePlusOrtagi Boolean @default(false)
 
+  /// MESAİ TAKİBİ — personelin QR okutarak giriş/çıkış yapması.
+  ///
+  /// QR mekana asılıyor ve personel kendi telefonundan okutuyor. Tek
+  /// koruma IP: okutan cihaz işletmenin ağından çıkmıyorsa kayıt
+  /// açılmıyor. QR'ın fotoğrafı çekilip evden okutulmasını engelleyen
+  /// tek şey bu — ve bu yüzden `mesaiIpleri` boşken sistem hiç
+  /// çalışmıyor (bkz. lib/personel/mesai.ts).
+  mesaiQrToken String? @unique
+
+  /// İzinli genel IP'ler, virgülle. Nokta/iki nokta ile biten bir değer
+  /// ÖNEK sayılıyor ("85.105.10." → o bloğun tamamı): kafelerin IP'si
+  /// çoğunlukla dinamik ve modem her açılışta son haneyi değiştiriyor.
+  mesaiIpleri String?
+
   /// Biyerlere uygulamasından masa rezervasyonu alınsın mı.
   ///
   /// Rezervasyon MODÜLÜ açık olsa bile varsayılan KAPALI ve bu bilinçli:
@@ -235,6 +249,7 @@ model Business {
   itemRatings           ItemRating[]
   bolgeMudurleri        UserBusiness[]
   shiftAssignments      ShiftAssignment[]
+  mesaiKayitlari        MesaiKaydi[]
   shiftNotes            ShiftNote[]
   leaveRequests         LeaveRequest[]
   checklistItems        ChecklistItem[]
@@ -587,6 +602,50 @@ model Zone {
   @@map("bolgeler")
 }
 
+/// PERSONEL MESAİ KAYDI — bir giriş, (varsa) bir çıkış.
+///
+/// Giriş ve çıkış AYNI SATIRDA: "çıkış yapmadı" sorusunun cevabı ancak
+/// ikisi bir arada durursa tek bakışta görünüyor. İki ayrı olay satırı
+/// tutulsaydı, eşleştirme raporun her açılışında yeniden yapılırdı.
+///
+/// EKSİK KAYDA UYDURMA SAAT YAZILMIYOR. Çıkış okutulmadıysa `cikis` null
+/// kalıyor ve rapor "çıkış yapmadı" diyor; hiç giriş yoksa o kişi için
+/// satır hiç açılmıyor ve rapor "giriş yapmadı" diyor. Otomatik kapatma
+/// (ör. 12 saat sonra) bordroya yanlış veri yazmanın en sessiz yolu
+/// olurdu — düzeltmeyi yönetici bilerek yapıyor (`duzeltenId`).
+model MesaiKaydi {
+  id         String @id @default(cuid())
+  businessId String
+  userId     String
+
+  giris DateTime
+  cikis DateTime?
+
+  /// Okutma anındaki IP'nin KARMASI — ham IP saklanmıyor (bkz.
+  /// lib/kimlik/istemci-ip.ts, LoginAttempt.ipHash ile aynı yaklaşım).
+  girisIpKarmasi String?
+  cikisIpKarmasi String?
+
+  /// "qr" | "elle" — elle olan, yöneticinin sonradan düzelttiği kayıt.
+  girisKaynak String  @default("qr")
+  cikisKaynak String?
+
+  /// Düzeltmeyi yapan yönetici ve gerekçesi. Bordroya giden bir sayıyı
+  /// değiştirmek iz bırakmalı.
+  duzeltenId   String?
+  duzeltmeNotu String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, giris])
+  @@index([userId, giris])
+  @@map("mesai_kayitlari")
+}
+
 /// Saat aralıklı masa rezervasyonu.
 model Rezervasyon {
   id         String @id @default(cuid())
@@ -935,6 +994,7 @@ model User {
   telefonlar           UserPhone[]
   businesses           UserBusiness[]
   shiftAssignments     ShiftAssignment[]
+  mesaiKayitlari       MesaiKaydi[]
   shiftNotes           ShiftNote[]
   checklistCompletions ChecklistCompletion[]
   shiftSwapRequests    ShiftSwapRequest[]    @relation("ShiftSwapRequester")

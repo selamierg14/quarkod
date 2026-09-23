@@ -55,6 +55,8 @@ const KAPILAR = [
   // gizli olan ayar sayfasını adresten açıp kaydedebiliyordu.
   "requireIsletmeYonetimi",
   "requireIsletmeSayfasi",
+  // Mesai takibi modülü.
+  "requireMesaiErisim",
   "getSession",
 ];
 

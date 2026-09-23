@@ -47,7 +47,8 @@ export type IkonAdi =
   | "duyuru"
   | "biyerlere"
   | "rota"
-  | "telefon";
+  | "telefon"
+  | "saat";
 
 export type AltNavLink = {
   href: string;
@@ -378,6 +379,24 @@ export function panelMenusu(
         // moduna düşüyor) — performans kartı yalnızca planlayan tarafa görünür.
         { href: "/admin/vardiya-planlama/performans", label: "Performans" },
       ],
+    });
+  }
+
+  /**
+   * MESAİ TAKİBİ ayrı bir modül: vardiya planlayan her işletme giriş/çıkış
+   * takibi istemiyor (ve tersi de doğru — plan yapmadan yalnızca saat
+   * tutan yerler var).
+   *
+   * Garsona GÖSTERİLMİYOR: personelin buradaki işi karekodu okutmak ve o
+   * ekrana menüden değil QR'dan geliniyor. Kendi kayıtlarını okutma
+   * ekranının altında görüyor.
+   */
+  if (moduller.includes("mesai") && role !== "garson") {
+    personel.push({
+      href: "/admin/mesai",
+      label: "Mesai takibi",
+      ikon: "saat",
+      exact: true,
     });
   }
 

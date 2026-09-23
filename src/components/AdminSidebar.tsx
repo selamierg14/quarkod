@@ -311,6 +311,12 @@ function Ikon({ ad }: { ad: IkonAdi }) {
           <path d="M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-3H4zM14 7h6V4h-6z" />
         </svg>
       );
+    case "saat":
+      return (
+        <svg viewBox="0 0 24 24" className={ortak} {...p}>
+          <path d="M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3.5 2" />
+        </svg>
+      );
     case "telefon":
       return (
         <svg viewBox="0 0 24 24" className={ortak} {...p}>

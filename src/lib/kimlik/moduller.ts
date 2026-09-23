@@ -18,6 +18,7 @@ export const MODULLER = {
   personel: "Personel operasyonu",
   kesfet: "Biyerlere keşfet",
   rezervasyon: "Rezervasyon",
+  mesai: "Personel mesai takibi",
 } as const;
 
 export type ModulAnahtari = keyof typeof MODULLER;
@@ -35,6 +36,8 @@ export const MODUL_ACIKLAMALARI: Record<ModulAnahtari, string> = {
     "İşletme, Biyerlere mobil uygulamasında haritada ve keşfet akışında görünür.",
   rezervasyon:
     "Kat planı, bölgeler, saatli masa rezervasyonu ve canlı masa durumu.",
+  mesai:
+    "Personelin QR okutarak giriş/çıkış yapması, mesai raporu ve dışa aktarım.",
 };
 
 export function gecerliModulMu(deger: string): deger is ModulAnahtari {
