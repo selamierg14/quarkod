@@ -10,16 +10,30 @@ import {
   hashPassword,
   requireOwner,
   requireYazma,
-} from "@/lib/auth";
-import { denetimYaz } from "@/lib/denetim";
-import { secenekleriAyristir, secenekleriBirlestir } from "@/lib/anket-detay";
-import { sifreSorunu } from "@/lib/sifre";
-import { prisma } from "@/lib/db";
-import { BUSINESS_TYPES, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/constants";
-import { validateImageDataUrl } from "@/lib/image";
-import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
-import { slugIleOlustur, slugify } from "@/lib/slug";
-import { googleYorumLinkiGecerliMi } from "@/lib/google-yorum";
+  requireIsletmeYonetimi,
+} from "@/lib/kimlik/auth";
+import { denetimYaz } from "@/lib/rapor/denetim";
+import { secenekleriAyristir, secenekleriBirlestir } from "@/lib/isletme/anket-detay";
+import { sifreSorunu } from "@/lib/kimlik/sifre";
+import { prisma } from "@/lib/cekirdek/db";
+import { BUSINESS_TYPES, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/cekirdek/constants";
+import { validateImageDataUrl } from "@/lib/isletme/image";
+import { normalizePhone, toUsername, usernameProblem } from "@/lib/kimlik/username";
+import { slugIleOlustur, slugify } from "@/lib/cekirdek/slug";
+
+/**
+ * Tek istekte eklenebilecek en fazla masa ve masa adı uzunluğu.
+ *
+ * Sınır iki işi birden yapıyor: veriyi makul tutmak ve arkasındaki toplu
+ * yazmanın büyüklüğünü sınırlamak. Aralık dalında zaten vardı, virgüllü
+ * liste dalında yoktu.
+ */
+const EN_COK_MASA = 300;
+const EN_UZUN_MASA_ADI = 40;
+import { googleYorumLinkiGecerliMi } from "@/lib/isletme/google-yorum";
+import { alanDogrula } from "@/lib/cekirdek/desenler";
+import { saatleriCoz, saatleriYaz } from "@/lib/isletme/calisma-saati";
+import { ilkHata, metinAlani, sayiAlani } from "@/lib/cekirdek/girdi";
 
 export type FormState = { error?: string; saved?: boolean };
 
@@ -49,15 +63,19 @@ export async function createBusiness(
     };
   }
 
-  const name = String(formData.get("name") ?? "").trim();
-  const type = String(formData.get("type") ?? "");
-  const tableCount = Number(formData.get("tableCount") ?? 0);
+  const adSonuc = alanDogrula(formData.get("name"), "isletmeAdi", "İşletme adı");
+  const masaSayisi = sayiAlani(formData.get("tableCount"), "Masa sayısı", {
+    enAz: 0,
+    enCok: EN_COK_MASA,
+    varsayilan: 0,
+  });
+  const hataMesaji = ilkHata(adSonuc, masaSayisi);
+  if (hataMesaji) return { error: hataMesaji };
 
-  if (!name) return { error: "İşletme adı gerekli." };
+  const name = adSonuc.ok ? adSonuc.deger : "";
+  const tableCount = masaSayisi.ok ? masaSayisi.deger : 0;
+  const type = String(formData.get("type") ?? "");
   if (!(type in BUSINESS_TYPES)) return { error: "Geçerli bir işletme türü seçin." };
-  if (!Number.isInteger(tableCount) || tableCount < 0 || tableCount > 300) {
-    return { error: "Masa sayısı 0-300 arasında olmalı." };
-  }
 
   // Sorumlu hesabı isteğe bağlı; girilirse işletmeyle birlikte açılır ki
   // yeni işletmenin sorumlusu ilk günden panele girebilsin.
@@ -72,10 +90,16 @@ export async function createBusiness(
   let phone: string | null = null;
 
   if (wantsManager) {
-    if (!managerName) return { error: "Sorumlu için ad soyad girin." };
-    if (!/^\S+@\S+\.\S+$/.test(managerEmail)) {
-      return { error: "Sorumlu için geçerli bir e-posta girin." };
-    }
+    // Biçim kuralları desenler.ts'ten; aynı e-posta deseni önceden üç ayrı
+    // dosyada elle yazılmıştı ve üçü de birbirinden farklıydı.
+    const sorumluHata = ilkHata(
+      alanDogrula(managerName, "kisiAdi", "Sorumlu adı"),
+      alanDogrula(managerEmail, "eposta", "Sorumlu e-postası"),
+      alanDogrula(managerPassword, "sifre", "Sorumlu şifresi"),
+      alanDogrula(managerPhone, "telefon", "Sorumlu telefonu"),
+    );
+    if (sorumluHata) return { error: sorumluHata };
+
     const sifreHatasi = sifreSorunu(managerPassword);
     if (sifreHatasi) return { error: `Sorumlu şifresi: ${sifreHatasi}` };
 
@@ -96,6 +120,33 @@ export async function createBusiness(
     }
   }
 
+  // Görünüşte ikincil olan bu üç alan da veritabanına DOĞRULANMADAN
+  // gidiyordu. En kritiği `brandColor`: hiçbir kontrolü yoktu ve değeri
+  // karekod üreticisine ham olarak veriliyor (isletmeler/[id]/qr/page.tsx),
+  // yani geçersiz bir renk o işletmenin QR sayfasını tamamen çökertiyordu.
+  const adresSonuc = alanDogrula(formData.get("address"), "adres", "Adres", {
+    zorunlu: false,
+  });
+  const renkSonuc = alanDogrula(formData.get("brandColor"), "renk", "Marka rengi", {
+    zorunlu: false,
+  });
+  const linkSonuc = alanDogrula(formData.get("googleReviewUrl"), "webAdresi", "Google linki", {
+    zorunlu: false,
+  });
+  const esikSonuc = sayiAlani(formData.get("notifyThreshold"), "Bildirim eşiği", {
+    enAz: 1,
+    enCok: 5,
+    varsayilan: 3,
+  });
+  const ayarHatasi = ilkHata(adresSonuc, renkSonuc, linkSonuc, esikSonuc);
+  if (ayarHatasi) return { error: ayarHatasi };
+
+  const adres = (adresSonuc.ok && adresSonuc.deger) || null;
+  const googleLinki = linkSonuc.ok ? linkSonuc.deger : "";
+  // Boş bırakılırsa varsayılan marka rengi.
+  const markaRengi = (renkSonuc.ok && renkSonuc.deger) || "#111827";
+  const esik = esikSonuc.ok ? esikSonuc.deger : 3;
+
   if (!slugify(name)) {
     return { error: "İşletme adından geçerli bir adres üretilemedi." };
   }
@@ -110,10 +161,10 @@ export async function createBusiness(
         slug,
         name,
         type,
-        address: String(formData.get("address") ?? "").trim() || null,
-        googleReviewUrl: String(formData.get("googleReviewUrl") ?? "").trim() || null,
-        brandColor: String(formData.get("brandColor") ?? "#111827"),
-        notifyThreshold: Number(formData.get("notifyThreshold") ?? 3),
+        address: adres,
+        googleReviewUrl: googleLinki || null,
+        brandColor: markaRengi,
+        notifyThreshold: esik,
         categories: {
           create: DEFAULT_CATEGORIES[type as BusinessType].map(
             (categoryName, index) => ({ name: categoryName, sortOrder: index }),
@@ -160,18 +211,59 @@ export async function updateBusiness(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const user = await requireYazma();
+  const user = await requireIsletmeYonetimi();
   const id = String(formData.get("id") ?? "");
 
   if (!await canAccessBusiness(user, id)) return { error: "Yetkiniz yok." };
 
-  const name = String(formData.get("name") ?? "").trim();
-  if (!name) return { error: "İşletme adı gerekli." };
+  const adSonuc = alanDogrula(formData.get("name"), "isletmeAdi", "İşletme adı");
+  const esikSonuc = sayiAlani(formData.get("notifyThreshold"), "Bildirim eşiği", {
+    enAz: 1,
+    enCok: 5,
+    varsayilan: 3,
+  });
+  // brandColor'ın HİÇ doğrulaması yoktu ve değeri karekod üreticisine ham
+  // gidiyor — geçersiz bir renk QR sayfasını çökertiyordu.
+  const renkSonuc = alanDogrula(formData.get("brandColor"), "renk", "Marka rengi", {
+    zorunlu: false,
+  });
+  const adresSonuc = alanDogrula(formData.get("address"), "adres", "Adres", {
+    zorunlu: false,
+  });
+  // Wi-Fi sınırları uydurma değil: SSID standardı 32, WPA2 parolası 63
+  // karakter. Daha uzunu hiçbir cihazda çalışmıyor, yani kaydetmenin de
+  // anlamı yok.
+  const wifiAdiSonuc = alanDogrula(formData.get("wifiSsid"), "wifiAdi", "Wi-Fi adı", {
+    zorunlu: false,
+  });
+  const wifiSifreSonuc = alanDogrula(
+    formData.get("wifiPassword"),
+    "wifiSifresi",
+    "Wi-Fi şifresi",
+    { zorunlu: false },
+  );
+  const iysSonuc = alanDogrula(formData.get("iysBrandCode"), "iysKodu", "İYS marka kodu", {
+    zorunlu: false,
+  });
 
-  const threshold = Number(formData.get("notifyThreshold") ?? 3);
-  if (!Number.isInteger(threshold) || threshold < 1 || threshold > 5) {
-    return { error: "Bildirim eşiği 1-5 arasında olmalı." };
-  }
+  const temelHata = ilkHata(
+    adSonuc,
+    esikSonuc,
+    renkSonuc,
+    adresSonuc,
+    wifiAdiSonuc,
+    wifiSifreSonuc,
+    iysSonuc,
+  );
+  if (temelHata) return { error: temelHata };
+
+  const name = adSonuc.ok ? adSonuc.deger : "";
+  const threshold = esikSonuc.ok ? esikSonuc.deger : 3;
+  const brandColor = (renkSonuc.ok && renkSonuc.deger) || "#111827";
+  const address = (adresSonuc.ok && adresSonuc.deger) || null;
+  const wifiSsid = (wifiAdiSonuc.ok && wifiAdiSonuc.deger) || null;
+  const wifiPassword = (wifiSifreSonuc.ok && wifiSifreSonuc.deger) || null;
+  const iysBrandCode = (iysSonuc.ok && iysSonuc.deger) || null;
 
   const googleReviewUrl = String(formData.get("googleReviewUrl") ?? "").trim();
   if (googleReviewUrl && !googleYorumLinkiGecerliMi(googleReviewUrl)) {
@@ -182,28 +274,56 @@ export async function updateBusiness(
         "içinde DEGISTIRIN gibi bir yer tutucu kalmamalı.",
     };
   }
-  if (googleReviewUrl && !/^https?:\/\//i.test(googleReviewUrl)) {
-    return { error: "Google linki http:// veya https:// ile başlamalı." };
-  }
+  // Bağlantı alanlarının hepsi TEK kural: `webAdresi`. Önceden aynı
+  // `/^https?:\/\//i` kontrolü bu dosyada üç ayrı yerde tekrarlanıyordu ve
+  // hiçbirinde uzunluk sınırı yoktu. `https?` şartı yalnızca biçim değil
+  // güvenlik: şema serbest kalsaydı `javascript:` bir bağlantı olarak
+  // sayfaya basılabilirdi.
+  const linkAlanlari = [
+    ["googleReviewUrl", "Google linki"],
+    ["instagramUrl", "Instagram linki"],
+    ["yemeksepetiUrl", "Yemeksepeti linki"],
+    ["getirUrl", "Getir linki"],
+    ["trendyolUrl", "Trendyol linki"],
+    ["migrosUrl", "Migros linki"],
+  ] as const;
 
-  const instagramUrl = String(formData.get("instagramUrl") ?? "").trim();
-  if (instagramUrl && !/^https?:\/\//i.test(instagramUrl)) {
-    return { error: "Instagram linki http:// veya https:// ile başlamalı." };
+  const linkler: Record<string, string | null> = {};
+  for (const [alan, etiket] of linkAlanlari) {
+    const sonuc = alanDogrula(formData.get(alan), "webAdresi", etiket, { zorunlu: false });
+    if (!sonuc.ok) return { error: sonuc.hata };
+    linkler[alan] = sonuc.deger || null;
   }
+  const instagramUrl = linkler.instagramUrl;
 
-  const wifiSsid = String(formData.get("wifiSsid") ?? "").trim();
-  const wifiPassword = String(formData.get("wifiPassword") ?? "").trim();
+  /**
+   * Çalışma saatleri tek bir metin alanında geliyor (bkz.
+   * CalismaSaatleri.tsx). Doğrulama ÇÖZÜP YENİDEN YAZMAK: çözücü bozuk
+   * parçaları zaten atıyor, yazıcı da kanonik biçimi üretiyor. Böylece
+   * veritabanına elle kurulmuş bir istekten gelen çöp giremiyor ve
+   * biçim tek yerden (lib/isletme/calisma-saati.ts) belirleniyor.
+   */
+  const calismaSaatleri = saatleriYaz(
+    saatleriCoz(String(formData.get("calismaSaatleri") ?? "")),
+  );
 
-  // Sipariş platformu linkleri: her biri isteğe bağlı, doluysa http(s) olmalı.
-  const siparisAlanlari = ["yemeksepetiUrl", "getirUrl", "trendyolUrl", "migrosUrl"] as const;
-  const siparisLinkleri: Record<string, string | null> = {};
-  for (const alan of siparisAlanlari) {
-    const deger = String(formData.get(alan) ?? "").trim();
-    if (deger && !/^https?:\/\//i.test(deger)) {
-      return { error: "Sipariş linkleri http:// veya https:// ile başlamalı." };
-    }
-    siparisLinkleri[alan] = deger || null;
+  // Tür kümesi: enum'a bağlı. Boş gelirse "değiştirme" anlamına geliyor.
+  const turHam = String(formData.get("type") ?? "");
+  if (turHam && !(turHam in BUSINESS_TYPES)) {
+    return { error: "Geçerli bir işletme türü seçin." };
   }
+  const tur = turHam || null;
+
+  // Karekod kartı yazısı ve duyuru: sessizce kesmek yerine sınırlı kırpma
+  // (metinAlani varsayılanı) — bu iki alan serbest metin, yarım kalması
+  // reddedilmesinden iyi.
+  const qrYazi = metinAlani(formData.get("qrCardText"), "Karekod kartı yazısı", {
+    enCok: 80,
+  });
+  const duyuruSonuc = metinAlani(formData.get("announcement"), "Duyuru", { enCok: 120 });
+  const metinHatasi = ilkHata(qrYazi, duyuruSonuc);
+  if (metinHatasi) return { error: metinHatasi };
+  const duyuru = (duyuruSonuc.ok && duyuruSonuc.deger) || null;
 
   // Görseller data URI olarak gelir; boş dize "kaldır" demek. Sunucu boyut ve
   // biçimi yeniden doğrular — tarayıcının küçültmesine güvenmiyoruz.
@@ -227,33 +347,35 @@ export async function updateBusiness(
     data: {
       name,
       // Tür değişimi sadece patronun yetkisinde; sorumlu formu göndermez.
-      ...(user.role === "owner" && formData.get("type")
-        ? { type: String(formData.get("type")) }
-        : {}),
-      address: String(formData.get("address") ?? "").trim() || null,
-      googleReviewUrl: googleReviewUrl || null,
-      brandColor: String(formData.get("brandColor") ?? "#111827"),
+      //
+      // TÜR KÜMESİ BURADA DA DENETLENİYOR. Önceden yalnızca createBusiness'te
+      // bakılıyordu, güncellemede `String(formData.get("type"))` doğrudan
+      // yazılıyordu — yani formu elle kuran biri işletmeye tanınmayan bir
+      // tür verebiliyordu. Sonuç sessiz değil: DEFAULT_CATEGORIES[type]
+      // undefined dönüyor ve o tür üzerinden geçen kod patlıyor.
+      ...(user.role === "owner" && tur ? { type: tur } : {}),
+      address,
+      googleReviewUrl: linkler.googleReviewUrl,
+      brandColor,
       notifyThreshold: threshold,
       googleRedirect: formData.get("googleRedirect") === "on",
-      qrCardText: String(formData.get("qrCardText") ?? "").trim().slice(0, 80) || null,
+      qrCardText: (qrYazi.ok && qrYazi.deger) || null,
       // Menüde gizlemek yetmez: form alanı elle kurulabilir. Modül kapalı
       // bir hesapta bu alana ne gönderilirse gönderilsin dokunulmuyor —
       // var olan değer korunuyor, silinmiyor de.
-      ...(user.moduller.includes("iys")
-        ? { iysBrandCode: String(formData.get("iysBrandCode") ?? "").trim() || null }
-        : {}),
+      ...(user.moduller.includes("iys") ? { iysBrandCode } : {}),
       logoUrl,
       coverUrl,
-      instagramUrl: instagramUrl || null,
-      wifiSsid: wifiSsid || null,
-      wifiPassword: wifiPassword || null,
-      announcement:
-        String(formData.get("announcement") ?? "").trim().slice(0, 120) || null,
+      instagramUrl,
+      wifiSsid,
+      wifiPassword,
+      calismaSaatleri,
+      announcement: duyuru,
       announcementActive: formData.get("announcementActive") === "on",
-      yemeksepetiUrl: siparisLinkleri.yemeksepetiUrl,
-      getirUrl: siparisLinkleri.getirUrl,
-      trendyolUrl: siparisLinkleri.trendyolUrl,
-      migrosUrl: siparisLinkleri.migrosUrl,
+      yemeksepetiUrl: linkler.yemeksepetiUrl,
+      getirUrl: linkler.getirUrl,
+      trendyolUrl: linkler.trendyolUrl,
+      migrosUrl: linkler.migrosUrl,
     },
   });
 
@@ -272,12 +394,13 @@ export async function addCategory(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const user = await requireYazma();
+  const user = await requireIsletmeYonetimi();
   const businessId = String(formData.get("businessId") ?? "");
-  const name = String(formData.get("name") ?? "").trim();
+  const adSonuc = alanDogrula(formData.get("name"), "kisaBaslik", "Kategori adı");
 
   if (!await canAccessBusiness(user, businessId)) return { error: "Yetkiniz yok." };
-  if (!name) return { error: "Kategori adı gerekli." };
+  if (!adSonuc.ok) return { error: adSonuc.hata };
+  const name = adSonuc.deger;
 
   const existing = await prisma.categoryTemplate.findUnique({
     where: { businessId_name: { businessId, name } },
@@ -314,7 +437,7 @@ export async function addCategory(
  * kapatmak doğru yol.
  */
 export async function updateCategoryProblems(formData: FormData) {
-  const user = await requireYazma();
+  const user = await requireIsletmeYonetimi();
   const id = String(formData.get("categoryId") ?? "");
 
   const category = await prisma.categoryTemplate.findUnique({ where: { id } });
@@ -336,7 +459,7 @@ export async function updateCategoryProblems(formData: FormData) {
 }
 
 export async function toggleCategory(formData: FormData) {
-  const user = await requireYazma();
+  const user = await requireIsletmeYonetimi();
   const id = String(formData.get("categoryId") ?? "");
 
   const category = await prisma.categoryTemplate.findUnique({ where: { id } });
@@ -351,7 +474,7 @@ export async function toggleCategory(formData: FormData) {
 }
 
 export async function moveCategory(formData: FormData) {
-  const user = await requireYazma();
+  const user = await requireIsletmeYonetimi();
   const id = String(formData.get("categoryId") ?? "");
   const direction = String(formData.get("direction") ?? "");
 
@@ -389,11 +512,21 @@ export async function addTables(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const user = await requireYazma();
+  const user = await requireIsletmeYonetimi();
   const businessId = String(formData.get("businessId") ?? "");
   if (!await canAccessBusiness(user, businessId)) return { error: "Yetkiniz yok." };
 
-  const raw = String(formData.get("tableNumbers") ?? "").trim();
+  // Ham girdi BÖLÜNMEDEN önce sınırlanıyor. Aşağıdaki eleman sayısı
+  // kontrolü doğru ama geç: 50 MB'lık bir dizeyi düzenli ifadeyle bölmek,
+  // sonra "çok fazla eleman" demek işi zaten yapmış olmak demek.
+  // 300 masa × 40 karakter + ayraçlar için 16 KB fazlasıyla yeterli.
+  const hamSonuc = metinAlani(formData.get("tableNumbers"), "Masa numaraları", {
+    enAz: 1,
+    enCok: EN_COK_MASA * (EN_UZUN_MASA_ADI + 2),
+    kirp: false,
+  });
+  if (!hamSonuc.ok) return { error: hamSonuc.hata };
+  const raw = hamSonuc.deger;
   const isEntrance = formData.get("isEntrance") === "on";
 
   // Hem "1-20" aralığı hem "VIP-1, VIP-2" listesi kabul edilir.
@@ -402,8 +535,8 @@ export async function addTables(
   if (range) {
     const start = Number(range[1]);
     const end = Number(range[2]);
-    if (end < start || end - start > 300) {
-      return { error: "Aralık geçersiz veya çok geniş (en fazla 300 masa)." };
+    if (end < start || end - start >= EN_COK_MASA) {
+      return { error: `Aralık geçersiz veya çok geniş (en fazla ${EN_COK_MASA} masa).` };
     }
     numbers = Array.from({ length: end - start + 1 }, (_, i) => String(start + i));
   } else {
@@ -416,23 +549,47 @@ export async function addTables(
   if (numbers.length === 0) {
     return { error: 'Masa numarası girin (örn. "1-20" veya "VIP-1, VIP-2").' };
   }
-
-  let added = 0;
-  for (const tableNumber of numbers) {
-    const existing = await prisma.table.findUnique({
-      where: { businessId_tableNumber: { businessId, tableNumber } },
-    });
-    if (existing) {
-      if (!existing.active) {
-        await prisma.table.update({ where: { id: existing.id }, data: { active: true } });
-      }
-      continue;
-    }
-    await prisma.table.create({
-      data: { businessId, tableNumber, isEntrance, qrToken: newQrToken() },
-    });
-    added += 1;
+  // Virgüllü liste dalında üst sınır YOKTU: on bin değer yapıştıran biri
+  // tek istekte yirmi bin sorgu tetikleyebiliyordu. Aralık dalındaki 300
+  // sınırı burada da geçerli.
+  if (numbers.length > EN_COK_MASA) {
+    return { error: `Tek seferde en fazla ${EN_COK_MASA} masa eklenebilir.` };
   }
+  const gecersizAd = numbers.find((n) => n.length > EN_UZUN_MASA_ADI);
+  if (gecersizAd) {
+    return { error: `Masa adı en fazla ${EN_UZUN_MASA_ADI} karakter olabilir.` };
+  }
+
+  // Döngü içinde sorgu YOK: numaralar tek `findMany` ile okunuyor, yeni
+  // olanlar tek `createMany` ile yazılıyor, kapalı olanlar tek
+  // `updateMany` ile açılıyor. Önceden 300 masalık bir aralık 600 gidiş
+  // dönüş demekti; uzak bir veritabanında (Neon) bu tek başına dakikalar
+  // sürüyordu.
+  const mevcutlar = await prisma.table.findMany({
+    where: { businessId, tableNumber: { in: numbers } },
+    select: { id: true, tableNumber: true, active: true },
+  });
+  const mevcutAdlar = new Set(mevcutlar.map((m) => m.tableNumber));
+  const yenidenAcilacaklar = mevcutlar.filter((m) => !m.active).map((m) => m.id);
+  const yeniler = numbers.filter((n) => !mevcutAdlar.has(n));
+
+  if (yenidenAcilacaklar.length > 0) {
+    await prisma.table.updateMany({
+      where: { id: { in: yenidenAcilacaklar } },
+      data: { active: true },
+    });
+  }
+  if (yeniler.length > 0) {
+    await prisma.table.createMany({
+      data: yeniler.map((tableNumber) => ({
+        businessId,
+        tableNumber,
+        isEntrance,
+        qrToken: newQrToken(),
+      })),
+    });
+  }
+  const added = yeniler.length;
 
   await denetimYaz(user, "business.table", {
     entity: "business",
@@ -455,7 +612,7 @@ export async function addTables(
  * tolere ediyor, ayrı bir veri modeli gerekmiyor.
  */
 export async function tekQrOlustur(formData: FormData): Promise<void> {
-  const user = await requireYazma();
+  const user = await requireIsletmeYonetimi();
   const businessId = String(formData.get("businessId") ?? "");
   if (!(await canAccessBusiness(user, businessId))) return;
 
@@ -489,7 +646,7 @@ export async function tekQrOlustur(formData: FormData): Promise<void> {
 }
 
 export async function toggleTable(formData: FormData) {
-  const user = await requireYazma();
+  const user = await requireIsletmeYonetimi();
   const id = String(formData.get("tableId") ?? "");
 
   const table = await prisma.table.findUnique({ where: { id } });
@@ -513,7 +670,7 @@ export async function toggleTable(formData: FormData) {
  * dönüş de mümkün olsun diye (bkz. tumMasalariAc).
  */
 export async function tumMasalariKapat(formData: FormData): Promise<void> {
-  const user = await requireYazma();
+  const user = await requireIsletmeYonetimi();
   const businessId = String(formData.get("businessId") ?? "");
   if (!(await canAccessBusiness(user, businessId))) return;
 
@@ -533,7 +690,7 @@ export async function tumMasalariKapat(formData: FormData): Promise<void> {
 
 /** Toplu kapatmanın tersi: kapalı masaya özel QR'ların hepsini açar. */
 export async function tumMasalariAc(formData: FormData): Promise<void> {
-  const user = await requireYazma();
+  const user = await requireIsletmeYonetimi();
   const businessId = String(formData.get("businessId") ?? "");
   if (!(await canAccessBusiness(user, businessId))) return;
 
@@ -570,7 +727,7 @@ export async function ayarlariKopyala(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const user = await requireYazma();
+  const user = await requireIsletmeYonetimi();
   const kaynakId = String(formData.get("businessId") ?? "");
   const hedefIdler = formData.getAll("hedefIds").map(String).filter(Boolean);
 

@@ -1,7 +1,8 @@
 import { Megaphone } from "lucide-react";
-import { requireMenuErisim, visibleBusinesses } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
+import { requireMenuErisim, visibleBusinesses } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { EmptyState, PageHeader, Pagination, SectionCard } from "@/components/ui";
+import { aralikMetni, cubukGosterilsinMi, sayfaDurumu, toplamSayfa } from "@/lib/cekirdek/sayfalama";
 import { IsletmeSecici } from "../menu/MenuUst";
 import { DuyuruSatiri, NewDuyuruForm } from "./DuyuruForms";
 
@@ -17,7 +18,7 @@ function tarihGirdisi(d: Date | null): string | null {
 export default async function DuyurularPage({
   searchParams,
 }: {
-  searchParams: Promise<{ isletme?: string }>;
+  searchParams: Promise<{ isletme?: string; sayfa?: string; boyut?: string }>;
 }) {
   const user = await requireMenuErisim();
   const businesses = await visibleBusinesses(user);
@@ -29,9 +30,14 @@ export default async function DuyurularPage({
 
   const secili = businesses.find((b) => b.id === query.isletme) ?? businesses[0];
 
+  const toplam = await prisma.duyuru.count({ where: { businessId: secili.id } });
+  const durum = sayfaDurumu(query, toplam);
+
   const duyurular = await prisma.duyuru.findMany({
     where: { businessId: secili.id },
     orderBy: [{ aktif: "desc" }, { sortOrder: "desc" }],
+    skip: durum.skip,
+    take: durum.take,
   });
 
   return (
@@ -72,6 +78,23 @@ export default async function DuyurularPage({
           ))}
         </ul>
       )}
+
+      {cubukGosterilsinMi(toplam, durum.boyut) ? (
+        <Pagination
+          sayfa={durum.sayfa}
+          toplamSayfa={toplamSayfa(toplam, durum.boyut)}
+          toplamKayit={toplam}
+          boyut={durum.boyut}
+          aralik={aralikMetni(durum, toplam)}
+          href={(s) =>
+            `/admin/duyurular?${new URLSearchParams({
+              ...(query.isletme ? { isletme: query.isletme } : {}),
+              ...(durum.boyut !== 10 ? { boyut: String(durum.boyut) } : {}),
+              sayfa: String(s),
+            }).toString()}`
+          }
+        />
+      ) : null}
     </div>
   );
 }

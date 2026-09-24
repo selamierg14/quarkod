@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { MusteriKabuk } from "@/components/MusteriKabuk";
-import { isletmeSlugla, menuIcerigi, qrSayfaVerisi } from "@/lib/qr-sayfa";
+import { isletmeSlugla, menuIcerigi, qrSayfaVerisi } from "@/lib/isletme/qr-sayfa";
 import { MenuGorunumu } from "./MenuGorunumu";
 
 type Params = { slug: string; table: string };

@@ -1,20 +1,21 @@
 import { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-} from "react-native";
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { renkler, yazi, bosluk, yaricap, isima } from "../src/tasarim";
+import { renkler, yazi, bosluk } from "../src/tasarim";
 import { useOturum } from "../src/store/oturum";
 import { Basilabilir } from "../src/bilesenler/Basilabilir";
+import { AnaDugme, FormAlani, HataMetni } from "../src/bilesenler/Form";
+import { SosyalGirisDugmeleri } from "../src/bilesenler/SosyalGirisDugmeleri";
 
+/**
+ * Giriş ekranı.
+ *
+ * Eskiden bu ekranın ÇIKIŞI yoktu: hesabı olmayan kişi kayıt olamıyor,
+ * şifresini unutan kurtaramıyordu. İki yol da sunucuda hazırdı; ekranda
+ * bağlantıları eksikti.
+ */
 export default function GirisEkrani() {
   const router = useRouter();
   const guvenliAlan = useSafeAreaInsets();
@@ -34,7 +35,9 @@ export default function GirisEkrani() {
       setHata(sonuc.hata ?? "Giriş yapılamadı.");
       return;
     }
-    router.back();
+    // Ekran derin bağlantıyla açıldıysa geri dönülecek yer yok.
+    if (router.canGoBack()) router.back();
+    else router.replace("/kesfet");
   }
 
   return (
@@ -61,89 +64,78 @@ export default function GirisEkrani() {
           entering={FadeInDown.delay(100).duration(420).springify()}
           style={{ gap: bosluk.m }}
         >
-          <Alan
+          <FormAlani
             etiket="Kullanıcı adı"
-            deger={username}
-            onDegis={setUsername}
-            otomatikTamamla="username"
+            value={username}
+            onChangeText={setUsername}
+            autoComplete="username"
+            textContentType="username"
+            maxLength={64}
           />
-          <Alan
+          <FormAlani
             etiket="Şifre"
-            deger={sifre}
-            onDegis={setSifre}
-            gizli
-            otomatikTamamla="current-password"
+            value={sifre}
+            onChangeText={setSifre}
+            secureTextEntry
+            autoComplete="current-password"
+            textContentType="password"
+            maxLength={128}
+            returnKeyType="go"
+            onSubmitEditing={gonder}
           />
 
-          {hata ? <Text style={stiller.hata}>{hata}</Text> : null}
-
+          {/* Şifre alanının hemen altında: şifresini hatırlamadığını
+              anladığı an tam burası. */}
           <Basilabilir
-            style={[stiller.buton, isima(renkler.vurgu), gonderiliyor && { opacity: 0.6 }]}
-            onPress={gonder}
-            disabled={gonderiliyor}
-            titresim="orta"
+            onPress={() => router.push("/sifremi-unuttum")}
+            style={stiller.metinBaglanti}
+            olcek={0.96}
+            accessibilityRole="link"
           >
-            <Text style={yazi.buton}>{gonderiliyor ? "Giriş yapılıyor…" : "Giriş yap"}</Text>
+            <Text style={stiller.baglantiMetni}>Şifremi unuttum</Text>
           </Basilabilir>
+
+          <HataMetni mesaj={hata} />
+
+          <AnaDugme
+            metin="Giriş yap"
+            bekleyenMetin="Giriş yapılıyor…"
+            bekliyor={gonderiliyor}
+            devreDisi={!username.trim() || !sifre}
+            onPress={gonder}
+          />
+
+          <SosyalGirisDugmeleri
+            onBasarili={() => {
+              if (router.canGoBack()) router.back();
+              else router.replace("/kesfet");
+            }}
+          />
         </Animated.View>
+
+        <View style={stiller.altSatir}>
+          <Text style={yazi.govde}>Hesabın yok mu?</Text>
+          <Basilabilir
+            onPress={() => router.replace("/kayit")}
+            style={stiller.metinBaglanti}
+            olcek={0.96}
+            accessibilityRole="link"
+          >
+            <Text style={stiller.baglantiMetni}>Ücretsiz kaydol</Text>
+          </Basilabilir>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-function Alan({
-  etiket,
-  deger,
-  onDegis,
-  gizli,
-  otomatikTamamla,
-}: {
-  etiket: string;
-  deger: string;
-  onDegis: (d: string) => void;
-  gizli?: boolean;
-  otomatikTamamla?: "username" | "current-password";
-}) {
-  const [odakli, setOdakli] = useState(false);
-
-  return (
-    <View style={{ gap: bosluk.s }}>
-      <Text style={yazi.etiket}>{etiket}</Text>
-      <TextInput
-        value={deger}
-        onChangeText={onDegis}
-        secureTextEntry={gizli}
-        autoCapitalize="none"
-        autoCorrect={false}
-        autoComplete={otomatikTamamla}
-        onFocus={() => setOdakli(true)}
-        onBlur={() => setOdakli(false)}
-        // 16px altı yazı boyutu iOS'ta sayfayı otomatik yakınlaştırıyor.
-        style={[stiller.girdi, odakli && { borderColor: renkler.vurgu }]}
-        placeholderTextColor={renkler.metin.soluk}
-      />
-    </View>
-  );
-}
-
 const stiller = StyleSheet.create({
-  girdi: {
-    backgroundColor: renkler.katman,
-    borderRadius: yaricap.m,
-    borderWidth: 1.5,
-    borderColor: "transparent",
-    paddingHorizontal: bosluk.l,
-    minHeight: 52,
-    fontSize: 16,
-    color: renkler.metin.ana,
-  },
-  buton: {
-    backgroundColor: renkler.vurgu,
-    borderRadius: yaricap.m,
-    minHeight: 52,
+  metinBaglanti: { minHeight: 36, alignSelf: "flex-start", justifyContent: "center" },
+  baglantiMetni: { ...yazi.govde, color: renkler.vurguParlak, fontWeight: "600" },
+  altSatir: {
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: bosluk.s,
+    gap: bosluk.xs,
   },
-  hata: { ...yazi.kucuk, color: renkler.uyari },
 });

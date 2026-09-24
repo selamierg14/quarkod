@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { after } from "next/server";
 import { Star, MapPin, Phone, MessageCircle, ClipboardList } from "lucide-react";
-import { mekanDetayGetir } from "@/lib/kesfet-veri";
-import { BUSINESS_TYPES } from "@/lib/mekan";
-import { prisma } from "@/lib/db";
+import { mekanDetayGetir } from "@/lib/biyerlere/kesfet-veri";
+import { BUSINESS_TYPES } from "@/lib/biyerlere/mekan";
+import { prisma } from "@/lib/cekirdek/db";
 import { FavoriButonu } from "./FavoriButonu";
 import { YolTarifiButonu } from "./YolTarifiButonu";
 import { PlusHakkiKutusu } from "./PlusHakkiKutusu";
+import { RezervasyonKutusu } from "./RezervasyonKutusu";
+import { AcikRozeti } from "../../../components/AcikRozeti";
 
 export const dynamic = "force-dynamic";
 
@@ -108,6 +110,25 @@ export default async function MekanDetayPage({
           )}
         </div>
 
+        {/* Bugünün durumu + haftanın tamamı. Saati girilmemiş mekanda
+            hiçbir şey çizilmiyor (bkz. AcikRozeti). */}
+        {mekan.acik !== "bilinmiyor" ? (
+          <details className="rounded-2xl border border-white/10 bg-[#24262E]/85 px-3.5 py-2.5">
+            <summary className="flex cursor-pointer items-center gap-2 text-small text-gray-200">
+              <AcikRozeti durum={mekan.acik} sonrakiAcilis={mekan.sonrakiAcilis} />
+              <span className="text-gray-400">Çalışma saatleri</span>
+            </summary>
+            <ul className="mt-2.5 flex flex-col gap-1 border-t border-white/5 pt-2.5">
+              {mekan.haftalikSaatler.map((g) => (
+                <li key={g.gun} className="flex justify-between text-caption">
+                  <span className="text-gray-400">{g.ad}</span>
+                  <span className="text-gray-200">{g.metin}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
+
         {mekan.adres ? (
           <p className="flex items-start gap-2 text-small text-gray-300">
             <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />
@@ -151,6 +172,8 @@ export default async function MekanDetayPage({
             />
           ) : null}
         </div>
+
+        {mekan.rezervasyonAcik ? <RezervasyonKutusu slug={mekan.slug} /> : null}
 
         {mekan.biyerlerePlusOrtagi ? <PlusHakkiKutusu businessId={mekan.id} /> : null}
 

@@ -1,7 +1,8 @@
 import { MapPinned } from "lucide-react";
-import { requireSuperadmin } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
+import { requireSuperadmin } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { EmptyState, PageHeader, Pagination, SectionCard } from "@/components/ui";
+import { aralikMetni, cubukGosterilsinMi, sayfaDurumu, toplamSayfa } from "@/lib/cekirdek/sayfalama";
 import { AktifButonu, DurakEkleForm, DurakSilButonu, NewRotaForm, RotaSilButonu } from "./RotaForms";
 
 export const dynamic = "force-dynamic";
@@ -15,12 +16,22 @@ export const metadata = { title: "Rotalar" };
  * getirebiliyor (bkz. Rota modeli yorumu, schema.prisma), bu yüzden tek
  * bir hesap sahibinin yetki alanına girmiyor.
  */
-export default async function RotalarPage() {
+export default async function RotalarPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sayfa?: string; boyut?: string }>;
+}) {
   await requireSuperadmin();
+  const sorgu = await searchParams;
+
+  const toplam = await prisma.rota.count();
+  const durum = sayfaDurumu(sorgu, toplam);
 
   const [rotalar, mekanlar] = await Promise.all([
     prisma.rota.findMany({
       orderBy: { createdAt: "desc" },
+      skip: durum.skip,
+      take: durum.take,
       include: {
         duraklar: {
           orderBy: { sira: "asc" },
@@ -95,6 +106,22 @@ export default async function RotalarPage() {
           ))}
         </ul>
       )}
+
+      {cubukGosterilsinMi(toplam, durum.boyut) ? (
+        <Pagination
+          sayfa={durum.sayfa}
+          toplamSayfa={toplamSayfa(toplam, durum.boyut)}
+          toplamKayit={toplam}
+          boyut={durum.boyut}
+          aralik={aralikMetni(durum, toplam)}
+          href={(s) =>
+            `/admin/rotalar?${new URLSearchParams({
+              ...(durum.boyut !== 10 ? { boyut: String(durum.boyut) } : {}),
+              sayfa: String(s),
+            }).toString()}`
+          }
+        />
+      ) : null}
     </div>
   );
 }

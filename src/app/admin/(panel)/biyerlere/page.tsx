@@ -1,11 +1,14 @@
-import { MapPin, Zap } from "lucide-react";
-import { requireKesfetErisim, visibleBusinesses } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
-import { sponsorMu } from "@/lib/sponsorluk";
+import { MapPin, Users, Zap } from "lucide-react";
+import { requireKesfetErisim, visibleBusinesses } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { EmptyState, PageHeader, Pagination, SectionCard } from "@/components/ui";
+import { aralikMetni, cubukGosterilsinMi, sayfaDurumu, toplamSayfa } from "@/lib/cekirdek/sayfalama";
+import { sponsorMu } from "@/lib/biyerlere/sponsorluk";
 import { IsletmeSecici } from "../menu/MenuUst";
 import { BiyerlereForm } from "./BiyerlereForm";
 import { FlasIndirim } from "./FlasIndirim";
+import { KullaniciEtkinlikleri } from "./KullaniciEtkinlikleri";
+import { listeAltSiniri } from "@/lib/biyerlere/etkinlik";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +24,7 @@ export const metadata = { title: "Biyerlere" };
 export default async function BiyerlerePage({
   searchParams,
 }: {
-  searchParams: Promise<{ isletme?: string }>;
+  searchParams: Promise<{ isletme?: string; sayfa?: string; boyut?: string }>;
 }) {
   const user = await requireKesfetErisim();
   const businesses = await visibleBusinesses(user);
@@ -45,6 +48,36 @@ export default async function BiyerlerePage({
       biyerlerePlusOrtagi: true,
       pushKredisi: true,
       sponsorHaftasi: true,
+    },
+  });
+
+  /**
+   * Mekanda açılmış müşteri buluşmaları — moderasyon listesi.
+   *
+   * Kaldırılmış olanlar gelmiyor; iptal edilenler de. İşletmenin
+   * ilgilendiği soru "şu an adımın yanında ne duruyor".
+   */
+  const etkinlikKosulu = {
+    businessId: business.id,
+    baslangic: { gte: listeAltSiniri(new Date()) },
+    iptalEdildi: null,
+    kaldirildi: null,
+  };
+  const toplam = await prisma.appEtkinlik.count({ where: etkinlikKosulu });
+  const durum = sayfaDurumu(query, toplam);
+
+  const kullaniciEtkinlikleri = await prisma.appEtkinlik.findMany({
+    where: etkinlikKosulu,
+    orderBy: { baslangic: "asc" },
+    skip: durum.skip,
+    take: durum.take,
+    select: {
+      id: true,
+      baslik: true,
+      aciklama: true,
+      baslangic: true,
+      appUser: { select: { name: true } },
+      _count: { select: { ilgiler: true } },
     },
   });
 
@@ -81,6 +114,41 @@ export default async function BiyerlerePage({
         description="Kısa süreli, öne çıkan bir kampanya duyurusu — bkz. aşağıdaki not."
       >
         <FlasIndirim businessId={business.id} pushKredisi={business.pushKredisi} />
+      </SectionCard>
+
+      <SectionCard
+        ikon={<Users className="h-4 w-4" aria-hidden="true" />}
+        renk="sky"
+        title="Müşteri buluşmaları"
+        description="Müşterilerin mekanınız için açtığı buluşma çağrıları. İşletme adına söz vermiyorlar ama adınızın yanında duruyorlar — uygun bulmadığınızı kaldırabilirsiniz."
+      >
+        <KullaniciEtkinlikleri
+          etkinlikler={kullaniciEtkinlikleri.map((e) => ({
+            id: e.id,
+            baslik: e.baslik,
+            aciklama: e.aciklama,
+            baslangic: e.baslangic.toISOString(),
+            acan: e.appUser.name,
+            ilgiSayisi: e._count.ilgiler,
+          }))}
+        />
+
+      {cubukGosterilsinMi(toplam, durum.boyut) ? (
+        <Pagination
+          sayfa={durum.sayfa}
+          toplamSayfa={toplamSayfa(toplam, durum.boyut)}
+          toplamKayit={toplam}
+          boyut={durum.boyut}
+          aralik={aralikMetni(durum, toplam)}
+          href={(s) =>
+            `/admin/biyerlere?${new URLSearchParams({
+              ...(query.isletme ? { isletme: query.isletme } : {}),
+              ...(durum.boyut !== 10 ? { boyut: String(durum.boyut) } : {}),
+              sayfa: String(s),
+            }).toString()}`
+          }
+        />
+      ) : null}
       </SectionCard>
     </div>
   );

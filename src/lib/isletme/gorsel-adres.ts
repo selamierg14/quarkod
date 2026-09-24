@@ -1,0 +1,156 @@
+import { createHash } from "node:crypto";
+
+/**
+ * İşletme görsellerinin müşteriye hangi adresle verileceği.
+ *
+ * Logo ve kapak veritabanında data URI (base64) olarak duruyor. Bu, panelde
+ * yükleme işini basitleştiriyor ama müşteri tarafında pahalıya patlıyordu —
+ * canlıda ölçüldü:
+ *
+ *   /f/keskinlezzetler/1 → 247 KB HTML, bunun 220 KB'ı (yüzde 89) dört adet
+ *   base64 görsel. "Dört" çünkü logo ve kapak ikişer kez geçiyor: bir kez
+ *   HTML işaretlemesinde, bir kez de RSC yükünde.
+ *
+ * Data URI tarayıcı önbelleğine girmez: müşteri karekodu her okuttuğunda
+ * aynı 110 KB yeniden iniyordu. Masadaki müşteri bunu mobil veriyle bekliyor.
+ *
+ * Çözüm görselleri veritabanından çıkarmak değil (yükleme akışı sade
+ * kalsın), müşteriye ayrı ve önbelleklenebilir bir adresten vermek. Adres
+ * içeriğin özetini taşıyor: görsel değişince adres de değişiyor, bu yüzden
+ * uzun süreli önbellek güvenli.
+ */
+
+export type GorselTuru = "logo" | "kapak";
+
+/** İçeriğin kısa özeti; adresin taze kalmasını sağlar. */
+export function gorselSurumu(dataUrl: string): string {
+  return createHash("sha256").update(dataUrl).digest("hex").slice(0, 12);
+}
+
+/**
+ * Müşteriye verilecek adres.
+ *
+ * Görsel yoksa null. Zaten bir http(s) adresiyse dokunmuyoruz — ileride
+ * görseller bir depolama servisine taşınırsa bu fonksiyon değişmeden çalışır.
+ *
+ * `/` ile başlayan değerler de olduğu gibi geçiyor: bunlar `public/`
+ * altındaki statik dosyalar (demo mekan fotoğrafları böyle duruyor).
+ * Elli iki mekanın kapağını data URI olarak saklamak, keşfet listesini
+ * her çeken isteğe birkaç megabaytlık bir veritabanı okuması ekliyordu —
+ * üstelik bu baytların tamamı yalnızca adres özeti hesaplanıp atılmak
+ * için okunuyordu. Panelden yüklenen görseller data URI olmaya devam
+ * ediyor; bu yol yalnızca dosya sisteminden gelenler için.
+ */
+export function gorselAdresi(
+  businessId: string,
+  tur: GorselTuru,
+  deger: string | null | undefined,
+): string | null {
+  if (!deger) return null;
+  if (/^https?:\/\//i.test(deger)) return deger;
+  // `//host/...` protokolsüz bir dış adres olurdu; onu kabul etmiyoruz.
+  if (deger.startsWith("/") && !deger.startsWith("//")) return deger;
+  if (!deger.startsWith("data:")) return null;
+  return `/g/${businessId}/${tur}?s=${gorselSurumu(deger)}`;
+}
+
+/** data URI'yi ham baytlara ve içerik tipine ayırır. */
+export function dataUrlCoz(
+  deger: string,
+): { tip: string; baytlar: Buffer } | null {
+  // [\s\S] kullanıyoruz: `s` bayrağı bu derleme hedefinde yok.
+  const eslesme = /^data:([\w/+.-]+);base64,([\s\S]+)$/.exec(deger.trim());
+  if (!eslesme) return null;
+  try {
+    return { tip: eslesme[1], baytlar: Buffer.from(eslesme[2], "base64") };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Duyuru/etkinlik afişinin adresi.
+ *
+ * Logo ve kapakla aynı gerekçe ve aynı desen: afişler de data URI olarak
+ * saklanıyor ve Biyerlere keşfet listesine gömüldüklerinde tek mekanlık
+ * bir yanıtı 164 KB'a çıkarıyorlardı. Adres yine içerik özetini taşıyor,
+ * yani afiş değişince adres de değişiyor ve uzun önbellek güvenli kalıyor.
+ */
+export function duyuruGorselAdresi(
+  duyuruId: string,
+  deger: string | null | undefined,
+): string | null {
+  if (!deger) return null;
+  if (/^https?:\/\//i.test(deger)) return deger;
+  if (!deger.startsWith("data:")) return null;
+  return `/g/duyuru/${duyuruId}?s=${gorselSurumu(deger)}`;
+}
+
+/**
+ * Menü ürünü fotoğrafının adresi.
+ *
+ * Logo/kapak/afişle aynı gerekçe. Burada bahis daha yüksek: bir menüde
+ * onlarca ürün var, hepsi fotoğraflıysa tek bir mekan detayı yanıtı
+ * megabaytlara çıkar. 55 ürünlük bir menüde ürün başına ~250 KB sınırı
+ * (bkz. MAX_MENU_BYTES) en kötü durumda ~14 MB demek.
+ */
+export function urunGorselAdresi(
+  urunId: string,
+  deger: string | null | undefined,
+): string | null {
+  if (!deger) return null;
+  if (/^https?:\/\//i.test(deger)) return deger;
+  if (!deger.startsWith("data:")) return null;
+  return `/g/urun/${urunId}?s=${gorselSurumu(deger)}`;
+}
+
+/**
+ * Biyerlere API'sinin döndürdüğü MEKAN ÖZETİ — tek kaynak.
+ *
+ * Aynı üç satır yedi ayrı uçta elle yazılıydı:
+ *
+ *     { id: x.business.id,
+ *       slug: x.business.slug,
+ *       ad: x.business.name,
+ *       logoUrl: gorselAdresi(x.business.id, "logo", x.business.logoUrl) }
+ *
+ * (cüzdan üç kez, profil, favoriler, rota-veri iki kez.) Kopyaların zararı
+ * sayı değil AYRIŞMA riski: `ad` alanının adı ya da logo adresinin
+ * üretilme biçimi değiştiğinde yedi yerin yedisinin birlikte değişmesi
+ * gerekiyordu ve biri unutulursa mobil taraf o uçta bozuk logo gösterip
+ * sebebi anlaşılmıyordu.
+ *
+ * `MEKAN_OZETI_SECIMI` Prisma select'i de burada: veriyi çeken sorgu ile
+ * onu dönüştüren fonksiyon yan yana durunca, alan eklerken birini
+ * güncelleyip diğerini unutmak mümkün olmuyor.
+ */
+export const MEKAN_OZETI_SECIMI = {
+  id: true,
+  slug: true,
+  name: true,
+  logoUrl: true,
+} as const;
+
+/** `MEKAN_OZETI_SECIMI` ile çekilmiş bir işletme satırı. */
+export type MekanOzetiKaynagi = {
+  id: string;
+  slug: string;
+  name: string;
+  logoUrl: string | null;
+};
+
+export type MekanOzeti = {
+  id: string;
+  slug: string;
+  ad: string;
+  logoUrl: string | null;
+};
+
+export function mekanOzeti(business: MekanOzetiKaynagi): MekanOzeti {
+  return {
+    id: business.id,
+    slug: business.slug,
+    ad: business.name,
+    logoUrl: gorselAdresi(business.id, "logo", business.logoUrl),
+  };
+}

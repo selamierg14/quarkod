@@ -23,7 +23,7 @@ export function BosDurum({
   butonMetni,
   onButon,
 }: {
-  cizim: "cuzdan" | "rota" | "favori" | "bildirim";
+  cizim: "cuzdan" | "rota" | "favori" | "bildirim" | "arama";
   baslik: string;
   aciklama: string;
   butonMetni?: string;
@@ -132,11 +132,25 @@ function BildirimCizimi() {
   );
 }
 
+function AramaCizimi() {
+  return (
+    <Svg width={CIZIM_BOYUTU} height={CIZIM_BOYUTU} viewBox="0 0 120 120">
+      <GradyanTanimi />
+      <Circle cx="60" cy="60" r="46" stroke={renkler.katmanYuksek} strokeWidth="1.5" fill="none" />
+      <Circle cx="55" cy="54" r="18" {...cizgi} />
+      <Path d="M68 67l14 14" {...cizgi} />
+      {/* Büyütecin içi boş: "aradın, bulamadın" durumunu anlatan tek detay. */}
+      <Path d="M48 54h14" {...cizgi} strokeWidth="1.8" opacity={0.45} />
+    </Svg>
+  );
+}
+
 const CIZIMLER = {
   cuzdan: CuzdanCizimi,
   rota: RotaCizimi,
   favori: FavoriCizimi,
   bildirim: BildirimCizimi,
+  arama: AramaCizimi,
 };
 
 const stiller = StyleSheet.create({

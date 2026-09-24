@@ -27,3 +27,5 @@ export function formatDateTime(date: Date): string {
     minute: "2-digit",
   });
 }
+export { GonderDugmesi } from "./GonderDugmesi";
+export { SilDugmesi } from "./SilDugmesi";

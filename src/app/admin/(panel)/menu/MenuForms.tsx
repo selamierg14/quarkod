@@ -3,7 +3,7 @@
 import { ChevronDown, ClipboardList, Send } from "lucide-react";
 import { useActionState, useState } from "react";
 import { ImageUpload } from "@/components/ImageUpload";
-import { SectionCard } from "@/components/ui";
+import { GonderDugmesi, SectionCard, SilDugmesi } from "@/components/ui";
 import {
   ALERJENLER,
   MENU_TAGS,
@@ -13,7 +13,7 @@ import {
   parseOzelBilesenler,
   parseTags,
   priceInputValue,
-} from "@/lib/menu";
+} from "@/lib/isletme/menu";
 import {
   addMenuCategory,
   addMenuItem,
@@ -79,7 +79,7 @@ export function NewCategoryForm({ businessId }: { businessId: string }) {
       >
         {pending ? "Ekleniyor…" : "Bölüm ekle"}
       </button>
-      {state.error ? <p className="pb-2 text-small text-danger">{state.error}</p> : null}
+      {state.error ? <p className="pb-2 text-small text-danger" role="alert">{state.error}</p> : null}
     </form>
   );
 }
@@ -107,9 +107,10 @@ export function CategoryHeader({
         >
           <input type="hidden" name="categoryId" value={id} />
           <input name="name" defaultValue={name} autoFocus className={`${INPUT} w-48`} />
-          <button type="submit" className={KUCUK_BUTON}>
+          <GonderDugmesi  className={KUCUK_BUTON}
+      >
             Kaydet
-          </button>
+          </GonderDugmesi>
           <button type="button" onClick={() => setDuzenle(false)} className={KUCUK_BUTON}>
             Vazgeç
           </button>
@@ -137,32 +138,36 @@ export function CategoryHeader({
         <form action={moveMenuCategory}>
           <input type="hidden" name="categoryId" value={id} />
           <input type="hidden" name="direction" value="up" />
-          <button type="submit" aria-label={`${name} bölümünü yukarı taşı`} className={KUCUK_BUTON}>
+          <GonderDugmesi  aria-label={`${name} bölümünü yukarı taşı`} className={KUCUK_BUTON}
+      >
             ↑
-          </button>
+          </GonderDugmesi>
         </form>
         <form action={moveMenuCategory}>
           <input type="hidden" name="categoryId" value={id} />
           <input type="hidden" name="direction" value="down" />
-          <button type="submit" aria-label={`${name} bölümünü aşağı taşı`} className={KUCUK_BUTON}>
+          <GonderDugmesi  aria-label={`${name} bölümünü aşağı taşı`} className={KUCUK_BUTON}
+      >
             ↓
-          </button>
+          </GonderDugmesi>
         </form>
         <form action={toggleMenuCategory}>
           <input type="hidden" name="categoryId" value={id} />
-          <button type="submit" className={KUCUK_BUTON}>
+          <GonderDugmesi  className={KUCUK_BUTON}
+      >
             {active ? "Gizle" : "Göster"}
-          </button>
+          </GonderDugmesi>
         </form>
         <form action={deleteMenuCategory}>
           <input type="hidden" name="categoryId" value={id} />
-          <button
-            type="submit"
+          <SilDugmesi
             title="Bölümü ve içindeki tüm ürünleri kalıcı olarak siler"
             className={`${KUCUK_BUTON} text-danger`}
-          >
+      
+            onayMetni="Bölüm ve ürünleri silinsin mi?"
+            onayClassName="bg-danger-soft text-danger-ink font-medium">
             Sil
-          </button>
+          </SilDugmesi>
         </form>
       </div>
     </div>
@@ -398,8 +403,8 @@ export function NewItemForm({
       <input type="hidden" name="categoryId" value={categoryId} />
       <UrunAlanlari brandColor={brandColor} />
 
-      {state.error ? <p className="text-small text-danger">{state.error}</p> : null}
-      {state.saved ? <p className="text-small text-success-ink">{state.saved}</p> : null}
+      {state.error ? <p className="text-small text-danger" role="alert">{state.error}</p> : null}
+      {state.saved ? <p className="text-small text-success-ink" role="status">{state.saved}</p> : null}
 
       <div className="flex gap-2">
         <button
@@ -445,8 +450,8 @@ export function ItemRow({
           {/* Ekleme formunda "saved" zaten gösteriliyordu, düzenleme
               formunda unutulmuştu — "kaydet dedim, oldu mu olmadı mı
               anlamıyorum" şikayetinin kaynağı tam olarak buydu. */}
-          {state.error ? <p className="text-small text-danger">{state.error}</p> : null}
-          {state.saved ? <p className="text-small text-success-ink">{state.saved}</p> : null}
+          {state.error ? <p className="text-small text-danger" role="alert">{state.error}</p> : null}
+          {state.saved ? <p className="text-small text-success-ink" role="status">{state.saved}</p> : null}
 
           <div className="flex gap-2">
             <button
@@ -528,16 +533,15 @@ export function ItemRow({
         {/* Tükendi, mutfaktan gelen bilgiyle anında işaretlenmeli: tek tık. */}
         <form action={toggleSoldOut}>
           <input type="hidden" name="itemId" value={urun.id} />
-          <button
-            type="submit"
+          <GonderDugmesi
             className={`rounded px-2 py-0.5 text-caption ${
               urun.soldOut
                 ? "bg-warning-soft text-warning-ink"
                 : "border border-line text-ink-muted hover:bg-canvas"
             }`}
-          >
+      >
             {urun.soldOut ? "Stoğa al" : "Tükendi"}
-          </button>
+          </GonderDugmesi>
         </form>
         <button type="button" onClick={() => setDuzenle(true)} className={KUCUK_BUTON}>
           Düzenle
@@ -545,32 +549,36 @@ export function ItemRow({
         <form action={moveMenuItem}>
           <input type="hidden" name="itemId" value={urun.id} />
           <input type="hidden" name="direction" value="up" />
-          <button type="submit" aria-label={`${urun.name} yukarı`} className={KUCUK_BUTON}>
+          <GonderDugmesi  aria-label={`${urun.name} yukarı`} className={KUCUK_BUTON}
+      >
             ↑
-          </button>
+          </GonderDugmesi>
         </form>
         <form action={moveMenuItem}>
           <input type="hidden" name="itemId" value={urun.id} />
           <input type="hidden" name="direction" value="down" />
-          <button type="submit" aria-label={`${urun.name} aşağı`} className={KUCUK_BUTON}>
+          <GonderDugmesi  aria-label={`${urun.name} aşağı`} className={KUCUK_BUTON}
+      >
             ↓
-          </button>
+          </GonderDugmesi>
         </form>
         <form action={toggleMenuItem}>
           <input type="hidden" name="itemId" value={urun.id} />
-          <button type="submit" className={KUCUK_BUTON}>
+          <GonderDugmesi  className={KUCUK_BUTON}
+      >
             {urun.active ? "Gizle" : "Geri koy"}
-          </button>
+          </GonderDugmesi>
         </form>
         <form action={deleteMenuItem}>
           <input type="hidden" name="itemId" value={urun.id} />
-          <button
-            type="submit"
+          <SilDugmesi
             title="Ürünü kalıcı olarak siler"
             className={`${KUCUK_BUTON} text-danger`}
-          >
+      
+            onayMetni="Ürün silinsin mi?"
+            onayClassName="bg-danger-soft text-danger-ink font-medium">
             Sil
-          </button>
+          </SilDugmesi>
         </form>
       </div>
     </li>
@@ -663,7 +671,7 @@ export function TumMenuyuSil({
       </div>
 
       {state.error ? (
-        <p className="text-small font-medium text-danger-ink">{state.error}</p>
+        <p className="text-small font-medium text-danger-ink" role="alert">{state.error}</p>
       ) : null}
     </form>
   );
@@ -750,12 +758,12 @@ export function MenuyuKopyala({
       )}
 
       {state.error ? (
-        <p className="mt-3 rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
+        <p className="mt-3 rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
           {state.error}
         </p>
       ) : null}
       {state.saved ? (
-        <p className="mt-3 rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink">
+        <p className="mt-3 rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink" role="status">
           {state.saved}
         </p>
       ) : null}

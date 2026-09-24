@@ -1,10 +1,10 @@
 import { Mail, Store, Utensils } from "lucide-react";
 import Link from "next/link";
-import { requireTenant, visibleBusinesses } from "@/lib/auth";
-import { modulTonu } from "@/lib/modul-rengi";
-import { getBusinessStats, type BusinessStats } from "@/lib/stats";
-import { biyerlereIstatistikGetir } from "@/lib/biyerlere-istatistik";
-import { prisma } from "@/lib/db";
+import { requireTenant, visibleBusinesses } from "@/lib/kimlik/auth";
+import { modulTonu } from "@/lib/kimlik/modul-rengi";
+import { getBusinessStats, type BusinessStats } from "@/lib/rapor/stats";
+import { biyerlereIstatistikGetir } from "@/lib/biyerlere/biyerlere-istatistik";
+import { prisma } from "@/lib/cekirdek/db";
 import { BiyerlereIstatistikKarti } from "./BiyerlereIstatistikKarti";
 import {
   Card,

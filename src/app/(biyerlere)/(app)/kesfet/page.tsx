@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { sorguCoz } from "@/lib/kesfet";
-import { mekanlariGetir } from "@/lib/kesfet-veri";
+import { sorguCoz } from "@/lib/biyerlere/kesfet";
+import { mekanlariGetir } from "@/lib/biyerlere/kesfet-veri";
 import { KesfetAkisi } from "./KesfetAkisi";
 
 export const dynamic = "force-dynamic";

@@ -6,12 +6,12 @@ import {
   requirePersonelYonetimi,
   requireUser,
   requireYazma,
-} from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { bildirimGonder } from "@/lib/bildirim";
-import { denetimYaz } from "@/lib/denetim";
-import { gunBaslangici } from "@/lib/gun";
-import { araliklarKesisiyorMu, gecerliIzinTuru } from "@/lib/izin";
+} from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { bildirimGonder } from "@/lib/altyapi/bildirim";
+import { denetimYaz } from "@/lib/rapor/denetim";
+import { gunBaslangici } from "@/lib/cekirdek/gun";
+import { araliklarKesisiyorMu, gecerliIzinTuru } from "@/lib/isletme/izin";
 
 /** İki tarih aynı günse tek gün, değilse aralık olarak yazar. */
 function tarihAraligiYaz(baslangic: Date, bitis: Date): string {

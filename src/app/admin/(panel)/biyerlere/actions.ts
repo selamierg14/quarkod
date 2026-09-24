@@ -1,22 +1,24 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canAccessBusiness, requireMenuErisim, requireYazma } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { denetimYaz } from "@/lib/denetim";
+import { canAccessBusiness, requireMenuErisim, requireYazma } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { denetimYaz } from "@/lib/rapor/denetim";
 import {
   expoyaGonder,
   pushHedefleriniSuz,
   pushMesajiOlustur,
   type PushHedefi,
-} from "@/lib/app-push";
+} from "@/lib/biyerlere/app-push";
 import {
   gecerliSegmentMi,
   googleLinkindenKoordinat,
   koordinatCoz,
   ozellikleriYaz,
   type Koordinat,
-} from "@/lib/mekan";
+} from "@/lib/biyerlere/mekan";
+import { alanDogrula } from "@/lib/cekirdek/desenler";
+import { sayiAlani } from "@/lib/cekirdek/girdi";
 
 export type BiyerlereFormState = { error?: string; saved?: boolean };
 export type FlasIndirimFormState = { error?: string; saved?: string };
@@ -117,14 +119,20 @@ export async function flasIndirimBaslat(
   await requireYazma();
 
   const businessId = String(formData.get("businessId") ?? "");
-  const baslik = String(formData.get("baslik") ?? "").trim();
-  const sureSaat = Number(formData.get("sureSaat") ?? "2");
+  // Başlık sınırsızdı ve doğrudan bir PUSH BİLDİRİMİNİN gövdesine
+  // giriyordu — dışarıya çıkan bir metnin sınırsız olması istenmez.
+  const baslikSonuc = alanDogrula(formData.get("baslik"), "kisaBaslik", "Başlık");
+  const sureSonuc = sayiAlani(formData.get("sureSaat"), "Süre", {
+    enAz: 1,
+    enCok: 24,
+    varsayilan: 2,
+  });
 
   if (!(await canAccessBusiness(actor, businessId))) return { error: "Bu işletmeye yetkiniz yok." };
-  if (!baslik) return { error: "Başlık gerekli." };
-  if (!Number.isFinite(sureSaat) || sureSaat <= 0 || sureSaat > 24) {
-    return { error: "Süre 1-24 saat arasında olmalı." };
-  }
+  if (!baslikSonuc.ok) return { error: baslikSonuc.hata };
+  if (!sureSonuc.ok) return { error: sureSonuc.hata };
+  const baslik = baslikSonuc.deger;
+  const sureSaat = sureSonuc.deger;
 
   const business = await prisma.business.findUnique({
     where: { id: businessId },
@@ -195,6 +203,11 @@ async function yakindakilereBildir(
         select: {
           id: true,
           active: true,
+          // Kullanıcı "yakınımdaki fırsatlar"ı kapattıysa bu bildirim ona
+          // gitmiyor (bkz. lib/biyerlere/bildirim-tercihi.ts). Kapatanı
+          // yok saymak, tek anahtarla HER ŞEYİ kapattırmanın en hızlı
+          // yoluydu — ve kapatılan kanal, işletmeye satılan kanal.
+          bildirimFirsat: true,
           sonBilinenEnlem: true,
           sonBilinenBoylam: true,
           sonKonumGuncelleme: true,
@@ -204,7 +217,7 @@ async function yakindakilereBildir(
   });
 
   const hedefler: PushHedefi[] = abonelikler
-    .filter((a) => a.appUser.active)
+    .filter((a) => a.appUser.active && a.appUser.bildirimFirsat)
     .map((a) => ({
       appUserId: a.appUser.id,
       jeton: a.expoToken!,
@@ -240,4 +253,64 @@ async function yakindakilereBildir(
   }
 
   return gonderilen;
+}
+
+export type EtkinlikKaldirState = { error?: string; saved?: string };
+
+/**
+ * KULLANICI ETKİNLİĞİNİ KALDIRMA — moderasyon.
+ *
+ * Bu, projedeki tek kullanıcı-üretimi yayın yüzeyi: bir müşteri, bir
+ * mekanın adının yanında duran bir metin yazıyor. Kötüye kullanımın
+ * bedelini yazan değil, adı geçen işletme ödüyor — dolayısıyla o metni
+ * kaldırma yetkisi de işletmenin olmalı. Moderasyon aracı olmadan
+ * kullanıcı içeriği yayınlamak, işletmeyi savunmasız bırakmak olurdu.
+ *
+ * KALDIRMA, İPTALDEN AYRI BİR ALAN (`kaldirildi` / `iptalEdildi`). İkisi
+ * de etkinliği listeden düşürüyor ama farklı sorulara cevap veriyorlar:
+ * biri "açan vazgeçti", diğeri "kurallara aykırıydı". Tek alanda
+ * birleştirmek, sonradan "bu kullanıcı kaç kez moderasyona takıldı"
+ * sorusunu cevaplanamaz hâle getirirdi.
+ *
+ * Satır SİLİNMİYOR: denetim kaydı bir kimliğe işaret ediyor ve o kimlik
+ * ortadan kalkarsa kayıt "silinmiş bir şeyi kaldırdı" demekten öteye
+ * gidemez.
+ */
+export async function kullaniciEtkinliginiKaldir(
+  _prev: EtkinlikKaldirState,
+  formData: FormData,
+): Promise<EtkinlikKaldirState> {
+  const user = await requireYazma();
+
+  const etkinlikId = String(formData.get("etkinlikId") ?? "");
+  if (!etkinlikId) return { error: "Etkinlik bilgisi eksik." };
+
+  const etkinlik = await prisma.appEtkinlik.findUnique({
+    where: { id: etkinlikId },
+    select: { id: true, baslik: true, businessId: true, kaldirildi: true },
+  });
+  if (!etkinlik) return { error: "Etkinlik bulunamadı." };
+
+  // Yetki ETKİNLİĞİN MEKANINA göre: bir işletme yalnızca kendi adının
+  // geçtiği çağrıyı kaldırabilir.
+  if (!(await canAccessBusiness(user, etkinlik.businessId))) {
+    return { error: "Bu işletmeye yetkiniz yok." };
+  }
+  if (etkinlik.kaldirildi) return { saved: "Bu etkinlik zaten kaldırılmış." };
+
+  const sebep = String(formData.get("sebep") ?? "").trim().slice(0, 200);
+
+  await prisma.appEtkinlik.update({
+    where: { id: etkinlikId },
+    data: { kaldirildi: new Date(), kaldirmaSebebi: sebep || null },
+  });
+
+  await denetimYaz(user, "biyerlere.etkinlik.kaldir", {
+    entity: "appEtkinlik",
+    entityId: etkinlikId,
+    detail: `"${etkinlik.baslik}" kaldırıldı${sebep ? ` — ${sebep}` : ""}`,
+  });
+
+  revalidatePath(YOL);
+  return { saved: "Etkinlik kaldırıldı." };
 }

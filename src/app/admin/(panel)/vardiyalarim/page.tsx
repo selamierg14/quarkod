@@ -1,13 +1,13 @@
 import { CalendarDays } from "lucide-react";
-import { requireUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { SHIFTS } from "@/lib/constants";
-import { gunAdi, gunBaslangici, gunEkle, gunGirdisi, gunGirdisindenTarih } from "@/lib/gun";
-import { etkinVardiyalar } from "@/lib/vardiya";
+import { requireUser } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { SHIFTS } from "@/lib/cekirdek/constants";
+import { gunAdi, gunBaslangici, gunEkle, gunGirdisi, gunGirdisindenTarih } from "@/lib/cekirdek/gun";
+import { etkinVardiyalar } from "@/lib/personel/vardiya";
 import { EmptyState, PageHeader } from "@/components/ui";
 import { DegisimTalebi } from "./DegisimTalebi";
 import { IzinTalebi } from "./IzinTalebi";
-import { IZIN_TURLERI, gecerliIzinTuru } from "@/lib/izin";
+import { IZIN_TURLERI, gecerliIzinTuru } from "@/lib/isletme/izin";
 
 export const dynamic = "force-dynamic";
 

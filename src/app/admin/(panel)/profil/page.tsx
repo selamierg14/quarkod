@@ -1,7 +1,7 @@
 import { IdCard, Lock, User } from "lucide-react";
-import { requireUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { ROL_ADLARI } from "@/lib/constants";
+import { requireUser } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { ROL_ADLARI } from "@/lib/cekirdek/constants";
 import { PasswordForm } from "../sifre/PasswordForm";
 import Link from "next/link";
 import { PageHeader, SectionCard } from "@/components/ui";

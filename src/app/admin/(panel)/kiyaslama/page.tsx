@@ -1,6 +1,6 @@
 import { BarChart3, TrendingUp, Trophy } from "lucide-react";
-import { allowedBusinessIds, requireModul, requireTenantOwner } from "@/lib/auth";
-import { getBusinessStats } from "@/lib/stats";
+import { allowedBusinessIds, requireModul, requireTenantOwner } from "@/lib/kimlik/auth";
+import { getBusinessStats } from "@/lib/rapor/stats";
 import { EmptyState, PageHeader, SectionCard, TabLink } from "@/components/ui";
 import { DeltaBadge, TrendChart } from "@/components/TrendChart";
 

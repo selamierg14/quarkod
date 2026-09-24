@@ -34,6 +34,19 @@ export function BildirimZili() {
     let iptal = false;
 
     async function yenile() {
+      // Zil hem AdminSidebar'ın mobil başlığında hem de panel layout'unun
+      // masaüstü çubuğunda duruyor; biri `lg:hidden`, diğeri `hidden
+      // lg:flex`. CSS bir React bileşenini söküp atmadığı için ikisi de
+      // her zaman monte oluyordu ve görünmeyen kopya da 45 saniyede bir
+      // sunucuya gidiyordu — her panel kullanıcısı için iki kat sorgu.
+      // Görünmeyen kopya yoklamayı atlıyor (display:none olan öğenin hiç
+      // istemci dikdörtgeni olmaz).
+      if (kutuRef.current && kutuRef.current.getClientRects().length === 0) return;
+      // Sekme arka plandayken yoklama duruyor. Panel açık bırakılan bir
+      // sekme gün boyunca boşuna sorgu üretiyordu; kimse bakmadığı için o
+      // sorguların hiçbirinin karşılığı ekrana çıkmıyor. Sekmeye dönüldüğü
+      // anda aşağıdaki dinleyici bir kez tazeliyor, yani gecikme olmuyor.
+      if (document.visibilityState === "hidden") return;
       try {
         const sonuc = await bildirimlerimiGetir();
         if (iptal) return;
@@ -48,9 +61,13 @@ export function BildirimZili() {
 
     yenile();
     const zamanlayici = setInterval(yenile, YOKLAMA_MS);
+    // Sekmeye geri dönüldüğünde bir sonraki turu beklemeden tazele:
+    // kullanıcı ekrana baktığı anda güncel listeyi görsün.
+    document.addEventListener("visibilitychange", yenile);
     return () => {
       iptal = true;
       clearInterval(zamanlayici);
+      document.removeEventListener("visibilitychange", yenile);
     };
   }, []);
 

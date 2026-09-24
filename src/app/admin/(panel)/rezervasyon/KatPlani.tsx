@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useCallback, useRef, useState } from "react";
-import { MASA_DURUM_ADLARI, MASA_DURUM_RENKLERI, type MasaDurumu } from "@/lib/rezervasyon";
+import { MASA_DURUM_ADLARI, MASA_DURUM_RENKLERI, type MasaDurumu } from "@/lib/isletme/rezervasyon";
 import { planKaydet, type RezervasyonFormState } from "./actions";
 
 export type PlanMasasi = {
@@ -29,6 +29,12 @@ export type PlanMasasi = {
  * Konumu olmayan masalar (planX null) krokinin ALTINDA bir havuzda
  * duruyor; oradan sürüklenip plana bırakılıyorlar. Böylece "masa var ama
  * krokide yok" durumu görünür oluyor — sessizce kaybolmuyorlar.
+ *
+ * Sürükleme HTML5 drag-and-drop ile DEĞİL, pointer olaylarıyla yapılıyor:
+ * `draggable` + dragstart dokunmatikte hiç tetiklenmiyor, yani kroki
+ * tablette — bir restoranın host bankosundaki en olası cihazda —
+ * düzenlenemiyordu. Pointer olayları fare, kalem ve parmağı aynı kodla
+ * karşılıyor.
  */
 export function KatPlani({
   businessId,
@@ -52,35 +58,96 @@ export function KatPlani({
     }
     return baslangic;
   });
-  const [surukleniyor, setSurukleniyor] = useState<string | null>(null);
+  /** Parmak/fare hâlâ basılıyken taşınan masa ve anlık yüzde konumu. */
+  const [surukleniyor, setSurukleniyor] = useState<
+    { id: string; x: number; y: number } | null
+  >(null);
   const [degisti, setDegisti] = useState(false);
 
-  const konumaTasi = useCallback(
-    (id: string, olayX: number, olayY: number) => {
+  /** Ekran koordinatını tuvale göre yüzdeye çevirir, kenarda kırpar. */
+  const yuzdeye = useCallback((olayX: number, olayY: number) => {
+    const tuval = tuvalRef.current;
+    if (!tuval) return null;
+    const kutu = tuval.getBoundingClientRect();
+    return {
+      x: Math.min(96, Math.max(0, ((olayX - kutu.left) / kutu.width) * 100)),
+      y: Math.min(92, Math.max(0, ((olayY - kutu.top) / kutu.height) * 100)),
+    };
+  }, []);
+
+  const suruklemeBasladi = useCallback(
+    (id: string, olay: React.PointerEvent<HTMLElement>) => {
+      if (!duzenlenebilir) return;
+      // Pointer capture olmadan parmak masanın dışına çıktığı anda
+      // olaylar başka bir öğeye gidiyor ve sürükleme yarıda kopuyor.
+      olay.currentTarget.setPointerCapture(olay.pointerId);
+      const konum = yuzdeye(olay.clientX, olay.clientY);
+      setSurukleniyor({ id, x: konum?.x ?? 0, y: konum?.y ?? 0 });
+    },
+    [duzenlenebilir, yuzdeye],
+  );
+
+  const suruklemeHareket = useCallback(
+    (olay: React.PointerEvent<HTMLElement>) => {
+      setSurukleniyor((onceki) => {
+        if (!onceki) return onceki;
+        const konum = yuzdeye(olay.clientX, olay.clientY);
+        return konum ? { ...onceki, ...konum } : onceki;
+      });
+    },
+    [yuzdeye],
+  );
+
+  const suruklemeBitti = useCallback(
+    (olay: React.PointerEvent<HTMLElement>) => {
       const tuval = tuvalRef.current;
-      if (!tuval) return;
-      const kutu = tuval.getBoundingClientRect();
-      // Yüzdeye çevir ve kenarlardan taşmayı engelle.
-      const x = Math.min(96, Math.max(0, ((olayX - kutu.left) / kutu.width) * 100));
-      const y = Math.min(92, Math.max(0, ((olayY - kutu.top) / kutu.height) * 100));
-      setKonumlar((onceki) => ({ ...onceki, [id]: { x, y } }));
-      setDegisti(true);
+      setSurukleniyor((onceki) => {
+        if (!onceki || !tuval) return null;
+        const kutu = tuval.getBoundingClientRect();
+        // Tuvalin dışında bırakılan masa yerleşmez: havuzdan çekip
+        // yanlışlıkla sayfanın boş bir yerine bırakmak, masayı krokinin
+        // köşesine yapıştırmaktan daha az şaşırtıcı.
+        const iceride =
+          olay.clientX >= kutu.left &&
+          olay.clientX <= kutu.right &&
+          olay.clientY >= kutu.top &&
+          olay.clientY <= kutu.bottom;
+        if (iceride) {
+          setKonumlar((oncekiler) => ({
+            ...oncekiler,
+            [onceki.id]: { x: onceki.x, y: onceki.y },
+          }));
+          setDegisti(true);
+        }
+        return null;
+      });
     },
     [],
   );
 
-  const plandakiler = masalar.filter((m) => konumlar[m.id]);
+  /** Sürükleme sırasında masa parmağı takip etsin. */
+  const gosterilecekKonum = (id: string) =>
+    surukleniyor?.id === id
+      ? { x: surukleniyor.x, y: surukleniyor.y }
+      : konumlar[id];
+
+  const plandakiler = masalar.filter(
+    (m) => konumlar[m.id] || surukleniyor?.id === m.id,
+  );
+  // Sürüklenen havuz masası listede KALIYOR (soluk görünüyor): öğe
+  // ortadan kalkarsa pointer capture da onunla birlikte gider ve
+  // sürükleme parmak kalkmadan biter.
   const havuzdakiler = masalar.filter((m) => !konumlar[m.id]);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4" role="alert">
       {durum.error ? (
-        <p className="rounded-control bg-danger-soft px-3 py-2 text-small text-danger-ink">
+        <p className="rounded-control bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
           {durum.error}
         </p>
       ) : null}
       {durum.saved ? (
-        <p className="rounded-control bg-success-soft px-3 py-2 text-small text-success-ink">
+        <p className="rounded-control bg-success-soft px-3 py-2 text-small text-success-ink" role="status">
           {durum.saved}
         </p>
       ) : null}
@@ -103,48 +170,34 @@ export function KatPlani({
         ref={tuvalRef}
         className="relative w-full overflow-hidden rounded-card border border-line bg-canvas"
         style={{ aspectRatio: "16 / 10" }}
-        onDragOver={duzenlenebilir ? (e) => e.preventDefault() : undefined}
-        onDrop={
-          duzenlenebilir
-            ? (e) => {
-                e.preventDefault();
-                const id = e.dataTransfer.getData("text/plain");
-                if (id) konumaTasi(id, e.clientX, e.clientY);
-                setSurukleniyor(null);
-              }
-            : undefined
-        }
       >
         {plandakiler.length === 0 ? (
           <p className="absolute inset-0 flex items-center justify-center px-6 text-center text-small text-ink-faint">
             {duzenlenebilir
-              ? "Aşağıdaki masaları buraya sürükleyip mekanınızın krokisini çizin."
+              ? "Aşağıdaki masaları buraya sürükleyip mekanınızın krokisini çizin (parmakla da olur)."
               : "Kat planı henüz çizilmemiş."}
           </p>
         ) : null}
 
         {plandakiler.map((masa) => {
-          const konum = konumlar[masa.id];
+          const konum = gosterilecekKonum(masa.id);
+          if (!konum) return null;
           return (
             <div
               key={masa.id}
-              draggable={duzenlenebilir}
-              onDragStart={
-                duzenlenebilir
-                  ? (e) => {
-                      e.dataTransfer.setData("text/plain", masa.id);
-                      setSurukleniyor(masa.id);
-                    }
-                  : undefined
+              onPointerDown={
+                duzenlenebilir ? (e) => suruklemeBasladi(masa.id, e) : undefined
               }
-              onDragEnd={duzenlenebilir ? () => setSurukleniyor(null) : undefined}
+              onPointerMove={duzenlenebilir ? suruklemeHareket : undefined}
+              onPointerUp={duzenlenebilir ? suruklemeBitti : undefined}
+              onPointerCancel={duzenlenebilir ? suruklemeBitti : undefined}
               title={`Masa ${masa.tableNumber} · ${masa.kapasite} kişilik${
                 masa.zoneAd ? ` · ${masa.zoneAd}` : ""
               } · ${MASA_DURUM_ADLARI[masa.durum]}`}
               className={`absolute flex h-14 w-14 flex-col items-center justify-center border-2 border-white text-white shadow-pop ${
                 masa.sekil === "yuvarlak" ? "rounded-full" : "rounded-control"
-              } ${duzenlenebilir ? "cursor-grab active:cursor-grabbing" : ""} ${
-                surukleniyor === masa.id ? "opacity-50" : ""
+              } ${duzenlenebilir ? "cursor-grab touch-none active:cursor-grabbing" : ""} ${
+                surukleniyor?.id === masa.id ? "opacity-70" : ""
               }`}
               style={{
                 left: `${konum.x}%`,
@@ -170,13 +223,13 @@ export function KatPlani({
                 {havuzdakiler.map((masa) => (
                   <div
                     key={masa.id}
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData("text/plain", masa.id);
-                      setSurukleniyor(masa.id);
-                    }}
-                    onDragEnd={() => setSurukleniyor(null)}
-                    className="cursor-grab rounded-control border border-line bg-surface px-3 py-2 text-small text-ink shadow-sm active:cursor-grabbing"
+                    onPointerDown={(e) => suruklemeBasladi(masa.id, e)}
+                    onPointerMove={suruklemeHareket}
+                    onPointerUp={suruklemeBitti}
+                    onPointerCancel={suruklemeBitti}
+                    className={`cursor-grab touch-none rounded-control border border-line bg-surface px-3 py-2 text-small text-ink shadow-sm active:cursor-grabbing ${
+                      surukleniyor?.id === masa.id ? "opacity-40" : ""
+                    }`}
                   >
                     Masa {masa.tableNumber}{" "}
                     <span className="text-ink-faint">· {masa.kapasite} kişi</span>

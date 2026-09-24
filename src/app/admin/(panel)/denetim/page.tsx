@@ -1,9 +1,10 @@
 import { Check } from "lucide-react";
-import { requireOwner } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { ROL_ADLARI } from "@/lib/constants";
-import { effectiveAccountId } from "@/lib/impersonation";
-import { EYLEM_METNI, denetimKapsami, type DenetimEylemi } from "@/lib/denetim";
+import { requireOwner } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { aralikMetni, sayfaDurumu, toplamSayfa } from "@/lib/cekirdek/sayfalama";
+import { ROL_ADLARI } from "@/lib/cekirdek/constants";
+import { effectiveAccountId } from "@/lib/kimlik/impersonation";
+import { EYLEM_METNI, denetimKapsami, type DenetimEylemi } from "@/lib/rapor/denetim";
 import {
   Badge,
   EmptyState,
@@ -25,7 +26,6 @@ export const dynamic = "force-dynamic";
 
 export const metadata = { title: "İşlem geçmişi" };
 
-const SAYFA_BOYU = 50;
 
 const ORTAK_SUZGECLER = [
   { deger: "", etiket: "Tümü" },
@@ -40,7 +40,7 @@ const PLATFORM_SUZGECI = { deger: "platform", etiket: "Platform ekibi" };
 export default async function DenetimPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tur?: string; sayfa?: string }>;
+  searchParams: Promise<{ tur?: string; sayfa?: string; boyut?: string }>;
 }) {
   // Hesap sahibi kendi kiracısının kaydını görür; platform yöneticisi hepsini.
   const user = await requireOwner();
@@ -62,22 +62,26 @@ export default async function DenetimPage({
         ? { action: { startsWith: `${tur}.` } }
         : {};
 
-  const sayfa = Math.max(1, Number(query.sayfa ?? "1") || 1);
   const where = { ...kapsam, ...turFiltresi };
 
-  const [toplam, kayitlar] = await Promise.all([
-    prisma.auditLog.count({ where }),
-    prisma.auditLog.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: (sayfa - 1) * SAYFA_BOYU,
-      take: SAYFA_BOYU,
-    }),
-  ]);
+  // Sayfa boyutu artık kullanıcının (varsayılan 10, seçenekler 25/50/100);
+  // eskiden 50'ye sabitti ve değiştirilemiyordu.
+  const toplam = await prisma.auditLog.count({ where });
+  const durum = sayfaDurumu(query, toplam);
+
+  const kayitlar = await prisma.auditLog.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    skip: durum.skip,
+    take: durum.take,
+  });
 
   const adres = (yeni: Record<string, string>) => {
     const p = new URLSearchParams();
     if (tur) p.set("tur", tur);
+    // Boyut seçimi sayfalar arasında korunuyor: "50 göster" deyip sonraki
+    // sayfaya geçen kullanıcı yeniden 10'a düşmemeli.
+    if (durum.boyut !== 10) p.set("boyut", String(durum.boyut));
     for (const [k, v] of Object.entries(yeni)) {
       if (v) p.set(k, v);
     }
@@ -152,9 +156,11 @@ export default async function DenetimPage({
           </TableShell>
 
           <Pagination
-            sayfa={sayfa}
-            toplamSayfa={Math.max(1, Math.ceil(toplam / SAYFA_BOYU))}
+            sayfa={durum.sayfa}
+            toplamSayfa={toplamSayfa(toplam, durum.boyut)}
             toplamKayit={toplam}
+            boyut={durum.boyut}
+            aralik={aralikMetni(durum, toplam)}
             href={(s) => adres({ sayfa: String(s) })}
           />
         </>

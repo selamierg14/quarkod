@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getSession, visibleBusinesses } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { buildFeedbackWhere, toCsv, type FeedbackQuery } from "@/lib/feedback-filters";
-import { FEEDBACK_STATUSES, SHIFTS, type FeedbackStatus, type Shift } from "@/lib/constants";
+import { getSession, visibleBusinesses } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { buildFeedbackWhere, toCsv, type FeedbackQuery } from "@/lib/isletme/feedback-filters";
+import { FEEDBACK_STATUSES, SHIFTS, type FeedbackStatus, type Shift } from "@/lib/cekirdek/constants";
 
 /** Tek seferde indirilebilecek en fazla kayıt. */
 const MAX_ROWS = 10000;

@@ -1,7 +1,7 @@
 import { Plus, Utensils } from "lucide-react";
 import Link from "next/link";
-import { requireMenuErisim } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { requireMenuErisim } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
 import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
 import {
   CategoryHeader,

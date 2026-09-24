@@ -1,15 +1,16 @@
 import { Bell, MessageSquare, Star, Tag } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { canAccessBusiness, requireAnketErisim } from "@/lib/auth";
-import { yazabilirMi } from "@/lib/session-token";
-import { prisma } from "@/lib/db";
-import { SHIFTS, type Shift } from "@/lib/constants";
-import { CONTACT_RETENTION_DAYS } from "@/lib/kvkk";
-import { detaylariCoz } from "@/lib/anket-detay";
-import { yanitlanabilir } from "@/lib/yanit";
+import { canAccessBusiness, requireAnketErisim } from "@/lib/kimlik/auth";
+import { yazabilirMi } from "@/lib/kimlik/session-token";
+import { prisma } from "@/lib/cekirdek/db";
+import { SHIFTS, type Shift } from "@/lib/cekirdek/constants";
+import { CONTACT_RETENTION_DAYS } from "@/lib/isletme/kvkk";
+import { detaylariCoz } from "@/lib/isletme/anket-detay";
+import { yanitlanabilir } from "@/lib/cekirdek/yanit";
 import { SectionCard, StatusBadge, Stars, formatDateTime } from "@/components/ui";
 import { StatusForm } from "./StatusForm";
+import { hazirYanitlar } from "@/lib/isletme/hazir-yanit";
 import { RespondForm } from "./RespondForm";
 
 export const dynamic = "force-dynamic";
@@ -245,6 +246,10 @@ export default async function FeedbackDetailPage({
                       id={feedback.id}
                       channel={feedback.contactType === "eposta" ? "eposta" : "telefon"}
                       alreadyResponded={Boolean(feedback.respondedAt)}
+                      hazirYanitlar={hazirYanitlar(
+                        feedback.overallRating,
+                        feedback.business.name,
+                      )}
                     />
                   ) : null}
                 </div>

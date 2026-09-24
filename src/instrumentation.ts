@@ -45,13 +45,21 @@ export async function register() {
     // Üretimde yanlış ayarla açılmaktansa hiç açılmamak yeğdir: bu
     // hataların hepsi sistem çalışıyor görünürken sessizce zarar verir.
     if (process.env.NODE_ENV === "production") {
-      const { uretimSorunlari } = await import("./lib/uretim-kontrol");
+      const { uretimSorunlari, uretimUyarilari } = await import(
+        "./lib/cekirdek/uretim-kontrol"
+      );
       const sorunlar = uretimSorunlari(process.env);
       if (sorunlar.length) {
         console.error("\n[ayar] Üretim ortamı hazır değil:\n");
         for (const sorun of sorunlar) console.error(`  • ${sorun}`);
         console.error("\nDüzeltip yeniden başlatın.\n");
         process.exit(1);
+      }
+
+      // Engellemiyor ama kayda giriyor: bunlar bilinçli bir tercih de
+      // olabilir, sessizce olmamalı.
+      for (const uyari of uretimUyarilari(process.env)) {
+        console.warn(`[ayar] UYARI: ${uyari}`);
       }
     }
 

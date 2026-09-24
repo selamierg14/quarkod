@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { gorselAdresi } from "@/lib/gorsel-adres";
-import { apiHata, appKullaniciGerekli, govdeOku } from "@/lib/app-api";
+import { prisma } from "@/lib/cekirdek/db";
+import { mekanOzeti } from "@/lib/isletme/gorsel-adres";
+import { apiHata, appKullaniciGerekli, govdeOku } from "@/lib/kimlik/app-api";
 
 export const dynamic = "force-dynamic";
 
@@ -21,10 +21,8 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     mekanlar: favoriler.map((f) => ({
-      id: f.business.id,
-      slug: f.business.slug,
-      ad: f.business.name,
-      logoUrl: gorselAdresi(f.business.id, "logo", f.business.logoUrl),
+      // Ortak özet tek yerden; markaRengi yalnızca bu uca özel.
+      ...mekanOzeti(f.business),
       markaRengi: f.business.brandColor,
     })),
   });

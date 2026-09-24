@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { requireUser } from "@/lib/auth";
-import { markaStili } from "@/lib/marka";
+import { requireUser } from "@/lib/kimlik/auth";
+import { markaStili } from "@/lib/isletme/marka";
 import { EtkilesimliDemo } from "./StilDemo";
 import {
   Alert,

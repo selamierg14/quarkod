@@ -7,7 +7,7 @@ import {
   MEKAN_OZELLIKLERI,
   type FiyatSegmenti,
   type MekanOzelligi,
-} from "@/lib/mekan";
+} from "@/lib/biyerlere/mekan";
 
 export type KesfetFiltreleri = {
   yaricapMetre: number;

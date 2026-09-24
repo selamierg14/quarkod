@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { SITE_ACIKLAMA, SITE_ADI } from "@/lib/site";
+import { SITE_ACIKLAMA, SITE_ADI } from "@/lib/cekirdek/site";
 
 /**
  * Web uygulaması manifestosu.

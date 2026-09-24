@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
-import { canAccessBusiness, requireUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { appUrl, qrCardText } from "@/lib/constants";
-import { qrPdfUret } from "@/lib/qr-pdf";
-import { masaSirala } from "@/lib/masa";
+import { canAccessBusiness, requireUser } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { appUrl, qrCardText } from "@/lib/cekirdek/constants";
+import { qrPdfUret } from "@/lib/isletme/qr-pdf";
+import { masaSirala } from "@/lib/isletme/masa";
+import { kopyaCoz, kopyalariYay } from "@/lib/isletme/qr-kopya";
 
 /**
  * Matbaaya gönderilecek toplu QR PDF'i.
@@ -12,11 +13,13 @@ import { masaSirala } from "@/lib/masa";
  * matbaaya iletebilsin ve tarayıcı önizlemesinde de açılabilsin.
  */
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const user = await requireUser();
   const { id } = await params;
+  // Ekrandaki "Ortak QR kopyası" kutusu bu sayıyı adreste taşıyor.
+  const kopya = kopyaCoz(new URL(request.url).searchParams.get("kopya"));
   // Kapsam kontrolü burada da şart: adres tahmin edilebilir ve dosya
   // işletmenin tüm masa adreslerini içeriyor.
   if (!(await canAccessBusiness(user, id))) notFound();
@@ -37,10 +40,19 @@ export async function GET(
     isletmeAdi: business.name,
     cagriMetni: qrCardText(business.type, business.qrCardText),
     markaRengi: business.brandColor,
-    kartlar: masaSirala(business.tables).map((table) => ({
-      etiket: table.isEntrance ? "Giriş" : `Masa ${table.tableNumber}`,
-      url: `${base}/f/${business.slug}/${encodeURIComponent(table.tableNumber)}`,
-    })),
+    /**
+     * Giriş (ortak) QR'ı `kopya` kadar tekrarlanıyor; hepsi AYNI kod.
+     * Kartın üstüne kopya numarası YAZILMIYOR: basılan kartlar birbirinin
+     * aynısı olmalı, "2/30" yazan bir kart müşteriye bir şey anlatmaz.
+     */
+    kartlar: kopyalariYay(
+      masaSirala(business.tables).map((table) => ({
+        etiket: table.isEntrance ? "Giriş" : `Masa ${table.tableNumber}`,
+        url: `${base}/f/${business.slug}/${encodeURIComponent(table.tableNumber)}`,
+        girisMi: table.isEntrance,
+      })),
+      kopya,
+    ).map(({ etiket, url }) => ({ etiket, url })),
   });
 
   return new Response(new Uint8Array(pdf), {

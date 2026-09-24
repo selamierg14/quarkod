@@ -1,19 +1,19 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { allowedBusinessIds, canAccessBusiness, requireYazma } from "@/lib/auth";
-import { denetimYaz } from "@/lib/denetim";
-import { prisma } from "@/lib/db";
-import { validateImageDataUrl } from "@/lib/image";
+import { allowedBusinessIds, canAccessBusiness, requireYazma } from "@/lib/kimlik/auth";
+import { denetimYaz } from "@/lib/rapor/denetim";
+import { prisma } from "@/lib/cekirdek/db";
+import { validateImageDataUrl } from "@/lib/isletme/image";
 import {
   parseKalori,
   parsePrice,
   serializeAlerjenler,
   serializeOzelBilesenler,
   serializeTags,
-} from "@/lib/menu";
-import { uniqueConstraintMessage } from "@/lib/unique-error";
-import { menuAcikMi } from "@/lib/menu-erisim";
+} from "@/lib/isletme/menu";
+import { uniqueConstraintMessage } from "@/lib/cekirdek/unique-error";
+import { menuAcikMi } from "@/lib/isletme/menu-erisim";
 
 export type MenuFormState = { error?: string; saved?: string };
 
@@ -435,8 +435,8 @@ export async function sablonuUygula(
   const hata = await menuIzni(businessId);
   if (hata) return { error: hata };
 
-  const { MENU_SABLONLARI } = await import("@/lib/menu-sablonlari");
-  const { sablonUrunBilgisi } = await import("@/lib/menu-sablon-bilgileri");
+  const { MENU_SABLONLARI } = await import("@/lib/isletme/menu-sablonlari");
+  const { sablonUrunBilgisi } = await import("@/lib/isletme/menu-sablon-bilgileri");
   const sablon = MENU_SABLONLARI.find((s) => s.id === sablonId);
   if (!sablon) return { error: "Şablon bulunamadı." };
 
@@ -530,16 +530,35 @@ export async function menuyuKopyala(
   const kopyalanan: string[] = [];
   const atlanan: string[] = [];
 
-  for (const hedefId of hedefIdler) {
-    if (hedefId === kaynakId || !izinliIdler.has(hedefId)) continue;
+  // Geçerli hedefler ÖNCE süzülüyor, sonra adları ve mevcut menü sayıları
+  // TEK sorguda okunuyor. Önceki hâl bu ikisini döngünün içinde her hedef
+  // için yeniden soruyordu: 20 şubeye kopyalayan bir zincir için 40
+  // gereksiz gidiş dönüş. Kopyalamanın kendisi hedef başına ayrı bir
+  // transaction olarak kalıyor — biri düşerse diğerleri yazılmış olmalı.
+  const gecerliHedefler = hedefIdler.filter(
+    (id) => id !== kaynakId && izinliIdler.has(id),
+  );
 
-    const [hedef, mevcutSayi] = await Promise.all([
-      prisma.business.findUnique({ where: { id: hedefId }, select: { name: true } }),
-      prisma.menuCategory.count({ where: { businessId: hedefId } }),
-    ]);
-    if (!hedef) continue;
-    if (mevcutSayi > 0) {
-      atlanan.push(hedef.name);
+  const [hedefler, doluOlanlar] = await Promise.all([
+    prisma.business.findMany({
+      where: { id: { in: gecerliHedefler } },
+      select: { id: true, name: true },
+    }),
+    prisma.menuCategory.groupBy({
+      by: ["businessId"],
+      where: { businessId: { in: gecerliHedefler } },
+      _count: { _all: true },
+    }),
+  ]);
+
+  const adHaritasi = new Map(hedefler.map((h) => [h.id, h.name]));
+  const doluHaritasi = new Map(doluOlanlar.map((g) => [g.businessId, g._count._all]));
+
+  for (const hedefId of gecerliHedefler) {
+    const hedefAdi = adHaritasi.get(hedefId);
+    if (!hedefAdi) continue;
+    if ((doluHaritasi.get(hedefId) ?? 0) > 0) {
+      atlanan.push(hedefAdi);
       continue;
     }
 
@@ -568,7 +587,7 @@ export async function menuyuKopyala(
       ),
     );
     await fiyatTarihiniDamgala(hedefId);
-    kopyalanan.push(hedef.name);
+    kopyalanan.push(hedefAdi);
   }
 
   if (kopyalanan.length > 0) {

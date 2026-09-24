@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { FEEDBACK_STATUS_LIST, SHIFTS } from "@/lib/constants";
+import { FEEDBACK_STATUS_LIST, SHIFTS } from "@/lib/cekirdek/constants";
 import { TarihGirdisi } from "@/components/ui";
 
 type Props = {

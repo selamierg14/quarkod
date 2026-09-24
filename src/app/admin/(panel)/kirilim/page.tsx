@@ -1,13 +1,13 @@
 import { Clock, DoorOpen, MapPin } from "lucide-react";
-import { requireAnketErisim, visibleBusinesses } from "@/lib/auth";
-import { getAnketHunisi, getDoldurmaSuresi, getShiftBreakdown, getTableBreakdown } from "@/lib/stats";
-import { huniYuzdeleriHesapla } from "@/lib/huni";
-import { masaBaskinliginiTespitEt } from "@/lib/masa-baskinlik";
-import { prisma } from "@/lib/db";
+import { requireAnketErisim, visibleBusinesses } from "@/lib/kimlik/auth";
+import { getAnketHunisi, getDoldurmaSuresi, getShiftBreakdown, getTableBreakdown } from "@/lib/rapor/stats";
+import { huniYuzdeleriHesapla } from "@/lib/rapor/huni";
+import { masaBaskinliginiTespitEt } from "@/lib/rapor/masa-baskinlik";
+import { prisma } from "@/lib/cekirdek/db";
 import { EmptyState, SectionCard } from "@/components/ui";
 import { RaporSekmeleri } from "@/components/RaporSekmeleri";
 import { PeriyotFiltre } from "@/components/PeriyotFiltre";
-import { gunEkle, gunBaslangici } from "@/lib/gun";
+import { gunEkle, gunBaslangici } from "@/lib/cekirdek/gun";
 
 function daysAgo(days: number): Date {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
@@ -18,6 +18,14 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Vardiya & masa" };
 
 const PERIODS = [
+  /**
+   * "Son 1 gün" = DÜNDEN BERİ, yani bugünün servisi.
+   *
+   * Diğer üç aralık eğilim içindir ("akşam vardiyası geriliyor mu");
+   * bu ise bugünün cevabı: sabah gelen düşük puan, 7 günlük ortalamanın
+   * içinde kaybolup görünmez oluyordu.
+   */
+  { days: 1, label: "Son 1 gün" },
   { days: 7, label: "Son 7 gün" },
   { days: 30, label: "Son 30 gün" },
   { days: 90, label: "Son 90 gün" },

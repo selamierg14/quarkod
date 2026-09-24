@@ -1,31 +1,30 @@
 "use server";
 
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { headers } from "next/headers";
+import { istemciIp, ipOzeti } from "@/lib/kimlik/istemci-ip";
 import { redirect } from "next/navigation";
-import { hashPassword, setSessionCookie } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { denetimYaz } from "@/lib/denetim";
+import { hashPassword, setSessionCookie } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { denetimYaz } from "@/lib/rapor/denetim";
 import {
   DENEME_GUN,
   IP_BASINA_GUNLUK_SINIR,
   denemeBitisi,
   kayitSorunu,
-} from "@/lib/deneme";
-import { BUSINESS_TYPES, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/constants";
-import { KVKK_VERSION } from "@/lib/kvkk";
-import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
-import { uniqueConstraintMessage } from "@/lib/unique-error";
-import { slugIleOlustur } from "@/lib/slug";
+} from "@/lib/isletme/deneme";
+import { BUSINESS_TYPES, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/cekirdek/constants";
+import { KVKK_VERSION } from "@/lib/isletme/kvkk";
+import { normalizePhone, toUsername, usernameProblem } from "@/lib/kimlik/username";
+import { uniqueConstraintMessage } from "@/lib/cekirdek/unique-error";
+import { slugIleOlustur } from "@/lib/cekirdek/slug";
 
 export type DenemeState = { error?: string };
 
 /** Ham IP saklanmıyor; sınır kontrolü karma üzerinden yapılıyor. */
 async function ipKarmasi(): Promise<string | null> {
-  const h = await headers();
-  const ip =
-    h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "";
-  return ip ? createHash("sha256").update(ip).digest("hex").slice(0, 32) : null;
+  // Güvenilir kaynak seçimi tek yerde (bkz. lib/kimlik/istemci-ip.ts).
+  return ipOzeti(istemciIp(await headers()));
 }
 
 /**

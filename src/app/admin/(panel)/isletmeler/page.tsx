@@ -1,19 +1,36 @@
 import { Store } from "lucide-react";
 import Link from "next/link";
-import { actingAccountId, requireUser, visibleBusinesses } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { BUSINESS_TYPES, type BusinessType } from "@/lib/constants";
-import { EmptyState, PageHeader } from "@/components/ui";
-import { googleYorumLinkiSorunu } from "@/lib/google-yorum";
+import { actingAccountId, requireIsletmeSayfasi, visibleBusinesses } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { BUSINESS_TYPES, type BusinessType } from "@/lib/cekirdek/constants";
+import { EmptyState, PageHeader, Pagination } from "@/components/ui";
+import { aralikMetni, cubukGosterilsinMi, sayfaDurumu, toplamSayfa } from "@/lib/cekirdek/sayfalama";
+import { googleYorumLinkiSorunu } from "@/lib/isletme/google-yorum";
 import { NewBusinessForm } from "./NewBusinessForm";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = { title: "İşletmeler" };
 
-export default async function BusinessListPage() {
-  const user = await requireUser();
-  const businesses = await visibleBusinesses(user);
+export default async function BusinessListPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sayfa?: string; boyut?: string }>;
+}) {
+  const user = await requireIsletmeSayfasi();
+  const sorgu = await searchParams;
+  const tumIsletmeler = await visibleBusinesses(user);
+
+  /**
+   * Kapsam sorgusu (`visibleBusinesses`) hepsini getiriyor; sayfalama
+   * BELLEKTE yapılıyor. Sebebi kapsamın rol başına değişen bir kural
+   * olması (bkz. lib/kimlik/tenancy.ts) — onu sayfalı bir sorguya çevirmek
+   * kuralı ikinci kez yazmak demekti. Kazanç yine de gerçek: aşağıdaki üç
+   * toplu sayım artık yalnızca GÖRÜNEN sayfanın işletmelerini sayıyor.
+   */
+  const toplam = tumIsletmeler.length;
+  const durum = sayfaDurumu(sorgu, toplam);
+  const businesses = tumIsletmeler.slice(durum.skip, durum.skip + durum.take);
 
   // Sahip her zaman ekleyebilir; platform yöneticisi yalnızca bir hesaba
   // "geçtiğinde" ekleyebilir — createBusiness action'ı zaten bunu böyle
@@ -137,6 +154,22 @@ export default async function BusinessListPage() {
           );
         })}
       </ul>
+
+      {cubukGosterilsinMi(toplam, durum.boyut) ? (
+        <Pagination
+          sayfa={durum.sayfa}
+          toplamSayfa={toplamSayfa(toplam, durum.boyut)}
+          toplamKayit={toplam}
+          boyut={durum.boyut}
+          aralik={aralikMetni(durum, toplam)}
+          href={(s) =>
+            `/admin/isletmeler?${new URLSearchParams({
+              ...(durum.boyut !== 10 ? { boyut: String(durum.boyut) } : {}),
+              sayfa: String(s),
+            }).toString()}`
+          }
+        />
+      ) : null}
 
       {isletmeEklenebilir ? <NewBusinessForm /> : null}
     </div>

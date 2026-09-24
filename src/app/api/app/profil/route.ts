@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { gorselAdresi } from "@/lib/gorsel-adres";
+import { prisma } from "@/lib/cekirdek/db";
+import { MEKAN_OZETI_SECIMI, mekanOzeti } from "@/lib/isletme/gorsel-adres";
 import {
   ROZETLER,
   ROZET_ANAHTARLARI,
   gecerliRozetMi,
   seviye,
   sonrakiSeviyeyeKalan,
-} from "@/lib/rozet";
-import { appKullaniciGerekli } from "@/lib/app-api";
+} from "@/lib/biyerlere/rozet";
+import { appKullaniciGerekli } from "@/lib/kimlik/app-api";
+import { KUPON_AKTIF } from "@/lib/biyerlere/kupon";
 
 export const dynamic = "force-dynamic";
 
@@ -37,13 +38,16 @@ export async function GET(request: Request) {
       select: {
         id: true,
         createdAt: true,
-        business: { select: { id: true, slug: true, name: true, logoUrl: true } },
+        business: { select: MEKAN_OZETI_SECIMI },
       },
     }),
     prisma.appVisit.count({ where: { appUserId: oturum.kullanici.id } }),
-    prisma.coupon.count({
-      where: { appUserId: oturum.kullanici.id, used: false },
-    }),
+    // Kupon kapalıyken sayaç 0; sorgu da atlanıyor (bkz. lib/biyerlere/kupon.ts).
+    KUPON_AKTIF
+      ? prisma.coupon.count({
+          where: { appUserId: oturum.kullanici.id, used: false },
+        })
+      : Promise.resolve(0),
     prisma.appUser.count({ where: { referredById: oturum.kullanici.id } }),
   ]);
 
@@ -59,7 +63,7 @@ export async function GET(request: Request) {
       seviye: seviye(oturum.kullanici.puan),
       sonrakiSeviyeyeKalan: sonrakiSeviyeyeKalan(oturum.kullanici.puan),
       dogrulanmisZiyaret: ziyaretSayisi,
-      cuzdandakiKupon: kuponSayisi,
+      ...(KUPON_AKTIF ? { cuzdandakiKupon: kuponSayisi } : {}),
       davetEttigiKisiSayisi: davetSayisi,
     },
     rozetler: ROZET_ANAHTARLARI.map((anahtar) => ({
@@ -74,10 +78,7 @@ export async function GET(request: Request) {
       id: z.id,
       tarih: z.createdAt,
       mekan: {
-        id: z.business.id,
-        slug: z.business.slug,
-        ad: z.business.name,
-        logoUrl: gorselAdresi(z.business.id, "logo", z.business.logoUrl),
+        ...mekanOzeti(z.business),
       },
     })),
   });
