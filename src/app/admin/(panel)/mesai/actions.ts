@@ -12,7 +12,10 @@ import {
 import { istemciIp, ipOzeti } from "@/lib/kimlik/istemci-ip";
 import { denetimYaz } from "@/lib/rapor/denetim";
 import {
+  EN_COK_IP,
   duzeltmeGecerliMi,
+  ipGirdisiniSadelestir,
+  ipListesiniDogrula,
   ipleriCoz,
   ipleriYaz,
   okutmaKarari,
@@ -93,24 +96,33 @@ export async function bulunduguAgiEkle(
     where: { id: businessId },
     select: { mesaiIpleri: true },
   });
+  // Elle girişle aynı biçime getiriliyor: IPv6 açılmış hâliyle
+  // saklanıyor, "::ffff:" önekli IPv4 düz IPv4'e çevriliyor.
+  const sade = ipGirdisiniSadelestir(ip);
+  if (!sade.ok) return { error: `Bağlantı adresi tanınamadı (${ip}).` };
+  const adres = sade.deger;
+
   const mevcut = ipleriCoz(isletme?.mesaiIpleri);
-  if (mevcut.includes(ip.toLowerCase())) {
-    return { saved: `Bu ağ (${ip}) zaten kayıtlı.` };
+  if (mevcut.includes(adres)) {
+    return { saved: `Bu ağ (${adres}) zaten kayıtlı.` };
+  }
+  if (mevcut.length >= EN_COK_IP) {
+    return { error: `En fazla ${EN_COK_IP} adres/blok tanımlanabilir. Önce listeden birini silin.` };
   }
 
   await prisma.business.update({
     where: { id: businessId },
-    data: { mesaiIpleri: ipleriYaz([...mevcut, ip]) },
+    data: { mesaiIpleri: ipleriYaz([...mevcut, adres]) },
   });
 
   await denetimYaz(actor, "mesai.ip", {
     entity: "business",
     entityId: businessId,
-    detail: `Mesai IP eklendi: ${ip}`,
+    detail: `Mesai IP eklendi: ${adres}`,
   });
 
   revalidatePath(YOL);
-  return { saved: `${ip} eklendi. Personel bu ağdan giriş yapabilir.` };
+  return { saved: `${adres} eklendi. Personel bu ağdan giriş yapabilir.` };
 }
 
 /** Elle IP listesi düzenleme — blok yazmak isteyen için ("85.105.11."). */
@@ -122,10 +134,11 @@ export async function ipleriKaydet(
   const actor = await yetkiliMi(businessId);
   if (!actor) return { error: "Bu işletmeye yetkiniz yok." };
 
-  const ipler = ipleriCoz(metin(formData, "ipler"));
-  // Üst sınır: her okutmada liste baştan sona taranıyor ve sınırsız bir
-  // liste, tek satırlık bir ayarla sorguyu ağırlaştırmanın yolu olurdu.
-  if (ipler.length > 20) return { error: "En fazla 20 adres/blok tanımlanabilir." };
+  // Biçim, geniş blok ve üst sınır kontrolü saf fonksiyonda
+  // (bkz. ipListesiniDogrula). Tek bir hatalı değer bütün kaydı durduruyor.
+  const liste = ipListesiniDogrula(metin(formData, "ipler"));
+  if (!liste.ok) return { error: liste.hata };
+  const ipler = liste.ipler;
 
   await prisma.business.update({
     where: { id: businessId },
@@ -139,7 +152,12 @@ export async function ipleriKaydet(
   });
 
   revalidatePath(YOL);
-  return { saved: "Adres listesi kaydedildi." };
+  return {
+    saved:
+      ipler.length === 0
+        ? "Liste boşaltıldı. Adres eklenene kadar personel giriş/çıkış yapamaz."
+        : `Adres listesi kaydedildi (${ipler.length} kayıt).`,
+  };
 }
 
 /**

@@ -113,16 +113,28 @@ export function MesaiKurulum({
 
         <form action={ipEylem} className="flex flex-col gap-2">
           <input type="hidden" name="businessId" value={businessId} />
-          <input
+          <label htmlFor="mesai-ipler" className="text-small font-medium text-ink">
+            Elle adres girin
+          </label>
+          <textarea
+            id="mesai-ipler"
             name="ipler"
-            defaultValue={ipler.join(", ")}
-            placeholder="85.105.10.42, 85.105.11."
-            className="rounded-control border border-line bg-surface px-3 py-2 text-small text-ink"
+            rows={3}
+            maxLength={2000}
+            defaultValue={ipler.join("\n")}
+            placeholder={"85.105.10.42\n85.105.11."}
+            spellCheck={false}
+            autoComplete="off"
+            className="rounded-control border border-line bg-surface px-3 py-2 font-mono text-small text-ink"
           />
           <p className="text-caption text-ink-faint">
+            Her satıra bir adres yazın; virgül ya da boşlukla da ayırabilirsiniz.
             Nokta ile biten değer bloğun tamamını kabul eder
-            (<code>85.105.11.</code> → 85.105.11.x). IP&apos;si sık değişen
-            hatlarda bunu kullanın.
+            (<code>85.105.11.</code> → 85.105.11.x); IP&apos;si sık değişen
+            hatlarda bunu kullanın. Güvenlik için en az üç hane yazılmalı —
+            <code>85.</code> ya da <code>85.105.</code> gibi geniş bloklar kabul
+            edilmez. IPv6 da girilebilir. Listeyi boşaltırsanız kimse giriş
+            yapamaz.
           </p>
           <button
             type="submit"

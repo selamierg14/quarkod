@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   DURUM_METNI,
+  EN_COK_IP,
   EN_KISA_ARALIK_SN,
   calisilanDakika,
   duzeltilmesiGerekenler,
   duzeltmeGecerliMi,
   gunlukTablo,
+  ipGirdisiniSadelestir,
   ipIzinliMi,
+  ipListesiniDogrula,
   ipleriCoz,
   ipleriYaz,
   okutmaKarari,
@@ -74,6 +77,124 @@ describe("ipIzinliMi", () => {
 
   it("büyük/küçük harf farkı IPv6'da sorun çıkarmıyor", () => {
     expect(ipIzinliMi(["2a02:ff0:"], "2A02:FF0:1234::9")).toBe(true);
+  });
+});
+
+describe("ipIzinliMi — IPv6 ve eşlenmiş IPv4", () => {
+  it("aynı IPv6 adresinin farklı yazımları eşleşiyor", () => {
+    expect(ipIzinliMi(["2a02:ff0:0:0:0:0:0:1"], "2a02:ff0::1")).toBe(true);
+    expect(ipIzinliMi(["2a02:ff0::1"], "2A02:0FF0:0000:0000:0000:0000:0000:0001")).toBe(true);
+    expect(ipIzinliMi(["2a02:ff0::1"], "2a02:ff0::2")).toBe(false);
+  });
+
+  it("IPv6 öneki, sıkıştırılmış gelen adreste de çalışıyor", () => {
+    // Gelen adres sıfır grupları "::" ile yutuyor; önek metin olarak
+    // karşılaştırılsaydı eşleşmezdi.
+    expect(ipIzinliMi(["2a02:ff0:0:0:"], "2a02:ff0::9")).toBe(true);
+    expect(ipIzinliMi(["2a02:ff0:0:0:"], "2a02:ff0:0:1::9")).toBe(false);
+  });
+
+  it("vekilin ::ffff: biçimindeki IPv4'ü düz IPv4 listesiyle eşleşiyor", () => {
+    expect(ipIzinliMi(IZINLI, "::ffff:85.105.10.42")).toBe(true);
+    expect(ipIzinliMi(IZINLI, "::ffff:85.105.11.9")).toBe(true);
+    expect(ipIzinliMi(IZINLI, "::ffff:78.180.4.4")).toBe(false);
+  });
+
+  it("çözülemeyen gelen adres hiçbir koşulda geçmiyor", () => {
+    expect(ipIzinliMi(IZINLI, "85.105.10.42, 1.1.1.1")).toBe(false);
+    expect(ipIzinliMi(IZINLI, "bilinmiyor")).toBe(false);
+  });
+});
+
+describe("ipGirdisiniSadelestir", () => {
+  it("tam IPv4 ve /24 bloğunu kabul ediyor", () => {
+    expect(ipGirdisiniSadelestir(" 85.105.10.42 ")).toEqual({ ok: true, deger: "85.105.10.42" });
+    expect(ipGirdisiniSadelestir("85.105.11.")).toEqual({ ok: true, deger: "85.105.11." });
+  });
+
+  /**
+   * Korumanın kendisi. "85." 16 milyon, "85.105." 65 bin adres demek;
+   * mesai kaydının tek kanıtı IP olduğu için bunlar korumayı fiilen
+   * kaldırırdı.
+   */
+  it("geniş blokları reddediyor", () => {
+    expect(ipGirdisiniSadelestir("85.").ok).toBe(false);
+    expect(ipGirdisiniSadelestir("85.105.").ok).toBe(false);
+    expect(ipGirdisiniSadelestir("2a02:ff0:").ok).toBe(false);
+  });
+
+  it("bozuk IPv4'ü reddediyor", () => {
+    for (const kotu of ["256.1.1.1", "1.2.3", "1.2.3.4.5", "01.2.3.4", "1.2.3.4.", "abc", "1.2.3.-4"]) {
+      expect(ipGirdisiniSadelestir(kotu).ok, kotu).toBe(false);
+    }
+  });
+
+  it("IPv6'yı açılmış biçimde saklıyor", () => {
+    expect(ipGirdisiniSadelestir("2A02:FF0::1")).toEqual({
+      ok: true,
+      deger: "2a02:ff0:0:0:0:0:0:1",
+    });
+    expect(ipGirdisiniSadelestir("2a02:0ff0:0012:0034:")).toEqual({
+      ok: true,
+      deger: "2a02:ff0:12:34:",
+    });
+  });
+
+  it("bozuk IPv6'yı reddediyor", () => {
+    for (const kotu of ["2a02::ff0::1", "2a02:ff0:12345::1", "gggg::1", "1:2:3:4:5:6:7:8:9"]) {
+      expect(ipGirdisiniSadelestir(kotu).ok, kotu).toBe(false);
+    }
+  });
+
+  it("::ffff: biçimini düz IPv4'e çeviriyor", () => {
+    expect(ipGirdisiniSadelestir("::ffff:85.105.10.42")).toEqual({
+      ok: true,
+      deger: "85.105.10.42",
+    });
+  });
+});
+
+describe("ipListesiniDogrula", () => {
+  it("virgül, boşluk, noktalı virgül ve satır sonuyla ayrılmış listeyi okuyor", () => {
+    expect(ipListesiniDogrula("85.105.10.42 85.105.10.43\n85.105.11.;1.2.3.4,5.6.7.8")).toEqual({
+      ok: true,
+      ipler: ["85.105.10.42", "85.105.10.43", "85.105.11.", "1.2.3.4", "5.6.7.8"],
+    });
+  });
+
+  it("tekrarları ayıklıyor, IPv6 yazım farklarını aynı sayıyor", () => {
+    expect(ipListesiniDogrula("1.2.3.4, 1.2.3.4, 2a02:ff0::1, 2a02:ff0:0::1")).toEqual({
+      ok: true,
+      ipler: ["1.2.3.4", "2a02:ff0:0:0:0:0:0:1"],
+    });
+  });
+
+  it("boş liste geçerli (listeyi temizlemek)", () => {
+    expect(ipListesiniDogrula("")).toEqual({ ok: true, ipler: [] });
+    expect(ipListesiniDogrula("  \n ,, ")).toEqual({ ok: true, ipler: [] });
+    expect(ipListesiniDogrula(null)).toEqual({ ok: true, ipler: [] });
+  });
+
+  it("tek bir hatalı değer bütün listeyi durduruyor ve hatalıyı söylüyor", () => {
+    const sonuc = ipListesiniDogrula("85.105.10.42, 85.");
+    expect(sonuc.ok).toBe(false);
+    if (!sonuc.ok) expect(sonuc.hata).toContain('"85."');
+  });
+
+  it("çok sayıda hatada ilk üçünü sayıp kalanını özetliyor", () => {
+    const sonuc = ipListesiniDogrula("a b c d e");
+    expect(sonuc.ok).toBe(false);
+    if (!sonuc.ok) expect(sonuc.hata).toContain("ve 2 değer daha");
+  });
+
+  it(`en fazla ${EN_COK_IP} kayıt`, () => {
+    const yirmi = Array.from({ length: EN_COK_IP }, (_, i) => `10.0.0.${i + 1}`).join(" ");
+    expect(ipListesiniDogrula(yirmi).ok).toBe(true);
+    expect(ipListesiniDogrula(`${yirmi} 10.0.0.99`).ok).toBe(false);
+  });
+
+  it("aşırı uzun girdiyi işlemeden reddediyor", () => {
+    expect(ipListesiniDogrula("1".repeat(2001)).ok).toBe(false);
   });
 });
 
