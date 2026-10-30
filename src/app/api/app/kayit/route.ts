@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/cekirdek/db";
+import { tekillikAlanlari } from "@/lib/cekirdek/unique-error";
 import { hashPassword } from "@/lib/kimlik/auth";
 import { sifreSorunu } from "@/lib/kimlik/sifre";
 import { usernameProblem } from "@/lib/kimlik/username";
@@ -130,8 +131,10 @@ export async function POST(request: Request) {
       // sayımı güncel değeri görüyor.
       if ((error as { code?: string }).code === "P2034") continue;
 
-      const alan = (error as { meta?: { target?: string[] } })?.meta?.target;
-      if (alan?.includes("username")) {
+      // `meta.target` Prisma 7 + pg adaptöründe hiç dolmuyor; alan adı
+      // sürücü hatasından okunuyor (bkz. lib/cekirdek/unique-error.ts).
+      const alan = tekillikAlanlari(error);
+      if (alan.includes("username")) {
         // Ön kontrol ile INSERT arasında başka bir istek aynı adı almış.
         return apiHata(`"${username}" kullanıcı adı zaten alınmış.`, 409);
       }

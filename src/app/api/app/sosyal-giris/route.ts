@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/cekirdek/db";
+import { tekillikAlanlari } from "@/lib/cekirdek/unique-error";
 import {
   apiHata,
   appKullaniciGerekli,
@@ -175,13 +176,15 @@ export async function POST(request: Request) {
       });
       return girisYaniti(yeni);
     } catch (error) {
-      const alan = (error as { meta?: { target?: string[] } })?.meta?.target;
+      // `meta.target` Prisma 7 + pg adaptöründe hiç dolmuyor; alan adı
+      // sürücü hatasından okunuyor (bkz. lib/cekirdek/unique-error.ts).
+      const alan = tekillikAlanlari(error);
       /**
        * Aynı kişi iki cihazdan aynı anda giriş yapmış olabilir: ikinci
        * INSERT `sub` tekilliğine takılır ve doğru davranış yeni hesap
        * açmak değil, az önce açılanla giriş yapmaktır.
        */
-      if (alan?.includes("googleSub") || alan?.includes("appleSub")) {
+      if (alan.includes("googleSub") || alan.includes("appleSub")) {
         const yarisiKazanan = await prisma.appUser.findFirst({
           where: { [subAlani(kimlik.saglayici)]: kimlik.sub },
           select: KULLANICI_ALANLARI,
