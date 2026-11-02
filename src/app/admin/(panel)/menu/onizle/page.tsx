@@ -76,7 +76,7 @@ export default async function MenuOnizlePage({
         : null;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <MenuSekmeleri aktif="gorunum" />
 
       <PageHeader

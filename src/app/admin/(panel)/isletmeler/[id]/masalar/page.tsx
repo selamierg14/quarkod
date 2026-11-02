@@ -24,7 +24,7 @@ export default async function MasalarPage({
   const girisQr = masalar.find((t) => t.isEntrance);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <IsletmeUst business={business} aktif="masalar" />
 
       {/* Kurulumun en kritik kararı bu: masaya özel mi, tek ortak mı.

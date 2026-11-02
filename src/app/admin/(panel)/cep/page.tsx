@@ -130,7 +130,7 @@ export default async function CepPage({
   const suAnkiVardiya = isletme ? vardiyaHesapla(simdi, isletme) : null;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <PageHeader
         ikon={<Smartphone className="h-4 w-4" aria-hidden="true" />}
         renk="indigo"

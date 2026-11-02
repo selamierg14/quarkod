@@ -5,7 +5,7 @@ import { logout } from "../giris/actions";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { KomutPaleti } from "@/components/KomutPaleti";
 import { PersonelKabuk } from "@/components/PersonelKabuk";
-import { UstCubuk } from "@/components/UstCubuk";
+import { KonumYolu, UstCubuk } from "@/components/UstCubuk";
 import { prisma } from "@/lib/cekirdek/db";
 import { ROL_ADLARI } from "@/lib/cekirdek/constants";
 import { abonelikUyarisi } from "@/lib/isletme/abonelik";
@@ -25,7 +25,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
     user.accountId
       ? prisma.account.findUnique({
           where: { id: user.accountId },
-          select: { active: true, expiresAt: true },
+          select: { active: true, expiresAt: true, name: true },
         })
       : Promise.resolve(null),
   ]);
@@ -48,6 +48,17 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   // girebildiği için bu bant onun tek yönlendirmesi.
   const uyari = hesap ? abonelikUyarisi(hesap) : null;
 
+  // Kenar çubuğunun tepesindeki çalışma alanı kartı: "şu an kimin
+  // panelindeyim" sorusunun cevabı her ekranda aynı yerde.
+  const rolAdi = ROL_ADLARI[user.role] ?? user.role;
+  const calismaAlani = aktifHesap
+    ? { ad: aktifHesap.name, alt: "Görüntüleniyor" }
+    : modu === "platform"
+      ? { ad: "Quarkod Platform", alt: "Tüm hesaplar" }
+      : isletmeler.length === 1
+        ? { ad: isletmeler[0].name, alt: hesap?.name ?? rolAdi }
+        : { ad: hesap?.name ?? "Hesabım", alt: `${isletmeler.length} işletme` };
+
   // Saha personeli (garson) tamamen ayrı, sade bir kabuk görüyor — yönetici
   // sidebar'ının onda karşılığı yok, iki ekranı var.
   if (modu === "personel") {
@@ -67,7 +78,10 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
     <ToastProvider>
     {/* data-tema: panel teması yalnızca bu kabuğun içinde (bkz.
         globals.css). Çalışma alanı beyaz; kenar çubuğu çam yeşili. */}
-    <div data-tema="panel" className={`${PANEL_FONT_SINIFI} flex min-h-dvh flex-col bg-surface lg:flex-row`}>
+    <div
+      data-tema="panel"
+      className={`${PANEL_FONT_SINIFI} flex min-h-dvh flex-col bg-canvas lg:flex-row lg:gap-3 lg:p-3`}
+    >
       {/* Ctrl/Cmd+K ile sayfa arama. Sidebar'la aynı menü ağacından
           beslendiği için ayrıca güncellenmesi gereken bir liste yok. */}
       <KomutPaleti gruplar={gruplar} />
@@ -75,24 +89,20 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
       <AdminSidebar
         gruplar={gruplar}
         kullaniciAdi={user.name}
-        rolAdi={ROL_ADLARI[user.role] ?? user.role}
+        rolAdi={rolAdi}
+        calismaAlani={calismaAlani}
         cikisAction={logout}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        {/* Sağ üstte sabit profil rozeti: uzun bir listede kendi satırını
-            görüp "profilime nasıl gidiyordum" diye sidebar'ın altını
-            aramak yerine buradan tek tıkla gidilsin. Mobilde bu rozet
-            AdminSidebar'ın kendi başlık çubuğunda — burada tekrar
-            göstermek iki üst üste çubuk demek olurdu. */}
-        <UstCubuk gruplar={gruplar} ad={user.name} />
+      <div className="flex min-w-0 flex-1 flex-col lg:gap-3">
+        <UstCubuk ad={user.name} rolAdi={rolAdi} />
 
         {/* Platform yöneticisi bir kiracıyı görüntülüyorsa bu bant hep üstte
             durur: yanlışlıkla müşterinin verisinde işlem yapmayı önler.
             `sticky` şart — sayfayla birlikte kayıp gittiğinde uzun bir listede
             aşağı inen yönetici başkasının hesabında olduğunu unutabiliyordu. */}
         {aktifHesap ? (
-          <div className="print-hidden sticky top-0 z-30 flex flex-wrap items-center justify-between gap-2 bg-warning-soft px-4 py-2 text-small text-warning-ink shadow-sm">
+          <div className="print-hidden sticky top-0 z-30 flex flex-wrap items-center justify-between gap-2 bg-warning-soft px-4 py-2 text-small text-warning-ink lg:top-3 lg:rounded-card">
             <span>
               <span className="font-semibold">{aktifHesap.name}</span> hesabını
               görüntülüyorsunuz. Yaptığınız işlemler bu hesaba yazılır.
@@ -110,7 +120,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
 
         {uyari ? (
           <div
-            className={`print-hidden px-4 py-2 text-small ${
+            className={`print-hidden px-4 py-2 text-small lg:rounded-card ${
               uyari.seviye === "bitti"
                 ? "bg-danger-line text-danger-deep"
                 : "bg-warning-soft text-warning-ink"
@@ -121,11 +131,10 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
           </div>
         ) : null}
 
-        {/* Üst sınır yok: geniş ekranda tablolar (Kullanıcılar, Ürünler,
-            Vardiya çizelgesi) kalan tüm genişliği kullansın diye kaldırıldı
-            — kutuya sıkışmış görünüyordu. Mobilde zaten viewport dar olduğu
-            için etkisi yok. */}
-        <main id="icerik" className="mx-auto w-full max-w-[1320px] flex-1 px-4 py-6 lg:px-8 lg:py-7">
+        {/* Üst sınır yok: içerik kalan bütün genişliği kullanıyor. Konum yolu
+            sayfa başlığının hemen üstünde (referans tasarımdaki gibi). */}
+        <main id="icerik" className="flex w-full min-w-0 flex-1 flex-col gap-2 px-4 py-5 lg:px-2 lg:py-2">
+          <KonumYolu gruplar={gruplar} />
           {children}
         </main>
       </div>

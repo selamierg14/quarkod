@@ -90,7 +90,7 @@ export default async function DenetimPage({
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <PageHeader
         ikon={<ScrollText className="h-4 w-4" aria-hidden="true" />}
         renk="slate"

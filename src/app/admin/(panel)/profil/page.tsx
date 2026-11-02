@@ -38,7 +38,7 @@ export default async function ProfilePage() {
   });
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <PageHeader
         ikon={<User className="h-4 w-4" aria-hidden="true" />}
         renk="indigo"

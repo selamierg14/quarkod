@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { modulTonu, type ModulRengi } from "@/lib/kimlik/modul-rengi";
+import type { ModulRengi } from "@/lib/kimlik/modul-rengi";
 import { BilgiIpucu } from "./BilgiIpucu";
 
 /**
@@ -87,28 +87,29 @@ export function SectionCard({
   className?: string;
   padded?: boolean;
 }) {
-  const ton = modulTonu(renk);
+  // `renk` geriye dönük uyum için kabul ediliyor; görünümü değiştirmiyor.
+  void renk;
   return (
-    <section
-      className={`overflow-hidden rounded-card bg-surface shadow-card ring-1 ring-line ${className}`}
-    >
-      <div
-        className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b px-4 py-2.5 ${ton.serit}`}
-      >
-        <div className="flex min-w-0 items-center gap-2">
-          {ikon ? (
-            // Rozetsiz, soluk ikon: başlığın yanında yön verir, göz onu
-            // başlıktan önce okumaz.
-            <span aria-hidden="true" className="flex shrink-0 text-ink-faint">
-              {ikon}
-            </span>
-          ) : null}
-          <h2 className="min-w-0 truncate font-display text-[16px] font-semibold tracking-tight text-ink">{title}</h2>
-          {description ? <BilgiIpucu>{description}</BilgiIpucu> : null}
+    // Gri zemin üzerinde tam genişlikte beyaz veri kartı. Başlık ve eylem
+    // kartın kendi üst satırında; padded={false} içerik (tablo, liste)
+    // kartın kenarlarına kadar uzanıyor — modüle girince içerik ekranın
+    // ortasında küçük bir pencere değil, sayfaya yayılan bir yüzey.
+    <section className={`min-w-0 overflow-hidden rounded-card bg-surface shadow-card ring-1 ring-line ${className}`}>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line px-5 py-3.5">
+        <div className="min-w-0">
+          <h2 className="flex min-w-0 items-center gap-2 font-display text-[17px] leading-tight font-semibold tracking-[-0.01em] text-ink">
+            {ikon ? (
+              <span aria-hidden="true" className="flex shrink-0 text-ink-faint">
+                {ikon}
+              </span>
+            ) : null}
+            <span className="min-w-0 truncate">{title}</span>
+          </h2>
+          {description ? <p className="mt-0.5 max-w-3xl text-small text-ink-faint">{description}</p> : null}
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
       </div>
-      <div className={padded ? "p-4" : ""}>{children}</div>
+      <div className={padded ? "p-5" : ""}>{children}</div>
     </section>
   );
 }
@@ -213,9 +214,9 @@ export function DefterBolumu({
   className?: string;
 }) {
   return (
-    <section className={`flex min-w-0 flex-col ${className}`}>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-ink pb-2">
-        <h2 className="font-display text-[20px] font-semibold tracking-[-0.01em] text-ink">
+    <section className={`min-w-0 overflow-hidden rounded-card bg-surface shadow-card ring-1 ring-line ${className}`}>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-line px-5 py-3.5">
+        <h2 className="font-display text-[17px] font-semibold tracking-[-0.01em] text-ink">
           {baslik}
           {sayi !== undefined ? (
             <span className={`ml-2 ${sayiTonu === "dikkat" ? "text-danger" : "text-ink-faint"}`}>{sayi}</span>
@@ -226,7 +227,7 @@ export function DefterBolumu({
           {eylem}
         </div>
       </div>
-      {children}
+      <div className="px-5 pb-4">{children}</div>
     </section>
   );
 }

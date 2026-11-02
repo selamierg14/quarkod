@@ -19,7 +19,7 @@ export default async function ComparisonPage() {
   const withData = stats.filter((stat) => stat.total > 0);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <div className="print-hidden -mb-2 flex gap-1 border-b border-line">
         <TabLink href="/admin" active={false}>
           Genel
@@ -118,7 +118,7 @@ export default async function ComparisonPage() {
             {withData.map((stat) => (
               <div
                 key={stat.id}
-                className="overflow-hidden rounded-card bg-surface shadow-card ring-1 ring-line"
+                className="overflow-hidden rounded-card bg-surface ring-1 ring-line"
               >
                 {/* Şubenin kendi marka rengi kartın tepesinde ince bir şerit:
                     üç kartı yan yana görürken hangisinin hangisi olduğu

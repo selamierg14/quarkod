@@ -88,7 +88,7 @@ export default async function MenuPage({
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <MenuSekmeleri aktif="duzenle" />
 
       <PageHeader
@@ -161,7 +161,7 @@ export default async function MenuPage({
             {kategoriler.map((kategori) => (
               <li
                 key={kategori.id}
-                className="overflow-hidden rounded-card bg-surface shadow-card ring-1 ring-line"
+                className="overflow-hidden rounded-card bg-surface ring-1 ring-line"
               >
                 <CategoryHeader
                   id={kategori.id}

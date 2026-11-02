@@ -46,7 +46,7 @@ export default async function SistemPage() {
   const sorunlu = satirlar.filter((s) => isSorunluMu(s.durum));
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <PageHeader
         ikon={<Activity className="h-4 w-4" aria-hidden="true" />}
         renk="slate"

@@ -135,7 +135,7 @@ export default async function MesaiPage({
   const ipTespitCalisiyor = gorulenIp !== "" && gorulenIp !== "guvenilmez";
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <PageHeader
         ikon={<Clock className="h-4 w-4" aria-hidden="true" />}
         renk="emerald"

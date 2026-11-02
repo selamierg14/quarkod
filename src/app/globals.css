@@ -162,9 +162,9 @@
   --font-mono: var(--font-panel-mono), ui-monospace, monospace;
   --font-display: var(--font-panel-display), var(--font-panel-sans), system-ui, sans-serif;
 
-  --color-canvas: #f6f7f4;
+  --color-canvas: #f1f3f0;
   --color-surface: #ffffff;
-  --color-sunken: #f3f5f1;
+  --color-sunken: #f5f7f4;
   --color-line: #e6e9e4;
   --color-line-strong: #c9d1ca;
 
@@ -207,12 +207,13 @@
   --color-info-soft: #e8effd;
   --color-info-ink: #1d4ed8;
 
-  --radius-card: 0.5rem;
-  --radius-control: 0.5rem;
-  --radius-chip: 0.375rem;
+  /* Yuvarlak, yumuşak yüzeyler: gri zemin üzerinde beyaz veri kartları
+     (referans: kullanıcının gösterdiği CRM ekranı, Kasım 2026). */
+  --radius-card: 1rem;
+  --radius-control: 0.625rem;
+  --radius-chip: 0.5rem;
 
-  /* Düz yüzeyler: kartı gölge değil ince çizgi ayırıyor. */
-  --shadow-card: none;
+  --shadow-card: 0 1px 2px rgba(20, 32, 28, 0.04);
 
   font-family: var(--font-sans);
   color: var(--color-ink);

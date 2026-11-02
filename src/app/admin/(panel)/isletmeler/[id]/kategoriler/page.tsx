@@ -17,7 +17,7 @@ export default async function KategorilerPage({
   const { business } = await isletmeyiYukle(id);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <IsletmeUst business={business} aktif="kategoriler" />
 
       <SectionCard

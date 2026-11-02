@@ -189,7 +189,7 @@ export default async function UsersPage({
   const seedCount = seedFlags.filter(([, flag]) => flag).length;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <PageHeader
         ikon={<Users className="h-4 w-4" aria-hidden="true" />}
         renk="indigo"
@@ -230,13 +230,13 @@ export default async function UsersPage({
             : "Ekibinizi kurmak için ilk kullanıcıyı ekleyin."}
         </EmptyState>
       ) : (
-        <div className="overflow-hidden rounded-card bg-surface shadow-card ring-1 ring-line">
+        <div className="overflow-hidden rounded-card bg-surface ring-1 ring-line">
           <p className="border-b border-line px-4 py-2 text-caption text-ink-muted">
             {filtreVar ? `${toplam} sonuç bulundu` : `${toplam} kullanıcı`}
           </p>
           <div className="overflow-x-auto">
           <table className="w-full text-small">
-            <thead className="border-b border-ink text-left text-small font-semibold text-ink-muted">
+            <thead className="border-b border-line text-left text-small font-semibold text-ink">
               <tr>
                 <th className="px-4 py-2">{siralamaBasligi("ad", "İsim")}</th>
                 <th className="hidden px-4 py-2 md:table-cell">İletişim</th>
