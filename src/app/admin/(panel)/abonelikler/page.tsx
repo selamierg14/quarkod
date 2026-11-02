@@ -111,7 +111,7 @@ export default async function AboneliklerPage({
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <PageHeader
         ikon={<RefreshCw className="h-4 w-4" aria-hidden="true" />}
         title="Abonelikler"
@@ -170,10 +170,10 @@ export default async function AboneliklerPage({
             : "Bu sekmede gösterilecek hesap yok."}
         </EmptyState>
       ) : (
-        <div className="overflow-hidden rounded-card bg-surface shadow-card ring-1 ring-line">
+        <div className="overflow-hidden rounded-card bg-surface ring-1 ring-line">
           <div className="overflow-x-auto">
             <table className="w-full text-small">
-              <thead className="border-b border-ink text-left text-small font-semibold text-ink-muted">
+              <thead className="border-b border-line text-left text-small font-semibold text-ink">
                 <tr>
                   <th className="px-4 py-2">Hesap</th>
                   <th className="px-4 py-2">Bitiş</th>

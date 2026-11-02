@@ -282,7 +282,7 @@ export default async function AdminHomePage({
   );
 
   return (
-    <div className="flex flex-col gap-10">
+    <div className="flex flex-col gap-6">
       {kiyaslamaGoster ? (
         <div className="print-hidden -mb-4 flex gap-1 border-b border-line">
           <TabLink href="/admin" active>
@@ -334,7 +334,9 @@ export default async function AdminHomePage({
         ) : null}
 
         {anketVar ? (
-          <>
+          // Günün akışı ve sayılar tek beyaz kartta: gri zemin üzerinde
+          // sayfanın "bugün" yüzeyi.
+          <div className="flex flex-col gap-6 rounded-card bg-surface px-5 pt-7 pb-2 shadow-card ring-1 ring-line">
             <GununAkisi
               simdi={simdiSaat}
               noktalar={bugunGeriBildirim.map((f) => ({
@@ -371,7 +373,7 @@ export default async function AdminHomePage({
                 },
               ]}
             />
-          </>
+          </div>
         ) : null}
       </section>
 
@@ -389,7 +391,7 @@ export default async function AdminHomePage({
       ) : null}
 
       {anketVar || (personelVar && tekIsletme) ? (
-        <div className="flex flex-wrap items-start gap-x-12 gap-y-10">
+        <div className="flex flex-wrap items-start gap-6">
           {anketVar ? (
             <div className="min-w-0 flex-[1_1_320px]">
               <KategoriKarnesi

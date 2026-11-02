@@ -27,7 +27,7 @@ export default async function SablonlarPage({
     : 0;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <MenuSekmeleri aktif="sablonlar" />
 
       <PageHeader

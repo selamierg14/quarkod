@@ -82,7 +82,7 @@ export default async function IzinlerPage({
   const digerleri = izinler.filter((i) => i.status !== "bekliyor");
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <VardiyaSekmeleri aktif="izinler" />
 
       <PageHeader

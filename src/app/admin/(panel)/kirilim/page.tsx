@@ -106,7 +106,7 @@ export default async function BreakdownPage({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <RaporSekmeleri aktif="vardiya" />
 
       <div className="flex flex-col gap-2">
@@ -309,7 +309,7 @@ export default async function BreakdownPage({
           <>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[520px] text-small">
-                <thead className="border-b border-ink text-left text-small font-semibold text-ink-muted">
+                <thead className="border-b border-line text-left text-small font-semibold text-ink">
                   <tr>
                     <th className="px-5 py-3">{masaVarMi ? "Masa" : "Nokta"}</th>
                     <th className="px-5 py-3">Ortalama</th>

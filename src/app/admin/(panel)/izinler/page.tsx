@@ -43,7 +43,7 @@ export default async function ConsentsPage({
   });
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <PageHeader
         ikon={<Mail className="h-4 w-4" aria-hidden="true" />}
         renk="emerald"
@@ -95,9 +95,9 @@ export default async function ConsentsPage({
           görünür.
         </EmptyState>
       ) : (
-        <div className="overflow-x-auto rounded-card bg-surface shadow-card ring-1 ring-line">
+        <div className="overflow-x-auto rounded-card bg-surface ring-1 ring-line">
           <table className="w-full min-w-[720px] text-small">
-            <thead className="border-b border-ink text-left text-small font-semibold text-ink-muted">
+            <thead className="border-b border-line text-left text-small font-semibold text-ink">
               <tr>
                 <th className="px-4 py-2 font-medium">Alıcı</th>
                 <th className="px-4 py-2 font-medium">Kanal</th>

@@ -47,7 +47,7 @@ export default async function UrunlerPage({
   const toplamOy = satirlar.length;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <RaporSekmeleri aktif="urunler" />
 
       <PageHeader
@@ -119,7 +119,7 @@ export default async function UrunlerPage({
 
           <div className="overflow-hidden rounded-control bg-surface ring-1 ring-line">
             <table className="w-full text-small">
-              <thead className="border-b border-ink text-left text-small font-semibold text-ink-muted">
+              <thead className="border-b border-line text-left text-small font-semibold text-ink">
                 <tr>
                   <th className="px-4 py-2 font-medium">Ürün</th>
                   <th className="px-4 py-2 text-right font-medium">Oy</th>

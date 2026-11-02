@@ -25,11 +25,14 @@ export function AdminSidebar({
   gruplar,
   kullaniciAdi,
   rolAdi,
+  calismaAlani,
   cikisAction,
 }: {
   gruplar: NavGrup[];
   kullaniciAdi: string;
   rolAdi: string;
+  /** Tepedeki kart: "şu an kimin panelindeyim" (işletme / hesap / platform). */
+  calismaAlani?: { ad: string; alt: string };
   /** Sunucu eylemi; burada mı ikon mu metinli buton mu göstereceğimize
    * karar veriyoruz, bu yüzden hazır JSX değil aksiyonun kendisi geçiyor. */
   cikisAction: () => Promise<void>;
@@ -58,38 +61,44 @@ export function AdminSidebar({
 
   const govde = (
     <div className="flex h-full flex-col">
-      <div
-        className={`flex items-center gap-2 px-3 pt-4 pb-3 ${
-          genis ? "" : "lg:justify-center"
-        }`}
-      >
-        {/* Üç çizgi: masaüstünde daraltır, mobilde çekmeceyi kapatır. */}
+      <div className={`flex items-center gap-2 px-4 pt-5 pb-3 ${genis ? "" : "lg:justify-center lg:px-2"}`}>
+        {/* Mobilde çekmeceyi kapatır; masaüstünde daraltma en altta. */}
         <button
           type="button"
-          onClick={() => {
-            setGenis((v) => !v);
-            setMobilAcik(false);
-          }}
-          aria-label={genis ? "Menüyü daralt" : "Menüyü genişlet"}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-chip text-white/80 transition hover:bg-white/10 hover:text-white"
+          onClick={() => setMobilAcik(false)}
+          aria-label="Menüyü kapat"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-chip text-white/80 transition hover:bg-white/10 hover:text-white lg:hidden"
         >
           <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
+            <path strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
           </svg>
         </button>
-        {/* Tek marka adı. Önceden burada "Memnuniyet Paneli" yazıyordu
-            (dar sütunda "Memnuniyet Pan…" diye kesiliyordu), altta "Quarkod",
-            uygulamada "Biyerlere" — aynı ekranda üç isim. Sürüm yalnızca
-            altta; burada ikinci kez gösterilmesi gürültüydü. */}
-        {genis ? (
-          <Link href="/admin" className="flex min-w-0 items-center gap-2 text-white">
-            <MarkaIsareti />
-            <span className="truncate font-display text-[17px] font-semibold tracking-tight">Quarkod</span>
-          </Link>
-        ) : null}
+        <Link href="/admin" className="flex min-w-0 items-center gap-2.5 text-white" title="Quarkod">
+          <MarkaIsareti />
+          <span className={`truncate font-display text-[19px] font-semibold tracking-tight ${genis ? "" : "lg:hidden"}`}>
+            Quarkod
+          </span>
+        </Link>
       </div>
 
-      <nav aria-label="Panel" className="flex-1 overflow-y-auto px-2 py-3">
+      {/* Çalışma alanı kartı (referans tasarımdaki gibi): hangi işletmenin
+          ya da hesabın panelinde olunduğu her ekranda aynı yerde. */}
+      {calismaAlani && genis ? (
+        <div className="mx-3 mb-2 flex items-center gap-3 rounded-control bg-white/5 px-3 py-2.5 ring-1 ring-white/10">
+          <span
+            aria-hidden="true"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cta font-display text-small font-bold text-cta-ink"
+          >
+            {calismaAlani.ad.trim().slice(0, 2).toLocaleUpperCase("tr")}
+          </span>
+          <span className="flex min-w-0 flex-col leading-tight">
+            <span className="truncate text-small font-semibold text-white">{calismaAlani.ad}</span>
+            <span className="truncate text-[11px] text-kabuk-faint">{calismaAlani.alt}</span>
+          </span>
+        </div>
+      ) : null}
+
+      <nav aria-label="Panel" className="flex-1 overflow-y-auto px-3 py-3">
         {gruplar.map((grup) => (
           <div key={grup.baslik} className="mb-6 last:mb-0">
             {genis ? (
@@ -154,7 +163,7 @@ export function AdminSidebar({
                                   onClick={() => setMobilAcik(false)}
                                   className={`flex items-center justify-between gap-2 rounded-chip px-2.5 py-1.5 text-small transition ${
                                     altAktif
-                                      ? "bg-cta/15 font-semibold text-white ring-1 ring-cta/35 ring-inset"
+                                      ? "bg-cta font-semibold text-cta-ink"
                                       : "text-kabuk-ink hover:bg-white/5 hover:text-white"
                                   }`}
                                 >
@@ -183,11 +192,11 @@ export function AdminSidebar({
                       aria-current={aktif ? "page" : undefined}
                       title={genis ? undefined : link.label}
                       onClick={() => setMobilAcik(false)}
-                      className={`flex items-center gap-2.5 rounded-chip px-2.5 py-2 text-small font-medium transition ${
+                      className={`flex items-center gap-3 rounded-control px-3 py-2.5 text-small font-medium transition ${
                         genis ? "" : "lg:justify-center"
                       } ${
                         aktif
-                          ? "bg-cta/15 font-semibold text-white ring-1 ring-cta/35 ring-inset"
+                          ? "bg-cta font-semibold text-cta-ink"
                           : "text-kabuk-ink hover:bg-white/5 hover:text-white"
                       }`}
                     >
@@ -203,6 +212,20 @@ export function AdminSidebar({
       </nav>
 
       <div className="border-t border-white/10 p-3">
+        <button
+          type="button"
+          onClick={() => setGenis((v) => !v)}
+          className={`mb-2 hidden w-full items-center gap-3 rounded-control px-3 py-2 text-small text-kabuk-ink transition hover:bg-white/5 hover:text-white lg:flex ${
+            genis ? "" : "justify-center px-0"
+          }`}
+          title={genis ? undefined : "Menüyü genişlet"}
+        >
+          <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <path d="M9 4v16" />
+          </svg>
+          {genis ? "Menüyü daralt" : <span className="sr-only">Menüyü genişlet</span>}
+        </button>
         {/* Kullanıcı kartı profile götürür: tek satırlık "Hesabım" grubunu
             menüden çıkarıp buraya bağladık, menü bir kalem kısaldı. */}
         <Link
@@ -299,14 +322,14 @@ export function AdminSidebar({
             onClick={() => setMobilAcik(false)}
             className="absolute inset-0 bg-ink/40 backdrop-blur-[2px]"
           />
-          <div className="absolute inset-y-0 left-0 w-64 bg-kabuk shadow-pop">{govde}</div>
+          <div className="absolute inset-y-0 left-0 w-[280px] bg-kabuk shadow-pop">{govde}</div>
         </div>
       ) : null}
 
       {/* Masaüstü sütunu */}
       <aside
-        className={`print-hidden sticky top-0 hidden h-dvh shrink-0 bg-kabuk transition-[width] duration-200 lg:block ${
-          genis ? "w-64" : "w-16"
+        className={`print-hidden sticky top-3 hidden h-[calc(100dvh-1.5rem)] shrink-0 overflow-hidden rounded-card bg-kabuk transition-[width] duration-200 lg:block ${
+          genis ? "w-[264px]" : "w-[72px]"
         }`}
       >
         {govde}

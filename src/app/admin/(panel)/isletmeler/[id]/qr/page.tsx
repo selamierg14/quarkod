@@ -74,7 +74,7 @@ export default async function QrPage({
   }));
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <div className="print-hidden">
         <IsletmeUst business={business} aktif="qr" />
       </div>

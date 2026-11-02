@@ -67,7 +67,7 @@ export default async function FeedbackListPage({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <RaporSekmeleri aktif="liste" />
 
       <PageHeader
@@ -110,7 +110,7 @@ export default async function FeedbackListPage({
         // Gelen kutusu: tablo değil satır listesi (yeni panel tasarımı).
         // Puan büyük ve renginde — göz önce onu okuyor; kırmızı yalnızca
         // düşük puanda. Satırın tamamı kayda gidiyor.
-        <ul className="m-0 list-none border-t border-ink p-0">
+        <ul className="m-0 list-none overflow-hidden rounded-card bg-surface p-0 shadow-card ring-1 ring-line">
           {feedbacks.map((feedback) => {
             const ratings: Record<string, number> = feedback.categoryRatings
               ? JSON.parse(feedback.categoryRatings)
@@ -120,10 +120,10 @@ export default async function FeedbackListPage({
               .sort((a, b) => a[1] - b[1])
               .slice(0, 2);
             return (
-              <li key={feedback.id} className="border-b border-line">
+              <li key={feedback.id} className="border-b border-line last:border-b-0">
                 <Link
                   href={`/admin/geri-bildirimler/${feedback.id}`}
-                  className="grid grid-cols-[48px_minmax(0,1fr)] gap-x-4 gap-y-1 px-1 py-3.5 transition-colors hover:bg-sunken/60 sm:grid-cols-[48px_minmax(0,1fr)_auto]"
+                  className="grid grid-cols-[48px_minmax(0,1fr)] gap-x-4 gap-y-1 px-5 py-4 transition-colors hover:bg-sunken sm:grid-cols-[48px_minmax(0,1fr)_auto]"
                 >
                   <span
                     className={`row-span-2 font-display text-[32px] leading-none font-bold tracking-[-0.03em] sm:row-span-1 ${puanMetinRengi(feedback.overallRating)}`}

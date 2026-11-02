@@ -214,7 +214,7 @@ export default async function VardiyaPlanlamaPage({
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <VardiyaSekmeleri aktif="cizelge" />
 
       {/* Başlık artık yalnızca kimlik: ne olduğu ve hangi hafta. Hafta
@@ -233,7 +233,7 @@ export default async function VardiyaPlanlamaPage({
         description={`${kisaTarih(haftaBasi)} – ${kisaTarih(haftaSonu, true)}${buHaftaMi ? " · bu hafta" : ""}`}
       />
 
-      <div className="flex flex-col divide-y divide-line rounded-card bg-surface shadow-card ring-1 ring-line">
+      <div className="flex flex-col divide-y divide-line rounded-card bg-surface ring-1 ring-line">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
           {businesses.length > 1 ? (
             <IsletmeSecici
@@ -417,7 +417,7 @@ export default async function VardiyaPlanlamaPage({
               yatay kaydırma zorunlu kılardı. */}
           <div
             id="vardiya-cizelgesi"
-            className="hidden overflow-x-auto rounded-card bg-surface shadow-card ring-1 ring-line lg:block"
+            className="hidden overflow-x-auto rounded-card bg-surface ring-1 ring-line lg:block"
           >
             {/* QA: 1316px ekranda "Cuma — bugün" ilk açılışta görünmüyordu. */}
             <BuguneKaydir kapsayici="vardiya-cizelgesi" />
@@ -438,7 +438,7 @@ export default async function VardiyaPlanlamaPage({
                   <col key={gunGirdisi(gun)} className="w-[13%]" />
                 ))}
               </colgroup>
-              <thead className="border-b border-ink text-left text-small font-semibold text-ink-muted">
+              <thead className="border-b border-line text-left text-small font-semibold text-ink">
                 <tr>
                   {/* Sabit ilk sütun: sağa kaydırınca hangi vardiyada olduğun
                       kaybolmasın. */}

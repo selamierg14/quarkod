@@ -34,7 +34,7 @@ export default async function EditUserPage({
   if (!target) notFound();
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <Link
         href="/admin/kullanicilar"
         className={buttonClass({ variant: "secondary", size: "sm", className: "self-start" })}

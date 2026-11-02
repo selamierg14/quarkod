@@ -22,7 +22,7 @@ export default async function BusinessSettingsPage({
     .map((b) => ({ id: b.id, name: b.name }));
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <IsletmeUst business={business} aktif="ayarlar" />
 
       <SectionCard

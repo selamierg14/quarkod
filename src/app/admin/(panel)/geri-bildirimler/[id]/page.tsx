@@ -66,7 +66,7 @@ export default async function FeedbackDetailPage({
   const sorunlar = detaylariCoz(feedback.problemDetails);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <Link
         href="/admin/geri-bildirimler"
         className={buttonClass({ variant: "secondary", size: "sm", className: "self-start" })}
@@ -80,7 +80,8 @@ export default async function FeedbackDetailPage({
           {/* "Dosya" başlığı: puan büyük ve renginde, yer ve zaman mono.
               Yorum hemen altında alıntı olarak — sayfaya gelen kişinin
               asıl okumak istediği şey. */}
-          <header className="flex flex-wrap items-end gap-x-6 gap-y-3 border-b border-ink pb-5">
+          <div className="flex flex-col gap-5 rounded-card bg-surface p-6 shadow-card ring-1 ring-line">
+          <header className="flex flex-wrap items-end gap-x-6 gap-y-3 border-b border-line pb-5">
             <span
               className={`font-display text-[80px] leading-[0.8] font-bold tracking-[-0.05em] ${puanMetinRengi(feedback.overallRating)}`}
               aria-label={`${feedback.overallRating} / 5 puan`}
@@ -109,6 +110,7 @@ export default async function FeedbackDetailPage({
               <span className="text-[16px] text-ink-faint">Müşteri yorum bırakmadı.</span>
             )}
           </blockquote>
+          </div>
 
           {Object.keys(ratings).length > 0 ? (
             <SectionCard
