@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { etkinVardiyalar, gecerliVardiyaMi, vardiyaHesapla, type VardiyaAyarlari } from "./vardiya";
+import {
+  etkinVardiyalar,
+  gecerliVardiyaMi,
+  vardiyaAraligi,
+  vardiyaHesapla,
+  type VardiyaAyarlari,
+} from "./vardiya";
 
 const VARSAYILAN: VardiyaAyarlari = {
   vardiyaSabahAktif: true,
@@ -69,5 +75,30 @@ describe("gecerliVardiyaMi", () => {
     expect(gecerliVardiyaMi("sabah")).toBe(true);
     expect(gecerliVardiyaMi("ogle")).toBe(true);
     expect(gecerliVardiyaMi("tatil")).toBe(false);
+  });
+});
+
+describe("vardiyaAraligi (özet şeması)", () => {
+  const ayar = {
+    vardiyaSabahAktif: true,
+    vardiyaSabahSaat: "08:00",
+    vardiyaOgleAktif: false,
+    vardiyaOgleSaat: "12:00",
+    vardiyaAksamAktif: true,
+    vardiyaAksamSaat: "16:30",
+    vardiyaGeceAktif: false,
+    vardiyaGeceSaat: "00:00",
+  };
+
+  it("bitiş bir sonraki etkin vardiyanın başlangıcı; kapalı vardiya atlanır", () => {
+    expect(vardiyaAraligi("sabah", ayar)).toEqual({ bas: 8, son: 16.5 });
+  });
+
+  it("son vardiya gece yarısında biter", () => {
+    expect(vardiyaAraligi("aksam", ayar)).toEqual({ bas: 16.5, son: 24 });
+  });
+
+  it("etkin olmayan vardiya için aralık yok", () => {
+    expect(vardiyaAraligi("ogle", ayar)).toBeNull();
   });
 });

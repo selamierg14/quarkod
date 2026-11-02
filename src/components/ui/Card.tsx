@@ -95,16 +95,15 @@ export function SectionCard({
       <div
         className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b px-4 py-2.5 ${ton.serit}`}
       >
-        <div className="flex min-w-0 items-center gap-2.5">
+        <div className="flex min-w-0 items-center gap-2">
           {ikon ? (
-            <span
-              aria-hidden="true"
-              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-chip text-small ${ton.rozet}`}
-            >
+            // Rozetsiz, soluk ikon: başlığın yanında yön verir, göz onu
+            // başlıktan önce okumaz.
+            <span aria-hidden="true" className="flex shrink-0 text-ink-faint">
               {ikon}
             </span>
           ) : null}
-          <h2 className="min-w-0 truncate text-body font-semibold text-ink">{title}</h2>
+          <h2 className="min-w-0 truncate font-display text-[16px] font-semibold tracking-tight text-ink">{title}</h2>
           {description ? <BilgiIpucu>{description}</BilgiIpucu> : null}
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
@@ -147,24 +146,19 @@ export function PageHeader({
   ikon?: ReactNode;
   renk?: SayfaRengi;
 }) {
-  const ton = modulTonu(renk);
+  // `ikon` ve `renk` çağıranlar bozulmasın diye kabul ediliyor; yeni
+  // tasarımda başlık ikonsuz — karakteri yazı tipi taşıyor.
+  void ikon;
+  void renk;
   return (
-    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
-      <div className="flex min-w-0 flex-1 items-start gap-3">
-        {ikon ? (
-          <span
-            aria-hidden="true"
-            className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-control ${ton.rozet}`}
-          >
-            {ikon}
-          </span>
+    <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+      <div className="min-w-0 flex-1">
+        <h1 className="font-display text-[28px] leading-[1.1] font-semibold tracking-[-0.02em] text-balance text-ink">
+          {title}
+        </h1>
+        {description ? (
+          <p className="mt-1.5 max-w-3xl text-small text-ink-muted">{description}</p>
         ) : null}
-        <div className="min-w-0">
-          <h1 className="text-display font-semibold text-balance text-ink">{title}</h1>
-          {description ? (
-            <p className="mt-1 max-w-3xl text-small text-ink-muted">{description}</p>
-          ) : null}
-        </div>
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}
     </div>
@@ -185,6 +179,54 @@ export function PageHeader({
 /** Kart içi bölüm başlığı; küçük, harfleri aralıklı, gürültüsüz. */
 export function Overline({ children }: { children: ReactNode }) {
   return (
-    <p className="text-overline font-semibold text-ink-muted uppercase">{children}</p>
+    <p className="text-small font-semibold text-ink-muted">{children}</p>
+  );
+}
+
+/**
+ * Defter bölümü — kutusuz bölüm: başlık, altında koyu ince çizgi, içerik
+ * doğrudan sayfada.
+ *
+ * Yeni panel tasarımının ("servis defteri") ana kalıbı. Kart dizisi
+ * yerine sayfa gibi akan bölümler: UI incelemesi her şeyin çerçeveli
+ * beyaz kutu olmasını "AI şablonu" hissinin kaynağı olarak gösterdi.
+ * İçerik yatayda başlıkla aynı hizada başlar; satırlar kendi
+ * aralarını ince çizgiyle ayırır.
+ */
+export function DefterBolumu({
+  baslik,
+  sayi,
+  sayiTonu = "notr",
+  aciklama,
+  eylem,
+  children,
+  className = "",
+}: {
+  baslik: ReactNode;
+  /** Başlığın yanındaki sayı (ör. bekleyen kayıt). */
+  sayi?: number | string;
+  sayiTonu?: "notr" | "dikkat";
+  /** Başlığın sağında, soluk tek satır. */
+  aciklama?: ReactNode;
+  eylem?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={`flex min-w-0 flex-col ${className}`}>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-ink pb-2">
+        <h2 className="font-display text-[20px] font-semibold tracking-[-0.01em] text-ink">
+          {baslik}
+          {sayi !== undefined ? (
+            <span className={`ml-2 ${sayiTonu === "dikkat" ? "text-danger" : "text-ink-faint"}`}>{sayi}</span>
+          ) : null}
+        </h2>
+        <div className="flex items-baseline gap-3 text-small">
+          {aciklama ? <span className="text-ink-faint">{aciklama}</span> : null}
+          {eylem}
+        </div>
+      </div>
+      {children}
+    </section>
   );
 }

@@ -97,7 +97,7 @@ export default async function ConsentsPage({
       ) : (
         <div className="overflow-x-auto rounded-card bg-surface shadow-card ring-1 ring-line">
           <table className="w-full min-w-[720px] text-small">
-            <thead className="bg-sunken/70 text-left text-overline font-semibold tracking-wide text-ink-muted uppercase">
+            <thead className="border-b border-ink text-left text-small font-semibold text-ink-muted">
               <tr>
                 <th className="px-4 py-2 font-medium">Alıcı</th>
                 <th className="px-4 py-2 font-medium">Kanal</th>

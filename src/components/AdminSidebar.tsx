@@ -59,7 +59,7 @@ export function AdminSidebar({
   const govde = (
     <div className="flex h-full flex-col">
       <div
-        className={`flex items-center gap-2 bg-gradient-to-r from-ink via-accent-700 to-accent-600 px-3 py-3.5 ${
+        className={`flex items-center gap-2 px-3 pt-4 pb-3 ${
           genis ? "" : "lg:justify-center"
         }`}
       >
@@ -84,7 +84,7 @@ export function AdminSidebar({
         {genis ? (
           <Link href="/admin" className="flex min-w-0 items-center gap-2 text-white">
             <MarkaIsareti />
-            <span className="truncate font-semibold tracking-tight">Quarkod</span>
+            <span className="truncate font-display text-[17px] font-semibold tracking-tight">Quarkod</span>
           </Link>
         ) : null}
       </div>
@@ -93,13 +93,13 @@ export function AdminSidebar({
         {gruplar.map((grup) => (
           <div key={grup.baslik} className="mb-6 last:mb-0">
             {genis ? (
-              <p className="px-2 pb-2 text-overline font-semibold text-ink-faint uppercase">
+              <p className="px-2.5 pb-1.5 text-caption font-semibold text-kabuk-faint">
                 {grup.baslik}
               </p>
             ) : (
               // Daraltılmış halde başlık yerine ince bir ayraç: gruplar
               // birbirine yapışmasın.
-              <div className="mx-2 mb-2 border-t border-line" aria-hidden="true" />
+              <div className="mx-2 mb-2 border-t border-white/10" aria-hidden="true" />
             )}
 
             <ul className="flex flex-col gap-0.5">
@@ -120,8 +120,8 @@ export function AdminSidebar({
                           genis ? "" : "lg:justify-center"
                         } ${
                           grupAktif
-                            ? "bg-accent-50 text-accent-700"
-                            : "text-ink-soft hover:bg-sunken hover:text-ink"
+                            ? "bg-white/5 text-white"
+                            : "text-kabuk-ink hover:bg-white/5 hover:text-white"
                         }`}
                       >
                         <Ikon ad={link.ikon} />
@@ -143,7 +143,7 @@ export function AdminSidebar({
                       </button>
 
                       {acik && genis ? (
-                        <ul className="mt-0.5 mb-1 flex flex-col gap-0.5 border-l border-line pl-4">
+                        <ul className="mt-0.5 mb-1 flex flex-col gap-0.5 border-l border-white/15 pl-4">
                           {link.altLinkler.map((alt) => {
                             const altAktif = aktifMi(alt, pathname);
                             return (
@@ -154,8 +154,8 @@ export function AdminSidebar({
                                   onClick={() => setMobilAcik(false)}
                                   className={`flex items-center justify-between gap-2 rounded-chip px-2.5 py-1.5 text-small transition ${
                                     altAktif
-                                      ? "bg-gradient-to-r from-accent-600 to-accent-500 font-medium text-white shadow-sm shadow-accent-600/25"
-                                      : "text-ink-soft hover:bg-sunken hover:text-ink"
+                                      ? "bg-cta/15 font-semibold text-white ring-1 ring-cta/35 ring-inset"
+                                      : "text-kabuk-ink hover:bg-white/5 hover:text-white"
                                   }`}
                                 >
                                   <span className="truncate">{alt.label}</span>
@@ -187,8 +187,8 @@ export function AdminSidebar({
                         genis ? "" : "lg:justify-center"
                       } ${
                         aktif
-                          ? "bg-gradient-to-r from-accent-600 to-accent-500 text-white shadow-sm shadow-accent-600/25"
-                          : "text-ink-soft hover:bg-sunken hover:text-ink"
+                          ? "bg-cta/15 font-semibold text-white ring-1 ring-cta/35 ring-inset"
+                          : "text-kabuk-ink hover:bg-white/5 hover:text-white"
                       }`}
                     >
                       <Ikon ad={link.ikon} />
@@ -202,25 +202,25 @@ export function AdminSidebar({
         ))}
       </nav>
 
-      <div className="border-t border-line p-3">
+      <div className="border-t border-white/10 p-3">
         {/* Kullanıcı kartı profile götürür: tek satırlık "Hesabım" grubunu
             menüden çıkarıp buraya bağladık, menü bir kalem kısaldı. */}
         <Link
           href="/admin/profil"
           title={genis ? undefined : `${kullaniciAdi} — Profil`}
-          className={`mb-2 flex items-center gap-2 rounded-chip px-1 py-1.5 transition hover:bg-canvas ${
+          className={`mb-2 flex items-center gap-2 rounded-chip px-1.5 py-1.5 transition hover:bg-white/5 ${
             genis ? "" : "justify-center"
           }`}
         >
           <span
             aria-hidden="true"
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sunken text-caption font-semibold text-ink-soft"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-caption font-semibold text-white"
           >
             {kullaniciAdi.trim().charAt(0).toLocaleUpperCase("tr")}
           </span>
           {genis ? (
-            <span className="min-w-0 flex-1 truncate text-caption text-ink-muted">
-              <span className="block truncate font-medium text-ink-soft">
+            <span className="min-w-0 flex-1 truncate text-caption text-kabuk-faint">
+              <span className="block truncate font-medium text-white">
                 {kullaniciAdi}
               </span>
               {rolAdi}
@@ -230,7 +230,7 @@ export function AdminSidebar({
         <CikisButonu
           action={cikisAction}
           title={genis ? undefined : "Çıkış"}
-          className={`flex w-full items-center justify-center gap-2 rounded-chip border border-line bg-surface text-small text-ink-soft transition hover:bg-canvas hover:text-ink disabled:opacity-45 ${
+          className={`flex w-full items-center justify-center gap-2 rounded-chip border border-white/15 text-small text-kabuk-ink transition hover:bg-white/5 hover:text-white disabled:opacity-45 ${
             genis ? "px-3 py-1.5" : "px-0 py-2"
           }`}
         >
@@ -249,7 +249,7 @@ export function AdminSidebar({
           {genis ? "Çıkış" : null}
         </CikisButonu>
         {genis ? (
-          <p className="mt-2.5 text-center text-[11px] text-ink-faint tabular">
+          <p className="mt-2.5 text-center text-[11px] text-kabuk-faint tabular">
             Sürüm {APP_VERSION}
           </p>
         ) : null}
@@ -299,13 +299,13 @@ export function AdminSidebar({
             onClick={() => setMobilAcik(false)}
             className="absolute inset-0 bg-ink/40 backdrop-blur-[2px]"
           />
-          <div className="absolute inset-y-0 left-0 w-64 bg-surface shadow-pop">{govde}</div>
+          <div className="absolute inset-y-0 left-0 w-64 bg-kabuk shadow-pop">{govde}</div>
         </div>
       ) : null}
 
       {/* Masaüstü sütunu */}
       <aside
-        className={`print-hidden sticky top-0 hidden h-dvh shrink-0 border-r border-line bg-surface transition-[width] duration-200 lg:block ${
+        className={`print-hidden sticky top-0 hidden h-dvh shrink-0 bg-kabuk transition-[width] duration-200 lg:block ${
           genis ? "w-64" : "w-16"
         }`}
       >
@@ -324,9 +324,10 @@ export function MarkaIsareti({ koyu = false }: { koyu?: boolean }) {
   return (
     <span
       aria-hidden="true"
-      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-[7px] text-[13px] font-bold leading-none ${
-        koyu ? "bg-ink text-white" : "bg-white text-accent-700"
-      }`}
+      // Tek kimlik: koyu ve açık zeminde aynı safran işaret. `koyu`
+      // geriye dönük uyum için duruyor, görünümü değiştirmiyor.
+      data-koyu={koyu || undefined}
+      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-cta font-display text-[14px] font-bold leading-none text-cta-ink"
     >
       Q
     </span>

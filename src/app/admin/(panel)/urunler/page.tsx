@@ -119,7 +119,7 @@ export default async function UrunlerPage({
 
           <div className="overflow-hidden rounded-control bg-surface ring-1 ring-line">
             <table className="w-full text-small">
-              <thead className="bg-sunken/70 text-left text-overline font-semibold tracking-wide text-ink-muted uppercase">
+              <thead className="border-b border-ink text-left text-small font-semibold text-ink-muted">
                 <tr>
                   <th className="px-4 py-2 font-medium">Ürün</th>
                   <th className="px-4 py-2 text-right font-medium">Oy</th>

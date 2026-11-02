@@ -271,7 +271,7 @@ export function NewUserForm({
           Garson bu ekranlara hiç girmiyor, ona gösterilmiyor. */}
       {verilebilirModuller.length > 0 && role !== "garson" ? (
         <fieldset className="flex flex-col gap-2 rounded-chip border border-line bg-canvas p-3">
-          <legend className="px-1 text-caption font-medium tracking-wide text-ink-muted uppercase">
+          <legend className="px-1 text-small font-medium text-ink-muted">
             Modül izinleri
           </legend>
           {/* İşaretsiz kutular gönderilmez, yani "hiç modül seçilmedi" ile
@@ -502,7 +502,7 @@ export function EditUserForm({
                (updateUser, modulDagitabilirMi dalı). */}
       {verilebilirModuller.length > 0 && role !== "garson" ? (
         <fieldset className="flex flex-col gap-2 rounded-chip border border-line bg-canvas p-3">
-          <legend className="px-1 text-caption font-medium tracking-wide text-ink-muted uppercase">
+          <legend className="px-1 text-small font-medium text-ink-muted">
             Modül izinleri
           </legend>
           {/* İşaretsiz kutular gönderilmez, yani "hiç modül seçilmedi" ile

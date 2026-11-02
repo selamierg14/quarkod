@@ -49,7 +49,7 @@ export function RespondForm({
   return (
     <form action={formAction} className="mt-3 flex flex-col gap-2">
       <input type="hidden" name="id" value={id} />
-      <label className="text-caption font-medium tracking-wide text-ink-muted uppercase">
+      <label className="text-small font-medium text-ink-muted">
         Müşteriye yanıt yaz
       </label>
       {/* Şablonlar metni GETİRİYOR, göndermiyor: gönderilmeden önce

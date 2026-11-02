@@ -236,7 +236,7 @@ export default async function UsersPage({
           </p>
           <div className="overflow-x-auto">
           <table className="w-full text-small">
-            <thead className="bg-sunken/70 text-left text-overline font-semibold tracking-wide text-ink-muted uppercase">
+            <thead className="border-b border-ink text-left text-small font-semibold text-ink-muted">
               <tr>
                 <th className="px-4 py-2">{siralamaBasligi("ad", "İsim")}</th>
                 <th className="hidden px-4 py-2 md:table-cell">İletişim</th>

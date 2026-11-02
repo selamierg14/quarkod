@@ -30,7 +30,7 @@ export function StatusForm({
       <input type="hidden" name="id" value={id} />
 
       <div>
-        <span className="text-caption font-medium tracking-wide text-ink-muted uppercase">
+        <span className="text-small font-medium text-ink-muted">
           Durum
         </span>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -53,7 +53,7 @@ export function StatusForm({
       </div>
 
       <label className="mt-2 flex flex-col gap-2">
-        <span className="text-caption font-medium tracking-wide text-ink-muted uppercase">
+        <span className="text-small font-medium text-ink-muted">
           İç not
         </span>
         <textarea

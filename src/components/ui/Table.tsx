@@ -37,7 +37,7 @@ export function TH({
   return (
     <th
       scope="col"
-      className={`px-4 py-2.5 text-overline font-semibold text-ink-muted uppercase ${
+      className={`px-4 py-2.5 text-small font-semibold text-ink-muted ${
         align === "right" ? "text-right" : "text-left"
       } ${className}`}
     >
