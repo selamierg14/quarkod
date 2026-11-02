@@ -1,25 +1,30 @@
-import { Mail, Store, Utensils } from "lucide-react";
+import { Store } from "lucide-react";
 import Link from "next/link";
 import { requireTenant, requireUser, visibleBusinesses } from "@/lib/kimlik/auth";
 import { effectiveAccountId } from "@/lib/kimlik/impersonation";
 import { PlatformOzeti } from "./PlatformOzeti";
-import { modulTonu } from "@/lib/kimlik/modul-rengi";
 import { getBusinessStats, type BusinessStats } from "@/lib/rapor/stats";
 import { biyerlereIstatistikGetir } from "@/lib/biyerlere/biyerlere-istatistik";
 import { prisma } from "@/lib/cekirdek/db";
+import { gunBaslangici, gunEkle } from "@/lib/cekirdek/gun";
+import { vardiyaAraligi } from "@/lib/personel/vardiya";
+import { masaEtiketi } from "@/lib/isletme/masa";
+import { trSirala } from "@/lib/cekirdek/text";
 import { BiyerlereIstatistikKarti } from "./BiyerlereIstatistikKarti";
-import {
-  Card,
-  CardHeader,
-  EmptyState,
-  SegmentGroup,
-  SegmentLink,
-  StatCard,
-  StatusBadge,
-  TabLink,
-  formatDateTime,
-} from "@/components/ui";
+import { EmptyState, SegmentGroup, SegmentLink, TabLink, buttonClass } from "@/components/ui";
 import { OnboardingKarti } from "./OnboardingKarti";
+import {
+  BuAksam,
+  GununAkisi,
+  KategoriKarnesi,
+  SayiSatiri,
+  ServisFisleri,
+  VardiyaAkisi,
+  ondalikSaat,
+  saatMetni,
+  type Fis,
+  type VardiyaSatiri,
+} from "./OzetParcalari";
 
 export const dynamic = "force-dynamic";
 
@@ -58,31 +63,6 @@ function sorunlariBirlestir(stats: BusinessStats[]) {
   );
 }
 
-/** Hızlı erişim kartları — rozet temaları modül renk sisteminden gelir. */
-const HIZLI_ERISIM = [
-  {
-    href: "/admin/menu",
-    Ikon: Utensils,
-    baslik: "QR Menü",
-    alt: "Ürün, fiyat, tükendi",
-    renk: "amber" as const,
-  },
-  {
-    href: "/admin/isletmeler",
-    Ikon: Store,
-    baslik: "İşletme ayarları",
-    alt: "Masalar, QR noktaları, marka",
-    renk: "indigo" as const,
-  },
-  {
-    href: "/admin/geri-bildirimler",
-    Ikon: Mail,
-    baslik: "Geri bildirimler",
-    alt: "Tüm kayıtları gör",
-    renk: "sky" as const,
-  },
-];
-
 export default async function AdminHomePage({
   searchParams,
 }: {
@@ -109,8 +89,6 @@ export default async function AdminHomePage({
   const biyerlereIstatistik = biyerlereGoster
     ? await biyerlereIstatistikGetir(secili.map((b) => b.id))
     : null;
-  const kapsamAdi =
-    secili.length === 1 ? secili[0].name : businesses.length === 0 ? "Henüz işletme yok" : "Tüm işletmeler";
 
   const toplam = stats.reduce((a, s) => a + s.total, 0);
   const acik = stats.reduce((a, s) => a + s.openComplaints, 0);
@@ -159,32 +137,154 @@ export default async function AdminHomePage({
       })
     : [];
 
-  // Tek işletme seçiliyse grafikler o işletmenin markasıyla çizilir: panelin
-  // kendisi nötr kalır, veri kimin olduğunu belli eder.
-  const grafikRengi = secili.length === 1 ? secili[0].brandColor : "#0f172a";
-
   if (businesses.length === 0) {
     return (
-      <EmptyState baslik="Henüz işletme yok" ikon={<Store className="h-4 w-4" aria-hidden="true" />}>
+      <EmptyState baslik="Henüz işletme yok" ikon={<Store className="h-5 w-5" aria-hidden="true" />}>
         Bir işletme ekleyip masalarını tanımladıktan sonra özet burada oluşur.
       </EmptyState>
     );
   }
 
+  const anketVar = user.moduller.includes("anket");
+  const personelVar = user.moduller.includes("personel") || user.moduller.includes("mesai");
+  const rezervasyonVar = user.moduller.includes("rezervasyon");
+  const seciliIdler = secili.map((b) => b.id);
+  const tekIsletme = secili.length === 1 ? secili[0] : null;
+
+  const simdi = new Date();
+  const bugun = gunBaslangici(simdi);
+  const yarin = gunEkle(bugun, 1);
+
+  // Bugüne ait parçalar paralel; modülü kapalı olan sorgulanmıyor.
+  const [bugunGeriBildirim, atamalar, mesailer, rezervasyonlar] = await Promise.all([
+    anketVar
+      ? prisma.feedback.findMany({
+          where: { businessId: { in: seciliIdler }, createdAt: { gte: bugun, lt: yarin } },
+          select: { id: true, createdAt: true, overallRating: true, table: { select: { tableNumber: true, isEntrance: true } } },
+          orderBy: { createdAt: "asc" },
+          take: 200,
+        })
+      : Promise.resolve([]),
+    // Vardiya şeması tek işletmede anlamlı: iki şubenin kadrosu aynı
+    // eksende karışır.
+    personelVar && tekIsletme
+      ? prisma.shiftAssignment.findMany({
+          where: { businessId: tekIsletme.id, date: { gte: bugun, lt: yarin } },
+          select: { userId: true, shift: true, user: { select: { name: true } } },
+        })
+      : Promise.resolve([]),
+    personelVar && tekIsletme && user.moduller.includes("mesai")
+      ? prisma.mesaiKaydi.findMany({
+          where: { businessId: tekIsletme.id, giris: { gte: bugun, lt: yarin } },
+          select: { userId: true, giris: true, cikis: true, user: { select: { name: true } } },
+          orderBy: { giris: "asc" },
+        })
+      : Promise.resolve([]),
+    rezervasyonVar
+      ? prisma.rezervasyon.findMany({
+          where: {
+            businessId: { in: seciliIdler },
+            baslangic: { gte: simdi, lt: yarin },
+            durum: { notIn: ["iptal", "gelmedi", "tamamlandi"] },
+          },
+          orderBy: { baslangic: "asc" },
+          take: 8,
+          select: {
+            id: true,
+            misafirAdi: true,
+            kisiSayisi: true,
+            baslangic: true,
+            durum: true,
+            masalar: { select: { masa: { select: { tableNumber: true, isEntrance: true } } } },
+          },
+        })
+      : Promise.resolve([]),
+  ]);
+
   // Şube karşılaştırma yalnızca birden fazla işletmesi olan sahip/platform
-  // yöneticisi için anlamlı; tek işletmeli hesap bu sekmeyi hiç görmez.
-  // Karşılaştırma geri bildirim verisi gösteriyor: anket modülü kapalıysa
-  // sekme de görünmemeli (sayfanın kendi kapısı requireModul ile ayrıca
-  // korunuyor).
+  // yöneticisi için anlamlı; anket modülü kapalıysa sekme de görünmemeli.
   const kiyaslamaGoster =
     businesses.length > 1 &&
     (user.role === "owner" || user.role === "superadmin") &&
-    user.moduller.includes("anket");
+    anketVar;
+
+  const gunAdi = simdi.toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long" });
+  const tarih = simdi.toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul", day: "numeric", month: "long" });
+  const dusukBugun = bugunGeriBildirim.filter((f) => f.overallRating <= 2).length;
+  const simdiSaat = ondalikSaat(simdi);
+
+  // --- Servis fişleri: eşiğin altında, çözülmemiş
+  const fisler: Fis[] = acilKayitlar.map((f) => {
+    const puanlar: Record<string, number> = f.categoryRatings ? JSON.parse(f.categoryRatings) : {};
+    const zayif = Object.entries(puanlar)
+      .filter(([, v]) => v <= 2)
+      .sort((a, b) => a[1] - b[1])
+      .slice(0, 2)
+      .map(([ad, v]) => `${ad.toLocaleLowerCase("tr")} ${v}`)
+      .join(" · ");
+    const gun = f.createdAt >= bugun ? "" : f.createdAt >= gunEkle(bugun, -1) ? "dün " : `${f.createdAt.toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul", day: "numeric", month: "short" })} `;
+    return {
+      id: f.id,
+      masa: f.table ? masaEtiketi(f.table) : "Masa —",
+      puan: f.overallRating,
+      zaman: `${gun}${saatMetni(f.createdAt)}`,
+      isletme: secili.length > 1 ? f.business.name : undefined,
+      yorum: f.comment,
+      zayif,
+    };
+  });
+
+  // --- Vardiya akışı: atama + mesai okutması, kişi başına bir satır
+  const vardiyaSatirlari: VardiyaSatiri[] = [];
+  if (tekIsletme) {
+    const kisiler = new Map<string, VardiyaSatiri>();
+    for (const a of atamalar) {
+      const aralik = vardiyaAraligi(a.shift as Parameters<typeof vardiyaAraligi>[0], tekIsletme);
+      const mevcut = kisiler.get(a.userId);
+      kisiler.set(a.userId, {
+        ad: a.user.name,
+        planBas: Math.min(mevcut?.planBas ?? 99, aralik?.bas ?? 99),
+        planSon: Math.max(mevcut?.planSon ?? -1, aralik?.son ?? -1),
+        giris: null,
+        cikis: null,
+        durum: "",
+        durumTonu: "notr",
+      });
+    }
+    for (const m of mesailer) {
+      const k =
+        kisiler.get(m.userId) ??
+        ({ ad: m.user.name, planBas: null, planSon: null, giris: null, cikis: null, durum: "", durumTonu: "notr" } as VardiyaSatiri);
+      // İlk giriş, son çıkış; açık kayıt varsa çıkış yok (uydurma saat yok).
+      if (k.giris === null) k.giris = ondalikSaat(m.giris);
+      k.cikis = m.cikis ? ondalikSaat(m.cikis) : null;
+      kisiler.set(m.userId, k);
+    }
+    for (const k of kisiler.values()) {
+      if (k.planBas === 99) k.planBas = null;
+      if (k.planSon === -1) k.planSon = null;
+      if (k.giris !== null) {
+        const gec = k.planBas !== null && k.giris - k.planBas > 10 / 60;
+        k.durum = k.cikis !== null ? `çıktı · ${saatMetinOndalik(k.cikis)}` : `${gec ? "geç" : "içeride"} · ${saatMetinOndalik(k.giris)}`;
+        k.durumTonu = k.cikis !== null ? "notr" : gec ? "uyari" : "iyi";
+      } else if (k.planBas !== null && simdiSaat > k.planBas + 0.25) {
+        k.durum = "giriş yapmadı";
+        k.durumTonu = "kotu";
+      } else if (k.planBas !== null) {
+        k.durum = `${saatMetinOndalik(k.planBas)} gelecek`;
+        k.durumTonu = "notr";
+      }
+      vardiyaSatirlari.push(k);
+    }
+  }
+  const vardiyaSirali = trSirala(vardiyaSatirlari, (k) => k.ad).sort(
+    (a, b) => (a.planBas ?? a.giris ?? 99) - (b.planBas ?? b.giris ?? 99),
+  );
 
   return (
-    <div className="flex flex-col gap-7">
+    <div className="flex flex-col gap-10">
       {kiyaslamaGoster ? (
-        <div className="print-hidden -mb-2 flex gap-1 border-b border-line">
+        <div className="print-hidden -mb-4 flex gap-1 border-b border-line">
           <TabLink href="/admin" active>
             Genel
           </TabLink>
@@ -194,224 +294,159 @@ export default async function AdminHomePage({
         </div>
       ) : null}
 
-      <section>
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h1 className="text-display font-semibold text-ink">{kapsamAdi} — Bugün</h1>
-          <span className="text-caption text-ink-faint">
-            {formatDateTime(new Date())} itibarıyla
-          </span>
+      <section className="flex flex-col gap-5">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="min-w-0">
+            <p className="m-0 text-small text-ink-faint">{secili.length === 1 ? secili[0].name : "Tüm işletmeler"}</p>
+            <h1 className="mt-1 font-display text-[36px] leading-none font-medium tracking-[-0.03em] text-ink">
+              <span className="capitalize">{gunAdi}</span>, <span className="font-bold">{tarih}</span>
+            </h1>
+            {anketVar ? (
+              <p className="mt-2.5 text-ink-muted">
+                Bugün <strong className="text-ink">{bugunGeriBildirim.length} geri bildirim</strong>
+                {dusukBugun > 0 ? (
+                  <>
+                    , <strong className="text-danger">{dusukBugun} düşük puan</strong>
+                  </>
+                ) : null}
+                .
+              </p>
+            ) : null}
+          </div>
+          {tekIsletme && user.role !== "garson" ? (
+            <Link href={`/admin/isletmeler/${tekIsletme.id}/qr`} className={buttonClass({ size: "md" })}>
+              QR kodlarını yazdır
+            </Link>
+          ) : null}
         </div>
 
         {businesses.length > 1 ? (
-          <div className="mt-3">
-            <SegmentGroup label="İşletme">
-              <SegmentLink href="/admin" active={secili.length > 1}>
-                Tümü
+          <SegmentGroup label="İşletme">
+            <SegmentLink href="/admin" active={secili.length > 1}>
+              Tümü
+            </SegmentLink>
+            {businesses.map((b) => (
+              <SegmentLink key={b.id} href={`/admin?isletme=${b.id}`} active={secili.length === 1 && secili[0].id === b.id}>
+                {b.name}
               </SegmentLink>
-              {businesses.map((b) => (
-                <SegmentLink
-                  key={b.id}
-                  href={`/admin?isletme=${b.id}`}
-                  active={secili.length === 1 && secili[0].id === b.id}
-                >
-                  {b.name}
-                </SegmentLink>
-              ))}
-            </SegmentGroup>
-          </div>
+            ))}
+          </SegmentGroup>
         ) : null}
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            renk="mavi"
-            label="Son 30 gün ortalaması"
-            value={ortalama !== null ? `${ortalama.toFixed(1)} / 5` : "—"}
-            hint={ortalama === null ? "Son 30 günde geri bildirim yok" : undefined}
-            trend={
-              ortalama === null
-                ? undefined
-                : delta === null || Math.abs(delta) < 0.1
-                ? { yon: "sabit", metin: "önceki aya göre sabit" }
-                : {
-                    yon: delta > 0 ? "yukari" : "asagi",
-                    metin: `${Math.abs(delta).toFixed(1)} önceki aya göre`,
-                    iyi: delta > 0,
-                  }
-            }
-          />
-          <StatCard
-            renk="mor"
-            label="Toplam geri bildirim"
-            value={String(toplam)}
-            hint={`Son 7 günde ${son7}`}
-          />
-          <StatCard
-            renk="amber"
-            label="Yanıt bekleyen"
-            value={String(acik)}
-            hint={acik > 0 ? "Eşiğin altında, çözülmemiş" : "Bekleyen şikayet yok"}
-            tone={acik > 0 ? "dikkat" : "default"}
-          />
-          <StatCard
-            renk="yesil"
-            label="Google dönüşümü"
-            value={googleShown ? `%${Math.round((googleClicked / googleShown) * 100)}` : "—"}
-            hint={`${googleClicked} / ${googleShown} müşteri gitti`}
-          />
-        </div>
+        {anketVar ? (
+          <>
+            <GununAkisi
+              simdi={simdiSaat}
+              noktalar={bugunGeriBildirim.map((f) => ({
+                saat: ondalikSaat(f.createdAt),
+                puan: f.overallRating,
+                etiket: `${saatMetni(f.createdAt)} · ${f.table ? masaEtiketi(f.table) : "Masa —"} · ${f.overallRating} puan`,
+                href: `/admin/geri-bildirimler/${f.id}`,
+              }))}
+            />
+            <SayiSatiri
+              sayilar={[
+                {
+                  etiket: "Ortalama, son 30 gün",
+                  deger: ortalama !== null ? ortalama.toFixed(1).replace(".", ",") : "—",
+                  not:
+                    ortalama === null
+                      ? "veri yok"
+                      : delta === null || Math.abs(delta) < 0.1
+                        ? "sabit"
+                        : `${delta > 0 ? "▲" : "▼"} ${Math.abs(delta).toFixed(1).replace(".", ",")}`,
+                  tonu: ortalama === null || delta === null || Math.abs(delta) < 0.1 ? "notr" : delta > 0 ? "iyi" : "kotu",
+                },
+                { etiket: "Geri bildirim", deger: String(toplam), not: `son 7 gün ${son7}` },
+                {
+                  etiket: "Yanıt bekleyen",
+                  deger: String(acik),
+                  not: acik > 0 ? "eşiğin altında" : "bekleyen yok",
+                  tonu: acik > 0 ? "dikkat" : "notr",
+                },
+                {
+                  etiket: "Google'a yönlenen",
+                  deger: googleShown ? `%${Math.round((googleClicked / googleShown) * 100)}` : "—",
+                  not: `${googleClicked} / ${googleShown}`,
+                },
+              ]}
+            />
+          </>
+        ) : null}
       </section>
-
-      {/* "Hızlı erişim" adı sayfanın dibinde anlamsızdı: oraya inen kişi
-          zaten aradığını bulmuş oluyordu. Artık üstte, tek satır. */}
-      <div className="print-hidden grid gap-2.5 sm:grid-cols-3">
-        {HIZLI_ERISIM.map((h) => (
-          <Link
-            key={h.href}
-            href={h.href}
-            className="group flex items-center gap-3 rounded-card bg-surface p-3.5 shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-raised"
-          >
-            <span
-              aria-hidden="true"
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-control shadow-md ${modulTonu(h.renk).rozet}`}
-            >
-              <h.Ikon className="h-[18px] w-[18px]" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-small font-semibold text-ink">{h.baslik}</span>
-              <span className="block text-caption text-ink-muted">{h.alt}</span>
-            </span>
-            <span
-              aria-hidden="true"
-              className="shrink-0 text-ink-faint transition group-hover:translate-x-0.5 group-hover:text-accent-700"
-            >
-              →
-            </span>
-          </Link>
-        ))}
-      </div>
 
       <OnboardingKarti user={user} businesses={businesses} />
 
-      <section className="grid items-start gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader title="Kategori kırılımı" description="Son 90 gün, düşükten yükseğe" />
-          {kategoriler.length === 0 ? (
-            <p className="mt-4 text-small text-ink-faint">
-              Kategori puanı gelmedi. Müşteriler detay yıldızlarını doldurdukça dolar.
-            </p>
-          ) : (
-            <ul className="mt-4 flex flex-col gap-3">
-              {kategoriler.map((k, i) => (
-                <li key={k.name}>
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span
-                      className={`text-caption ${i === 0 ? "text-danger-ink" : "text-ink-soft"}`}
-                    >
-                      {k.name}
-                    </span>
-                    <span
-                      className={`text-caption font-semibold tabular ${
-                        i === 0 ? "text-danger-ink" : "text-ink-soft"
-                      }`}
-                    >
-                      {k.average.toFixed(1)}
-                    </span>
-                  </div>
-                  {/* En zayıf başlık kırmızı: sahibinin bakması gereken tek
-                      satır oysa, onu diğerlerinin arasında kaybetmeyelim. */}
-                  <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-sunken">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${(k.average / 5) * 100}%`,
-                        backgroundColor: i === 0 ? "var(--color-danger)" : grafikRengi,
-                      }}
-                    />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+      {anketVar ? (
+        <ServisFisleri
+          fisler={fisler}
+          eylem={
+            <Link href="/admin/geri-bildirimler" className="font-semibold text-ink hover:text-accent-700">
+              Tüm geri bildirimler →
+            </Link>
+          }
+        />
+      ) : null}
 
-          {/* Kategori ortalamasının bir kademe altı: "Temizlik 2.1" patrona
-              nereye bakacağını söylemiyor, "Tuvaletler 8 kez" söylüyor. */}
-          {sorunlar.length > 0 ? (
-            <div className="mt-5 border-t border-line pt-4">
-              <p className="text-caption font-medium tracking-wide text-ink-muted uppercase">
-                En çok işaretlenen sorun
-              </p>
-              <ul className="mt-2.5 flex flex-col gap-1.5">
-                {sorunlar.map((p) => (
-                  <li
-                    key={`${p.kategori}-${p.alan}`}
-                    className="flex items-baseline justify-between gap-2"
-                  >
-                    <span className="min-w-0 truncate text-caption text-ink-soft">
-                      <span className="text-ink-faint">{p.kategori} · </span>
-                      {p.alan}
-                    </span>
-                    <span className="shrink-0 text-caption font-semibold tabular text-ink-soft">
-                      {p.count}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+      {anketVar || (personelVar && tekIsletme) ? (
+        <div className="flex flex-wrap items-start gap-x-12 gap-y-10">
+          {anketVar ? (
+            <div className="min-w-0 flex-[1_1_320px]">
+              <KategoriKarnesi
+                kategoriler={kategoriler.map((k) => ({ ad: k.name, ortalama: k.average, adet: k.count }))}
+                sorunlar={sorunlar.map((p) => ({ kategori: p.kategori, alan: p.alan, adet: p.count }))}
+              />
             </div>
           ) : null}
-        </Card>
-
-        {biyerlereIstatistik ? <BiyerlereIstatistikKarti istatistik={biyerlereIstatistik} /> : null}
-      </section>
-
-      <Card padded={false}>
-        <div className="flex items-center justify-between border-b border-line px-5 py-4">
-          <h2 className="text-heading font-semibold text-ink">Acil geri bildirimler</h2>
-          <span className="text-caption text-ink-faint">Eşiğin altında, çözülmemiş</span>
+          {personelVar && tekIsletme ? (
+            <div className="min-w-0 flex-[1.4_1_420px]">
+              <VardiyaAkisi
+                satirlar={vardiyaSirali}
+                simdi={simdiSaat}
+                eylem={
+                  user.moduller.includes("mesai") ? (
+                    <Link href="/admin/mesai" className="font-semibold text-ink hover:text-accent-700">
+                      Mesai raporu →
+                    </Link>
+                  ) : (
+                    <Link href="/admin/vardiya-planlama" className="font-semibold text-ink hover:text-accent-700">
+                      Çizelge →
+                    </Link>
+                  )
+                }
+              />
+            </div>
+          ) : null}
         </div>
-        {acilKayitlar.length === 0 ? (
-          <p className="px-5 py-6 text-small text-ink-muted">
-            Bekleyen şikayet yok. Düşük puanlı bir geri bildirim geldiğinde burada
-            görünür.
-          </p>
-        ) : (
-          <ul>
-            {acilKayitlar.map((f) => (
-              <li key={f.id} className="border-b border-line last:border-b-0">
-                <Link
-                  href={`/admin/geri-bildirimler/${f.id}`}
-                  className="flex items-start gap-3 bg-danger-soft px-5 py-3.5 transition hover:bg-danger-line/60"
-                >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-danger-line text-caption font-semibold text-danger-ink tabular">
-                    {f.overallRating}★
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex flex-wrap items-center gap-2 text-caption">
-                      <span className="font-medium text-ink">
-                        {f.table
-                          ? f.table.isEntrance
-                            ? "Giriş"
-                            : `Masa ${f.table.tableNumber}`
-                          : "Masa —"}
-                      </span>
-                      {stats.length > 1 ? (
-                        <span className="text-ink-muted">{f.business.name}</span>
-                      ) : null}
-                      <StatusBadge status={f.status} />
-                    </span>
-                    <span className="mt-1 line-clamp-2 block text-small text-ink-soft">
-                      {f.comment || "Yorum bırakılmadı."}
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-caption text-ink-faint">
-                    {formatDateTime(f.createdAt)}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+      ) : null}
 
+      {rezervasyonVar ? (
+        <BuAksam
+          rezervasyonlar={rezervasyonlar.map((r) => ({
+            id: r.id,
+            saat: saatMetni(r.baslangic),
+            ad: r.misafirAdi,
+            kisi: r.kisiSayisi,
+            masa: r.masalar.length ? r.masalar.map((m) => masaEtiketi(m.masa)).join(" + ") : "masa atanmadı",
+            durum: r.durum === "bekliyor" ? "Onay bekliyor" : r.durum === "oturdu" ? "Oturdu" : "Onaylı",
+            bekliyor: r.durum === "bekliyor",
+          }))}
+          eylem={
+            <Link href="/admin/rezervasyon" className="font-semibold text-ink hover:text-accent-700">
+              Masa durumu →
+            </Link>
+          }
+        />
+      ) : null}
+
+      {biyerlereIstatistik ? <BiyerlereIstatistikKarti istatistik={biyerlereIstatistik} /> : null}
     </div>
   );
+}
+
+/** 16.5 → "16:30" */
+function saatMetinOndalik(saat: number): string {
+  const s = Math.floor(saat);
+  const d = Math.round((saat - s) * 60);
+  return `${String(s).padStart(2, "0")}:${String(d).padStart(2, "0")}`;
 }

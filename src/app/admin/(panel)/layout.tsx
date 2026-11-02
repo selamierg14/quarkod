@@ -11,6 +11,7 @@ import { ROL_ADLARI } from "@/lib/cekirdek/constants";
 import { abonelikUyarisi } from "@/lib/isletme/abonelik";
 import { ToastProvider } from "@/components/ui";
 import { panelMenusu, panelModu } from "@/lib/kimlik/panel";
+import { PANEL_FONT_SINIFI } from "../fontlar";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,9 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   if (modu === "personel") {
     return (
       <ToastProvider>
-        <PersonelKabuk ad={user.name}>{children}</PersonelKabuk>
+        <div data-tema="panel" className={PANEL_FONT_SINIFI}>
+          <PersonelKabuk ad={user.name}>{children}</PersonelKabuk>
+        </div>
       </ToastProvider>
     );
   }
@@ -62,7 +65,9 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
     // flex öğesi. Yatay dizilimde başlık, içerikle yan yana düşüp paneli
     // telefonda ikiye bölüyordu. lg'den itibaren yan çubuk + içerik yan yana.
     <ToastProvider>
-    <div className="flex min-h-dvh flex-col bg-canvas lg:flex-row">
+    {/* data-tema: panel teması yalnızca bu kabuğun içinde (bkz.
+        globals.css). Çalışma alanı beyaz; kenar çubuğu çam yeşili. */}
+    <div data-tema="panel" className={`${PANEL_FONT_SINIFI} flex min-h-dvh flex-col bg-surface lg:flex-row`}>
       {/* Ctrl/Cmd+K ile sayfa arama. Sidebar'la aynı menü ağacından
           beslendiği için ayrıca güncellenmesi gereken bir liste yok. */}
       <KomutPaleti gruplar={gruplar} />
@@ -120,7 +125,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
             Vardiya çizelgesi) kalan tüm genişliği kullansın diye kaldırıldı
             — kutuya sıkışmış görünüyordu. Mobilde zaten viewport dar olduğu
             için etkisi yok. */}
-        <main id="icerik" className="w-full flex-1 px-4 py-5 lg:px-6 lg:py-6">
+        <main id="icerik" className="mx-auto w-full max-w-[1320px] flex-1 px-4 py-6 lg:px-8 lg:py-7">
           {children}
         </main>
       </div>

@@ -59,7 +59,7 @@ export default async function SponsorlarPage({
         <div className="overflow-x-auto">
           <table className="w-full text-small">
             <thead>
-              <tr className="border-b border-line text-caption text-ink-faint uppercase">
+              <tr className="border-b border-line text-small text-ink-faint font-semibold">
                 <th className="py-2 text-left font-medium">İşletme</th>
                 <th className="py-2 text-left font-medium">Sponsor (bu hafta)</th>
                 <th className="py-2 text-left font-medium">Push kredisi</th>

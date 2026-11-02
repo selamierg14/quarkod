@@ -155,7 +155,7 @@ export default async function AccountsPage({
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-small">
-              <thead className="bg-sunken/70 text-left text-overline font-semibold tracking-wide text-ink-muted uppercase">
+              <thead className="border-b border-ink text-left text-small font-semibold text-ink-muted">
                 <tr>
                   <th className="px-4 py-2">Hesap</th>
                   <th className="hidden px-4 py-2 text-right sm:table-cell">İşletme</th>

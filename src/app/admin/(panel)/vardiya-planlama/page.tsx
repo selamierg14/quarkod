@@ -293,7 +293,7 @@ export default async function VardiyaPlanlamaPage({
 
       {bekleyenTalepler.length > 0 ? (
         <section className="rounded-control bg-warning-soft p-4 ring-1 ring-warning/25">
-          <h2 className="text-caption font-medium tracking-wide text-warning-ink uppercase">
+          <h2 className="text-small font-medium text-warning-ink">
             Bekleyen vardiya değişim/bırakma talepleri
           </h2>
           <ul className="mt-2 flex flex-col gap-2">
@@ -438,7 +438,7 @@ export default async function VardiyaPlanlamaPage({
                   <col key={gunGirdisi(gun)} className="w-[13%]" />
                 ))}
               </colgroup>
-              <thead className="bg-sunken/70 text-left text-overline font-semibold tracking-wide text-ink-muted uppercase">
+              <thead className="border-b border-ink text-left text-small font-semibold text-ink-muted">
                 <tr>
                   {/* Sabit ilk sütun: sağa kaydırınca hangi vardiyada olduğun
                       kaybolmasın. */}

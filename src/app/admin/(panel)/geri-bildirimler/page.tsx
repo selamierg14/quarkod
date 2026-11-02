@@ -9,13 +9,14 @@ import {
   PageHeader,
   Pagination,
   StatusBadge,
-  Stars,
   formatDateTime,
   buttonClass,
 } from "@/components/ui";
 import { RaporSekmeleri } from "@/components/RaporSekmeleri";
 import { buildFeedbackWhere, type FeedbackQuery } from "@/lib/isletme/feedback-filters";
 import { FilterBar } from "./FilterBar";
+import { masaEtiketi } from "@/lib/isletme/masa";
+import { puanMetinRengi } from "../OzetParcalari";
 
 export const dynamic = "force-dynamic";
 
@@ -106,100 +107,66 @@ export default async function FeedbackListPage({
       {feedbacks.length === 0 ? (
         <EmptyState>Bu filtrelere uyan kayıt yok.</EmptyState>
       ) : (
-        <div className="overflow-x-auto rounded-card bg-surface shadow-card ring-1 ring-line">
-          <table className="w-full min-w-[720px] text-small">
-            <thead className="bg-sunken/70 text-left text-overline font-semibold tracking-wide text-ink-muted uppercase">
-              <tr>
-                <th className="px-4 py-2 font-medium">Tarih</th>
-                {businesses.length > 1 ? (
-                  <th className="px-4 py-2 font-medium">İşletme</th>
-                ) : null}
-                <th className="px-4 py-2 font-medium">Masa</th>
-                <th className="px-4 py-2 font-medium">Puan</th>
-                <th className="px-4 py-2 font-medium">Zayıf kategoriler</th>
-                <th className="px-4 py-2 font-medium">Yorum</th>
-                <th className="px-4 py-2 font-medium">Durum</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {feedbacks.map((feedback) => {
-                const ratings: Record<string, number> = feedback.categoryRatings
-                  ? JSON.parse(feedback.categoryRatings)
-                  : {};
-                const weak = Object.entries(ratings)
-                  .filter(([, value]) => value <= 3)
-                  .sort((a, b) => a[1] - b[1])
-                  .slice(0, 2);
-
-                return (
-                  <tr
-                    key={feedback.id}
-                    // Satırın tamamı tıklanabilir (QA: üzerine gelince
-                    // vurgulanıyor ama yalnızca tarih ve yorum tıklanıyordu).
-                    // Tarih bağlantısı `after:` ile satırı kaplıyor; ekran
-                    // okuyucuya tek bağlantı kalıyor. Kırmızı şerit yalnızca
-                    // düşük puanda — kırmızının tek anlamı bu.
-                    className={`relative cursor-pointer transition-colors hover:bg-sunken/60 ${
-                      feedback.overallRating <= 2 ? "shadow-[inset_3px_0_0_0_var(--color-danger)]" : ""
-                    }`}
+        // Gelen kutusu: tablo değil satır listesi (yeni panel tasarımı).
+        // Puan büyük ve renginde — göz önce onu okuyor; kırmızı yalnızca
+        // düşük puanda. Satırın tamamı kayda gidiyor.
+        <ul className="m-0 list-none border-t border-ink p-0">
+          {feedbacks.map((feedback) => {
+            const ratings: Record<string, number> = feedback.categoryRatings
+              ? JSON.parse(feedback.categoryRatings)
+              : {};
+            const weak = Object.entries(ratings)
+              .filter(([, value]) => value <= 3)
+              .sort((a, b) => a[1] - b[1])
+              .slice(0, 2);
+            return (
+              <li key={feedback.id} className="border-b border-line">
+                <Link
+                  href={`/admin/geri-bildirimler/${feedback.id}`}
+                  className="grid grid-cols-[48px_minmax(0,1fr)] gap-x-4 gap-y-1 px-1 py-3.5 transition-colors hover:bg-sunken/60 sm:grid-cols-[48px_minmax(0,1fr)_auto]"
+                >
+                  <span
+                    className={`row-span-2 font-display text-[32px] leading-none font-bold tracking-[-0.03em] sm:row-span-1 ${puanMetinRengi(feedback.overallRating)}`}
+                    aria-label={`${feedback.overallRating} / 5 puan`}
                   >
-                    <td className="px-4 py-2.5 whitespace-nowrap text-ink-muted">
-                      <Link
-                        href={`/admin/geri-bildirimler/${feedback.id}`}
-                        className="after:absolute after:inset-0 hover:underline focus-visible:outline-2 focus-visible:outline-accent-600"
-                      >
+                    {feedback.overallRating}
+                  </span>
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                      <span className="font-semibold text-ink">
+                        {feedback.table ? masaEtiketi(feedback.table) : "Masa —"}
+                      </span>
+                      <span className="font-mono text-caption text-ink-faint">
                         {formatDateTime(feedback.createdAt)}
-                      </Link>
-                    </td>
-                    {businesses.length > 1 ? (
-                      <td className="px-4 py-2.5 whitespace-nowrap">
-                        <span className="flex items-center gap-2">
+                      </span>
+                      {businesses.length > 1 ? (
+                        <span className="inline-flex items-center gap-1.5 text-caption text-ink-muted">
                           <span
+                            aria-hidden="true"
                             className="h-2 w-2 rounded-full"
                             style={{ backgroundColor: feedback.business.brandColor }}
                           />
                           {feedback.business.name}
                         </span>
-                      </td>
+                      ) : null}
+                    </span>
+                    <span className="line-clamp-1 text-ink-soft">
+                      {feedback.comment || <span className="text-ink-faint">Yorum bırakılmadı.</span>}
+                    </span>
+                    {weak.length > 0 ? (
+                      <span className="font-mono text-caption text-danger">
+                        {weak.map(([name, value]) => `${name.toLocaleLowerCase("tr")} ${value}`).join(" · ")}
+                      </span>
                     ) : null}
-                    <td className="px-4 py-2.5 whitespace-nowrap text-ink-muted">
-                      {feedback.table
-                        ? feedback.table.isEntrance
-                          ? "Giriş"
-                          : `Masa ${feedback.table.tableNumber}`
-                        : "—"}
-                    </td>
-                    <td className="px-4 py-2.5 whitespace-nowrap">
-                      <Stars value={feedback.overallRating} />
-                    </td>
-                    <td className="px-4 py-2.5">
-                      {weak.length === 0 ? (
-                        <span className="text-rating-empty">—</span>
-                      ) : (
-                        <span className="flex flex-wrap gap-1">
-                          {weak.map(([name, value]) => (
-                            <span
-                              key={name}
-                              className="rounded-md bg-danger-soft px-1.5 py-0.5 text-caption text-danger-ink"
-                            >
-                              {name} {value}
-                            </span>
-                          ))}
-                        </span>
-                      )}
-                    </td>
-                    <td className="max-w-xs px-4 py-2.5">
-                      <span className="line-clamp-2 text-ink-soft">{feedback.comment ?? "—"}</span>
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <StatusBadge status={feedback.status} />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                  </span>
+                  <span className="col-start-2 sm:col-start-auto sm:self-start">
+                    <StatusBadge status={feedback.status} />
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       )}
 
       {/* Elle yazılmış önceki/sonraki bloğu ortak bileşene alındı:

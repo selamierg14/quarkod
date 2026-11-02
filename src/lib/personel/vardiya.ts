@@ -57,3 +57,25 @@ export function vardiyaHesapla(date: Date, ayarlar: VardiyaAyarlari): Shift | nu
 export function gecerliVardiyaMi(value: string): value is Shift {
   return value in SHIFTS;
 }
+
+/**
+ * Bir vardiyanın gün içindeki aralığı, ondalık saat olarak (16:30 → 16.5).
+ *
+ * Bitiş saati tutulmuyor; kural `vardiyaHesapla` ile aynı: bitiş, bir
+ * sonraki etkin vardiyanın başlangıcı. Son vardiya gece yarısında biter
+ * (24). Gece yarısını aşan vardiya (ör. 22:00 → 06:00) özet şemasında
+ * gün sonuna kadar çizilir; ertesi günün parçası o günün şemasında.
+ * Vardiya etkin değilse null.
+ */
+export function vardiyaAraligi(
+  shift: Shift,
+  ayarlar: VardiyaAyarlari,
+): { bas: number; son: number } | null {
+  const etkin = ALANLAR.filter((a) => ayarlar[a.aktif])
+    .map((a) => ({ shift: a.shift, bas: saatToDakika(ayarlar[a.saat] as string) / 60 }))
+    .sort((a, b) => a.bas - b.bas);
+  const i = etkin.findIndex((e) => e.shift === shift);
+  if (i === -1) return null;
+  const sonraki = etkin[i + 1];
+  return { bas: etkin[i].bas, son: sonraki ? sonraki.bas : 24 };
+}

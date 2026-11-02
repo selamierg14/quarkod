@@ -8,7 +8,9 @@ import { SHIFTS, type Shift } from "@/lib/cekirdek/constants";
 import { CONTACT_RETENTION_DAYS } from "@/lib/isletme/kvkk";
 import { detaylariCoz } from "@/lib/isletme/anket-detay";
 import { yanitlanabilir } from "@/lib/cekirdek/yanit";
-import { SectionCard, StatusBadge, Stars, formatDateTime, buttonClass } from "@/components/ui";
+import { masaEtiketi } from "@/lib/isletme/masa";
+import { noktaPuan, puanMetinRengi } from "../../OzetParcalari";
+import { SectionCard, StatusBadge, formatDateTime, buttonClass } from "@/components/ui";
 import { StatusForm } from "./StatusForm";
 import { hazirYanitlar } from "@/lib/isletme/hazir-yanit";
 import { RespondForm } from "./RespondForm";
@@ -75,60 +77,38 @@ export default async function FeedbackDetailPage({
 
       <div className="grid gap-5 lg:grid-cols-[2fr_1fr]">
         <div className="flex flex-col gap-4">
-          <section className="overflow-hidden rounded-card bg-surface shadow-card ring-1 ring-line">
-            {/* İşletmenin marka rengi kartın tepesinde: zincirde çalışan
-                sorumlu, hangi şubenin kaydına baktığını yazıyı okumadan
-                anlıyor. */}
+          {/* "Dosya" başlığı: puan büyük ve renginde, yer ve zaman mono.
+              Yorum hemen altında alıntı olarak — sayfaya gelen kişinin
+              asıl okumak istediği şey. */}
+          <header className="flex flex-wrap items-end gap-x-6 gap-y-3 border-b border-ink pb-5">
             <span
-              aria-hidden="true"
-              className="block h-1.5 w-full"
-              style={{ backgroundColor: feedback.business.brandColor }}
-            />
-            <div className="p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <span className="flex items-center gap-2 font-medium">
-                <span
-                  className="h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: feedback.business.brandColor }}
-                />
-                {feedback.business.name}
-              </span>
-              <StatusBadge status={feedback.status} />
+              className={`font-display text-[80px] leading-[0.8] font-bold tracking-[-0.05em] ${puanMetinRengi(feedback.overallRating)}`}
+              aria-label={`${feedback.overallRating} / 5 puan`}
+            >
+              {feedback.overallRating}
+              <span className="text-[26px] tracking-normal text-ink-faint">/5</span>
+            </span>
+            <div className="min-w-[200px] flex-1">
+              <h1 className="font-display text-[28px] leading-tight font-semibold tracking-[-0.02em] text-ink">
+                {feedback.table ? masaEtiketi(feedback.table) : "Masa belirtilmemiş"}
+              </h1>
+              <p className="mt-1 font-mono text-caption text-ink-faint">
+                {formatDateTime(feedback.createdAt)}
+                {feedback.shift ? ` · ${SHIFTS[feedback.shift as Shift]} vardiyası` : ""}
+                {` · ${feedback.business.name}`}
+                {feedback.redirectedToGoogle ? " · Google'a yönlendirildi" : ""}
+              </p>
             </div>
+            <StatusBadge status={feedback.status} />
+          </header>
 
-            <div className="mt-4 flex items-center gap-3">
-              <Stars value={feedback.overallRating} className="text-2xl" />
-              <span className="text-lg font-semibold tabular">
-                {feedback.overallRating}/5
-              </span>
-            </div>
-
-            <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-line pt-4 text-small sm:grid-cols-4">
-              <div>
-                <dt className="text-caption text-ink-faint uppercase">Tarih</dt>
-                <dd>{formatDateTime(feedback.createdAt)}</dd>
-              </div>
-              <div>
-                <dt className="text-caption text-ink-faint uppercase">Konum</dt>
-                <dd>
-                  {feedback.table
-                    ? feedback.table.isEntrance
-                      ? "Giriş"
-                      : `Masa ${feedback.table.tableNumber}`
-                    : "—"}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-caption text-ink-faint uppercase">Vardiya</dt>
-                <dd>{feedback.shift ? SHIFTS[feedback.shift as Shift] : "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-caption text-ink-faint uppercase">Google</dt>
-                <dd>{feedback.redirectedToGoogle ? "Yönlendirildi" : "—"}</dd>
-              </div>
-            </dl>
-            </div>
-          </section>
+          <blockquote className="m-0 max-w-3xl font-display text-[22px] leading-snug font-normal tracking-[-0.01em] whitespace-pre-wrap text-ink">
+            {feedback.comment ? (
+              <>“{feedback.comment}”</>
+            ) : (
+              <span className="text-[16px] text-ink-faint">Müşteri yorum bırakmadı.</span>
+            )}
+          </blockquote>
 
           {Object.keys(ratings).length > 0 ? (
             <SectionCard
@@ -142,11 +122,11 @@ export default async function FeedbackDetailPage({
                   <li key={name} className="py-2">
                     <div className="flex items-center justify-between">
                       <span className="text-small text-ink-soft">{name}</span>
-                      <span className="flex items-center gap-2">
-                        <Stars value={value} />
-                        <span className="w-8 text-right text-small tabular text-ink-muted">
-                          {value}/5
-                        </span>
+                      <span
+                        className={`font-mono text-small tracking-[0.1em] ${puanMetinRengi(value)}`}
+                        aria-label={`${value} / 5`}
+                      >
+                        {noktaPuan(value)}
                       </span>
                     </div>
 
@@ -170,16 +150,12 @@ export default async function FeedbackDetailPage({
             </SectionCard>
           ) : null}
 
-          <SectionCard ikon={<MessageSquare className="h-4 w-4" aria-hidden="true" />} renk="sky" title="Müşteri yorumu">
-            <p className="text-body whitespace-pre-wrap text-ink-strong">
-              {feedback.comment ?? (
-                <span className="text-ink-faint">Yorum bırakılmamış.</span>
-              )}
-            </p>
-
+          {/* Yorum artık başlığın altında alıntı olarak; bu kart ekleri ve
+              iletişimi taşıyor. */}
+          <SectionCard ikon={<MessageSquare className="h-4 w-4" aria-hidden="true" />} renk="sky" title="İletişim ve ekler">
             {feedback.photoUrl ? (
-              <div className="mt-4">
-                <h3 className="text-caption font-medium tracking-wide text-ink-muted uppercase">
+              <div className="mb-4">
+                <h3 className="text-small font-medium text-ink-muted">
                   Müşterinin eklediği fotoğraf
                 </h3>
                 {/* Yeni sekmede tam boy açılsın: tabaktaki ayrıntı küçük
@@ -204,7 +180,7 @@ export default async function FeedbackDetailPage({
             ) : null}
 
             <div className="mt-4 border-t border-line pt-4">
-              <h3 className="text-caption font-medium tracking-wide text-ink-muted uppercase">
+              <h3 className="text-small font-medium text-ink-muted">
                 İletişim
               </h3>
               {feedback.contactInfo ? (
@@ -285,7 +261,7 @@ export default async function FeedbackDetailPage({
             ) : (
               <div className="flex flex-col gap-3">
                 <div>
-                  <span className="text-caption font-medium tracking-wide text-ink-muted uppercase">
+                  <span className="text-small font-medium text-ink-muted">
                     Durum
                   </span>
                   <div className="mt-2">
@@ -293,7 +269,7 @@ export default async function FeedbackDetailPage({
                   </div>
                 </div>
                 <div>
-                  <span className="text-caption font-medium tracking-wide text-ink-muted uppercase">
+                  <span className="text-small font-medium text-ink-muted">
                     İç not
                   </span>
                   <p className="mt-1 text-small whitespace-pre-wrap text-ink-soft">
@@ -326,7 +302,7 @@ export default async function FeedbackDetailPage({
                 sildiği için yetersizdi. */}
             {gecmis.length > 0 ? (
               <div className="mt-4 border-t border-line pt-4">
-                <span className="text-caption font-medium tracking-wide text-ink-muted uppercase">
+                <span className="text-small font-medium text-ink-muted">
                   Geçmiş
                 </span>
                 <ul className="mt-2 flex flex-col gap-2">

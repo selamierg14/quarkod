@@ -17,10 +17,12 @@ export type ButtonSize = "sm" | "md" | "lg";
  * lekesi "form", geçişli bir yüzey "uygulama" hissi veriyor.
  */
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary:
-    "bg-gradient-to-b from-accent-600 to-accent-700 text-white shadow-card shadow-accent-700/20 hover:brightness-110 active:scale-[0.99]",
+  // CTA token'ı: panelde safran + koyu yazı, panel dışında platform
+  // vurgusu + beyaz (bkz. globals.css --color-cta). Degrade kalktı: düz
+  // renk, tek bakışta "sayfanın ana eylemi" diye okunuyor.
+  primary: "bg-cta font-semibold text-cta-ink hover:bg-cta-hover active:scale-[0.99]",
   secondary:
-    "bg-surface text-ink-soft ring-1 ring-line hover:bg-sunken hover:text-ink active:scale-[0.99]",
+    "bg-surface text-ink ring-1 ring-line-strong hover:bg-sunken active:scale-[0.99]",
   destructive:
     "bg-gradient-to-b from-danger to-danger-ink text-white shadow-card shadow-danger/20 hover:brightness-110 active:scale-[0.99]",
   ghost: "text-ink-muted hover:bg-sunken hover:text-ink",

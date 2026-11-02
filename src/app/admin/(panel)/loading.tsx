@@ -19,19 +19,13 @@ export default function Loading() {
     <div className="flex flex-col gap-4" aria-busy="true" aria-live="polite">
       <span className="sr-only">Yükleniyor…</span>
 
-      {/* Başlık: PageHeader artık kart değil, doğrudan zeminde. */}
-      <div className="flex items-start gap-3">
-        <Skeleton className="mt-0.5 h-8 w-8 shrink-0 rounded-control" />
-        <div className="min-w-0 flex-1">
-          <Skeleton className="h-6 w-full max-w-52" />
-          <Skeleton className="mt-2 h-3.5 w-full max-w-96" />
-        </div>
+      {/* Başlık ikonsuz ve büyük; altında defter çizgisiyle bir liste. */}
+      <div className="min-w-0">
+        <Skeleton className="h-8 w-full max-w-64" />
+        <Skeleton className="mt-2.5 h-3.5 w-full max-w-96" />
       </div>
 
-      <div className="overflow-hidden rounded-card bg-surface shadow-card ring-1 ring-line">
-        <div className="border-b border-line px-5 py-3.5">
-          <Skeleton className="h-3.5 w-40" />
-        </div>
+      <div className="border-t border-ink">
         <SkeletonRows satir={6} />
       </div>
     </div>

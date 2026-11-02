@@ -131,7 +131,7 @@ export function BildirimZili() {
       {acik ? (
         <div className="absolute top-full right-0 z-40 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-card bg-surface p-2 text-ink shadow-pop ring-1 ring-line">
           <div className="flex items-center justify-between px-2 py-1.5">
-            <span className="text-caption font-medium tracking-wide text-ink-muted uppercase">
+            <span className="text-small font-medium text-ink-muted">
               Bildirimler
             </span>
             {unread > 0 ? (
@@ -148,7 +148,7 @@ export function BildirimZili() {
           <div className="mt-1 max-h-96 overflow-y-auto">
             {uyarilar.length > 0 ? (
               <div className="mb-2">
-                <p className="px-2 pb-1 text-overline font-semibold text-ink-faint uppercase">
+                <p className="px-2 pb-1 text-small font-semibold text-ink-faint">
                   Dikkat gerekiyor
                 </p>
                 <ul className="flex flex-col gap-0.5">

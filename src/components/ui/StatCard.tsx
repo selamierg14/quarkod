@@ -43,11 +43,11 @@ export function StatCard({
               aria-hidden="true"
             />
           ) : null}
-          <p className="text-overline font-semibold text-ink-muted uppercase">{label}</p>
+          <p className="text-small text-ink-muted">{label}</p>
         </div>
 
         <div className="mt-2 flex items-end gap-2">
-          <p className="text-metric font-semibold text-ink tabular">{value}</p>
+          <p className="font-display text-[30px] leading-none font-semibold tracking-[-0.02em] text-ink tabular">{value}</p>
           {trend ? (
             <span
               className={`mb-1 inline-flex items-center gap-0.5 text-caption font-medium ${
