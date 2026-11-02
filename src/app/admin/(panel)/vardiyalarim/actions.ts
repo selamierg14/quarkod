@@ -1,12 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { bildirimGonder } from "@/lib/bildirim";
-import { gunAdi, gunBaslangici } from "@/lib/gun";
-import { SHIFTS, type Shift } from "@/lib/constants";
-import { gecerliVardiyaMi } from "@/lib/vardiya";
+import { requireUser } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { bildirimGonder } from "@/lib/altyapi/bildirim";
+import { gunAdi, gunBaslangici } from "@/lib/cekirdek/gun";
+import { SHIFTS, type Shift } from "@/lib/cekirdek/constants";
+import { gecerliVardiyaMi } from "@/lib/personel/vardiya";
+import { alanDogrula } from "@/lib/cekirdek/desenler";
 
 export type DegisimFormState = { error?: string; saved?: string };
 
@@ -29,7 +30,10 @@ export async function degisimTalepEt(
 ): Promise<DegisimFormState> {
   const user = await requireUser();
   const assignmentId = String(formData.get("assignmentId") ?? "");
-  const note = String(formData.get("note") ?? "").trim();
+  // Not sınırsızdı; talebin gövdesi olarak veritabanına yazılıyor.
+  const notSonuc = alanDogrula(formData.get("note"), "aciklama", "Not", { zorunlu: false });
+  if (!notSonuc.ok) return { error: notSonuc.hata };
+  const note = notSonuc.deger;
   const hedefTarihStr = String(formData.get("hedefTarih") ?? "").trim();
   const hedefVardiyaStr = String(formData.get("hedefVardiya") ?? "").trim();
 

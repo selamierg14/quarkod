@@ -3,9 +3,9 @@ import { SurveyForm } from "@/components/SurveyForm";
 import { ViewTracker } from "@/components/ViewTracker";
 import { ZiyaretDogrulayici } from "@/components/ZiyaretDogrulayici";
 import { MusteriKabuk } from "@/components/MusteriKabuk";
-import { isletmeSlugla, menuIcerigi, qrSayfaVerisi } from "@/lib/qr-sayfa";
-import { sorunSecenekleri } from "@/lib/anket-detay";
-import { googleYorumLinkiGecerliMi } from "@/lib/google-yorum";
+import { isletmeSlugla, menuIcerigi, qrSayfaVerisi } from "@/lib/isletme/qr-sayfa";
+import { sorunSecenekleri } from "@/lib/isletme/anket-detay";
+import { googleYorumLinkiGecerliMi } from "@/lib/isletme/google-yorum";
 
 type Params = { slug: string; table: string };
 

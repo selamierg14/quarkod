@@ -1,6 +1,6 @@
 "use client";
 
-import type { MetinAnahtari } from "@/lib/ceviriler";
+import type { MetinAnahtari } from "@/lib/cekirdek/ceviriler";
 import { useDil } from "./DilSaglayici";
 
 /**

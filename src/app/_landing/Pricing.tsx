@@ -34,7 +34,6 @@ const PAKETLER: Paket[] = [
       "Giriş paketindeki her şey",
       "Fotoğraflı QR menü",
       "Ürün bazlı puanlama",
-      "Kupon ve sadakat tanımlama",
       "Duyuru şeridi ve çoklu dil desteği",
     ],
     vurgu: true,

@@ -1,8 +1,8 @@
 import { Plus, Utensils } from "lucide-react";
 import Link from "next/link";
-import { requireMenuErisim } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
+import { requireMenuErisim } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { EmptyState, PageHeader, SectionCard, buttonClass } from "@/components/ui";
 import {
   CategoryHeader,
   ItemRow,
@@ -37,7 +37,11 @@ export default async function MenuPage({
   if (!menuAcik) {
     return (
       <div className="flex flex-col gap-4">
-        <h1 className="text-title font-semibold">QR Menü</h1>
+        <PageHeader
+          ikon={<Utensils className="h-4 w-4" aria-hidden="true" />}
+          renk="amber"
+          title="QR Menü"
+        />
         <div className="rounded-control bg-surface p-6 ring-1 ring-line">
           <p className="font-medium">Bu hesapta QR menü modülü kapalı.</p>
           <p className="mt-2 text-small text-ink-muted">
@@ -84,7 +88,7 @@ export default async function MenuPage({
   );
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <MenuSekmeleri aktif="duzenle" />
 
       <PageHeader
@@ -97,7 +101,7 @@ export default async function MenuPage({
             <Link
               href={`/f/${secili.slug}/${encodeURIComponent(onizlemeMasa)}/menu`}
               target="_blank"
-              className="rounded-control border border-line bg-surface px-3.5 py-2 text-small font-medium text-ink-soft transition hover:bg-canvas"
+              className={buttonClass({ variant: "secondary", size: "sm" })}
             >
               Müşteri gözüyle aç ↗
             </Link>
@@ -114,7 +118,7 @@ export default async function MenuPage({
           aksiyon={
             <Link
               href="/admin/menu/sablonlar"
-              className="rounded-control bg-gradient-to-r from-accent-600 to-accent-700 px-4 py-2.5 text-small font-semibold text-white shadow-card transition hover:brightness-110"
+              className={buttonClass({ size: "md" })}
             >
               Hazır şablonlara göz at →
             </Link>
@@ -153,15 +157,6 @@ export default async function MenuPage({
             ) : null}
           </div>
 
-          {/* Menü doluyken şablon uygulanamıyor; sıfırdan kurmak isteyen
-              önce buradan boşaltıyor. Uzun ürün listesinin dibinde
-              aranmasın diye listenin üstünde duruyor. */}
-          <TumMenuyuSil
-            businessId={secili.id}
-            bolumSayisi={kategoriler.length}
-            urunSayisi={toplamUrun}
-          />
-
           <ul className="flex flex-col gap-4">
             {kategoriler.map((kategori) => (
               <li
@@ -195,6 +190,16 @@ export default async function MenuPage({
           </ul>
 
           <MenuyuKopyala businessId={secili.id} hedefler={kardesler} />
+
+          {/* Geri alınamaz işlem sayfanın SONUNDA (UI incelemesi): önceden
+              menünün üstündeydi, sayfayı açan ilk onu görüyordu. Onay için
+              işletme adı yazdırılıyor. */}
+          <TumMenuyuSil
+            businessId={secili.id}
+            isletmeAdi={secili.name}
+            bolumSayisi={kategoriler.length}
+            urunSayisi={toplamUrun}
+          />
         </>
       ) : null}
     </div>

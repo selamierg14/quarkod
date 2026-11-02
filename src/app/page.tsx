@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { markaStili } from "@/lib/marka";
+import { markaStili } from "@/lib/isletme/marka";
 import { AnnouncementBar } from "./_landing/AnnouncementBar";
 import { BusinessTypes } from "./_landing/BusinessTypes";
 import { Faq, SORULAR } from "./_landing/Faq";

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { notFound } from "next/navigation";
-import { canAccessBusiness, requireTenant } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { canAccessBusiness, requireTenant } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
 import { formatDateTime } from "@/components/ui";
-import { CONTACT_TYPES, KVKK_VERSION, consentSummary, type ContactType } from "@/lib/kvkk";
-import { kanitPdfUret } from "@/lib/kanit-pdf";
+import { CONTACT_TYPES, KVKK_VERSION, consentSummary, type ContactType } from "@/lib/isletme/kvkk";
+import { kanitPdfUret } from "@/lib/rapor/kanit-pdf";
 
 /**
  * Geri bildirimde bırakılan iletişim bilgisi için KVKK açık rıza kanıt

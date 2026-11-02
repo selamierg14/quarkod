@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { allowedBusinessIds, requireModul, requireOwner, requireYazma } from "@/lib/auth";
-import { denetimYaz } from "@/lib/denetim";
-import { prisma } from "@/lib/db";
+import { allowedBusinessIds, requireModul, requireOwner, requireYazma } from "@/lib/kimlik/auth";
+import { denetimYaz } from "@/lib/rapor/denetim";
+import { prisma } from "@/lib/cekirdek/db";
 
 /**
  * Bekleyen izinleri "İYS'ye bildirildi" olarak işaretler.

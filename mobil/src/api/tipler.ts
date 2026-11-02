@@ -15,6 +15,13 @@ export type AppKullanici = {
   puan: number;
   referralCode: string;
   plusUyeMi: boolean;
+  /**
+   * Kullanıcının BİLDİĞİ bir şifresi var mı. Sosyal girişle açılan
+   * hesapta false: hassas işlemlerde şifre yerine sağlayıcıdan taze
+   * jeton isteniyor (bkz. src/kimlik/kanit.ts). İsteğe bağlı çünkü
+   * alanı göndermeyen eski bir sunucu sürümünde "şifreli" varsayılıyor.
+   */
+  sifreBelirlendi?: boolean;
 };
 
 export type GirisYaniti = {
@@ -36,7 +43,8 @@ export type ProfilYaniti = {
     seviye: number;
     sonrakiSeviyeyeKalan: number | null;
     dogrulanmisZiyaret: number;
-    cuzdandakiKupon: number;
+    /** Kupon özelliği kapalıyken sunucu bu alanı HİÇ göndermiyor. */
+    cuzdandakiKupon?: number;
     davetEttigiKisiSayisi: number;
   };
   rozetler: Rozet[];
@@ -45,6 +53,23 @@ export type ProfilYaniti = {
     tarih: string;
     mekan: { id: string; slug: string; ad: string; logoUrl: string | null };
   }[];
+};
+
+/**
+ * `/api/app/bildirimler` öğesi.
+ *
+ * `href` SUNUCUDAN geliyor ve web yollarını taşıyor ("/profil",
+ * "/mekan/<slug>"). Mobil yönlendirmesi de aynı yolları kullandığı için
+ * doğrudan uygulanabiliyor; ayrışırlarsa eşleme burada değil, ekranda
+ * yapılmalı.
+ */
+export type BildirimOgesi = {
+  id: string;
+  tur: "rozet" | "kupon" | "duyuru";
+  tarih: string;
+  baslik: string;
+  aciklama: string | null;
+  href: string;
 };
 
 export type MekanOzet = {
@@ -56,6 +81,7 @@ export type MekanOzet = {
   logoUrl: string | null;
   kapakUrl: string | null;
   markaRengi: string;
+  instagram: string | null;
   konum: { enlem: number | null; boylam: number | null };
   mesafeMetre: number | null;
   fiyatSegmenti: string | null;
@@ -63,6 +89,16 @@ export type MekanOzet = {
   puan: number | null;
   degerlendirmeSayisi: number;
   sponsorluMu: boolean;
+  /**
+   * Mekan ŞU AN açık mı.
+   *
+   * "bilinmiyor", saatini hiç girmemiş mekan demek — "kapalı" ile aynı
+   * şey değil ve öyle gösterilmemeli: kapalı yazmak, aslında açık olan
+   * bir mekandan müşteri kaçırır.
+   */
+  acik: "acik" | "kapali" | "bilinmiyor";
+  /** Kapalıyken bir sonraki açılış ("Salı 09:00"); açıkken null. */
+  sonrakiAcilis: string | null;
   etkinlikler: {
     id: string;
     baslik: string;
@@ -74,6 +110,57 @@ export type MekanOzet = {
 };
 
 export type MekanListesi = { adet: number; mekanlar: MekanOzet[] };
+
+/**
+ * `/api/app/rotalar` öğesi.
+ *
+ * `ziyaretEdilenler` ve `tamamlandiMi` girişsiz istekte de GELİYOR ama
+ * boş/false olarak — sunucu alanları hiç göndermemek yerine nötr değerle
+ * dolduruyor, böylece istemci iki ayrı şekil için dallanmıyor.
+ */
+export type RotaOzet = {
+  id: string;
+  slug: string;
+  ad: string;
+  aciklama: string | null;
+  duraklar: {
+    id: string;
+    businessId: string;
+    slug: string;
+    ad: string;
+    logoUrl: string | null;
+  }[];
+  /** Ziyaret edilmiş durakların işletme kimlikleri. */
+  ziyaretEdilenler: string[];
+  tamamlandiMi: boolean;
+};
+
+export type RotaListesi = { rotalar: RotaOzet[] };
+
+/**
+ * `/api/app/etkinlikler` öğesi — KULLANICININ açtığı buluşma.
+ *
+ * `MekanOzet.etkinlikler` ile karıştırılmamalı: oradakiler İŞLETMENİN
+ * duyuruları ("bu hafta canlı müzik"), burası müşterilerin çağrıları
+ * ("cumartesi 20:00'de buradayım"). İkisinin güvenilirliği farklı ve
+ * arayüzde de ayrı gösteriliyorlar.
+ *
+ * `acan` yalnızca AD taşıyor — kullanıcı adı ya da kimlik değil; liste
+ * kişi arama dizinine dönüşmemeli.
+ */
+export type KullaniciEtkinligi = {
+  id: string;
+  baslik: string;
+  aciklama: string | null;
+  baslangic: string;
+  acan: string;
+  benimMi: boolean;
+  mekan: MekanKisa;
+  ilgiSayisi: number;
+  ilgilendimMi: boolean;
+};
+
+export type EtkinlikListesi = { etkinlikler: KullaniciEtkinligi[] };
 
 export type MekanKisa = {
   id: string;
@@ -109,3 +196,98 @@ export type CuzdanYaniti = {
     hediyeKazanildiMi: boolean;
   }[];
 };
+
+/**
+ * `/api/app/mekanlar/[slug]` yanıtı.
+ *
+ * Listeden (`MekanOzet`) ayrı: menü onlarca ürün taşıyor ve bunu liste
+ * yanıtına koymak, kullanıcının hiç açmayacağı kırk mekanın menüsünü de
+ * indirmesi demekti (sunucudaki aynı gerekçe).
+ */
+export type MekanUrunu = {
+  id: string;
+  ad: string;
+  aciklama: string | null;
+  fiyatKurus: number;
+  gorselUrl: string | null;
+  etiketler: string[];
+  tukendi: boolean;
+  kaloriKcal: number | null;
+  alerjenler: string[];
+};
+
+export type MekanDetay = MekanOzet & {
+  siparisLinkleri: {
+    yemeksepeti: string | null;
+    getir: string | null;
+    trendyol: string | null;
+    migros: string | null;
+  };
+  telefon: string | null;
+  biyerlerePlusOrtagi: boolean;
+  /** Uygulamadan masa ayırtılabiliyor mu (işletme anahtarı + tanımlı masa). */
+  rezervasyonAcik: boolean;
+  menu: {
+    fiyatGuncelleme: string | null;
+    bolumler: { id: string; ad: string; urunler: MekanUrunu[] }[];
+  };
+  dogrulanmisYorumlar: {
+    id: string;
+    isim: string;
+    yorum: string;
+    puan: number | null;
+    tarih: string;
+    rozetler: string[];
+  }[];
+};
+
+export type MekanDetayYaniti = { mekan: MekanDetay };
+
+/** `/api/app/ziyaret` başarı yanıtı (201). */
+export type ZiyaretYaniti = {
+  ziyaret: { id: string; mekanAdi: string; mesafeMetre: number | null; tarih: string };
+  kazanilanPuan: number;
+  yeniRozetler: { anahtar: string; ad: string; aciklama: string; puan: number }[];
+  toplamPuan: number;
+  seviye: number;
+  /**
+   * Sadakat damga kartı — sunucu bu özelliği kapatabiliyor ve o zaman alan
+   * HİÇ GELMİYOR (bkz. sunucuda lib/biyerlere/kupon.ts). İsteğe bağlı
+   * olması bilinçli: uygulamanın yayındaki sürümleri sunucu bayrağını
+   * bilmiyor, verinin varlığına bakıp çiziyor. Böylece özellik geri
+   * açıldığında yeni sürüm beklemeden yeniden görünüyor.
+   */
+  sadakat?: {
+    damgaSayisi: number;
+    esik: number;
+    kalanZiyaret: number;
+    kazanilanKupon: { id: string; kod: string; indirim: string } | null;
+  };
+  tamamlananRotalar: { id: string; ad: string; slug: string }[];
+  rotaTamamlamaPuani: number;
+};
+
+/** `/api/app/rezervasyon?mekan=…` — bir günün müsait saatleri. */
+export type MusaitlikYaniti = {
+  mekan: { slug: string; ad: string; telefon: string | null };
+  tarih: string;
+  enGecGun: number;
+  sureDakika: number;
+  saatler: { etiket: string; baslangic: string }[];
+};
+
+/** `/api/app/rezervasyon` — kullanıcının kendi rezervasyonları. */
+export type RezervasyonKaydi = {
+  id: string;
+  baslangic: string;
+  bitis: string;
+  kisiSayisi: number;
+  durum: string;
+  durumMetni: string;
+  not: string | null;
+  gecmisMi: boolean;
+  iptalEdilebilir: boolean;
+  mekan: { id: string; slug: string; ad: string; logoUrl: string | null; telefon: string | null };
+};
+
+export type RezervasyonListesiYaniti = { rezervasyonlar: RezervasyonKaydi[] };

@@ -1,12 +1,12 @@
 import { Pencil, User } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/db";
-import { requireKullaniciYonetimi, userScope, visibleBusinesses } from "@/lib/auth";
-import { verilebilirModuller } from "@/lib/moduller";
+import { prisma } from "@/lib/cekirdek/db";
+import { requireKullaniciYonetimi, userScope, visibleBusinesses } from "@/lib/kimlik/auth";
+import { verilebilirModuller } from "@/lib/kimlik/moduller";
 import { EditUserForm } from "../../UserForms";
-import { acilabilirRoller } from "@/lib/panel";
-import { PageHeader, SectionCard } from "@/components/ui";
+import { acilabilirRoller } from "@/lib/kimlik/panel";
+import { PageHeader, SectionCard, buttonClass } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +23,10 @@ export default async function EditUserPage({
   const [target, businesses] = await Promise.all([
     prisma.user.findFirst({
       where: { id, ...await userScope(owner) },
-      include: { businesses: { select: { businessId: true } } },
+      include: {
+        businesses: { select: { businessId: true } },
+        telefonlar: { orderBy: { sira: "asc" }, select: { phone: true } },
+      },
     }),
     visibleBusinesses(owner),
   ]);
@@ -31,10 +34,10 @@ export default async function EditUserPage({
   if (!target) notFound();
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <Link
         href="/admin/kullanicilar"
-        className="inline-flex w-fit items-center gap-1.5 self-start rounded-control border border-line bg-surface px-3 py-1.5 text-small font-medium text-ink-soft shadow-card transition hover:-translate-y-0.5 hover:border-line-strong hover:text-ink"
+        className={buttonClass({ variant: "secondary", size: "sm", className: "self-start" })}
       >
         <span aria-hidden="true">←</span>
         Kullanıcı listesine dön
@@ -67,6 +70,7 @@ export default async function EditUserPage({
               email: target.email,
               username: target.username,
               phone: target.phone,
+              ekTelefonlar: target.telefonlar.map((t) => t.phone),
               role: target.role,
               businessId: target.businessId,
               bolgeIsletmeleri: target.businesses.map((b) => b.businessId),

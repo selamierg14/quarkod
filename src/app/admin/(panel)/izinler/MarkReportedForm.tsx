@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { markReported } from "./actions";
+import { buttonClass } from "@/components/ui";
 
 export function MarkReportedForm({ bekleyen }: { bekleyen: number }) {
   const [acik, setAcik] = useState(false);
@@ -13,7 +14,7 @@ export function MarkReportedForm({ bekleyen }: { bekleyen: number }) {
       <button
         type="button"
         onClick={() => setAcik(true)}
-        className="rounded-chip border border-line bg-surface px-3 py-1.5 text-small text-ink-soft hover:bg-canvas"
+        className={buttonClass({ variant: "secondary", size: "sm" })}
       >
         Bildirildi olarak işaretle
       </button>
@@ -25,18 +26,18 @@ export function MarkReportedForm({ bekleyen }: { bekleyen: number }) {
       <input
         name="transactionId"
         placeholder="İYS işlem no (isteğe bağlı)"
-        className="w-52 rounded-chip border border-line px-3 py-1.5 text-small outline-none focus:border-line-strong"
+        className="w-52 rounded-chip border border-line px-3 py-1.5 text-small outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
       />
       <button
         type="submit"
-        className="rounded-chip bg-accent-600 px-3 py-1.5 text-small font-medium text-white transition hover:bg-accent-700"
+        className={buttonClass({ size: "sm" })}
       >
         {bekleyen} kaydı işaretle
       </button>
       <button
         type="button"
         onClick={() => setAcik(false)}
-        className="rounded-chip border border-line px-3 py-1.5 text-small text-ink-muted"
+        className={buttonClass({ variant: "secondary", size: "sm" })}
       >
         Vazgeç
       </button>

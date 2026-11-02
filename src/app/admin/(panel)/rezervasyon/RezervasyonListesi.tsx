@@ -1,8 +1,9 @@
 "use client";
 
 import { useActionState } from "react";
-import { REZERVASYON_DURUMLARI, type RezervasyonDurumu } from "@/lib/rezervasyon";
+import { REZERVASYON_DURUMLARI, type RezervasyonDurumu } from "@/lib/isletme/rezervasyon";
 import { rezervasyonDurumDegistir, type RezervasyonFormState } from "./actions";
+import { buttonClass } from "@/components/ui";
 
 export type ListeKaydi = {
   id: string;
@@ -81,6 +82,14 @@ function Satir({ businessId, kayit }: { businessId: string; kayit: ListeKaydi })
             >
               {REZERVASYON_DURUMLARI[kayit.durum as RezervasyonDurumu] ?? kayit.durum}
             </span>
+            {/* Kanal yalnızca uygulamada gösteriliyor: panelden girilen
+                kayıtta "Panelden" yazmak her satıra gürültü eklerdi,
+                oysa "uygulamadan geldi, onay bekliyor" bir eylem çağrısı. */}
+            {kayit.kanal === "biyerlere" ? (
+              <span className="rounded-chip bg-brand-soft px-2 py-0.5 text-caption text-brand">
+                Uygulamadan
+              </span>
+            ) : null}
           </div>
           <span className="text-small text-ink-soft">
             {saat(bas)} – {saat(bit)} · {kayit.kisiSayisi} kişi ·{" "}
@@ -114,14 +123,14 @@ function Satir({ businessId, kayit }: { businessId: string; kayit: ListeKaydi })
           <button
             type="submit"
             disabled={bekliyor}
-            className="rounded-control border border-line px-3 py-1.5 text-small text-ink hover:bg-sunken disabled:opacity-50"
+            className={buttonClass({ variant: "secondary", size: "sm" })}
           >
             {bekliyor ? "…" : "Uygula"}
           </button>
         </form>
       </div>
 
-      {durum.error ? <p className="text-caption text-danger-ink">{durum.error}</p> : null}
+      {durum.error ? <p className="text-caption text-danger-ink" role="alert">{durum.error}</p> : null}
     </div>
   );
 }

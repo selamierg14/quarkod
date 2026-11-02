@@ -50,7 +50,7 @@ function KayitFormu() {
     <div>
       <h1 className="text-2xl font-bold text-white">Biyerlere&apos;ye katıl</h1>
       <p className="mt-1 text-small text-gray-400">
-        Ücretsiz kaydol, puan biriktir, rozet ve kupon kazan.
+        Ücretsiz kaydol, puan biriktir, rozet kazan.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Crown } from "lucide-react";
 import { appAuthPost } from "../../../lib/api-istemci";
 import { useOturum } from "../../../lib/OturumSaglayici";
+import { KUPON_AKTIF } from "@/lib/biyerlere/kupon";
 
 /**
  * Biyerlere Plus'a ortak mekanlarda çıkan "günlük ücretsiz kahve" kutusu.
@@ -19,6 +20,13 @@ export function PlusHakkiKutusu({ businessId }: { businessId: string }) {
   const [hata, setHata] = useState<string | null>(null);
 
   const plusUyesiMi = oturum.durum === "girisli" && oturum.kullanici.plusUyeMi;
+
+  // Plus hakkı bir kupon üretiyor; özellik kapalıyken kutu hiç çizilmiyor
+  // (sunucudaki uç da 404 dönüyor — bkz. lib/biyerlere/kupon.ts).
+  //
+  // Kontrol hook'lardan SONRA: React hook'ların her render'da aynı sırada
+  // çağrılmasını şart koşuyor, erken dönüş onları atlıyordu.
+  if (!KUPON_AKTIF) return null;
 
   async function talepEt() {
     setDurum("gonderiliyor");

@@ -1,8 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canAccessBusiness, requirePersonelYonetimi, requireYazma } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { canAccessBusiness, requirePersonelYonetimi, requireYazma } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { alanDogrula } from "@/lib/cekirdek/desenler";
+import { adAnahtari } from "@/lib/cekirdek/text";
 
 export type SablonFormState = { error?: string; saved?: string };
 
@@ -14,23 +16,36 @@ export async function gorevEkle(
   await requireYazma();
 
   const businessId = String(formData.get("businessId") ?? "");
-  const label = String(formData.get("label") ?? "").trim();
+  const etiket = alanDogrula(formData.get("label"), "kisaBaslik", "Görev adı");
   const gorev = String(formData.get("gorev") ?? "");
 
   if (!(await canAccessBusiness(actor, businessId))) {
     return { error: "Bu işletmeye yetkiniz yok." };
   }
-  if (!label) return { error: "Görev adı gerekli." };
+  if (!etiket.ok) return { error: etiket.hata };
+  const label = etiket.deger;
   if (!["acilis", "kapanis"].includes(gorev)) return { error: "Açılış ya da kapanış seçin." };
 
-  const sonuncu = await prisma.checklistItem.findFirst({
+  const mevcutlar = await prisma.checklistItem.findMany({
     where: { businessId, gorev },
     orderBy: { sortOrder: "desc" },
+    select: { id: true, label: true, sortOrder: true, active: true },
   });
 
-  await prisma.checklistItem.create({
-    data: { businessId, label, gorev, sortOrder: (sonuncu?.sortOrder ?? -1) + 1 },
-  });
+  // Aynı listede aynı görev iki kez olunca personel iki ayrı kutuyu
+  // işaretlemek zorunda kalıyor, tamamlanma oranı da yanlış çıkıyordu
+  // (QA, Ekim 2026). Büyük-küçük harf farkı da tekrar sayılıyor.
+  const ayni = mevcutlar.find((m) => adAnahtari(m.label) === adAnahtari(label));
+  if (ayni?.active) {
+    return { error: `"${ayni.label}" bu listede zaten var.` };
+  }
+  if (ayni) {
+    await prisma.checklistItem.update({ where: { id: ayni.id }, data: { active: true } });
+  } else {
+    await prisma.checklistItem.create({
+      data: { businessId, label, gorev, sortOrder: (mevcutlar[0]?.sortOrder ?? -1) + 1 },
+    });
+  }
 
   revalidatePath("/admin/vardiya-planlama/sablon");
   revalidatePath("/admin/gorevlerim");

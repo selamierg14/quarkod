@@ -1,7 +1,7 @@
 import { Armchair, DoorOpen } from "lucide-react";
 import Link from "next/link";
 import { SectionCard } from "@/components/ui";
-import { masaSirala } from "@/lib/masa";
+import { masaSirala } from "@/lib/isletme/masa";
 import { TableManager } from "../TableManager";
 import { TekQrKurulum } from "../TekQrKurulum";
 import { IsletmeUst } from "../IsletmeUst";
@@ -24,7 +24,7 @@ export default async function MasalarPage({
   const girisQr = masalar.find((t) => t.isEntrance);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <IsletmeUst business={business} aktif="masalar" />
 
       {/* Kurulumun en kritik kararı bu: masaya özel mi, tek ortak mı.

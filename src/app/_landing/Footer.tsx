@@ -5,7 +5,7 @@ import {
   SITE_ADI,
   iletisimTelefonu,
   telefonHref,
-} from "@/lib/site";
+} from "@/lib/cekirdek/site";
 
 /**
  * Site altbilgisi.

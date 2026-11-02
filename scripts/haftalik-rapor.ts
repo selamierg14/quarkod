@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { isiCalistir } from "./is-kaydi";
 import { createScriptClient } from "./prisma-client";
-import { haftalikRaporGonder } from "../src/lib/haftalik-rapor";
+import { haftalikRaporGonder } from "../src/lib/rapor/haftalik-rapor";
 
 /**
  * Haftalık özet raporu. Pazartesi sabahı cron ile çalıştırın:

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useOturum } from "../../lib/OturumSaglayici";
+import { Alan, AnaDugme, Hata } from "../../components/Form";
 
 export default function GirisPage() {
   const router = useRouter();
@@ -45,37 +46,45 @@ export default function GirisPage() {
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
-        <label className="flex flex-col gap-1.5">
-          <span className="text-caption font-medium text-gray-300">Kullanıcı adı</span>
-          <input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            autoComplete="username"
-            required
-            className="rounded-control border border-white/15 bg-[#24262E] px-4 py-3 text-white outline-none focus:border-[#6366F1]"
-          />
-        </label>
-        <label className="flex flex-col gap-1.5">
-          <span className="text-caption font-medium text-gray-300">Şifre</span>
-          <input
-            type="password"
-            value={sifre}
-            onChange={(e) => setSifre(e.target.value)}
-            autoComplete="current-password"
-            required
-            className="rounded-control border border-white/15 bg-[#24262E] px-4 py-3 text-white outline-none focus:border-[#6366F1]"
-          />
-        </label>
-
-        {hata ? <p className="text-small text-[#FF6B4A]">{hata}</p> : null}
-
-        <button
-          type="submit"
+        <Alan
+          id="giris-kullanici"
+          etiket="Kullanıcı adı"
+          tur="girisKimligi"
+          zorunlu
+          autoComplete="username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
           disabled={gonderiliyor}
-          className="mt-2 rounded-control bg-[#6366F1] px-5 py-3.5 text-base font-semibold text-white transition active:scale-[0.97] duration-150 ease-out disabled:opacity-60"
+        />
+        <Alan
+          id="giris-sifre"
+          etiket="Şifre"
+          tur="girisSifresi"
+          zorunlu
+          autoComplete="current-password"
+          value={sifre}
+          onChange={(e) => setSifre(e.target.value)}
+          disabled={gonderiliyor}
+        />
+
+        {/**
+         * Bağlantı formun İÇİNDE ve şifre alanının hemen altında: şifresini
+         * hatırlamadığını anladığı an tam burası. Formun dışına, sayfanın
+         * en altına konsaydı, hata mesajını gören kullanıcı onu aramak
+         * yerine aynı şifreyi tekrar denerdi.
+         */}
+        <Link
+          href="/sifremi-unuttum"
+          className="-mt-1 self-start text-caption font-medium text-[#818CF8]"
         >
-          {gonderiliyor ? "Giriş yapılıyor…" : "Giriş yap"}
-        </button>
+          Şifremi unuttum
+        </Link>
+
+        <Hata mesaj={hata} />
+
+        <AnaDugme bekliyor={gonderiliyor} bekleyenMetin="Giriş yapılıyor…">
+          Giriş yap
+        </AnaDugme>
       </form>
 
       <p className="mt-6 text-center text-small text-gray-400">

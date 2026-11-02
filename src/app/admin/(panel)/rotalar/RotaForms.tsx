@@ -9,9 +9,11 @@ import {
   rotaSil,
   type RotaFormState,
 } from "./actions";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
+import { GonderDugmesi, SilDugmesi, buttonClass } from "@/components/ui";
 
 const INPUT =
-  "w-full rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
+  "w-full rounded-control border border-line bg-surface px-3 py-2 text-small text-ink outline-none placeholder:text-ink-faint transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100";
 
 export function NewRotaForm() {
   const [state, formAction, pending] = useActionState<RotaFormState, FormData>(rotaEkle, {});
@@ -21,12 +23,18 @@ export function NewRotaForm() {
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Rota adı</span>
-          <input name="ad" required placeholder="Kadıköy Kahve Rotası" className={INPUT} />
+          <input
+            name="ad"
+            {...alanOzellikleri("isletmeAdi")}
+            placeholder="Kadıköy Kahve Rotası"
+            className={INPUT}
+          />
         </label>
         <label className="flex flex-col gap-1 sm:col-span-2">
           <span className="text-caption text-ink-muted">Açıklama (isteğe bağlı)</span>
           <textarea
             name="aciklama"
+            {...alanOzellikleri("aciklama", { zorunlu: false })}
             rows={2}
             placeholder="Kadıköy'ün en sevilen 4 üçüncü nesil kahvecisi. Hepsini gez, rozeti kap!"
             className={INPUT}
@@ -36,17 +44,17 @@ export function NewRotaForm() {
       <button
         type="submit"
         disabled={pending}
-        className="self-start rounded-control bg-accent-600 px-4 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+        className={buttonClass({ size: "md", className: "self-start" })}
       >
         {pending ? "Oluşturuluyor..." : "Rota oluştur"}
       </button>
       {state.error ? (
-        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
+        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
           {state.error}
         </p>
       ) : null}
       {state.saved ? (
-        <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink">
+        <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink" role="status">
           {state.saved}
         </p>
       ) : null}
@@ -58,14 +66,13 @@ export function AktifButonu({ id, aktif }: { id: string; aktif: boolean }) {
   return (
     <form action={rotaAktifDegistir}>
       <input type="hidden" name="id" value={id} />
-      <button
-        type="submit"
+      <GonderDugmesi
         className={`rounded-chip px-2.5 py-1 text-caption font-medium ${
           aktif ? "bg-success-soft text-success-ink" : "border border-line text-ink-faint"
         }`}
       >
         {aktif ? "Yayında" : "Pasif"}
-      </button>
+      </GonderDugmesi>
     </form>
   );
 }
@@ -74,12 +81,13 @@ export function RotaSilButonu({ id }: { id: string }) {
   return (
     <form action={rotaSil}>
       <input type="hidden" name="id" value={id} />
-      <button
-        type="submit"
+      <SilDugmesi
         className="rounded-chip px-2 py-1 text-caption text-ink-faint hover:text-danger"
-      >
+      
+            onayMetni="Rota silinsin mi?"
+            onayClassName="bg-danger-soft text-danger-ink font-medium">
         Rotayı sil
-      </button>
+      </SilDugmesi>
     </form>
   );
 }
@@ -109,11 +117,11 @@ export function DurakEkleForm({
       <button
         type="submit"
         disabled={pending}
-        className="rounded-control border border-line px-3 py-2 text-caption font-medium text-ink-soft hover:bg-canvas disabled:opacity-60"
+        className={buttonClass({ variant: "secondary", size: "sm" })}
       >
         {pending ? "Ekleniyor..." : "Durak ekle"}
       </button>
-      {state.error ? <span className="text-caption text-danger">{state.error}</span> : null}
+      {state.error ? <span className="text-caption text-danger" role="alert">{state.error}</span> : null}
     </form>
   );
 }
@@ -122,12 +130,13 @@ export function DurakSilButonu({ id }: { id: string }) {
   return (
     <form action={durakSil}>
       <input type="hidden" name="id" value={id} />
-      <button
-        type="submit"
+      <SilDugmesi
         className="rounded-chip px-2 py-0.5 text-caption text-ink-faint hover:text-danger"
-      >
+      
+            onayMetni="Durak çıkarılsın mı?"
+            onayClassName="bg-danger-soft text-danger-ink font-medium">
         Çıkar
-      </button>
+      </SilDugmesi>
     </form>
   );
 }

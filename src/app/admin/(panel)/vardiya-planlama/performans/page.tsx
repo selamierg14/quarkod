@@ -1,10 +1,11 @@
 import { BarChart3, Users2 } from "lucide-react";
-import { requirePersonelYonetimi, visibleBusinesses } from "@/lib/auth";
-import { getPersonelPerformansi } from "@/lib/stats";
+import { requirePersonelYonetimi, visibleBusinesses } from "@/lib/kimlik/auth";
+import { getPersonelPerformansi } from "@/lib/rapor/stats";
 import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
+import { VARSAYILAN_DONEM_GUN } from "@/components/DonemBos";
 import { IsletmeSecici } from "../../menu/MenuUst";
 import { PeriyotFiltre } from "@/components/PeriyotFiltre";
-import { ROL_ADLARI } from "@/lib/constants";
+import { ROL_ADLARI } from "@/lib/cekirdek/constants";
 import { VardiyaSekmeleri } from "../VardiyaSekmeleri";
 
 export const dynamic = "force-dynamic";
@@ -30,12 +31,14 @@ export default async function PersonelPerformansPage({
   }
 
   const secili = businesses.find((b) => b.id === query.isletme) ?? businesses[0];
-  const days = PERIODS.some((p) => String(p.days) === query.gun) ? Number(query.gun) : 30;
+  const days = PERIODS.some((p) => String(p.days) === query.gun)
+    ? Number(query.gun)
+    : VARSAYILAN_DONEM_GUN;
 
   const performans = await getPersonelPerformansi(secili.id, days);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <VardiyaSekmeleri aktif="performans" />
 
       <PageHeader
@@ -60,6 +63,7 @@ export default async function PersonelPerformansPage({
         baseHref="/admin/vardiya-planlama/performans"
         businesses={[]}
         donemler={PERIODS.map((p) => ({ gun: p.days, label: p.label }))}
+        varsayilan={VARSAYILAN_DONEM_GUN}
       />
 
       {performans.length === 0 ? (

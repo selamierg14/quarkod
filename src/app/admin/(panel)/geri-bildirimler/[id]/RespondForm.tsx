@@ -1,7 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import type { HazirYanit } from "@/lib/isletme/hazir-yanit";
 import { respondToCustomer, type RespondState } from "./actions";
+import { buttonClass } from "@/components/ui";
 
 /**
  * Şikayet döngüsünü kapatan yanıt kutusu.
@@ -15,16 +17,24 @@ export function RespondForm({
   id,
   channel,
   alreadyResponded,
+  hazirYanitlar,
 }: {
   id: string;
   /** "telefon" → SMS, "eposta" → e-posta. Butonun etiketini belirler. */
   channel: "telefon" | "eposta";
   alreadyResponded: boolean;
+  /** Puana göre seçilmiş şablonlar (bkz. lib/isletme/hazir-yanit.ts). */
+  hazirYanitlar: HazirYanit[];
 }) {
   const [state, formAction, pending] = useActionState<RespondState, FormData>(
     respondToCustomer,
     {},
   );
+  /**
+   * Metin kontrollü bir alana taşındı: şablona dokunulduğunda kutunun
+   * dolması gerekiyor. `defaultValue` ile bunu yapmanın yolu yok.
+   */
+  const [mesaj, setMesaj] = useState("");
 
   const gonderildi = alreadyResponded || state.sent;
 
@@ -42,20 +52,40 @@ export function RespondForm({
       <label className="text-caption font-medium tracking-wide text-ink-muted uppercase">
         Müşteriye yanıt yaz
       </label>
+      {/* Şablonlar metni GETİRİYOR, göndermiyor: gönderilmeden önce
+          düzenlenebilmesi şart — yanlış şikayete hazır cümle göndermek,
+          hiç yanıt vermemekten kötü. */}
+      {hazirYanitlar.length > 0 && !mesaj ? (
+        <div className="flex flex-wrap gap-1.5">
+          {hazirYanitlar.map((yanit) => (
+            <button
+              key={yanit.etiket}
+              type="button"
+              onClick={() => setMesaj(yanit.metin)}
+              className={buttonClass({ variant: "secondary", size: "sm" })}
+            >
+              {yanit.etiket}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       <textarea
         name="mesaj"
         rows={3}
         maxLength={480}
         required
+        value={mesaj}
+        onChange={(e) => setMesaj(e.target.value)}
         placeholder={
           channel === "eposta"
             ? "Örn: Geri bildiriminiz için teşekkürler, sorunu çözdük..."
             : "Kısa bir SMS yazın; müşterinin numarasına gönderilir."
         }
-        className="rounded-control border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong"
+        className="rounded-control border border-line bg-surface px-3 py-2 text-small outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
       />
       {state.error ? (
-        <p className="text-caption text-danger-ink">{state.error}</p>
+        <p className="text-caption text-danger-ink" role="alert">{state.error}</p>
       ) : null}
       <div className="flex items-center justify-between gap-2">
         <span className="text-caption text-ink-faint">
@@ -65,7 +95,7 @@ export function RespondForm({
         <button
           type="submit"
           disabled={pending}
-          className="shrink-0 rounded-control bg-accent-600 px-4 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+          className={buttonClass({ size: "md", className: "shrink-0" })}
         >
           {pending ? "Gönderiliyor…" : "Gönder"}
         </button>

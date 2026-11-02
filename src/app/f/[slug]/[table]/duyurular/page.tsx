@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/cekirdek/db";
 import { MusteriKabuk } from "@/components/MusteriKabuk";
-import { isletmeSlugla, qrSayfaVerisi } from "@/lib/qr-sayfa";
-import { duyuruAktifMi } from "@/lib/duyuru";
+import { isletmeSlugla, qrSayfaVerisi } from "@/lib/isletme/qr-sayfa";
+import { duyuruAktifMi } from "@/lib/isletme/duyuru";
 import { DuyurularListesi } from "./DuyurularListesi";
 
 type Params = { slug: string; table: string };

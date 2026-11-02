@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { allowedBusinessIds, getSession } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { toCsv } from "@/lib/feedback-filters";
-import { IYS_EXPORT_HEADERS, formatConsentDate } from "@/lib/iys";
+import { allowedBusinessIds, getSession } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { toCsv } from "@/lib/isletme/feedback-filters";
+import { IYS_EXPORT_HEADERS, formatConsentDate } from "@/lib/isletme/iys";
 
 /**
  * İYS toplu yükleme dosyası.

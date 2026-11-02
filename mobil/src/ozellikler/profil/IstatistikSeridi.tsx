@@ -3,12 +3,16 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { renkler, yazi, bosluk, yaricap, golge } from "../../tasarim";
 
 /**
- * Üçlü sayaç şeridi (puan / ziyaret / kupon).
+ * Sayaç şeridi (puan / ziyaret / varsa kupon).
  *
- * Üçü tek bir kart içinde ayraçla bölünüyor, üç ayrı kart olarak değil:
- * aynı cümlenin üç kelimesi gibi okunmaları gerekiyor ("100 puan, 12
- * ziyaret, 2 kupon") — ayrı kartlar bunları birbiriyle ilgisiz üç
- * ölçüye çeviriyordu.
+ * Hepsi tek bir kart içinde ayraçla bölünüyor, ayrı kartlar olarak değil:
+ * aynı cümlenin kelimeleri gibi okunmaları gerekiyor ("100 puan, 12
+ * ziyaret") — ayrı kartlar bunları birbiriyle ilgisiz ölçülere
+ * çeviriyordu.
+ *
+ * `kupon` İSTEĞE BAĞLI: kupon özelliği kapalıyken sunucu sayacı hiç
+ * göndermiyor ve şeritte o bölme çizilmiyor. Sıfır göstermek, kullanıcıya
+ * "kupon kazanabilirsin ama hiç kazanmadın" demek olurdu.
  */
 export function IstatistikSeridi({
   puan,
@@ -17,7 +21,7 @@ export function IstatistikSeridi({
 }: {
   puan: number;
   ziyaret: number;
-  kupon: number;
+  kupon?: number;
 }) {
   return (
     <Animated.View entering={FadeInDown.delay(120).duration(400).springify()}>
@@ -25,8 +29,12 @@ export function IstatistikSeridi({
         <Sayac deger={puan} etiket="Kaşif Puanı" renk={renkler.odulParlak} />
         <View style={stiller.ayirac} />
         <Sayac deger={ziyaret} etiket="Doğrulanmış Ziyaret" />
-        <View style={stiller.ayirac} />
-        <Sayac deger={kupon} etiket="Aktif Kupon" />
+        {kupon === undefined ? null : (
+          <>
+            <View style={stiller.ayirac} />
+            <Sayac deger={kupon} etiket="Aktif Kupon" />
+          </>
+        )}
       </View>
     </Animated.View>
   );

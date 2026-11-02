@@ -1,6 +1,6 @@
 import { BarChart3, TrendingUp, Trophy } from "lucide-react";
-import { allowedBusinessIds, requireModul, requireTenantOwner } from "@/lib/auth";
-import { getBusinessStats } from "@/lib/stats";
+import { allowedBusinessIds, requireModul, requireTenantOwner } from "@/lib/kimlik/auth";
+import { getBusinessStats } from "@/lib/rapor/stats";
 import { EmptyState, PageHeader, SectionCard, TabLink } from "@/components/ui";
 import { DeltaBadge, TrendChart } from "@/components/TrendChart";
 
@@ -19,7 +19,7 @@ export default async function ComparisonPage() {
   const withData = stats.filter((stat) => stat.total > 0);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <div className="print-hidden -mb-2 flex gap-1 border-b border-line">
         <TabLink href="/admin" active={false}>
           Genel

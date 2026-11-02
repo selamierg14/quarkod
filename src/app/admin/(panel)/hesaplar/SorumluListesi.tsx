@@ -46,7 +46,7 @@ export function SorumluListesi({
   etiket?: string;
 }) {
   if (kisiler.length === 0) {
-    return <p className="mt-1 text-caption text-rating">{bosMesaj}</p>;
+    return <p className="mt-1 text-caption font-medium text-warning-ink">{bosMesaj}</p>;
   }
 
   const gorunen = kisiler.slice(0, ESIK);

@@ -1,7 +1,9 @@
 "use server";
 
-import { requireUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { requireUser } from "@/lib/kimlik/auth";
+import { effectiveAccountId } from "@/lib/kimlik/impersonation";
+import { prisma } from "@/lib/cekirdek/db";
+import { platformUyarilari, type PlatformUyarisi } from "@/lib/rapor/platform-uyarilari";
 
 export type BildirimOzet = {
   id: string;
@@ -20,10 +22,19 @@ export type BildirimOzet = {
 export async function bildirimlerimiGetir(): Promise<{
   unread: number;
   items: BildirimOzet[];
+  /**
+   * Yalnızca platform görünümündeki superadmin için: sistem hataları,
+   * süresi dolan abonelikler. Kayıtlı bildirim DEĞİL — sorun düzelince
+   * kendiliğinden kayboluyor, "okundu" işaretlenemiyor (okundu demek onu
+   * çözmüyor). UI incelemesi zilin "ne gösterdiği belli değil" dedi;
+   * yöneticinin asıl bakması gerekenler burada sayılı rozetle duruyor.
+   */
+  uyarilar: PlatformUyarisi[];
 }> {
   const user = await requireUser();
+  const platformda = user.role === "superadmin" && !(await effectiveAccountId(user));
 
-  const [unread, items] = await Promise.all([
+  const [unread, items, uyarilar] = await Promise.all([
     prisma.panelNotification.count({ where: { userId: user.id, read: false } }),
     prisma.panelNotification.findMany({
       where: { userId: user.id },
@@ -38,9 +49,11 @@ export async function bildirimlerimiGetir(): Promise<{
         createdAt: true,
       },
     }),
+    platformda ? platformUyarilari() : Promise.resolve([]),
   ]);
 
   return {
+    uyarilar,
     unread,
     items: items.map((item) => ({
       ...item,

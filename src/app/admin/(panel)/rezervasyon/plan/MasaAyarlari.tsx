@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { masaKaydet, type RezervasyonFormState } from "../actions";
+import { buttonClass } from "@/components/ui";
 
 export type AyarMasasi = {
   id: string;
@@ -107,12 +108,12 @@ function Satir({
       <button
         type="submit"
         disabled={bekliyor}
-        className="rounded-control border border-line px-3 py-1.5 text-small font-semibold text-ink hover:bg-sunken disabled:opacity-50"
+        className={buttonClass({ variant: "secondary", size: "sm" })}
       >
         {bekliyor ? "…" : "Kaydet"}
       </button>
 
-      {durum.error ? <span className="text-caption text-danger-ink">{durum.error}</span> : null}
+      {durum.error ? <span className="text-caption text-danger-ink" role="alert">{durum.error}</span> : null}
       {durum.saved ? <span className="text-caption text-success-ink">✓</span> : null}
     </form>
   );

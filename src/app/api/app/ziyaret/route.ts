@@ -1,21 +1,38 @@
 import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { gecerliKoordinatMi } from "@/lib/mekan";
+import { prisma } from "@/lib/cekirdek/db";
+import { gecerliKoordinatMi } from "@/lib/biyerlere/mekan";
 import {
   ZIYARET_BEKLEME_SAATI,
   ZIYARET_PUANI,
   redMesaji,
   ziyaretKarari,
-} from "@/lib/ziyaret";
-import { rozetleriDegerlendir } from "@/lib/rozet-verme";
-import { seviye } from "@/lib/rozet";
-import { SADAKAT_ESIGI, sadakatDurumuHesapla } from "@/lib/sadakat";
-import { ROTA_TAMAMLAMA_PUANI, rotalariDegerlendir } from "@/lib/rota-tamamlama";
-import { apiHata, appKullaniciGerekli, govdeOku, metin } from "@/lib/app-api";
+} from "@/lib/biyerlere/ziyaret";
+import { rozetleriDegerlendir } from "@/lib/biyerlere/rozet-verme";
+import { seviye } from "@/lib/biyerlere/rozet";
+import {
+  SADAKAT_ESIGI,
+  acilmasiGerekenKuponVarMi,
+  sadakatDurumuHesapla,
+} from "@/lib/biyerlere/sadakat";
+import { ROTA_TAMAMLAMA_PUANI, rotalariDegerlendir } from "@/lib/biyerlere/rota-tamamlama";
+import { apiHata, appKullaniciGerekli, govdeOku, metin } from "@/lib/kimlik/app-api";
+import { SINIRLAR, hizSiniriMesaji, hizSiniriUygula } from "@/lib/kimlik/hiz-siniri";
+import { KUPON_AKTIF } from "@/lib/biyerlere/kupon";
 
 /** Sadakat hediyesi kuponunun geçerlilik süresi. */
 const SADAKAT_KUPON_GECERLILIK_GUN = 30;
+
+/**
+ * Sadakat kuponlarının kod öneki.
+ *
+ * Hem üretimde hem "kaç kupon açılmış" sorgusunda kullanılıyor; iki yerde
+ * ayrı yazılsaydı biri değişince sayım sessizce sıfıra düşerdi.
+ */
+const SADAKAT_KUPON_ONEKI = "SADAKAT-";
+
+/** İşlemi geri almak için kullanılan iç sinyal — dışarı sızmıyor. */
+class BeklemeSuresiHatasi extends Error {}
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +51,13 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   const oturum = await appKullaniciGerekli(request);
   if ("yanit" in oturum) return oturum.yanit;
+
+  // Başarılı ziyaret zaten mekan başına 4 saat kilitli; buradaki sınır
+  // BAŞARISIZ denemeler için: farklı slug'lar deneyerek koordinat/mekan
+  // eşleşmesi aramak ya da sunucuyu mesafe hesabıyla meşgul etmek
+  // ücretsiz olmasın.
+  const kota = await hizSiniriUygula(SINIRLAR.ziyaret, oturum.kullanici.id);
+  if (!kota.izin) return apiHata(hizSiniriMesaji(kota), 429);
 
   const govde = await govdeOku(request);
   if (!govde) return apiHata("Geçersiz istek gövdesi.", 400);
@@ -104,22 +128,81 @@ export async function POST(request: Request) {
       })
     : null;
 
-  const [ziyaret] = await prisma.$transaction([
-    prisma.appVisit.create({
-      data: {
-        appUserId: oturum.kullanici.id,
-        businessId: mekan.id,
-        tableId: table?.id ?? null,
-        mesafeMetre: karar.mesafeMetre,
+  /**
+   * Ziyaret yazımı SERIALIZABLE — ve bu bir yarış durumunu kapatıyor.
+   *
+   * Önceki hâlde bekleme kontrolü ile yazım arasında hiçbir atomiklik
+   * yoktu: son ziyaret okunuyor, karar veriliyor, sonra yazılıyordu.
+   * Eşzamanlı istekler AYNI "son ziyaret"i okuyup hepsi kabul alıyordu.
+   * Ölçüldü — 8 eşzamanlı istek 8 ziyaret ve 10 yerine 80 puan üretti;
+   * yani 4 saatlik bekleme kuralı tek bir çift tıkla ya da elle kurulmuş
+   * paralel isteklerle tamamen atlanabiliyordu.
+   *
+   * Çözüm: bekleme kontrolü ile yazımı AYNI serializable işleme almak.
+   * Postgres'in SSI'ı tam bu deseni (predicate üzerine write skew)
+   * yakalıyor ve ikinci işlemi 40001 ile düşürüyor. Prisma bunu P2034
+   * olarak yüzeye çıkarıyor; biz onu "biri bizden önce yazdı" diye okuyup
+   * kullanıcıya normal bekleme mesajını gösteriyoruz.
+   *
+   * Tekillik kısıtı NEDEN kullanılmadı: bekleme penceresi KAYAN (son
+   * ziyaretten 4 saat), sabit değil. Sabit pencereye dayalı bir unique
+   * kısıt, 03:59 ve 04:01'deki iki ziyareti ayrı pencerelere düşürüp
+   * kuralı değiştirirdi.
+   */
+  let ziyaret: { id: string; createdAt: Date };
+  try {
+    ziyaret = await prisma.$transaction(
+      async (tx) => {
+        // Kontrol İŞLEMİN İÇİNDE tekrarlanıyor — dışarıdaki okuma artık
+        // yalnızca hızlı elemek için; bağlayıcı olan bu.
+        const sonKayit = await tx.appVisit.findFirst({
+          where: { appUserId: oturum.kullanici.id, businessId: mekan.id },
+          orderBy: { createdAt: "desc" },
+          select: { createdAt: true },
+        });
+        if (
+          sonKayit &&
+          (Date.now() - sonKayit.createdAt.getTime()) / (1000 * 60 * 60) <
+            ZIYARET_BEKLEME_SAATI
+        ) {
+          throw new BeklemeSuresiHatasi();
+        }
+
+        const yeni = await tx.appVisit.create({
+          data: {
+            appUserId: oturum.kullanici.id,
+            businessId: mekan.id,
+            tableId: table?.id ?? null,
+            mesafeMetre: karar.mesafeMetre,
+          },
+          select: { id: true, createdAt: true },
+        });
+        await tx.appUser.update({
+          where: { id: oturum.kullanici.id },
+          data: { puan: { increment: ZIYARET_PUANI } },
+        });
+        return yeni;
       },
-      select: { id: true, createdAt: true },
-    }),
-    prisma.appUser.update({
-      where: { id: oturum.kullanici.id },
-      data: { puan: { increment: ZIYARET_PUANI } },
-      select: { puan: true },
-    }),
-  ]);
+      { isolationLevel: "Serializable" },
+    );
+  } catch (hata) {
+    // Bekleme kuralı ya da eşzamanlı bir istek: ikisinin de kullanıcıya
+    // söyleyeceği şey aynı, çünkü sonuç aynı — bu ziyaret sayılmadı.
+    const cakisma =
+      hata instanceof BeklemeSuresiHatasi ||
+      (hata as { code?: string }).code === "P2034";
+    if (!cakisma) throw hata;
+
+    return NextResponse.json(
+      {
+        hata: redMesaji("cok-erken"),
+        neden: "cok-erken",
+        mesafeMetre: karar.mesafeMetre,
+        beklemeSaati: ZIYARET_BEKLEME_SAATI,
+      },
+      { status: 409 },
+    );
+  }
 
   // Rota tamamlama ÖNCE değerlendiriliyor: puanı doğrudan DB'ye yazıyor,
   // rozet değerlendirmesi (aşağıda) `toplamPuan`'ı DB'den okuyor — sıra
@@ -140,12 +223,43 @@ export async function POST(request: Request) {
   const sadakat = sadakatDurumuHesapla(buMekandakiZiyaretSayisi, SADAKAT_ESIGI);
   let sadakatKuponu: { id: string; indirim: string } | null = null;
 
-  if (sadakat.hediyeKazanildiMi) {
+  /**
+   * Kupon "eşiği tam bu ziyarette geçti mi" koşuluyla DEĞİL, "hak edilen
+   * kadar kupon açılmış mı" koşuluyla üretiliyor.
+   *
+   * Eski hâlde kupon yazımı ziyaret işleminin DIŞINDAydı ve tek bir anlık
+   * koşula bağlıydı: yazma herhangi bir sebeple düşerse (bağlantı kopması,
+   * zaman aşımı) kullanıcı on ziyareti tamamlamış ama kuponsuz kalıyordu —
+   * üstelik telafisi yoktu, çünkü bir sonraki ziyarette sayı 11 olup
+   * `11 % 10 = 1` veriyor ve eşik koşulu bir daha asla sağlanmıyordu.
+   *
+   * Şimdi "tamamlanan kart sayısı" ile "bu mekan için açılmış sadakat
+   * kuponu sayısı" karşılaştırılıyor: işlem hem tekrarlanabilir
+   * (idempotent) hem de kendini onarır — kaçan kupon bir sonraki
+   * ziyarette açılır.
+   */
+  // Kupon ve sadakat kapalıyken sayım sorgusu da atlanıyor — kapalı bir
+  // özellik için her ziyarette veritabanına gitmenin karşılığı yok
+  // (bkz. lib/biyerlere/kupon.ts).
+  const acilmisKupon = KUPON_AKTIF
+    ? await prisma.coupon.count({
+        where: {
+          appUserId: oturum.kullanici.id,
+          businessId: mekan.id,
+          code: { startsWith: SADAKAT_KUPON_ONEKI },
+        },
+      })
+    : 0;
+
+  if (
+    KUPON_AKTIF &&
+    acilmasiGerekenKuponVarMi(buMekandakiZiyaretSayisi, acilmisKupon, SADAKAT_ESIGI)
+  ) {
     const kupon = await prisma.coupon.create({
       data: {
         businessId: mekan.id,
         appUserId: oturum.kullanici.id,
-        code: `SADAKAT-${randomBytes(6).toString("hex")}`,
+        code: `${SADAKAT_KUPON_ONEKI}${randomBytes(6).toString("hex")}`,
         discount: "Ücretsiz kahve (sadakat ödülü)",
         expiresAt: new Date(Date.now() + SADAKAT_KUPON_GECERLILIK_GUN * 24 * 60 * 60 * 1000),
       },
@@ -169,13 +283,21 @@ export async function POST(request: Request) {
       yeniRozetler: rozetSonucu.yeniRozetler,
       toplamPuan: rozetSonucu.toplamPuan,
       seviye: seviye(rozetSonucu.toplamPuan),
-      sadakat: {
-        damgaSayisi: sadakat.damgaSayisi,
-        esik: sadakat.esik,
-        kalanZiyaret: sadakat.kalanZiyaret,
-        // Doluysa cüzdanda hemen görünsün diye kuponun kendisi de dönüyor.
-        kazanilanKupon: sadakatKuponu,
-      },
+      // Kupon/sadakat kapalıyken alan HİÇ GÖNDERİLMİYOR (bkz.
+      // lib/biyerlere/kupon.ts). Sıfırlarla doldurulmuş bir nesne
+      // göndermek, uygulamada "0/10 damga" diye boş bir ilerleme çubuğu
+      // çizdirirdi; alanın yokluğu ise doğal olarak hiçbir şey çizmiyor.
+      ...(KUPON_AKTIF
+        ? {
+            sadakat: {
+              damgaSayisi: sadakat.damgaSayisi,
+              esik: sadakat.esik,
+              kalanZiyaret: sadakat.kalanZiyaret,
+              // Doluysa cüzdanda hemen görünsün diye kuponun kendisi de dönüyor.
+              kazanilanKupon: sadakatKuponu,
+            },
+          }
+        : {}),
       // Bu ziyaretle tamamlanan rota(lar) — genelde 0 ya da 1 eleman, iki
       // ayrı rotanın son durağı aynı ziyaret olması nadir ama imkansız
       // değil, o yüzden liste.

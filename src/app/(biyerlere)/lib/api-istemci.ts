@@ -1,6 +1,6 @@
 "use client";
 
-import { BIYERLERE_JETON_ANAHTARI } from "@/lib/biyerlere-jeton";
+import { BIYERLERE_JETON_ANAHTARI } from "@/lib/biyerlere/biyerlere-jeton";
 
 /**
  * Biyerlere'nin `/api/app/*` uçlarına istemciden istek atan tek nokta.
@@ -67,11 +67,17 @@ export async function appAuthGet<T>(yol: string): Promise<ApiSonuc<T>> {
 export async function appAuthPost<T>(
   yol: string,
   gövde?: Record<string, unknown>,
+  /**
+   * HTTP metodu. İki adımlı akışlarda (kod gönder → kodu doğrula) ikinci
+   * adım PUT: aynı kaynağı GÜNCELLEMEK, yeni bir şey yaratmak değil.
+   * Varsayılan POST — mevcut çağıranların hiçbiri değişmiyor.
+   */
+  metot: "POST" | "PUT" | "PATCH" | "DELETE" = "POST",
 ): Promise<ApiSonuc<T>> {
   const jeton = jetonOku();
   try {
     const response = await fetch(yol, {
-      method: "POST",
+      method: metot,
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",

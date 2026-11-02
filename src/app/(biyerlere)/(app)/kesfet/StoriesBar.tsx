@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { MekanOzet } from "@/lib/kesfet-veri";
+import type { MekanOzet } from "@/lib/biyerlere/kesfet-veri";
 
 type Hikaye = {
   mekan: Pick<MekanOzet, "id" | "slug" | "ad" | "logoUrl">;

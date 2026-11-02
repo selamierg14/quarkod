@@ -1,9 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canAccessBusiness, requireRezervasyonErisim, requireYazma } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { denetimYaz } from "@/lib/denetim";
+import { canAccessBusiness, requireRezervasyonErisim, requireYazma } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { denetimYaz } from "@/lib/rapor/denetim";
+import { rezervasyonSonucunuBildir } from "@/lib/biyerlere/rezervasyon-kullanici-bildirimi";
 import {
   cakismaBul,
   gecerliDurumMu,
@@ -11,8 +12,11 @@ import {
   kapasiteYeterliMi,
   planKonumuKirp,
   rezervasyonDogrula,
+  EN_COK_MASA_BIRLESTIRME,
+  EN_UZUN_NOT,
+  EN_UZUN_TELEFON,
   type MevcutRezervasyon,
-} from "@/lib/rezervasyon";
+} from "@/lib/isletme/rezervasyon";
 
 const YOL = "/admin/rezervasyon";
 
@@ -230,10 +234,23 @@ export async function rezervasyonKaydet(
 
   const duzenlenenId = metin(formData, "rezervasyonId") || null;
   const misafirAdi = metin(formData, "misafirAdi");
-  const telefon = metin(formData, "telefon") || null;
-  const notMetni = metin(formData, "not") || null;
+  // Uzunluklar burada KIRPILIYOR, reddedilmiyor: sınırı aşan bir telefon
+  // ya da not yüzünden rezervasyonu geri çevirmek, servisteki personeli
+  // formun başına döndürmek olurdu. Misafir adı ve kişi sayısı gibi anlam
+  // taşıyan alanlar ise rezervasyonDogrula'da reddediliyor.
+  const telefon = metin(formData, "telefon").slice(0, EN_UZUN_TELEFON) || null;
+  const notMetni = metin(formData, "not").slice(0, EN_UZUN_NOT) || null;
   const kisiSayisi = Number(formData.get("kisiSayisi") ?? 0);
-  const masaIdleri = formData.getAll("masaIdleri").map((m) => String(m)).filter(Boolean);
+  const masaIdleri = [
+    ...new Set(
+      formData
+        .getAll("masaIdleri")
+        .map((m) => String(m).trim())
+        .filter(Boolean),
+    ),
+    // Tekrarlar ayıklanıyor: aynı masa iki kez gönderilince hem gereksiz
+    // çakışma sorgusu atılıyor hem de "2 masa" sayılıyordu.
+  ].slice(0, EN_COK_MASA_BIRLESTIRME + 1);
 
   const baslangic = new Date(metin(formData, "baslangic"));
   const bitis = new Date(metin(formData, "bitis"));
@@ -358,6 +375,10 @@ export async function rezervasyonDurumDegistir(
     data: { durum: durumHam },
   });
 
+  // Uygulamadan gelen talebin sahibine sonucu bildir. Personel "onayladım"
+  // dediğinde müşterinin bunu öğrenmesinin başka bir yolu yok.
+  await rezervasyonSonucunuBildir(rezervasyonId);
+
   await denetimYaz(actor, "rezervasyon.durum", {
     entity: "business",
     entityId: businessId,
@@ -366,4 +387,53 @@ export async function rezervasyonDurumDegistir(
 
   revalidatePath(YOL);
   return { saved: "Durum güncellendi." };
+}
+
+/**
+ * Uygulamadan rezervasyon alma anahtarı.
+ *
+ * Varsayılan KAPALI ve açması bilinçli olarak işletmenin elinde: talep
+ * geldiğinde masayı sistem otomatik seçiyor (bkz.
+ * lib/biyerlere/rezervasyon-talebi.ts). Masa kapasiteleri ve çalışma
+ * saatleri girilmemiş bir mekanda bu seçim anlamsız sonuçlar üretir —
+ * iki kişilik gruba depo masasını verip müşteriyi karşılamak, özelliğin
+ * hiç olmamasından kötü.
+ */
+export async function uygulamaRezervasyonuAyarla(
+  _prev: RezervasyonFormState,
+  formData: FormData,
+): Promise<RezervasyonFormState> {
+  const businessId = metin(formData, "businessId");
+  const actor = await yetkiliMi(businessId);
+  if (!actor) return { error: "Bu işletmeye yetkiniz yok." };
+
+  const acik = metin(formData, "acik") === "1";
+
+  if (acik) {
+    // Kapasitesi tanımlı tek bir masa bile yoksa anahtarı açmak boş bir
+    // saat listesi demek: kullanıcı "Masa ayırt"a dokunup hiçbir şey
+    // bulamaz ve bir daha denemez.
+    const masaSayisi = await prisma.table.count({ where: { businessId, active: true } });
+    if (masaSayisi === 0) {
+      return { error: "Önce kat planında en az bir aktif masa tanımlayın." };
+    }
+  }
+
+  await prisma.business.update({
+    where: { id: businessId },
+    data: { rezervasyonAcik: acik },
+  });
+
+  await denetimYaz(actor, "rezervasyon.uygulamaAyari", {
+    entity: "business",
+    entityId: businessId,
+    detail: acik ? "Uygulamadan rezervasyon açıldı" : "Uygulamadan rezervasyon kapatıldı",
+  });
+
+  revalidatePath(YOL);
+  return {
+    saved: acik
+      ? "Biyerlere kullanıcıları artık bu mekandan masa ayırtabilir."
+      : "Uygulamadan rezervasyon kapatıldı.",
+  };
 }

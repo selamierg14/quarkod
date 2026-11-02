@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/cekirdek/db";
 import { MusteriKabuk } from "@/components/MusteriKabuk";
 import { ZiyaretDogrulayici } from "@/components/ZiyaretDogrulayici";
-import { isletmeSlugla, qrSayfaVerisi } from "@/lib/qr-sayfa";
-import { duyuruAktifMi } from "@/lib/duyuru";
+import { isletmeSlugla, qrSayfaVerisi } from "@/lib/isletme/qr-sayfa";
+import { duyuruAktifMi } from "@/lib/isletme/duyuru";
 import { KarsilamaSecenekleri } from "./KarsilamaSecenekleri";
 
 type Params = { slug: string; table: string };

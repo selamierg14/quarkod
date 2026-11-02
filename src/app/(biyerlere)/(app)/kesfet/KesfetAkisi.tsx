@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SlidersHorizontal, Search, CalendarDays, MapPinned } from "lucide-react";
-import type { MekanOzet } from "@/lib/kesfet-veri";
-import { VARSAYILAN_YARICAP_METRE } from "@/lib/kesfet";
+import type { MekanOzet } from "@/lib/biyerlere/kesfet-veri";
+import { VARSAYILAN_YARICAP_METRE } from "@/lib/biyerlere/kesfet";
 import { appGet } from "../../lib/api-istemci";
 import { useKonum } from "../../lib/konum";
 import { StoriesBar } from "./StoriesBar";

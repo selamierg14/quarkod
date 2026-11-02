@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Search } from "lucide-react";
-import type { MekanOzet } from "@/lib/kesfet-veri";
-import { BUSINESS_TYPES, type BusinessType, MEKAN_OZELLIK_ANAHTARLARI, MEKAN_OZELLIKLERI } from "@/lib/mekan";
+import type { MekanOzet } from "@/lib/biyerlere/kesfet-veri";
+import { BUSINESS_TYPES, type BusinessType, MEKAN_OZELLIK_ANAHTARLARI, MEKAN_OZELLIKLERI } from "@/lib/biyerlere/mekan";
 import { appGet } from "../../lib/api-istemci";
 import { MekanKarti, MekanKartiSkeleton } from "../kesfet/MekanKarti";
 

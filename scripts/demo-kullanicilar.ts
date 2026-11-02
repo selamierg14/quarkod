@@ -73,7 +73,10 @@ async function main() {
     const veri = {
       name: t.name,
       email: `${t.username}@ornek.test`,
-      phone: "+905321112233",
+      // 555 ön eki Türkiye'de operatörlere tahsis edilmemiş: demo hesabı
+      // için kod üretilse bile gerçek bir kişiye SMS gitmiyor. Önceki
+      // değer (+9053...) gerçek bir operatör aralığındaydı.
+      phone: `+9055500${String(tanimlar.indexOf(t) + 1).padStart(5, "0")}`,
       role: t.role,
       accountId: t.accountId,
       businessId: t.businessId,

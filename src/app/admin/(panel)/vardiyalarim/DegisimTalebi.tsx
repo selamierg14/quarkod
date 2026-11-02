@@ -1,8 +1,10 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import type { Shift } from "@/lib/constants";
+import type { Shift } from "@/lib/cekirdek/constants";
 import { degisimTalepEt, type DegisimFormState } from "./actions";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
+import { buttonClass } from "@/components/ui";
 
 export function DegisimTalebi({
   assignmentId,
@@ -129,6 +131,7 @@ export function DegisimTalebi({
 
           <input
             name="note"
+            {...alanOzellikleri("aciklama", { zorunlu: false })}
             placeholder="sebep (isteğe bağlı)"
             className={`rounded-chip border px-2.5 py-1.5 text-caption outline-none ${girdiSinifi}`}
           />
@@ -136,7 +139,7 @@ export function DegisimTalebi({
             <button
               type="submit"
               disabled={pending}
-              className="rounded-chip bg-accent-600 px-2.5 py-1 text-caption font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+              className={buttonClass({ size: "sm" })}
             >
               {pending ? "Gönderiliyor..." : "Talebi gönder"}
             </button>
@@ -149,7 +152,7 @@ export function DegisimTalebi({
             </button>
           </div>
           {state.error ? (
-            <p className={`text-caption ${koyu ? "text-white" : "text-danger"}`}>{state.error}</p>
+            <p className={`text-caption ${koyu ? "text-white" : "text-danger"}`} role="alert">{state.error}</p>
           ) : null}
         </form>
       ) : null}

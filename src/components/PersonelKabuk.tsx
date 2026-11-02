@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { MarkaIsareti } from "./AdminSidebar";
 import { BildirimZili } from "./BildirimZili";
 import { ProfilAvatarButton } from "./ProfilAvatarButton";
 import { CikisButonu } from "./CikisButonu";
-import { APP_VERSION } from "@/lib/constants";
+import { APP_VERSION } from "@/lib/cekirdek/constants";
 import { logout } from "@/app/admin/giris/actions";
 
 type PersonelLink = { href: string; label: string; ikon: "takvim" | "gorev" };
@@ -35,7 +36,10 @@ export function PersonelKabuk({
   return (
     <div className="flex min-h-dvh flex-col bg-canvas">
       <header className="print-hidden sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-line bg-surface px-4 py-2.5">
-        <span className="font-semibold tracking-tight text-ink">Memnuniyet Paneli</span>
+        <span className="flex items-center gap-2 font-semibold tracking-tight text-ink">
+          <MarkaIsareti koyu />
+          Quarkod
+        </span>
         <div className="flex items-center gap-2">
           <span className="hidden text-caption text-ink-faint sm:inline">v{APP_VERSION}</span>
           <CikisButonu

@@ -1,0 +1,143 @@
+name: CI
+
+# Bozuk bir commit'in üretime sessizce gitmesini engelleyen kapı.
+#
+# Önceden hiçbir otomatik kontrol yoktu: 664 test, tip kontrolü ve lint
+# yalnızca birileri elle çalıştırırsa koşuyordu. Bulunan middleware hatası
+# tam da bu türdendi — geliştirmede görünmüyor, üretimde patlıyor.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Aynı dal için yeni bir push gelirse eskisini iptal et: sıradaki koşu
+# zaten güncel kodu test edecek.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Web (panel + Biyerlere)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # Testlerin bir kısmı gerçek bir Postgres'e izole şema kurup
+    # `prisma db push` çalıştırıyor. CI'da UZAK veritabanına bağlanmıyoruz:
+    # üretim verisinin yanına şema açmak hem riskli, hem de eşzamanlı
+    # koşularda bağlantı limitini doldurur. Servis konteyneri her koşuda
+    # temiz ve izole.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: cafe
+          POSTGRES_PASSWORD: cafe_ci
+          POSTGRES_DB: cafe_projesi
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://cafe:cafe_ci@localhost:5432/cafe_projesi
+      # Testler jeton üretip doğruluyor; gerçek sır değil, CI'ya özel.
+      AUTH_SECRET: ci_icin_sabit_ve_yeterince_uzun_bir_anahtar_2026
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # `npm ci` — package-lock.json'a birebir sadık kurulum. `npm install`
+      # kilidi güncelleyebilir ve CI'da test edilen ağaç ile üretime giden
+      # ağaç ayrışır.
+      - run: npm ci
+
+      - name: Prisma istemcisi + şema
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+
+      # Next, route/layout tiplerini (LayoutProps, PageProps…) ÜRETİYOR ve
+      # bunlar .next/types altına yazılıyor. Temiz bir ortamda o klasör
+      # olmadığı için tsc "Cannot find name 'LayoutProps'" veriyordu.
+      # `typegen` bunu tam derleme yapmadan üretir.
+      - name: Next tip tanımlarını üret
+        run: npx next typegen
+
+      - name: Tip kontrolü
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint
+
+      - name: Testler
+        run: npm test
+
+      # Derleme en sona: hızlı kontroller önce düşsün, geri bildirim
+      # dakikalarca beklemesin.
+      - name: Derleme
+        run: npm run build
+
+  mobil:
+    name: Mobil (Biyerlere uygulaması)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: mobil
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobil/package-lock.json
+
+      - run: npm ci
+      - name: Tip kontrolü
+        run: npx tsc --noEmit
+      - name: Lint
+        run: npx eslint .
+      - name: Testler
+        run: npm test
+
+  guvenlik:
+    name: Bağımlılık taraması
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Artık BLOKLUYOR — ama yalnızca kabul listesi DIŞINDAKİ bulgularda.
+      #
+      # Önceden düz `npm audit` idi ve `continue-on-error: true` ile
+      # duruyordu. Gerekçesi o an geçerliydi: açık kalan dört uyarının
+      # tamamı Prisma'nın kendi derleme zamanı ağacındandı ve npm'in
+      # önerdiği "düzeltme" Prisma'yı bir ana sürüm düşürmekti. Bloklayan
+      # bir adım ilk günden kırmızı olur, kimse bakmaz hâle gelirdi.
+      #
+      # Bloklamamanın bedeli de görüldü: araya Next.js'te KİMLİK
+      # DOĞRULAMASI GEREKTİRMEYEN bir uzaktan kod çalıştırma uyarısı düştü,
+      # CI yeşil kalmaya devam etti ve kimse fark etmedi. Düzeltmesi
+      # yalnızca bir yama sürümüydü.
+      #
+      # Betik ikisinin ortasını tutuyor: gerekçelendirilmiş uyarılar
+      # susuyor, geri kalan her şey CI'yı kırıyor. Kabul listesi ve her
+      # satırın gerekçesi scripts/bagimlilik-taramasi.mjs içinde.
+      - name: Bağımlılık taraması (kabul listesi dışı bulgular bloklar)
+        run: node scripts/bagimlilik-taramasi.mjs

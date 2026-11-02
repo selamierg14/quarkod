@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { haftalikRaporGonder } from "@/lib/haftalik-rapor";
-import { cronCalistir, cronYetkiliMi } from "@/lib/cron";
+import { prisma } from "@/lib/cekirdek/db";
+import { haftalikRaporGonder } from "@/lib/rapor/haftalik-rapor";
+import { cronCalistir, cronYetkiliMi } from "@/lib/altyapi/cron";
 
 export const dynamic = "force-dynamic";
 

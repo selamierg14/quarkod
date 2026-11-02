@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Home } from "lucide-react";
-import { markaStili } from "@/lib/marka";
+import { markaStili } from "@/lib/isletme/marka";
 
 /**
  * 404 sayfası.

@@ -5,9 +5,10 @@ import {
   REZERVASYON_KANALLARI,
   VARSAYILAN_SURE_DAKIKA,
   kapasiteYeterliMi,
-} from "@/lib/rezervasyon";
+} from "@/lib/isletme/rezervasyon";
 import { rezervasyonKaydet, type RezervasyonFormState } from "./actions";
 
+import { buttonClass } from "@/components/ui";
 export type SecilebilirMasa = {
   id: string;
   tableNumber: string;
@@ -76,12 +77,12 @@ export function RezervasyonForm({
       <input type="hidden" name="businessId" value={businessId} />
 
       {durum.error ? (
-        <p className="rounded-control bg-danger-soft px-3 py-2 text-small text-danger-ink">
+        <p className="rounded-control bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
           {durum.error}
         </p>
       ) : null}
       {durum.saved ? (
-        <p className="rounded-control bg-success-soft px-3 py-2 text-small text-success-ink">
+        <p className="rounded-control bg-success-soft px-3 py-2 text-small text-success-ink" role="status">
           {durum.saved}
         </p>
       ) : null}
@@ -94,7 +95,7 @@ export function RezervasyonForm({
             required
             maxLength={120}
             placeholder="Ayşe Yılmaz"
-            className="rounded-control border border-line px-3 py-2 text-body text-ink-strong outline-none focus:border-line-strong"
+            className="rounded-control border border-line px-3 py-2 text-body text-ink-strong outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
           />
         </label>
 
@@ -105,7 +106,7 @@ export function RezervasyonForm({
             inputMode="tel"
             maxLength={20}
             placeholder="05XX XXX XX XX"
-            className="rounded-control border border-line px-3 py-2 text-body text-ink-strong outline-none focus:border-line-strong"
+            className="rounded-control border border-line px-3 py-2 text-body text-ink-strong outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
           />
         </label>
 
@@ -119,7 +120,7 @@ export function RezervasyonForm({
             value={kisiSayisi}
             onChange={(e) => setKisiSayisi(Number(e.target.value) || 1)}
             required
-            className="rounded-control border border-line px-3 py-2 text-body text-ink-strong outline-none focus:border-line-strong"
+            className="rounded-control border border-line px-3 py-2 text-body text-ink-strong outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
           />
         </label>
 
@@ -128,7 +129,7 @@ export function RezervasyonForm({
           <select
             name="kanal"
             defaultValue="telefon"
-            className="rounded-control border border-line px-3 py-2 text-body text-ink-strong outline-none focus:border-line-strong"
+            className="rounded-control border border-line px-3 py-2 text-body text-ink-strong outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
           >
             {Object.entries(REZERVASYON_KANALLARI).map(([deger, etiket]) => (
               <option key={deger} value={deger}>
@@ -145,7 +146,7 @@ export function RezervasyonForm({
             type="datetime-local"
             defaultValue={baslangicVarsayilan}
             required
-            className="rounded-control border border-line px-3 py-2 text-body text-ink-strong outline-none focus:border-line-strong"
+            className="rounded-control border border-line px-3 py-2 text-body text-ink-strong outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
           />
         </label>
 
@@ -156,7 +157,7 @@ export function RezervasyonForm({
             type="datetime-local"
             defaultValue={bitisVarsayilan}
             required
-            className="rounded-control border border-line px-3 py-2 text-body text-ink-strong outline-none focus:border-line-strong"
+            className="rounded-control border border-line px-3 py-2 text-body text-ink-strong outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
           />
         </label>
       </div>
@@ -226,7 +227,7 @@ export function RezervasyonForm({
           rows={2}
           maxLength={500}
           placeholder="Doğum günü, pencere kenarı tercihi…"
-          className="resize-none rounded-control border border-line px-3 py-2 text-body text-ink-strong outline-none focus:border-line-strong"
+          className="resize-none rounded-control border border-line px-3 py-2 text-body text-ink-strong outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
         />
       </label>
 
@@ -234,7 +235,7 @@ export function RezervasyonForm({
         <button
           type="submit"
           disabled={bekliyor || secili.length === 0}
-          className="rounded-control bg-brand px-4 py-2.5 text-small font-semibold text-brand-ink disabled:opacity-50"
+          className={buttonClass({ size: "md" })}
         >
           {bekliyor ? "Kaydediliyor…" : "Rezervasyonu oluştur"}
         </button>

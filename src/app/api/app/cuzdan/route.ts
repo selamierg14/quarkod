@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { gorselAdresi } from "@/lib/gorsel-adres";
-import { guncelKupon } from "@/lib/kupon-kod";
-import { sadakatDurumuHesapla } from "@/lib/sadakat";
-import { appKullaniciGerekli } from "@/lib/app-api";
+import { prisma } from "@/lib/cekirdek/db";
+import { MEKAN_OZETI_SECIMI, mekanOzeti } from "@/lib/isletme/gorsel-adres";
+import { guncelKupon } from "@/lib/biyerlere/kupon-kod";
+import { sadakatDurumuHesapla } from "@/lib/biyerlere/sadakat";
+import { appKullaniciGerekli } from "@/lib/kimlik/app-api";
+import { KUPON_AKTIF } from "@/lib/biyerlere/kupon";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,14 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const oturum = await appKullaniciGerekli(request);
   if ("yanit" in oturum) return oturum.yanit;
+
+  // Kupon ve sadakat kapalı (bkz. lib/biyerlere/kupon.ts). Uç kaldırılmadı,
+  // BOŞ dönüyor: mobil uygulamanın yayındaki sürümleri bu ucu çağırmaya
+  // devam ediyor ve 404 almak onlarda hata ekranı açardı. Boş liste ise
+  // "henüz bir şey yok" olarak zaten doğru çiziliyor.
+  if (!KUPON_AKTIF) {
+    return NextResponse.json({ kuponlar: [], gecmisKuponlar: [], sadakatKartlari: [] });
+  }
 
   const simdi = new Date();
 
@@ -34,7 +43,7 @@ export async function GET(request: Request) {
         discount: true,
         expiresAt: true,
         createdAt: true,
-        business: { select: { id: true, slug: true, name: true, logoUrl: true } },
+        business: { select: MEKAN_OZETI_SECIMI },
       },
     }),
     // Geçmiş: kullanılmış YA DA süresi dolmuş — "şu an ne kullanabilirim"
@@ -52,7 +61,7 @@ export async function GET(request: Request) {
         used: true,
         usedAt: true,
         expiresAt: true,
-        business: { select: { id: true, slug: true, name: true, logoUrl: true } },
+        business: { select: MEKAN_OZETI_SECIMI },
       },
     }),
     // Sadakat damga kartı: her mekan için doğrulanmış ziyaret sayısı.
@@ -67,7 +76,7 @@ export async function GET(request: Request) {
   const isletmeler = isletmeIdleri.length
     ? await prisma.business.findMany({
         where: { id: { in: isletmeIdleri } },
-        select: { id: true, slug: true, name: true, logoUrl: true },
+        select: MEKAN_OZETI_SECIMI,
       })
     : [];
   const isletmeHaritasi = new Map(isletmeler.map((b) => [b.id, b]));
@@ -79,12 +88,7 @@ export async function GET(request: Request) {
         id: k.id,
         indirim: k.discount,
         sonKullanma: k.expiresAt,
-        mekan: {
-          id: k.business.id,
-          slug: k.business.slug,
-          ad: k.business.name,
-          logoUrl: gorselAdresi(k.business.id, "logo", k.business.logoUrl),
-        },
+        mekan: mekanOzeti(k.business),
         // Kasada okutulacak kod ve pencerenin bitişine kalan süre.
         // Mobil taraf geri sayımı gösterip süre bitince listeyi yeniliyor.
         kod,
@@ -97,24 +101,14 @@ export async function GET(request: Request) {
       kullanildi: k.used,
       kullanilmaTarihi: k.usedAt,
       sonKullanma: k.expiresAt,
-      mekan: {
-        id: k.business.id,
-        slug: k.business.slug,
-        ad: k.business.name,
-        logoUrl: gorselAdresi(k.business.id, "logo", k.business.logoUrl),
-      },
+      mekan: mekanOzeti(k.business),
     })),
     sadakatKartlari: ziyaretGruplari
       .map((g) => {
         const isletme = isletmeHaritasi.get(g.businessId);
         if (!isletme) return null;
         return {
-          mekan: {
-            id: isletme.id,
-            slug: isletme.slug,
-            ad: isletme.name,
-            logoUrl: gorselAdresi(isletme.id, "logo", isletme.logoUrl),
-          },
+          mekan: mekanOzeti(isletme),
           ...sadakatDurumuHesapla(g._count._all),
         };
       })

@@ -1,8 +1,9 @@
 import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { createScriptClient } from "./prisma-client";
-import { davetKoduUret } from "../src/lib/davet";
-import { hakEdilenRozetler, type ZiyaretOzeti } from "../src/lib/rozet";
+import { davetKoduUret } from "../src/lib/biyerlere/davet";
+import { hakEdilenRozetler, type ZiyaretOzeti } from "../src/lib/biyerlere/rozet";
+import { USERNAME_MAX, toUsername } from "../src/lib/kimlik/username";
 
 /**
  * Biyerlere'yi (Keşfet/Harita/Cüzdan) "yüzlerce kullanıcısı olan canlı bir
@@ -211,12 +212,27 @@ async function main() {
       });
       bizIdler.push({ id: business.id, tur: isletme.tur, plusOrtagi });
 
+      // Kullanıcı adı panelin KENDİ kuralından geçmeli (en fazla 32
+      // karakter, bkz. lib/kimlik/username.ts). Ham `${slug}.demo`
+      // kullanılırken uzun adlı mekanlar 32'yi aşıyordu ve o hesaplar
+      // panelden DÜZENLENEMEZ hâle geliyordu: form açılıyor, kaydet
+      // deyince kendi kullanıcı adı "geçersiz" diye reddediliyordu.
+      //
+      // KISALTMA SLUG'A UYGULANIYOR, birleşime değil. `toUsername` sağdan
+      // kestiği için `toUsername(`${slug}.demo`)` uzun adlarda tam da
+      // ayırt edici olan eki yiyordu: "anadolu-kavagi-balik-lokantasi.demo"
+      // → "anadolu-kavagi-balik-lokantasi.d". Bu hesap artık demo olarak
+      // tanınmıyor ve demo hesaplarına toplu işlem yapan araçların
+      // (bkz. scripts/iki-asamali-hazirlik.ts) dışında kalıyordu.
+      const EK = ".demo";
+      const demoKullaniciAdi = `${toUsername(slug).slice(0, USERNAME_MAX - EK.length)}${EK}`;
+
       await prisma.user.upsert({
-        where: { username: `${slug}.demo` },
+        where: { username: demoKullaniciAdi },
         create: {
           accountId: hesap.id,
           name: `${isletme.ad} Sahibi`,
-          username: `${slug}.demo`,
+          username: demoKullaniciAdi,
           email: `${slug}.sahip@biyerlere-demo.local`,
           passwordHash: sifreHash,
           role: "owner",

@@ -1,11 +1,13 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { BUSINESS_TYPE_LIST, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/constants";
+import { BUSINESS_TYPE_LIST, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/cekirdek/constants";
 import { createBusiness, type FormState } from "./actions";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
+import { buttonClass } from "@/components/ui";
 
 const INPUT =
-  "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
+  "rounded-control border border-line bg-surface px-3 py-2 text-small text-ink outline-none placeholder:text-ink-faint transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100";
 
 export function NewBusinessForm() {
   const [open, setOpen] = useState(false);
@@ -41,7 +43,7 @@ export function NewBusinessForm() {
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">İşletme adı</span>
-          <input name="name" required className={INPUT} />
+          <input name="name" {...alanOzellikleri("isletmeAdi")} className={INPUT} />
         </label>
 
         <label className="flex flex-col gap-1">
@@ -62,14 +64,14 @@ export function NewBusinessForm() {
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Adres (isteğe bağlı)</span>
-          <input name="address" className={INPUT} />
+          <input name="address" {...alanOzellikleri("adres", { zorunlu: false })} className={INPUT} />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Google yorum linki</span>
           <input
             name="googleReviewUrl"
-            type="url"
+            {...alanOzellikleri("webAdresi", { zorunlu: false })}
             placeholder="https://..."
             className={INPUT}
           />
@@ -102,6 +104,7 @@ export function NewBusinessForm() {
           <span className="text-caption text-ink-muted">Marka rengi</span>
           <input
             name="brandColor"
+            {...alanOzellikleri("renk", { zorunlu: false })}
             type="color"
             defaultValue="#111827"
             className="h-9 w-20 rounded-chip border border-line bg-surface p-1"
@@ -125,26 +128,46 @@ export function NewBusinessForm() {
         <div className="grid gap-3 sm:grid-cols-3">
           <label className="flex flex-col gap-1">
             <span className="text-caption text-ink-muted">Ad soyad</span>
-            <input name="managerName" className={INPUT} />
+            <input
+              name="managerName"
+              {...alanOzellikleri("kisiAdi", { zorunlu: false })}
+              className={INPUT}
+            />
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-caption text-ink-muted">E-posta</span>
-            <input name="managerEmail" type="email" className={INPUT} />
+            <input
+              name="managerEmail"
+              {...alanOzellikleri("eposta", { zorunlu: false })}
+              className={INPUT}
+            />
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-caption text-ink-muted">Kullanıcı adı</span>
-            <input name="managerUsername" autoCapitalize="none" spellCheck={false} className={INPUT} />
+            <input
+              name="managerUsername"
+              {...alanOzellikleri("kullaniciAdi", { zorunlu: false })}
+              autoCapitalize="none"
+              spellCheck={false}
+              className={INPUT}
+            />
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-caption text-ink-muted">Cep telefonu</span>
-            <input name="managerPhone" type="tel" placeholder="05XX XXX XX XX" className={INPUT} />
+            <input
+              name="managerPhone"
+              {...alanOzellikleri("telefon", { zorunlu: false })}
+              placeholder="05XX XXX XX XX"
+              className={INPUT}
+            />
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-caption text-ink-muted">Başlangıç şifresi</span>
             <input
               name="managerPassword"
-              type="text"
+              {...alanOzellikleri("sifre", { zorunlu: false })}
               minLength={8}
+              type="text"
               placeholder="en az 8 karakter"
               className={INPUT}
             />
@@ -153,7 +176,7 @@ export function NewBusinessForm() {
       </fieldset>
 
       {state.error ? (
-        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
+        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
           {state.error}
         </p>
       ) : null}
@@ -162,14 +185,14 @@ export function NewBusinessForm() {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-control bg-accent-600 px-4 py-2.5 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+          className={buttonClass({ size: "md" })}
         >
           {pending ? "Oluşturuluyor..." : "Oluştur"}
         </button>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="rounded-control border border-line px-4 py-2.5 text-small text-ink-soft"
+          className={buttonClass({ variant: "secondary", size: "md" })}
         >
           Vazgeç
         </button>

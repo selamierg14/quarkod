@@ -3,11 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Compass, Map, Wallet, User } from "lucide-react";
+import { KUPON_AKTIF } from "@/lib/biyerlere/kupon";
 
 const SEKMELER = [
   { href: "/kesfet", label: "Keşfet", ikon: Compass },
   { href: "/harita", label: "Harita", ikon: Map },
-  { href: "/cuzdan", label: "Cüzdan", ikon: Wallet },
+  // Kupon ve sadakat kapalıyken cüzdan sekmesi ÇİZİLMİYOR: içeriği yalnızca
+  // kupon ve damga kartıydı, açık bırakmak kullanıcıyı her seferinde boş bir
+  // ekrana götürmek olurdu (bkz. lib/biyerlere/kupon.ts).
+  ...(KUPON_AKTIF ? [{ href: "/cuzdan", label: "Cüzdan", ikon: Wallet }] : []),
   { href: "/profil", label: "Profil", ikon: User },
 ] as const;
 

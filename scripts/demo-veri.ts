@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { createScriptClient } from "./prisma-client";
-import { foldTr } from "../src/lib/text";
-import { shiftFromDate } from "../src/lib/constants";
+import { foldTr } from "../src/lib/cekirdek/text";
+import { shiftFromDate } from "../src/lib/cekirdek/constants";
 
 /**
  * Paneli dolu görmek için geçmişe yayılmış örnek geri bildirim üretir.

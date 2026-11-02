@@ -1,13 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireSuperadmin } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { denetimYaz } from "@/lib/denetim";
-import { haftaBaslangici, gunGirdisi } from "@/lib/gun";
-import { sponsorMu } from "@/lib/sponsorluk";
+import { requireSuperadmin } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { denetimYaz } from "@/lib/rapor/denetim";
+import { haftaBaslangici, gunGirdisi } from "@/lib/cekirdek/gun";
+import { sponsorMu } from "@/lib/biyerlere/sponsorluk";
+import { sayiAlani } from "@/lib/cekirdek/girdi";
 
 const YOL = "/admin/sponsorlar";
+
+/** Tek seferde tanımlanabilecek en fazla push kredisi. */
+const EN_COK_PUSH_KREDISI = 100_000;
 
 /**
  * Bir işletmeyi bu haftanın sponsoru yapar.
@@ -73,17 +77,23 @@ export async function sponsorKaldir(formData: FormData): Promise<void> {
 export async function krediEkle(formData: FormData): Promise<void> {
   const actor = await requireSuperadmin();
   const businessId = String(formData.get("businessId") ?? "");
-  const adet = Number(formData.get("adet") ?? "0");
-  if (!Number.isFinite(adet) || adet <= 0) return;
+  // ÜST SINIR yoktu: `adet: 1e15` kabul edilip bakiyeye ekleniyordu.
+  // Alt sınırı yazıp üstünü atlamak, bu projede tekrar eden hata sınıfı.
+  const adetSonuc = sayiAlani(formData.get("adet"), "Kredi adedi", {
+    enAz: 1,
+    enCok: EN_COK_PUSH_KREDISI,
+  });
+  if (!adetSonuc.ok) return;
+  const adet = adetSonuc.deger;
 
   const business = await prisma.business.update({
     where: { id: businessId },
-    data: { pushKredisi: { increment: Math.floor(adet) } },
+    data: { pushKredisi: { increment: adet } },
     select: { name: true, pushKredisi: true },
   });
 
   await denetimYaz(actor, "platform.pushKredisi", {
-    detail: `${business.name}: +${Math.floor(adet)} push kredisi (yeni bakiye: ${business.pushKredisi})`,
+    detail: `${business.name}: +${adet} push kredisi (yeni bakiye: ${business.pushKredisi})`,
     entity: "Business",
     entityId: businessId,
     accountId: null,

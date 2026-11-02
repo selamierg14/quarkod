@@ -1,10 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { canAccessBusiness, getSession, visibleBusinesses } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { toCsv } from "@/lib/feedback-filters";
-import { gunEkle, gunGirdisi, haftaBaslangici } from "@/lib/gun";
-import { cizelgeyiTabloyaDok } from "@/lib/vardiya-tablo";
-import { izinKumesiKur } from "@/lib/izin";
+import { canAccessBusiness, getSession, visibleBusinesses } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { toCsv } from "@/lib/isletme/feedback-filters";
+import { gunEkle, gunGirdisi, gunGirdisindenTarih, haftaBaslangici } from "@/lib/cekirdek/gun";
+import { trSirala } from "@/lib/cekirdek/text";
+import { cizelgeyiTabloyaDok } from "@/lib/personel/vardiya-tablo";
+import { izinKumesiKur } from "@/lib/isletme/izin";
 
 /**
  * Haftalık vardiya çizelgesini Excel'de açılabilir bir tablo olarak indirir.
@@ -37,11 +38,14 @@ export async function GET(request: NextRequest) {
 
   const baslangicParam = params.get("baslangic");
   const haftaBasi = haftaBaslangici(
-    baslangicParam ? new Date(baslangicParam) : new Date(),
+    baslangicParam && /^\d{4}-\d{2}-\d{2}$/.test(baslangicParam)
+      ? gunGirdisindenTarih(baslangicParam)
+      : new Date(),
   );
+  const sonrakiHafta = gunEkle(haftaBasi, 7);
   const gunler = Array.from({ length: 7 }, (_, i) => gunEkle(haftaBasi, i));
 
-  const [personel, atamalar, izinler] = await Promise.all([
+  const [personelHam, atamalar, izinler] = await Promise.all([
     prisma.user.findMany({
       where: {
         businessId: secili.id,
@@ -52,7 +56,9 @@ export async function GET(request: NextRequest) {
       select: { id: true, name: true },
     }),
     prisma.shiftAssignment.findMany({
-      where: { businessId: secili.id, date: { gte: haftaBasi, lte: gunler[6] } },
+      // Yarı açık aralık: `lte: pazar 00:00` UTC'de saklanmış eski pazar
+      // kayıtlarını (İstanbul 03:00) dışarıda bırakıyordu.
+      where: { businessId: secili.id, date: { gte: haftaBasi, lt: sonrakiHafta } },
       select: { userId: true, date: true, shift: true },
     }),
     // Onaylı izinler dosyada "İzinli" olarak görünsün: çizelgeyi Excel'de
@@ -61,13 +67,14 @@ export async function GET(request: NextRequest) {
       where: {
         businessId: secili.id,
         status: "onaylandi",
-        baslangic: { lte: gunler[6] },
+        baslangic: { lt: sonrakiHafta },
         bitis: { gte: haftaBasi },
       },
       select: { userId: true, baslangic: true, bitis: true, tur: true, status: true },
     }),
   ]);
 
+  const personel = trSirala(personelHam, (p) => p.name);
   const tablo = cizelgeyiTabloyaDok(personel, gunler, atamalar, izinKumesiKur(izinler));
   const dosyaAdi = `vardiya-${slugla(secili.name)}-${gunGirdisi(haftaBasi)}.csv`;
 

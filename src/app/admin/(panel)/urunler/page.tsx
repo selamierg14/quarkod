@@ -1,10 +1,11 @@
-import { ThumbsDown, ThumbsUp } from "lucide-react";
-import { requireAnketErisim, visibleBusinesses } from "@/lib/auth";
-import { EmptyState, SectionCard } from "@/components/ui";
+import { Star, ThumbsDown, ThumbsUp } from "lucide-react";
+import { requireAnketErisim, visibleBusinesses } from "@/lib/kimlik/auth";
+import { PageHeader, SectionCard } from "@/components/ui";
 import { RaporSekmeleri } from "@/components/RaporSekmeleri";
 import { PeriyotFiltre } from "@/components/PeriyotFiltre";
-import { GUVENILIR_OY_SINIRI, enIyiEnKotu, urunPuanlari } from "@/lib/menu";
-import { getItemRatings } from "@/lib/stats";
+import { DonemBos, VARSAYILAN_DONEM_GUN } from "@/components/DonemBos";
+import { GUVENILIR_OY_SINIRI, enIyiEnKotu, urunPuanlari } from "@/lib/isletme/menu";
+import { getItemRatings } from "@/lib/rapor/stats";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,9 @@ export default async function UrunlerPage({
 
   const secili =
     query.isletme && allowedIds.includes(query.isletme) ? [query.isletme] : allowedIds;
-  const gun = DONEMLER.some((d) => String(d.gun) === query.gun) ? Number(query.gun) : 30;
+  const gun = DONEMLER.some((d) => String(d.gun) === query.gun)
+    ? Number(query.gun)
+    : VARSAYILAN_DONEM_GUN;
 
   const satirlar = await getItemRatings(secili, gun);
 
@@ -44,36 +47,31 @@ export default async function UrunlerPage({
   const toplamOy = satirlar.length;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <RaporSekmeleri aktif="urunler" />
 
-      <div>
-        <h1 className="flex items-center gap-2.5 text-title font-semibold">
-          <span
-            aria-hidden="true"
-            className="flex h-9 w-9 items-center justify-center rounded-chip bg-amber-100 text-base text-amber-700 ring-1 ring-amber-200"
-          >
-            ⭐
-          </span>
-          Ürün puanları
-        </h1>
-        <p className="mt-1 text-small text-ink-muted">
-          Müşterilerin tek tek puanladığı ürünler. Genel memnuniyet düşükken
-          sorunun hangi üründe olduğunu buradan görürsünüz.
-        </p>
-      </div>
+      <PageHeader
+        ikon={<Star className="h-4 w-4" aria-hidden="true" />}
+        renk="amber"
+        title="Ürün puanları"
+        description="Müşterilerin tek tek puanladığı ürünler. Genel memnuniyet düşükken sorunun hangi üründe olduğunu buradan görürsünüz."
+      />
 
       <PeriyotFiltre
         baseHref="/admin/urunler"
         businesses={businesses}
         donemler={DONEMLER}
+        varsayilan={VARSAYILAN_DONEM_GUN}
       />
 
       {puanlar.length === 0 ? (
-        <EmptyState>
-          Bu dönemde ürün puanı yok. Müşteriler QR menüden ne aldıklarını seçip
-          puanladıkça burası dolar — menüde ürün tanımlı olduğundan emin olun.
-        </EmptyState>
+        <DonemBos
+          businessIds={secili}
+          gun={gun}
+          taban={`/admin/urunler${query.isletme ? `?isletme=${query.isletme}` : ""}`}
+          donemler={DONEMLER.map((d) => d.gun)}
+          baslik="Bu dönemde ürün puanı yok"
+        />
       ) : (
         <>
           <p className="text-small text-ink-muted">
@@ -121,7 +119,7 @@ export default async function UrunlerPage({
 
           <div className="overflow-hidden rounded-control bg-surface ring-1 ring-line">
             <table className="w-full text-small">
-              <thead className="bg-canvas text-left text-caption text-ink-muted uppercase">
+              <thead className="bg-sunken/70 text-left text-overline font-semibold tracking-wide text-ink-muted uppercase">
                 <tr>
                   <th className="px-4 py-2 font-medium">Ürün</th>
                   <th className="px-4 py-2 text-right font-medium">Oy</th>

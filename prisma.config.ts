@@ -10,6 +10,10 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Migration'lar HAVUZSUZ bağlantıdan geçer: PgBouncer işlem kipinde
+    // çalışıyor ve migration'ların ihtiyaç duyduğu oturum düzeyi
+    // komutlarını (advisory lock, CREATE TYPE) desteklemiyor. Çalışma
+    // zamanı ise DATABASE_URL ile pooler'a bağlanır (bkz. lib/cekirdek/db.ts).
+    url: process.env["DIRECT_URL"] ?? process.env["DATABASE_URL"],
   },
 });

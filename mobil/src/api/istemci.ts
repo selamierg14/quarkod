@@ -62,13 +62,51 @@ export const jetonDeposu = {
   },
 };
 
+/**
+ * Gizli OLMAYAN küçük tercihler (ör. "bildirimlere en son ne zaman
+ * baktı").
+ *
+ * Jetonla aynı depoyu kullanıyor ama ayrı bir kapı: jeton bir kimlik ve
+ * SecureStore'da (Keychain/Keystore) durması şart; bunlar yalnızca
+ * kolaylık verisi. Ayrı tutmak, ileride bu tarafı AsyncStorage'a
+ * taşımayı tek dosyalık bir değişiklik yapıyor — jetonun yanlışlıkla
+ * oraya kaymasına da engel.
+ *
+ * Okuma/yazma HER ZAMAN sessizce başarısız olabiliyor: gizli sekmede
+ * localStorage kapalı, bazı Android cihazlarda Keystore erişilemez
+ * olabiliyor. Tercih kaybolursa varsayılana düşülüyor, uygulama
+ * çalışmaya devam ediyor.
+ */
+export const yerelTercih = {
+  async oku(anahtar: string): Promise<string | null> {
+    try {
+      if (Platform.OS === "web") return globalThis.localStorage?.getItem(anahtar) ?? null;
+      return await SecureStore.getItemAsync(anahtar);
+    } catch {
+      return null;
+    }
+  },
+  async yaz(anahtar: string, deger: string): Promise<void> {
+    try {
+      if (Platform.OS === "web") globalThis.localStorage?.setItem(anahtar, deger);
+      else await SecureStore.setItemAsync(anahtar, deger);
+    } catch {
+      // Tercih kaydedilemedi; bir dahaki açılışta varsayılan geçerli.
+    }
+  },
+};
+
 export type ApiSonuc<T> =
   | { ok: true; veri: T }
   | { ok: false; hata: string; durum: number };
 
 async function istek<T>(
   yol: string,
-  secenekler: { yontem?: "GET" | "POST" | "DELETE"; govde?: unknown; jetonlu?: boolean } = {},
+  secenekler: {
+    yontem?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+    govde?: unknown;
+    jetonlu?: boolean;
+  } = {},
 ): Promise<ApiSonuc<T>> {
   const { yontem = "GET", govde, jetonlu = true } = secenekler;
   const jeton = jetonlu ? await jetonDeposu.oku() : null;
@@ -107,6 +145,12 @@ async function istek<T>(
 export const api = {
   get: <T,>(yol: string) => istek<T>(yol),
   post: <T,>(yol: string, govde?: unknown) => istek<T>(yol, { yontem: "POST", govde }),
+  put: <T,>(yol: string, govde?: unknown) => istek<T>(yol, { yontem: "PUT", govde }),
+  /** Girişsiz iki adımlı akışlar (şifre kurtarma) için. */
+  acikPut: <T,>(yol: string, govde?: unknown) =>
+    istek<T>(yol, { yontem: "PUT", govde, jetonlu: false }),
+  acikPatch: <T,>(yol: string, govde?: unknown) =>
+    istek<T>(yol, { yontem: "PATCH", govde, jetonlu: false }),
   delete: <T,>(yol: string, govde?: unknown) => istek<T>(yol, { yontem: "DELETE", govde }),
   /** Girişsiz uçlar (keşfet listesi, mekan detayı). */
   acikGet: <T,>(yol: string) => istek<T>(yol, { jetonlu: false }),

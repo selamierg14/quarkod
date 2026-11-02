@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { sorunSecenekleri } from "@/lib/anket-detay";
+import { sorunSecenekleri } from "@/lib/isletme/anket-detay";
 import {
   addCategory,
   moveCategory,
@@ -9,6 +9,7 @@ import {
   updateCategoryProblems,
   type FormState,
 } from "../actions";
+import { GonderDugmesi, buttonClass } from "@/components/ui";
 
 type Category = {
   id: string;
@@ -31,21 +32,29 @@ export function CategoryManager({
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Aynı açıklama sayfada iki kez yazıyordu (QA); tek yerde. */}
       <p className="text-small text-ink-muted">
-        Anket ekranında bu başlıklar bu sırayla görünür. Kaldırmak yerine
-        &quot;kapat&quot; deyin — eski kayıtlardaki puanlar korunur. Müşteri bir
-        başlığa 1-2 yıldız verirse, altındaki seçenekler açılır ve sorunun tam
+        Anket ekranında bu başlıklar bu sırayla görünür. Kaldırmak yerine{" "}
+        <strong>kapatın</strong> — eski kayıtlardaki puanlar korunur. Müşteri bir
+        başlığa 1-2 yıldız verirse altındaki seçenekler açılır ve sorunun tam
         yerini işaretleyebilir.
       </p>
 
       <ul className="divide-y divide-line rounded-chip ring-1 ring-line">
         {categories.map((category, index) => (
-          <li key={category.id} className="px-3 py-2">
+          // Kapatılmış kategori aktif olanla aynı görünüyordu; yalnızca düğme
+          // yazısı "Aç" oluyordu (QA). Artık soluk ve etiketli.
+          <li key={category.id} className={`px-3 py-2 ${category.active ? "" : "bg-sunken/50"}`}>
           <div className="flex items-center gap-2">
             <span
-              className={`flex-1 text-small ${category.active ? "" : "text-ink-faint line-through"}`}
+              className={`flex flex-1 items-center gap-2 text-small ${category.active ? "text-ink" : "text-ink-faint"}`}
             >
               {category.name}
+              {category.active ? null : (
+                <span className="rounded-chip bg-sunken px-1.5 py-0.5 text-caption font-medium text-ink-muted ring-1 ring-line">
+                  Kapalı
+                </span>
+              )}
             </span>
 
             <form action={moveCategory}>
@@ -55,7 +64,7 @@ export function CategoryManager({
                 type="submit"
                 disabled={index === 0}
                 aria-label={`${category.name} yukarı taşı`}
-                className="rounded px-2 py-1 text-ink-faint hover:bg-sunken disabled:opacity-30"
+                className={buttonClass({ variant: "ghost", size: "sm", className: "w-8 px-0" })}
               >
                 ↑
               </button>
@@ -67,19 +76,18 @@ export function CategoryManager({
                 type="submit"
                 disabled={index === categories.length - 1}
                 aria-label={`${category.name} aşağı taşı`}
-                className="rounded px-2 py-1 text-ink-faint hover:bg-sunken disabled:opacity-30"
+                className={buttonClass({ variant: "ghost", size: "sm", className: "w-8 px-0" })}
               >
                 ↓
               </button>
             </form>
             <form action={toggleCategory}>
               <input type="hidden" name="categoryId" value={category.id} />
-              <button
-                type="submit"
-                className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas"
-              >
+              <GonderDugmesi
+                className={buttonClass({ variant: "secondary", size: "sm" })}
+      >
                 {category.active ? "Kapat" : "Aç"}
-              </button>
+              </GonderDugmesi>
             </form>
           </div>
 
@@ -99,19 +107,19 @@ export function CategoryManager({
           name="name"
           required
           placeholder="Yeni kategori (örn. Otopark)"
-          className="flex-1 rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong"
+          className="flex-1 rounded-control border border-line bg-surface px-3 py-2 text-small text-ink outline-none placeholder:text-ink-faint transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
         />
         <button
           type="submit"
           disabled={pending}
-          className="rounded-chip bg-accent-600 px-4 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+          className={buttonClass({ size: "md" })}
         >
           Ekle
         </button>
       </form>
 
       {state.error ? (
-        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
+        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
           {state.error}
         </p>
       ) : null}
@@ -156,14 +164,13 @@ function SorunSecenekleri({ kategori }: { kategori: Category }) {
             name="problemOptions"
             defaultValue={kategori.problemOptions ?? mevcut.join(", ")}
             placeholder="Tuvaletler, Masalar, Zemin"
-            className="min-w-56 flex-1 rounded-chip border border-line bg-surface px-3 py-1.5 text-caption outline-none focus:border-line-strong"
+            className="min-w-56 flex-1 rounded-chip border border-line bg-surface px-3 py-1.5 text-caption outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
           />
-          <button
-            type="submit"
-            className="rounded-chip bg-accent-600 px-3 py-1.5 text-caption font-medium text-white transition hover:bg-accent-700"
-          >
+          <GonderDugmesi
+            className={buttonClass({ size: "sm" })}
+      >
             Kaydet
-          </button>
+          </GonderDugmesi>
           <span className="w-full text-caption text-ink-faint">
             Virgülle ayırın. Boş bırakırsanız varsayılana döner.
           </span>

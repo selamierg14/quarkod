@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { cihazAboneliginiKapat } from "@/lib/push-cihaz";
+import { cihazAboneliginiKapat } from "@/lib/altyapi/push-cihaz";
 
 /**
  * Çıkış düğmesi.

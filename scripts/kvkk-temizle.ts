@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { isiCalistir } from "./is-kaydi";
 import { createScriptClient } from "./prisma-client";
-import { CONTACT_RETENTION_DAYS } from "../src/lib/kvkk";
+import { CONTACT_RETENTION_DAYS } from "../src/lib/isletme/kvkk";
 
 /**
  * Saklama süresi dolan iletişim bilgilerini siler.

@@ -1,4 +1,4 @@
-import { SITE_ACIKLAMA, SITE_ADI, iletisimTelefonu, siteUrl } from "@/lib/site";
+import { SITE_ACIKLAMA, SITE_ADI, iletisimTelefonu, siteUrl } from "@/lib/cekirdek/site";
 
 /**
  * Ana sayfanın yapısal verisi (JSON-LD).

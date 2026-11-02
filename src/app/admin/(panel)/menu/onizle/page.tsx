@@ -1,7 +1,7 @@
 import { Lock, Smartphone, Utensils } from "lucide-react";
 import Link from "next/link";
-import { requireMenuErisim } from "@/lib/auth";
-import { EmptyState, PageHeader } from "@/components/ui";
+import { requireMenuErisim } from "@/lib/kimlik/auth";
+import { EmptyState, PageHeader, buttonClass } from "@/components/ui";
 import { IsletmeSecici, MenuSekmeleri } from "../MenuUst";
 import { menuSecimi } from "../_secim";
 
@@ -45,13 +45,13 @@ export default async function MenuOnizlePage({
             <div className="flex flex-wrap justify-center gap-2">
               <Link
                 href="/admin/menu/sablonlar"
-                className="rounded-control bg-gradient-to-r from-accent-600 to-accent-700 px-4 py-2.5 text-small font-semibold text-white shadow-card transition hover:brightness-110"
+                className={buttonClass({ size: "md" })}
               >
                 Hazır şablonlara göz at →
               </Link>
               <Link
                 href="/admin/menu"
-                className="rounded-control border border-line bg-surface px-4 py-2.5 text-small font-medium text-ink-soft transition hover:bg-canvas"
+                className={buttonClass({ variant: "secondary", size: "sm" })}
               >
                 Kendim ekleyeyim
               </Link>
@@ -67,7 +67,7 @@ export default async function MenuOnizlePage({
             aksiyon: (
               <Link
                 href={`/admin/isletmeler/${secili.id}/masalar`}
-                className="rounded-control bg-gradient-to-r from-accent-600 to-accent-700 px-4 py-2.5 text-small font-semibold text-white shadow-card transition hover:brightness-110"
+                className={buttonClass({ size: "md" })}
               >
                 Masalar &amp; QR noktaları →
               </Link>
@@ -76,7 +76,7 @@ export default async function MenuOnizlePage({
         : null;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <MenuSekmeleri aktif="gorunum" />
 
       <PageHeader
@@ -95,11 +95,22 @@ export default async function MenuOnizlePage({
       ) : (
         <>
           {/* Telefon genişliğinde çerçeve: bu ekran zaten yalnızca mobilde açılıyor. */}
-          <div className="mx-auto w-full max-w-sm overflow-hidden rounded-[2rem] bg-surface shadow-pop ring-8 ring-ink">
+          {/* Yükleme göstergesi iframe'in ARKASINDA: iframe boşken saydam,
+              sayfa çizilince göstergeyi örtüyor (QA: 3-4 sn boş beyaz
+              telefon). Yükseklik ekrana sığıyor; 720px sabit yükseklik
+              sayfayı 74px kaydırıyordu. */}
+          <div className="relative mx-auto w-full max-w-sm overflow-hidden rounded-[2rem] bg-surface shadow-pop ring-8 ring-ink">
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-caption text-ink-faint"
+            >
+              <span className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent-600" />
+              Menü yükleniyor…
+            </div>
             <iframe
               src={`/f/${secili.slug}/${encodeURIComponent(onizlemeMasa)}/menu`}
               title="Müşteri gözüyle QR menü"
-              className="h-[720px] w-full"
+              className="relative h-[min(720px,calc(100dvh-15rem))] min-h-[480px] w-full"
             />
           </div>
           <p className="text-center text-caption text-ink-muted">

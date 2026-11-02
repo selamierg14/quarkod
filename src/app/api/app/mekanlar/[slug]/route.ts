@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { mekanDetayGetir } from "@/lib/kesfet-veri";
+import { mekanDetayGetir } from "@/lib/biyerlere/kesfet-veri";
 
 export const dynamic = "force-dynamic";
 
@@ -26,5 +26,11 @@ export async function GET(
     return NextResponse.json({ hata: "Mekan bulunamadı." }, { status: 404 });
   }
 
-  return NextResponse.json({ mekan });
+  // Kimliksiz ve kişiye özel olmayan detay: kenarda paylaşılabilir (bkz.
+  // liste ucundaki gerekçe). Menü ve yorum güncellemesi en fazla ~1 dk
+  // gecikiyor.
+  return NextResponse.json(
+    { mekan },
+    { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } },
+  );
 }

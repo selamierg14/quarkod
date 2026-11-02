@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { requireUser } from "@/lib/auth";
-import { markaStili } from "@/lib/marka";
+import { requireUser } from "@/lib/kimlik/auth";
+import { markaStili } from "@/lib/isletme/marka";
 import { EtkilesimliDemo } from "./StilDemo";
 import {
   Alert,
@@ -106,7 +106,7 @@ const DURUMLAR = [
 ];
 
 const TIPOGRAFI = [
-  { sinif: "text-display", ad: "display · 22px", ornek: "Memnuniyet Paneli" },
+  { sinif: "text-display", ad: "display · 22px", ornek: "Quarkod" },
   { sinif: "text-metric tabular", ad: "metric · 26px", ornek: "4,3 / 128" },
   { sinif: "text-title", ad: "title · 18px", ornek: "Geri bildirimler" },
   { sinif: "text-heading", ad: "heading · 14px", ornek: "Açık şikayetler" },

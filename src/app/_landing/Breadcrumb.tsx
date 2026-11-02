@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { siteUrl } from "@/lib/site";
+import { siteUrl } from "@/lib/cekirdek/site";
 
 export type Adim = { ad: string; href?: string };
 

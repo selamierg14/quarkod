@@ -1,17 +1,26 @@
 import { MessageSquare } from "lucide-react";
 import Link from "next/link";
-import { requireAnketErisim, visibleBusinesses } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { EmptyState, StatusBadge, Stars, formatDateTime } from "@/components/ui";
+import { requireAnketErisim, visibleBusinesses } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { aralikMetni, cubukGosterilsinMi, sayfaDurumu, toplamSayfa } from "@/lib/cekirdek/sayfalama";
+import {
+  Alert,
+  EmptyState,
+  PageHeader,
+  Pagination,
+  StatusBadge,
+  Stars,
+  formatDateTime,
+  buttonClass,
+} from "@/components/ui";
 import { RaporSekmeleri } from "@/components/RaporSekmeleri";
-import { buildFeedbackWhere, type FeedbackQuery } from "@/lib/feedback-filters";
+import { buildFeedbackWhere, type FeedbackQuery } from "@/lib/isletme/feedback-filters";
 import { FilterBar } from "./FilterBar";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Geri bildirimler" };
 
-const PAGE_SIZE = 30;
 
 export default async function FeedbackListPage({
   searchParams,
@@ -21,32 +30,38 @@ export default async function FeedbackListPage({
   const user = await requireAnketErisim();
   const businesses = await visibleBusinesses(user);
   const allowedIds = businesses.map((b) => b.id);
-  const query = await searchParams;
+  const ham = await searchParams;
+  // Başlangıç bitişten sonraysa (15.09 → 01.09) sorgu sessizce "0 kayıt"
+  // dönüyordu (QA). Kullanıcının kastettiği aralık belli: çevirip
+  // uyguluyoruz ve bunu söylüyoruz.
+  const tersAralik = Boolean(ham.baslangic && ham.bitis && ham.baslangic > ham.bitis);
+  const query = tersAralik ? { ...ham, baslangic: ham.bitis, bitis: ham.baslangic } : ham;
 
   // Yetki filtresi burada uygulanır: sorumlu, adres çubuğuna başka bir işletme
   // kimliği yazarak kapsam dışına çıkamaz.
   const where = buildFeedbackWhere(query, allowedIds);
 
-  const page = Math.max(1, Number(query.sayfa ?? 1) || 1);
+  const total = await prisma.feedback.count({ where });
+  // Sayfa boyutu kullanıcının (varsayılan 10); eskiden 30'a sabitti.
+  const durum = sayfaDurumu(query, total);
 
-  const [total, feedbacks] = await Promise.all([
-    prisma.feedback.count({ where }),
-    prisma.feedback.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
-      include: { business: true, table: true },
-    }),
-  ]);
+  const feedbacks = await prisma.feedback.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    skip: durum.skip,
+    take: durum.take,
+    include: { business: true, table: true },
+  });
 
-  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const pageCount = toplamSayfa(total, durum.boyut);
 
   function pageHref(target: number) {
     const next = new URLSearchParams(
       Object.entries(query).filter(([, v]) => v) as [string, string][],
     );
     next.set("sayfa", String(target));
+    // Boyut seçimi sayfa değişince korunuyor.
+    if (durum.boyut !== 10) next.set("boyut", String(durum.boyut));
     return `/admin/geri-bildirimler?${next.toString()}`;
   }
 
@@ -54,16 +69,11 @@ export default async function FeedbackListPage({
     <div className="flex flex-col gap-4">
       <RaporSekmeleri aktif="liste" />
 
-      <div className="flex items-baseline justify-between">
-        <h1 className="flex items-center gap-2.5 text-title font-semibold">
-          <span
-            aria-hidden="true"
-            className="flex h-9 w-9 items-center justify-center rounded-control bg-gradient-to-br from-sky-500 to-sky-700 text-white shadow-md shadow-sky-500/25"
-          >
-            <MessageSquare className="h-4 w-4" />
-          </span>
-          Geri bildirimler
-        </h1>
+      <PageHeader
+        ikon={<MessageSquare className="h-4 w-4" aria-hidden="true" />}
+        renk="sky"
+        title="Geri bildirimler"
+        action={
         <span className="flex items-center gap-3">
           <span className="text-small text-ink-muted">{total} kayıt</span>
           {total > 0 ? (
@@ -73,13 +83,20 @@ export default async function FeedbackListPage({
                   ([key, value]) => value && key !== "sayfa",
                 ) as [string, string][],
               ).toString()}`}
-              className="print-hidden rounded-chip border border-line bg-surface px-3 py-1.5 text-small text-ink-soft hover:bg-canvas"
+              className={buttonClass({ variant: "secondary", size: "sm", className: "print-hidden" })}
             >
               CSV indir
             </a>
           ) : null}
         </span>
-      </div>
+        }
+      />
+
+      {tersAralik ? (
+        <Alert tone="uyari" baslik="Tarih aralığı ters seçilmiş">
+          Başlangıç bitişten sonraydı; {query.baslangic} – {query.bitis} aralığı gösteriliyor.
+        </Alert>
+      ) : null}
 
       <FilterBar
         businesses={businesses.map((b) => ({ id: b.id, name: b.name }))}
@@ -89,19 +106,19 @@ export default async function FeedbackListPage({
       {feedbacks.length === 0 ? (
         <EmptyState>Bu filtrelere uyan kayıt yok.</EmptyState>
       ) : (
-        <div className="overflow-x-auto rounded-control bg-surface ring-1 ring-line">
+        <div className="overflow-x-auto rounded-card bg-surface shadow-card ring-1 ring-line">
           <table className="w-full min-w-[720px] text-small">
-            <thead className="border-b border-line text-left text-caption tracking-wide text-ink-muted uppercase">
+            <thead className="bg-sunken/70 text-left text-overline font-semibold tracking-wide text-ink-muted uppercase">
               <tr>
-                <th className="px-4 py-3 font-medium">Tarih</th>
+                <th className="px-4 py-2 font-medium">Tarih</th>
                 {businesses.length > 1 ? (
-                  <th className="px-4 py-3 font-medium">İşletme</th>
+                  <th className="px-4 py-2 font-medium">İşletme</th>
                 ) : null}
-                <th className="px-4 py-3 font-medium">Masa</th>
-                <th className="px-4 py-3 font-medium">Puan</th>
-                <th className="px-4 py-3 font-medium">Zayıf kategoriler</th>
-                <th className="px-4 py-3 font-medium">Yorum</th>
-                <th className="px-4 py-3 font-medium">Durum</th>
+                <th className="px-4 py-2 font-medium">Masa</th>
+                <th className="px-4 py-2 font-medium">Puan</th>
+                <th className="px-4 py-2 font-medium">Zayıf kategoriler</th>
+                <th className="px-4 py-2 font-medium">Yorum</th>
+                <th className="px-4 py-2 font-medium">Durum</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -115,17 +132,27 @@ export default async function FeedbackListPage({
                   .slice(0, 2);
 
                 return (
-                  <tr key={feedback.id} className="hover:bg-canvas">
-                    <td className="px-4 py-3 whitespace-nowrap text-ink-muted">
+                  <tr
+                    key={feedback.id}
+                    // Satırın tamamı tıklanabilir (QA: üzerine gelince
+                    // vurgulanıyor ama yalnızca tarih ve yorum tıklanıyordu).
+                    // Tarih bağlantısı `after:` ile satırı kaplıyor; ekran
+                    // okuyucuya tek bağlantı kalıyor. Kırmızı şerit yalnızca
+                    // düşük puanda — kırmızının tek anlamı bu.
+                    className={`relative cursor-pointer transition-colors hover:bg-sunken/60 ${
+                      feedback.overallRating <= 2 ? "shadow-[inset_3px_0_0_0_var(--color-danger)]" : ""
+                    }`}
+                  >
+                    <td className="px-4 py-2.5 whitespace-nowrap text-ink-muted">
                       <Link
                         href={`/admin/geri-bildirimler/${feedback.id}`}
-                        className="hover:underline"
+                        className="after:absolute after:inset-0 hover:underline focus-visible:outline-2 focus-visible:outline-accent-600"
                       >
                         {formatDateTime(feedback.createdAt)}
                       </Link>
                     </td>
                     {businesses.length > 1 ? (
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className="px-4 py-2.5 whitespace-nowrap">
                         <span className="flex items-center gap-2">
                           <span
                             className="h-2 w-2 rounded-full"
@@ -135,17 +162,17 @@ export default async function FeedbackListPage({
                         </span>
                       </td>
                     ) : null}
-                    <td className="px-4 py-3 whitespace-nowrap text-ink-muted">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-ink-muted">
                       {feedback.table
                         ? feedback.table.isEntrance
                           ? "Giriş"
-                          : feedback.table.tableNumber
+                          : `Masa ${feedback.table.tableNumber}`
                         : "—"}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-4 py-2.5 whitespace-nowrap">
                       <Stars value={feedback.overallRating} />
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-2.5">
                       {weak.length === 0 ? (
                         <span className="text-rating-empty">—</span>
                       ) : (
@@ -161,15 +188,10 @@ export default async function FeedbackListPage({
                         </span>
                       )}
                     </td>
-                    <td className="max-w-xs px-4 py-3">
-                      <Link
-                        href={`/admin/geri-bildirimler/${feedback.id}`}
-                        className="line-clamp-2 text-ink-soft hover:text-ink"
-                      >
-                        {feedback.comment ?? "—"}
-                      </Link>
+                    <td className="max-w-xs px-4 py-2.5">
+                      <span className="line-clamp-2 text-ink-soft">{feedback.comment ?? "—"}</span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-2.5">
                       <StatusBadge status={feedback.status} />
                     </td>
                   </tr>
@@ -180,28 +202,18 @@ export default async function FeedbackListPage({
         </div>
       )}
 
-      {pageCount > 1 ? (
-        <div className="flex items-center justify-center gap-2 text-small">
-          {page > 1 ? (
-            <Link
-              href={pageHref(page - 1)}
-              className="rounded-chip border border-line px-3 py-1.5 hover:bg-surface"
-            >
-              ← Önceki
-            </Link>
-          ) : null}
-          <span className="text-ink-muted">
-            {page} / {pageCount}
-          </span>
-          {page < pageCount ? (
-            <Link
-              href={pageHref(page + 1)}
-              className="rounded-chip border border-line px-3 py-1.5 hover:bg-surface"
-            >
-              Sonraki →
-            </Link>
-          ) : null}
-        </div>
+      {/* Elle yazılmış önceki/sonraki bloğu ortak bileşene alındı:
+          sayfa boyutu seçici de onunla birlikte geliyor ve panelin
+          tamamında aynı çubuk duruyor. */}
+      {cubukGosterilsinMi(total, durum.boyut) ? (
+        <Pagination
+          sayfa={durum.sayfa}
+          toplamSayfa={pageCount}
+          toplamKayit={total}
+          boyut={durum.boyut}
+          aralik={aralikMetni(durum, total)}
+          href={pageHref}
+        />
       ) : null}
     </div>
   );

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { View, Text, StyleSheet, Linking, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   Easing,
@@ -19,6 +20,7 @@ import {
   SEKME_YUKSEKLIGI,
 } from "../../tasarim";
 import { Basilabilir } from "../../bilesenler/Basilabilir";
+import { AcikRozeti } from "../../bilesenler/AcikRozeti";
 import type { MekanOzet } from "../../api/tipler";
 
 /**
@@ -41,6 +43,7 @@ export function MekanSayfasi({
   onKapat: () => void;
 }) {
   const guvenliAlan = useSafeAreaInsets();
+  const router = useRouter();
   const acilma = useSharedValue(0);
 
   useEffect(() => {
@@ -98,6 +101,14 @@ export function MekanSayfasi({
               : "Henüz puan yok"}
             {mekan.mesafeMetre !== null ? `  ·  ${mesafeYazisi(mekan.mesafeMetre)}` : ""}
           </Text>
+          {/* Panel haritadan ve Keşfet'ten açılıyor; kullanıcı buradan
+              "yol tarifi"ne basıp yola çıkabiliyor. Açıklık tam da bu
+              kararın yanında durmalı — kapalıysa da yazıyor. */}
+          <AcikRozeti
+            durum={mekan.acik}
+            sonrakiAcilis={mekan.sonrakiAcilis}
+            boyut="kucuk"
+          />
         </View>
 
         <Basilabilir style={stiller.kapatButonu} onPress={onKapat} accessibilityLabel="Kapat">
@@ -136,7 +147,15 @@ export function MekanSayfasi({
         <Basilabilir
           style={[stiller.buton, { backgroundColor: renkler.vurgu }]}
           titresim="orta"
-          onPress={onKapat}
+          onPress={() => {
+            // "Detay" düğmesi eskiden yalnızca paneli kapatıyordu — açacak
+            // bir detay sayfası yoktu. Panel kapanıp ardından sayfa
+            // açılıyor: geri dönüldüğünde harita, panelin altında kalmış
+            // eski hâliyle değil temiz hâliyle karşılıyor.
+            const hedef = mekan.slug;
+            onKapat();
+            router.push(`/mekan/${hedef}`);
+          }}
         >
           <Text style={yazi.buton}>Detay</Text>
         </Basilabilir>

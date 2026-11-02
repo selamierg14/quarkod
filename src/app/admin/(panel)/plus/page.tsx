@@ -1,8 +1,9 @@
 import { Crown } from "lucide-react";
-import { requireSuperadmin } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { PageHeader, SectionCard } from "@/components/ui";
-import { plusGecerliMi } from "@/lib/biyerlere-plus";
+import { requireSuperadmin } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { PageHeader, Pagination, SectionCard, buttonClass } from "@/components/ui";
+import { aralikMetni, cubukGosterilsinMi, sayfaDurumu, toplamSayfa } from "@/lib/cekirdek/sayfalama";
+import { plusGecerliMi } from "@/lib/biyerlere/biyerlere-plus";
 import { PlusKaldirButonu, PlusYapForm } from "./PlusForms";
 
 export const dynamic = "force-dynamic";
@@ -16,28 +17,35 @@ export const metadata = { title: "Biyerlere Plus" };
 export default async function PlusPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ara?: string }>;
+  searchParams: Promise<{ ara?: string; sayfa?: string; boyut?: string }>;
 }) {
   await requireSuperadmin();
-  const { ara } = await searchParams;
-  const arama = (ara ?? "").trim();
+  const sorgu = await searchParams;
+  const arama = (sorgu.ara ?? "").trim();
+
+  const kosul = arama
+    ? {
+        OR: [
+          { username: { contains: arama, mode: "insensitive" as const } },
+          { name: { contains: arama, mode: "insensitive" as const } },
+        ],
+      }
+    : { plusUyeMi: true };
+
+  // Eskiden sabit 30 kayıt: 31. Plus üyesi hiçbir ekranda görünmüyordu.
+  const toplam = await prisma.appUser.count({ where: kosul });
+  const durum = sayfaDurumu(sorgu, toplam);
 
   const kullanicilar = await prisma.appUser.findMany({
-    where: arama
-      ? {
-          OR: [
-            { username: { contains: arama, mode: "insensitive" } },
-            { name: { contains: arama, mode: "insensitive" } },
-          ],
-        }
-      : { plusUyeMi: true },
+    where: kosul,
     orderBy: { createdAt: "desc" },
-    take: 30,
+    skip: durum.skip,
+    take: durum.take,
     select: { id: true, username: true, name: true, plusUyeMi: true, plusBitis: true },
   });
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <PageHeader
         ikon={<Crown className="h-4 w-4" aria-hidden="true" />}
         renk="amber"
@@ -57,11 +65,11 @@ export default async function PlusPage({
             name="ara"
             defaultValue={arama}
             placeholder="Kullanıcı adı ya da ad"
-            className="flex-1 rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong"
+            className="flex-1 rounded-control border border-line bg-surface px-3 py-2 text-small text-ink outline-none placeholder:text-ink-faint transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
           />
           <button
             type="submit"
-            className="rounded-control border border-line px-4 py-2 text-small font-medium text-ink-soft hover:bg-canvas"
+            className={buttonClass({ variant: "secondary", size: "sm" })}
           >
             Ara
           </button>
@@ -105,6 +113,23 @@ export default async function PlusPage({
             })}
           </ul>
         )}
+
+      {cubukGosterilsinMi(toplam, durum.boyut) ? (
+        <Pagination
+          sayfa={durum.sayfa}
+          toplamSayfa={toplamSayfa(toplam, durum.boyut)}
+          toplamKayit={toplam}
+          boyut={durum.boyut}
+          aralik={aralikMetni(durum, toplam)}
+          href={(s) =>
+            `/admin/plus?${new URLSearchParams({
+              ...(arama ? { ara: arama } : {}),
+              ...(durum.boyut !== 10 ? { boyut: String(durum.boyut) } : {}),
+              sayfa: String(s),
+            }).toString()}`
+          }
+        />
+      ) : null}
       </SectionCard>
     </div>
   );

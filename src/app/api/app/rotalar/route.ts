@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { appKullaniciOku } from "@/lib/app-api";
-import { rotalariGetir } from "@/lib/rota-veri";
+import { prisma } from "@/lib/cekirdek/db";
+import { appKullaniciOku } from "@/lib/kimlik/app-api";
+import { rotalariGetir } from "@/lib/biyerlere/rota-veri";
 
 export const dynamic = "force-dynamic";
 

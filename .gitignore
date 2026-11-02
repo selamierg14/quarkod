@@ -53,3 +53,6 @@ next-env.d.ts
 
 # Claude Code kişisel ayarları (launch.json paylaşılır, bu paylaşılmaz)
 .claude/settings.local.json
+
+# Geçici test/ölçüm betikleri — asla commit edilmez.
+scripts/.tmp/

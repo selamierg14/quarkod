@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Menu, QrCode } from "lucide-react";
 import { ButtonLink } from "@/components/ui";
-import { SITE_ADI } from "@/lib/site";
+import { SITE_ADI } from "@/lib/cekirdek/site";
 
 const NAV_LINKS = [
   { href: "/#ozellikler", label: "Özellikler" },

@@ -1,7 +1,7 @@
 "use client";
 
-import { CONTACT_RETENTION_DAYS } from "@/lib/kvkk";
-import type { MetinAnahtari } from "@/lib/ceviriler";
+import { CONTACT_RETENTION_DAYS } from "@/lib/isletme/kvkk";
+import type { MetinAnahtari } from "@/lib/cekirdek/ceviriler";
 import { useDil } from "./DilSaglayici";
 
 /** Aydınlatma metninin maddeleri: başlık + gövde anahtarı. */

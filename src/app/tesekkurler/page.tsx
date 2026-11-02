@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
-import { markaStili } from "@/lib/marka";
-import { DENEME_GUN } from "@/lib/deneme";
+import { markaStili } from "@/lib/isletme/marka";
+import { DENEME_GUN } from "@/lib/isletme/deneme";
 import { Footer } from "../_landing/Footer";
 import { Header } from "../_landing/Header";
 

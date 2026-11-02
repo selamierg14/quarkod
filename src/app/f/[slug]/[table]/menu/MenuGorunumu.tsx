@@ -12,11 +12,11 @@ import {
   parseOzelBilesenler,
   parseTags,
   type MenuTag,
-} from "@/lib/menu";
-import { taslakAnahtari, taslakGuncelle, taslakOku } from "@/lib/anket-taslak";
-import { foldTr } from "@/lib/text";
+} from "@/lib/isletme/menu";
+import { taslakAnahtari, taslakGuncelle, taslakOku } from "@/lib/isletme/anket-taslak";
+import { foldTr } from "@/lib/cekirdek/text";
 import { useDil } from "@/components/DilSaglayici";
-import type { MetinAnahtari } from "@/lib/ceviriler";
+import type { MetinAnahtari } from "@/lib/cekirdek/ceviriler";
 
 export type MenuUrun = {
   id: string;

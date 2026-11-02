@@ -1,6 +1,6 @@
 import { ClipboardList, Moon, Plus, Sunrise } from "lucide-react";
-import { requirePersonelYonetimi, visibleBusinesses } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { requirePersonelYonetimi, visibleBusinesses } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
 import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
 import { IsletmeSecici } from "../../menu/MenuUst";
 import { SablonForm } from "./SablonForm";
@@ -34,7 +34,7 @@ export default async function GorevSablonuPage({
   });
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <VardiyaSekmeleri aktif="sablon" />
 
       <PageHeader

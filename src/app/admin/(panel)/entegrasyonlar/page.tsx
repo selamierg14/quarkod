@@ -1,5 +1,5 @@
 import { Plug } from "lucide-react";
-import { requireModul, requireTenantOwner } from "@/lib/auth";
+import { requireModul, requireTenantOwner } from "@/lib/kimlik/auth";
 import { PageHeader } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -51,7 +51,7 @@ export default async function EntegrasyonlarPage() {
   await requireModul("iys");
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <PageHeader
         ikon={<Plug className="h-4 w-4" aria-hidden="true" />}
         renk="teal"

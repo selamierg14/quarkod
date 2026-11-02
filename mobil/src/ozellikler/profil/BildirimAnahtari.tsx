@@ -56,13 +56,13 @@ export function BildirimAnahtari() {
     <Animated.View entering={FadeInDown.delay(160).duration(400).springify()}>
       <View style={[stiller.kap, golge("m")]}>
         <View style={{ flex: 1, gap: 3, minWidth: 0 }}>
-          <Text style={yazi.kartBasligi}>Yakınımdaki fırsatlar</Text>
+          <Text style={yazi.kartBasligi}>Bildirimler</Text>
           <Text style={yazi.kucuk}>
             {desteklenmiyor
               ? "Bu cihazda bildirim açılamıyor (Expo Go/simülatör sınırı)."
               : acik
-                ? "Yakınındaki flaş indirimlerde bildirim alacaksın."
-                : "Yakınında bir mekan flaş indirim başlatınca haberin olsun."}
+                ? "Açık. Hangi bildirimleri alacağını tercihlerden seçebilirsin."
+                : "Fırsatlar, rezervasyon sonucun ve favori mekan duyuruların için aç."}
           </Text>
         </View>
 
@@ -76,7 +76,7 @@ export function BildirimAnahtari() {
             titresim={acik ? "hafif" : "basari"}
             accessibilityRole="switch"
             accessibilityState={{ checked: acik, disabled: desteklenmiyor }}
-            accessibilityLabel="Yakınımdaki fırsat bildirimleri"
+            accessibilityLabel="Bildirim izni"
           >
             <Text style={[yazi.kucuk, acik ? stiller.metinAcik : stiller.metinKapali]}>
               {desteklenmiyor ? "Kapalı" : acik ? "Açık" : "Aç"}

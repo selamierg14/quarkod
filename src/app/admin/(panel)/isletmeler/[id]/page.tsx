@@ -1,5 +1,5 @@
 import { Settings } from "lucide-react";
-import { visibleBusinesses } from "@/lib/auth";
+import { visibleBusinesses } from "@/lib/kimlik/auth";
 import { SectionCard } from "@/components/ui";
 import { AyarlariKopyala } from "./AyarlariKopyala";
 import { SettingsForm } from "./SettingsForm";
@@ -22,7 +22,7 @@ export default async function BusinessSettingsPage({
     .map((b) => ({ id: b.id, name: b.name }));
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <IsletmeUst business={business} aktif="ayarlar" />
 
       <SectionCard
@@ -30,6 +30,9 @@ export default async function BusinessSettingsPage({
         renk="indigo"
         title="İşletme ayarları"
         description="Müşterinin QR'ı okuttuğunda gördüğü isim, görseller, marka rengi ve yönlendirmeler."
+        // Formun altındaki kaydet çubuğu ekrana yapışık (sticky); kartın
+        // `overflow-hidden`'ı bunu engelliyordu.
+        className="overflow-visible!"
       >
         <SettingsForm
           business={{
@@ -39,6 +42,7 @@ export default async function BusinessSettingsPage({
             address: business.address,
             googleReviewUrl: business.googleReviewUrl,
             brandColor: business.brandColor,
+            calismaSaatleri: business.calismaSaatleri,
             notifyThreshold: business.notifyThreshold,
             googleRedirect: business.googleRedirect,
             qrCardText: business.qrCardText,

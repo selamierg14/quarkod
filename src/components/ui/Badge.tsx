@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { FEEDBACK_STATUSES, type FeedbackStatus } from "@/lib/constants";
+import { FEEDBACK_STATUSES, type FeedbackStatus } from "@/lib/cekirdek/constants";
 
 export type BadgeTone = "notr" | "basari" | "uyari" | "hata" | "bilgi" | "vurgu";
 
@@ -31,9 +31,17 @@ export function Badge({
   );
 }
 
+/**
+ * Geri bildirimin İŞ durumu — iyi/kötü değil, "kim bakmalı".
+ *
+ * "Yeni" önceden kırmızıydı: 5 yıldızlı bir övgü de kırmızı rozetle
+ * görünüyor, kırmızı "düşük puan" anlamını yitiriyordu (UI incelemesi).
+ * Kırmızı artık yalnızca düşük puan satırında (TR `vurgu`); yeni kayıt
+ * mavi, incelenen nötr, çözülen yeşil.
+ */
 const STATUS_TONE: Record<FeedbackStatus, BadgeTone> = {
-  yeni: "hata",
-  incelendi: "uyari",
+  yeni: "bilgi",
+  incelendi: "notr",
   cozuldu: "basari",
 };
 

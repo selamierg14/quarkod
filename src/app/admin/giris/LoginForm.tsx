@@ -2,13 +2,15 @@
 
 import { useActionState, useState } from "react";
 import { loginAction, type LoginState } from "./actions";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
 
+import { buttonClass } from "@/components/ui";
 // "use server" dosyaları yalnızca async fonksiyon dışa aktarabilir; başlangıç
 // durumu bu yüzden istemci tarafında duruyor.
 const INITIAL_LOGIN_STATE: LoginState = { step: "kimlik", mode: "giris" };
 
 const INPUT =
-  "w-full rounded-control border border-line bg-surface p-3 text-[16px] outline-none focus:border-line-strong";
+  "w-full rounded-control border border-line bg-surface p-3 text-[16px] outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100";
 
 /**
  * Giriş, 2FA kodu ve şifre sıfırlama tek ekranda.
@@ -43,10 +45,9 @@ export function LoginForm() {
           <input
             id="username"
             name="username"
-            autoComplete="username"
+            {...alanOzellikleri("girisKimligi")}
             autoCapitalize="none"
             spellCheck={false}
-            required
             className={INPUT}
           />
 
@@ -58,9 +59,8 @@ export function LoginForm() {
               <input
                 id="password"
                 name="password"
-                type="password"
+                {...alanOzellikleri("girisSifresi")}
                 autoComplete="current-password"
-                required
                 className={INPUT}
               />
             </>
@@ -84,15 +84,45 @@ export function LoginForm() {
           <input
             id="code"
             name="code"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            pattern="[0-9]{6}"
-            required
+            {...alanOzellikleri("dogrulamaKodu")}
             autoFocus
             placeholder="––––––"
             className={`${INPUT} text-center font-mono text-2xl tracking-[0.4em]`}
           />
+
+          {/* Kodu şu an hangi numaranın tuttuğu istekler arasında burada
+              taşınıyor; sunucu her istekte durumu sıfırdan kuruyor. */}
+          <input type="hidden" name="aktifSira" value={state.aktifSira ?? 0} />
+
+          {/* Kod gelmediyse başka kayıtlı numaraya istemek — yedek
+              numaraların var oluş sebebi. Yalnızca SIRA gönderiliyor;
+              numaranın kendisi istemciye hiç inmiyor (bkz. actions.ts). */}
+          {state.secenekler && state.secenekler.length > 0 ? (
+            <div className="mt-1 flex flex-col gap-1.5">
+              <span className="text-caption text-ink-muted">
+                Kod gelmediyse başka numaranıza isteyin:
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {state.secenekler.map((secenek) => (
+                  <button
+                    key={secenek.sira}
+                    type="submit"
+                    name="yenidenGonder"
+                    value={secenek.sira}
+                    // Kod alanı `required`; bu düğme kodu GÖNDERMİYOR, yeni
+                    // kod İSTİYOR. Doğrulama atlanmazsa tarayıcı "bu alanı
+                    // doldurun" deyip gönderimi engelliyor ve düğme hiç
+                    // çalışmıyordu — üstelik sessizce, çünkü hata balonu
+                    // boş kod alanını işaret ediyor.
+                    formNoValidate
+                    className={buttonClass({ variant: "secondary", size: "sm" })}
+                  >
+                    {secenek.maskeli}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </>
       ) : null}
 
@@ -107,10 +137,8 @@ export function LoginForm() {
           <input
             id="newPassword"
             name="password"
-            type="password"
+            {...alanOzellikleri("sifre")}
             autoComplete="new-password"
-            minLength={8}
-            required
             className={INPUT}
           />
           <label className="text-small text-ink-soft" htmlFor="newPasswordRepeat">
@@ -119,10 +147,8 @@ export function LoginForm() {
           <input
             id="newPasswordRepeat"
             name="passwordRepeat"
-            type="password"
+            {...alanOzellikleri("sifre")}
             autoComplete="new-password"
-            minLength={8}
-            required
             className={INPUT}
           />
         </>
@@ -142,7 +168,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={pending}
-        className="mt-3 rounded-control bg-gradient-to-r from-accent-600 to-accent-700 px-5 py-3.5 font-medium text-white shadow-card transition hover:from-accent-700 hover:to-accent-700 disabled:from-slate-400 disabled:to-slate-400"
+        className={buttonClass({ size: "lg", className: "mt-3" })}
       >
         {pending
           ? "Lütfen bekleyin…"

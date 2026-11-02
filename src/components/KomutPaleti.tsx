@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
-import type { NavGrup } from "@/lib/panel";
+import type { NavGrup } from "@/lib/kimlik/panel";
 
 /**
  * Klavyeden sayfa arama — Ctrl/Cmd + K.
@@ -27,11 +27,11 @@ function hedefleriTopla(gruplar: NavGrup[]): Hedef[] {
       // ama alt linkleriyle aynı adrese düşüyorsa iki kez listelenmesin.
       const adaylar = [
         { href: link.href, label: link.label },
-        ...(link.altLinkler ?? []).map((alt) => ({
+        ...[...(link.altLinkler ?? []), ...(link.sayfalar ?? [])].map((alt) => ({
           href: alt.href,
           // "Kullanıcılar › Ekle" — tek başına "Ekle" hangi modülün
           // eklemesi olduğunu söylemiyordu.
-          label: link.altLinkler ? `${link.label} › ${alt.label}` : alt.label,
+          label: `${link.label} › ${alt.label}`,
         })),
       ];
       for (const aday of adaylar) {
@@ -54,6 +54,18 @@ function aramaAnahtari(metin: string): string {
   return metin
     .toLocaleLowerCase("tr")
     .replace(/[çğıöşü]/g, (h) => ({ ç: "c", ğ: "g", ı: "i", ö: "o", ş: "s", ü: "u" })[h] ?? h);
+}
+
+const AC_OLAYI = "komut-paleti:ac";
+
+/**
+ * Paleti klavye dışında açmak için (üst çubuktaki "Sayfa ara…" düğmesi,
+ * mobil başlıktaki büyüteç). Olay üzerinden: palet layout'ta tek örnek,
+ * düğmeler ise farklı bileşen ağaçlarında — ortak bir state taşımak için
+ * context kurmak bu tek işe göre ağır kalırdı.
+ */
+export function komutPaletiniAc() {
+  window.dispatchEvent(new Event(AC_OLAYI));
 }
 
 export function KomutPaleti({ gruplar }: { gruplar: NavGrup[] }) {
@@ -85,8 +97,17 @@ export function KomutPaleti({ gruplar }: { gruplar: NavGrup[] }) {
         setAcik(false);
       }
     }
+    function disaridanAc() {
+      setAcik(true);
+      setSorgu("");
+      setSecili(0);
+    }
     window.addEventListener("keydown", dinle);
-    return () => window.removeEventListener("keydown", dinle);
+    window.addEventListener(AC_OLAYI, disaridanAc);
+    return () => {
+      window.removeEventListener("keydown", dinle);
+      window.removeEventListener(AC_OLAYI, disaridanAc);
+    };
   }, []);
 
   useEffect(() => {

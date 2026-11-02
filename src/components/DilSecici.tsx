@@ -1,6 +1,6 @@
 "use client";
 
-import { DILLER, DIL_LISTESI } from "@/lib/diller";
+import { DILLER, DIL_LISTESI } from "@/lib/cekirdek/diller";
 import { useDil } from "./DilSaglayici";
 
 /**

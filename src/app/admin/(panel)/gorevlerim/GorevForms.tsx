@@ -1,11 +1,13 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { SHIFTS, type Shift } from "@/lib/constants";
+import { SHIFTS, type Shift } from "@/lib/cekirdek/constants";
 import { shiftNotuEkle, toggleGorev, type GorevFormState } from "./actions";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
+import { buttonClass } from "@/components/ui";
 
 const INPUT =
-  "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
+  "rounded-control border border-line bg-surface px-3 py-2 text-small text-ink outline-none placeholder:text-ink-faint transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100";
 
 /**
  * Tıklayınca hemen (sunucu yanıtını beklemeden) işaretlenen görev satırı.
@@ -110,6 +112,7 @@ export function ShiftNotuFormu({
         <span className="text-caption text-ink-muted">Not</span>
         <input
           name="text"
+          {...alanOzellikleri("not")}
           required
           placeholder="masa 5'te sorun oldu, dikkat..."
           className={`${INPUT} w-full`}
@@ -119,19 +122,19 @@ export function ShiftNotuFormu({
       <button
         type="submit"
         disabled={pending}
-        className="rounded-control bg-accent-600 px-4 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+        className={buttonClass({ size: "md" })}
       >
         {pending ? "Ekleniyor..." : "Ekle"}
       </button>
 
       {state.error ? (
-        <p className="w-full text-caption text-danger">{state.error}</p>
+        <p className="w-full text-caption text-danger" role="alert">{state.error}</p>
       ) : null}
       {/* Alan uncontrolled: sunucu isteği bitince metin kutuda kalıyordu,
           "gitti mi gitmedi mi" izlenimi veriyordu. Ekleme aşağıdaki listede
           zaten görünüyor ama bu satır anlık bir doğrulama sağlıyor. */}
       {state.saved ? (
-        <p className="w-full text-caption text-success-ink">{state.saved}</p>
+        <p className="w-full text-caption text-success-ink" role="status">{state.saved}</p>
       ) : null}
     </form>
   );

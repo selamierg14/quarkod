@@ -1,10 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canAccessBusiness, requireUser, requireYazma } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { gunBaslangici } from "@/lib/gun";
-import { gecerliVardiyaMi } from "@/lib/vardiya";
+import { canAccessBusiness, requireUser, requireYazma } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { gunBaslangici } from "@/lib/cekirdek/gun";
+import { gecerliVardiyaMi } from "@/lib/personel/vardiya";
+import { alanDogrula } from "@/lib/cekirdek/desenler";
 
 export type GorevFormState = { error?: string; saved?: string };
 
@@ -52,15 +53,18 @@ export async function shiftNotuEkle(
   await requireYazma();
   const businessId = String(formData.get("businessId") ?? "");
   const shift = String(formData.get("shift") ?? "");
-  const text = String(formData.get("text") ?? "").trim();
+  // Not sınırsızdı: tek istekle megabaytlarca metin ShiftNote tablosuna
+  // yazılabiliyordu.
+  const notSonuc = alanDogrula(formData.get("text"), "not", "Not", { zorunlu: true });
 
   if (!(await canAccessBusiness(user, businessId))) {
     return { error: "Bu işletmeye erişiminiz yok." };
   }
-  if (!text) return { error: "Not boş olamaz." };
+  if (!notSonuc.ok) return { error: notSonuc.hata };
   if (!gecerliVardiyaMi(shift)) {
     return { error: "Vardiya seçin." };
   }
+  const text = notSonuc.deger;
 
   await prisma.shiftNote.create({
     data: { businessId, date: gunBaslangici(), shift, authorId: user.id, text },

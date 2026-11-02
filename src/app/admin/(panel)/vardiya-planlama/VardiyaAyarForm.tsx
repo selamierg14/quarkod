@@ -3,6 +3,7 @@
 import { Settings } from "lucide-react";
 import { useActionState, useState } from "react";
 import { vardiyaAyarlariniGuncelle, type VardiyaAyarFormState } from "./actions";
+import { buttonClass } from "@/components/ui";
 
 const ALANLAR = [
   { key: "Sabah", label: "Sabah" },
@@ -71,7 +72,7 @@ export function VardiyaAyarForm({
                   type="time"
                   name={`saat${alan.key}`}
                   defaultValue={String(ayarlar[`vardiya${alan.key}Saat`] ?? "")}
-                  className="min-w-0 flex-1 rounded-chip border border-line bg-surface px-2 py-1 text-small outline-none focus:border-line-strong"
+                  className="min-w-0 flex-1 rounded-chip border border-line bg-surface px-2 py-1 text-small outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
                 />
               </label>
             ))}
@@ -86,12 +87,12 @@ export function VardiyaAyarForm({
             <button
               type="submit"
               disabled={pending}
-              className="self-start rounded-control bg-accent-600 px-4 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+              className={buttonClass({ size: "md", className: "self-start" })}
             >
               {pending ? "Kaydediliyor..." : "Kaydet"}
             </button>
-            {state.error ? <p className="text-caption text-danger">{state.error}</p> : null}
-            {state.saved ? <p className="text-caption text-success-ink">{state.saved}</p> : null}
+            {state.error ? <p className="text-caption text-danger" role="alert">{state.error}</p> : null}
+            {state.saved ? <p className="text-caption text-success-ink" role="status">{state.saved}</p> : null}
           </div>
         </form>
       ) : null}

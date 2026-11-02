@@ -2,12 +2,15 @@ import { View, Text, ScrollView, StyleSheet, RefreshControl } from "react-native
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { renkler, yazi, bosluk, yaricap, golge, isima, SEKME_YUKSEKLIGI } from "../../src/tasarim";
+import { renkler, yazi, bosluk, yaricap, SEKME_YUKSEKLIGI } from "../../src/tasarim";
+import { TARA_DUGMESI_PAYI } from "../../src/bilesenler/TaraDugmesi";
 import { useVeri } from "../../src/api/useVeri";
 import type { CuzdanYaniti } from "../../src/api/tipler";
 import { useOturum } from "../../src/store/oturum";
 import { Iskelet } from "../../src/bilesenler/Iskelet";
 import { BosDurum } from "../../src/bilesenler/BosDurum";
+import { KuponBileti } from "../../src/ozellikler/cuzdan/KuponBileti";
+import { SadakatKarti } from "../../src/ozellikler/cuzdan/SadakatKarti";
 
 export default function CuzdanEkrani() {
   const guvenliAlan = useSafeAreaInsets();
@@ -44,7 +47,7 @@ export default function CuzdanEkrani() {
       style={stiller.kap}
       contentContainerStyle={{
         paddingTop: ustBosluk,
-        paddingBottom: SEKME_YUKSEKLIGI + guvenliAlan.bottom + bosluk.xxl,
+        paddingBottom: SEKME_YUKSEKLIGI + guvenliAlan.bottom + TARA_DUGMESI_PAYI,
         gap: bosluk.xl,
       }}
       showsVerticalScrollIndicator={false}
@@ -80,13 +83,8 @@ export default function CuzdanEkrani() {
                 <Animated.View
                   key={kupon.id}
                   entering={FadeInDown.delay(sira * 70).duration(400).springify()}
-                  style={[stiller.kuponKarti, isima(renkler.odul)]}
                 >
-                  <Text style={stiller.kuponBaslik}>{kupon.indirim}</Text>
-                  <Text style={yazi.kucuk}>{kupon.mekan.ad}</Text>
-                  <View style={stiller.kod}>
-                    <Text style={stiller.kodMetni}>{kupon.kod}</Text>
-                  </View>
+                  <KuponBileti kupon={kupon} />
                 </Animated.View>
               ))}
             </View>
@@ -99,32 +97,8 @@ export default function CuzdanEkrani() {
                 <Animated.View
                   key={kart.mekan.id}
                   entering={FadeInDown.delay(sira * 70).duration(400).springify()}
-                  style={[stiller.sadakatKarti, golge("m")]}
                 >
-                  <View style={{ gap: 2 }}>
-                    <Text style={yazi.kartBasligi}>{kart.mekan.ad}</Text>
-                    <Text style={yazi.kucuk}>
-                      {kart.kalanZiyaret > 0
-                        ? `${kart.kalanZiyaret} ziyaret sonra ücretsiz kahve!`
-                        : "Hediyeni almaya hazırsın 🎉"}
-                    </Text>
-                  </View>
-                  <View style={stiller.damgalar}>
-                    {Array.from({ length: kart.esik }, (_, i) => (
-                      <View
-                        key={i}
-                        style={[
-                          stiller.damga,
-                          i < kart.damgaSayisi && stiller.damgaDolu,
-                          i < kart.damgaSayisi && isima(renkler.odul),
-                        ]}
-                      >
-                        <Text style={{ fontSize: 11, opacity: i < kart.damgaSayisi ? 1 : 0.25 }}>
-                          ☕
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
+                  <SadakatKarti kart={kart} sira={sira} />
                 </Animated.View>
               ))}
             </View>
@@ -138,35 +112,4 @@ export default function CuzdanEkrani() {
 const stiller = StyleSheet.create({
   kap: { flex: 1, backgroundColor: renkler.zemin },
   bolum: { paddingHorizontal: bosluk.xl, gap: bosluk.m },
-  kuponKarti: {
-    backgroundColor: renkler.katman,
-    borderRadius: yaricap.xl,
-    padding: bosluk.l,
-    gap: bosluk.s,
-  },
-  kuponBaslik: { ...yazi.kartBasligi, color: renkler.odulParlak },
-  kod: {
-    alignSelf: "flex-start",
-    backgroundColor: renkler.odulSoluk,
-    paddingHorizontal: bosluk.m,
-    paddingVertical: 6,
-    borderRadius: yaricap.s,
-  },
-  kodMetni: { ...yazi.kucuk, color: renkler.odulParlak, letterSpacing: 1.4 },
-  sadakatKarti: {
-    backgroundColor: renkler.katman,
-    borderRadius: yaricap.xl,
-    padding: bosluk.l,
-    gap: bosluk.m,
-  },
-  damgalar: { flexDirection: "row", flexWrap: "wrap", gap: bosluk.s },
-  damga: {
-    width: 30,
-    height: 30,
-    borderRadius: yaricap.tam,
-    backgroundColor: renkler.katmanYuksek,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  damgaDolu: { backgroundColor: renkler.odul },
 });

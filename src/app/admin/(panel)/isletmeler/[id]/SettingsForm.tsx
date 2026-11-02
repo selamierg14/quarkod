@@ -1,14 +1,17 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { ChevronDown } from "lucide-react";
-import { BUSINESS_TYPE_LIST, qrCardText } from "@/lib/constants";
+import { BUSINESS_TYPE_LIST, qrCardText } from "@/lib/cekirdek/constants";
 import { ImageUpload } from "@/components/ImageUpload";
-import { useToast } from "@/components/ui";
+import { useToast, buttonClass } from "@/components/ui";
 import { updateBusiness, type FormState } from "../actions";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
+import { CalismaSaatleri } from "./CalismaSaatleri";
 
 const INPUT =
-  "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
+  "rounded-control border border-line bg-surface px-3 py-2 text-small text-ink outline-none placeholder:text-ink-faint transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100";
 
 // Önceden etiketler `text-caption text-ink-muted` idi: küçük punto +
 // orta-açık gri, ekran görüntüsünde "silik" ve "anlaşılmıyor" diye
@@ -32,6 +35,7 @@ type Business = {
   coverUrl: string | null;
   instagramUrl: string | null;
   wifiSsid: string | null;
+  calismaSaatleri: string | null;
   wifiPassword: string | null;
   announcement: string | null;
   announcementActive: boolean;
@@ -100,10 +104,8 @@ export function SettingsForm({
   const defaultCardText = qrCardText(business.type);
 
   /**
-   * Bu form ekrana sığmayacak kadar uzun ve iki ayrı yerden gönderiliyor:
-   * tepedeki "Görselleri kaydet" ve en alttaki "Kaydet". Sonucu yalnızca
-   * düğmenin yanında göstermek, diğer uçtan gönderen kişiyi sonucu
-   * göremeden bırakıyordu. Kısa bildirim her iki durumda da görünür.
+   * Form ekrana sığmayacak kadar uzun. Sonuç kısa bildirimle (toast)
+   * gösteriliyor ki kaydet çubuğu nerede olursa olsun görünsün.
    */
   const { bildir } = useToast();
   const sonDurum = useRef(state);
@@ -113,6 +115,24 @@ export function SettingsForm({
     if (state.error) bildir(state.error, "hata");
     else if (state.saved) bildir("İşletme ayarları kaydedildi.");
   }, [state, bildir]);
+
+  // Kaydedilmemiş değişiklik uyarısı (QA). Herhangi bir alan değişince
+  // "kirli" sayılıyor; başarılı kayıt temizliyor. Sayfadan çıkarken
+  // tarayıcının kendi onay penceresi çıkıyor.
+  const [kirli, setKirli] = useState(false);
+  const [sonKayit, setSonKayit] = useState(state);
+  if (state !== sonKayit) {
+    setSonKayit(state);
+    if (state.saved) setKirli(false);
+  }
+  useEffect(() => {
+    if (!kirli) return;
+    const uyar = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", uyar);
+    return () => window.removeEventListener("beforeunload", uyar);
+  }, [kirli]);
 
   const sosyalOzet = [
     business.instagramUrl ? "Instagram" : null,
@@ -125,7 +145,11 @@ export function SettingsForm({
   ].filter(Boolean);
 
   return (
-    <form action={formAction} className="flex flex-col gap-3">
+    <form
+      action={formAction}
+      onChange={() => setKirli(true)}
+      className="flex flex-col gap-3"
+    >
       <input type="hidden" name="id" value={business.id} />
 
       {/* Kimlik: her zaman açık. Formun geri kalanı katlanabilir ama bu üçü
@@ -133,7 +157,12 @@ export function SettingsForm({
       <div className="grid gap-3 rounded-control border border-line bg-surface p-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
           <span className={ETIKET}>İşletme adı</span>
-          <input name="name" defaultValue={business.name} required className={INPUT} />
+          <input
+            name="name"
+            {...alanOzellikleri("isletmeAdi")}
+            defaultValue={business.name}
+            className={INPUT}
+          />
         </label>
 
         {isOwner ? (
@@ -151,7 +180,12 @@ export function SettingsForm({
 
         <label className="flex flex-col gap-1 sm:col-span-2">
           <span className={ETIKET}>Adres</span>
-          <input name="address" defaultValue={business.address ?? ""} className={INPUT} />
+          <input
+            name="address"
+            {...alanOzellikleri("adres", { zorunlu: false })}
+            defaultValue={business.address ?? ""}
+            className={INPUT}
+          />
         </label>
       </div>
 
@@ -181,24 +215,13 @@ export function SettingsForm({
           <span className={ETIKET}>Marka rengi</span>
           <input
             name="brandColor"
+            {...alanOzellikleri("renk", { zorunlu: false })}
             type="color"
             defaultValue={business.brandColor}
             className="h-9 w-20 rounded-chip border border-line bg-surface p-1"
           />
         </label>
 
-        {/* Form uzun; görselleri seçen kişi en alttaki kaydet düğmesine
-            kadar kaydırmak istemeyebilir. Aynı formu buradan da gönderir. */}
-        <div className="flex flex-wrap items-center gap-3 border-t border-line pt-3">
-          <button
-            type="submit"
-            disabled={pending}
-            className="rounded-control bg-accent-600 px-4 py-2.5 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
-          >
-            {pending ? "Kaydediliyor..." : "Görselleri kaydet"}
-          </button>
-          <span className={YARDIM}>Aşağıdaki ayarlarla birlikte kaydedilir.</span>
-        </div>
       </Bolum>
 
       <Bolum
@@ -224,7 +247,7 @@ export function SettingsForm({
           <span className={ETIKET}>Google yorum linki</span>
           <input
             name="googleReviewUrl"
-            type="url"
+            {...alanOzellikleri("webAdresi", { zorunlu: false })}
             placeholder="https://search.google.com/local/writereview?placeid=..."
             defaultValue={business.googleReviewUrl ?? ""}
             className={INPUT}
@@ -249,6 +272,17 @@ export function SettingsForm({
             </span>
           </span>
         </label>
+      </Bolum>
+
+      <Bolum
+        baslik="Çalışma saatleri"
+        ozet={business.calismaSaatleri ? "tanımlı" : "girilmedi"}
+      >
+        <p className={YARDIM}>
+          Biyerlere uygulamasında “şu an açık mı” bilgisi buradan geliyor.
+          Girilmezse mekan “kapalı” değil “saati bilinmiyor” olarak görünür.
+        </p>
+        <CalismaSaatleri baslangic={business.calismaSaatleri} />
       </Bolum>
 
       <Bolum baslik="QR kartındaki çağrı metni">
@@ -279,6 +313,7 @@ export function SettingsForm({
             <span className={ETIKET}>İYS marka kodu</span>
             <input
               name="iysBrandCode"
+              {...alanOzellikleri("iysKodu", { zorunlu: false })}
               defaultValue={business.iysBrandCode ?? ""}
               placeholder="ör. 654321"
               className={`${INPUT} w-40`}
@@ -298,7 +333,7 @@ export function SettingsForm({
           <span className={ETIKET}>Instagram linki</span>
           <input
             name="instagramUrl"
-            type="url"
+            {...alanOzellikleri("webAdresi", { zorunlu: false })}
             placeholder="https://instagram.com/kafeniz"
             defaultValue={business.instagramUrl ?? ""}
             className={INPUT}
@@ -313,6 +348,7 @@ export function SettingsForm({
             <span className={ETIKET}>Wi-Fi ağ adı (SSID)</span>
             <input
               name="wifiSsid"
+              {...alanOzellikleri("wifiAdi", { zorunlu: false })}
               defaultValue={business.wifiSsid ?? ""}
               className={INPUT}
             />
@@ -322,6 +358,7 @@ export function SettingsForm({
             <span className={ETIKET}>Wi-Fi şifresi</span>
             <input
               name="wifiPassword"
+              {...alanOzellikleri("wifiSifresi", { zorunlu: false })}
               defaultValue={business.wifiPassword ?? ""}
               className={INPUT}
             />
@@ -337,28 +374,28 @@ export function SettingsForm({
           <div className="grid gap-2 sm:grid-cols-2">
             <input
               name="yemeksepetiUrl"
-              type="url"
+              {...alanOzellikleri("webAdresi", { zorunlu: false })}
               placeholder="Yemeksepeti sayfa linki"
               defaultValue={business.yemeksepetiUrl ?? ""}
               className={INPUT}
             />
             <input
               name="getirUrl"
-              type="url"
+              {...alanOzellikleri("webAdresi", { zorunlu: false })}
               placeholder="Getir sayfa linki"
               defaultValue={business.getirUrl ?? ""}
               className={INPUT}
             />
             <input
               name="trendyolUrl"
-              type="url"
+              {...alanOzellikleri("webAdresi", { zorunlu: false })}
               placeholder="Trendyol Yemek linki"
               defaultValue={business.trendyolUrl ?? ""}
               className={INPUT}
             />
             <input
               name="migrosUrl"
-              type="url"
+              {...alanOzellikleri("webAdresi", { zorunlu: false })}
               placeholder="Migros Yemek linki"
               defaultValue={business.migrosUrl ?? ""}
               className={INPUT}
@@ -371,12 +408,23 @@ export function SettingsForm({
         </div>
       </Bolum>
 
+      {/* Bu, menünün tepesindeki TEK SATIRLIK şerit. Görselli, tarihli
+          duyuru kartları ayrı bir modül (Duyurular). QA iki sistemin
+          karıştığını söyledi; ad ve açıklama artık farkı söylüyor. */}
       <Bolum
-        baslik="Duyuru"
+        baslik="Menü şeridi"
         ozet={business.announcementActive ? "yayında" : "kapalı"}
       >
+        <p className={YARDIM}>
+          QR menünün en üstünde tek satırlık kısa bir not. Görselli ve tarih
+          aralığına bağlı duyurular için{" "}
+          <Link href="/admin/duyurular" className="font-medium text-accent-700 hover:underline">
+            Duyurular sayfasını
+          </Link>{" "}
+          kullanın.
+        </p>
         <label className="flex flex-col gap-1">
-          <span className={ETIKET}>QR menünün tepesinde görünen duyuru</span>
+          <span className={ETIKET}>Şerit metni</span>
           <input
             name="announcement"
             defaultValue={business.announcement ?? ""}
@@ -398,7 +446,7 @@ export function SettingsForm({
             className="mt-0.5 h-4 w-4"
           />
           <span className="text-small">
-            <span className="font-medium text-ink">Duyuruyu menüde göster</span>
+            <span className="font-medium text-ink">Şeridi menüde göster</span>
             <span className={`mt-0.5 block ${YARDIM}`}>
               Kapalıyken müşteri şeridi görmez.
             </span>
@@ -406,24 +454,25 @@ export function SettingsForm({
         </label>
       </Bolum>
 
-      {state.error ? (
-        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
-          {state.error}
-        </p>
-      ) : null}
-      {state.saved ? (
-        <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink">
-          Kaydedildi.
-        </p>
-      ) : null}
-
-      <button
-        type="submit"
-        disabled={pending}
-        className="self-start rounded-control bg-accent-600 px-4 py-2.5 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
-      >
-        {pending ? "Kaydediliyor..." : "Kaydet"}
-      </button>
+      {/* TEK kaydet, ekranın altına yapışık: form uzun olduğu için ortada
+          ikinci bir "Görselleri kaydet" düğmesi vardı (QA: iki ayrı düğme
+          kafa karıştırıyordu). Çubuk her kaydırma konumunda görünür. */}
+      <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center gap-3 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur">
+        <button type="submit" disabled={pending} className={buttonClass({ size: "md" })}>
+          {pending ? "Kaydediliyor…" : "Kaydet"}
+        </button>
+        {state.error ? (
+          <span className="text-small font-medium text-danger-ink" role="alert">
+            {state.error}
+          </span>
+        ) : kirli ? (
+          <span className="text-small text-warning-ink">Kaydedilmemiş değişiklik var.</span>
+        ) : state.saved ? (
+          <span className="text-small text-success-ink" role="status">
+            Kaydedildi.
+          </span>
+        ) : null}
+      </div>
     </form>
   );
 }

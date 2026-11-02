@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getSession } from "@/lib/auth";
-import { toCsv } from "@/lib/feedback-filters";
-import { gunEkle, gunGirdisi, haftaBaslangici } from "@/lib/gun";
-import { cizelgeyiTabloyaDok, IZINLI_ETIKETI } from "@/lib/vardiya-tablo";
-import { SHIFTS } from "@/lib/constants";
+import { getSession } from "@/lib/kimlik/auth";
+import { toCsv } from "@/lib/isletme/feedback-filters";
+import { gunEkle, gunGirdisi, haftaBaslangici } from "@/lib/cekirdek/gun";
+import { cizelgeyiTabloyaDok, IZINLI_ETIKETI } from "@/lib/personel/vardiya-tablo";
+import { SHIFTS } from "@/lib/cekirdek/constants";
 
 /**
  * İçe aktarmanın kabul ettiği biçimi gösteren, gerçek veri taşımayan

@@ -1,7 +1,7 @@
 import { Store } from "lucide-react";
 import Link from "next/link";
 import { TabLink } from "@/components/ui";
-import { BUSINESS_TYPES, type BusinessType } from "@/lib/constants";
+import { BUSINESS_TYPES, type BusinessType } from "@/lib/cekirdek/constants";
 
 /**
  * İşletme ekranlarının ortak başlığı ve sekmeleri.

@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { createScriptClient } from "./prisma-client";
-import { foldTr } from "../src/lib/text";
+import { foldTr } from "../src/lib/cekirdek/text";
 
 /**
  * commentSearch alanı sonradan eklendiği için eski kayıtlarda boş. Bu script

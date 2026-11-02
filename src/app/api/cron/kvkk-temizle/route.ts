@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { CONTACT_RETENTION_DAYS } from "@/lib/kvkk";
-import { cronCalistir, cronYetkiliMi } from "@/lib/cron";
+import { prisma } from "@/lib/cekirdek/db";
+import { CONTACT_RETENTION_DAYS } from "@/lib/isletme/kvkk";
+import { cronCalistir, cronYetkiliMi } from "@/lib/altyapi/cron";
+import { pruneLoginAttempts } from "@/lib/kimlik/login-guard";
+import { eskiIptalleriTemizle } from "@/lib/kimlik/jeton-iptal";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +47,16 @@ export async function GET(request: Request) {
       },
     });
 
-    return `${result.count} kayıt temizlendi.`;
+    // Sayaç tablosunun günlük budaması da buraya bağlı. Önceden yalnızca
+    // PANEL GİRİŞİNDE tetikleniyordu; oysa aynı tabloya artık hız sınırı da
+    // yazıyor (kayıt, ziyaret, metrik uçları — bkz. lib/kimlik/hiz-siniri.ts).
+    // Panele kimse girmediği bir haftada tablo sınırsız büyüyordu.
+    const budanan = await pruneLoginAttempts().catch(() => 0);
+    // Süresi dolmuş jetonların iptal kayıtları: jeton zaten geçersiz,
+    // satırın işi bitti.
+    const iptal = await eskiIptalleriTemizle().catch(() => 0);
+
+    return `${result.count} kayıt temizlendi, ${budanan ?? 0} eski sayaç satırı, ${iptal} eski jeton iptali budandı.`;
   });
 
   return NextResponse.json({ ok, detay }, { status: ok ? 200 : 500 });

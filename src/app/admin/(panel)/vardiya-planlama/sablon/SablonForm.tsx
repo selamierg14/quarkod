@@ -2,9 +2,11 @@
 
 import { useActionState } from "react";
 import { gorevEkle, type SablonFormState } from "./actions";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
+import { buttonClass } from "@/components/ui";
 
 const INPUT =
-  "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
+  "rounded-control border border-line bg-surface px-3 py-2 text-small text-ink outline-none placeholder:text-ink-faint transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100";
 
 export function SablonForm({ businessId }: { businessId: string }) {
   const [state, formAction, pending] = useActionState<SablonFormState, FormData>(
@@ -28,6 +30,7 @@ export function SablonForm({ businessId }: { businessId: string }) {
         <span className="text-caption text-ink-muted">Görev</span>
         <input
           name="label"
+          {...alanOzellikleri("kisaBaslik")}
           required
           placeholder="Buzdolabı sıcaklığı kontrol edildi"
           className={`${INPUT} w-full`}
@@ -37,14 +40,14 @@ export function SablonForm({ businessId }: { businessId: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-control bg-accent-600 px-4 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+        className={buttonClass({ size: "md" })}
       >
         {pending ? "Ekleniyor..." : "Ekle"}
       </button>
 
-      {state.error ? <p className="w-full text-caption text-danger">{state.error}</p> : null}
+      {state.error ? <p className="w-full text-caption text-danger" role="alert">{state.error}</p> : null}
       {state.saved ? (
-        <p className="w-full text-caption text-success-ink">{state.saved}</p>
+        <p className="w-full text-caption text-success-ink" role="status">{state.saved}</p>
       ) : null}
     </form>
   );

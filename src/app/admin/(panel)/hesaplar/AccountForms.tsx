@@ -1,8 +1,8 @@
 "use client";
 
-import { MODULLER, MODUL_ANAHTARLARI } from "@/lib/moduller";
+import { MODULLER, MODUL_ANAHTARLARI } from "@/lib/kimlik/moduller";
 import { useActionState, useState } from "react";
-import { TarihGirdisi } from "@/components/ui";
+import { TarihGirdisi, GonderDugmesi, SilDugmesi, buttonClass } from "@/components/ui";
 import {
   createAccount,
   enterAccount,
@@ -10,12 +10,13 @@ import {
   updateSubscription,
   type AccountFormState,
 } from "./actions";
+import { alanOzellikleri } from "@/lib/cekirdek/desenler";
 
 const INPUT =
-  "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
+  "rounded-control border border-line bg-surface px-3 py-2 text-small text-ink outline-none placeholder:text-ink-faint transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100";
 
-export function NewAccountForm() {
-  const [open, setOpen] = useState(false);
+export function NewAccountForm({ acikBasla = false }: { acikBasla?: boolean }) {
+  const [open, setOpen] = useState(acikBasla);
   const [state, formAction, pending] = useActionState<AccountFormState, FormData>(
     createAccount,
     {},
@@ -26,9 +27,9 @@ export function NewAccountForm() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="self-start rounded-control border border-dashed border-line-strong px-4 py-3 text-small text-ink-soft hover:bg-surface"
+        className={buttonClass({ size: "sm" })}
       >
-        + Yeni müşteri hesabı aç
+        + Yeni hesap
       </button>
     );
   }
@@ -36,9 +37,9 @@ export function NewAccountForm() {
   return (
     <form
       action={formAction}
-      className="flex flex-col gap-3 rounded-control bg-surface p-5 ring-1 ring-line"
+      className="flex flex-col gap-3 rounded-card bg-surface p-4 shadow-card ring-1 ring-line"
     >
-      <h2 className="font-semibold tracking-tight">Yeni hesap</h2>
+      <h2 className="text-body font-semibold text-ink">Yeni hesap</h2>
       <p className="text-small text-ink-muted">
         Hesap ve ilk sahibi birlikte açılır. Sahibi daha sonra kendi
         işletmelerini ve sorumlularını kendisi ekler.
@@ -47,23 +48,24 @@ export function NewAccountForm() {
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Hesap adı (firma/zincir)</span>
-          <input name="name" required className={INPUT} />
+          <input name="name" {...alanOzellikleri("isletmeAdi")} className={INPUT} />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Sahibinin adı</span>
-          <input name="ownerName" required className={INPUT} />
+          <input name="ownerName" {...alanOzellikleri("kisiAdi")} className={INPUT} />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Sahibinin e-postası</span>
-          <input name="ownerEmail" type="email" required className={INPUT} />
+          <input name="ownerEmail" {...alanOzellikleri("eposta")} className={INPUT} />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Kullanıcı adı (giriş için)</span>
           <input
             name="ownerUsername"
+            {...alanOzellikleri("kullaniciAdi", { zorunlu: false })}
             autoCapitalize="none"
             spellCheck={false}
             placeholder="boş bırakılırsa e-postadan türetilir"
@@ -75,13 +77,19 @@ export function NewAccountForm() {
           <span className="text-caption text-ink-muted">
             Cep telefonu (doğrulama kodu)
           </span>
-          <input name="ownerPhone" type="tel" required placeholder="05XX XXX XX XX" className={INPUT} />
+          <input
+            name="ownerPhone"
+            {...alanOzellikleri("telefon")}
+            placeholder="05XX XXX XX XX"
+            className={INPUT}
+          />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Başlangıç şifresi</span>
           <input
             name="password"
+            {...alanOzellikleri("sifre")}
             type="text"
             required
             minLength={8}
@@ -103,12 +111,12 @@ export function NewAccountForm() {
       </div>
 
       {state.error ? (
-        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
+        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
           {state.error}
         </p>
       ) : null}
       {state.saved ? (
-        <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink">
+        <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink" role="status">
           {state.saved}
         </p>
       ) : null}
@@ -117,14 +125,14 @@ export function NewAccountForm() {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-control bg-accent-600 px-4 py-2.5 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+          className={buttonClass({ size: "md" })}
         >
           {pending ? "Açılıyor..." : "Hesabı aç"}
         </button>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="rounded-control border border-line px-4 py-2.5 text-small text-ink-soft"
+          className={buttonClass({ variant: "secondary", size: "md" })}
         >
           Kapat
         </button>
@@ -137,21 +145,24 @@ export function NewAccountForm() {
 export function EnterAccountButton({
   accountId,
   active,
+  etiket = "Görüntüle",
 }: {
   accountId: string;
   active: boolean;
+  etiket?: string;
 }) {
   return (
     <form action={enterAccount}>
       <input type="hidden" name="accountId" value={accountId} />
-      <button
-        type="submit"
+      {/* İkincil düğme: her satırda dolu mor bir düğme tekrar ettiğinde
+          sayfanın asıl eylemi kayboluyordu (UI incelemesi). */}
+      <GonderDugmesi
         disabled={!active}
-        title={active ? undefined : "Askıdaki hesabın paneline girilemez"}
-        className="rounded-chip bg-accent-600 px-3 py-1.5 text-caption font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-300"
+        title={active ? "Paneli bu müşterinin gözünden aç" : "Askıdaki hesabın paneline girilemez"}
+        className={buttonClass({ variant: "secondary", size: "sm" })}
       >
-        Bu hesabı görüntüle
-      </button>
+        {etiket}
+      </GonderDugmesi>
     </form>
   );
 }
@@ -166,17 +177,26 @@ export function ToggleAccountButton({
   return (
     <form action={toggleAccount}>
       <input type="hidden" name="accountId" value={accountId} />
-      <button
-        type="submit"
-        title={
-          active
-            ? "Askıya alınınca kullanıcılar giremez ve QR'lar çalışmaz; veri silinmez."
-            : "Hesabı yeniden aktif et"
-        }
-        className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas"
-      >
-        {active ? "Askıya al" : "Aktifleştir"}
-      </button>
+      {active ? (
+        // Askıya almak müşterinin bütün kullanıcılarını dışarıda bırakıp
+        // QR'larını durduruyor: kırmızı ve iki adımlı (UI incelemesi —
+        // "riskli ama nötr görünüyor").
+        <SilDugmesi
+          title="Askıya alınınca kullanıcılar giremez ve QR'lar çalışmaz; veri silinmez."
+          className={buttonClass({ variant: "secondary", size: "sm", className: "text-danger-ink" })}
+          onayClassName="bg-danger! text-white! ring-danger!"
+          onayMetni="Askıya alınsın mı? Kullanıcılar giremez."
+        >
+          Askıya al
+        </SilDugmesi>
+      ) : (
+        <GonderDugmesi
+          title="Hesabı yeniden aktif et"
+          className={buttonClass({ variant: "secondary", size: "sm" })}
+        >
+          Aktifleştir
+        </GonderDugmesi>
+      )}
     </form>
   );
 }
@@ -242,6 +262,7 @@ export function SubscriptionForm({
         <span className="text-caption text-ink-muted">İYS hizmet sağlayıcı kodu</span>
         <input
           name="iysCode"
+          {...alanOzellikleri("iysKodu", { zorunlu: false })}
           defaultValue={iysCode}
           placeholder="ör. 123456"
           className={`${INPUT} w-36 py-1.5`}
@@ -256,9 +277,9 @@ export function SubscriptionForm({
         {pending ? "Kaydediliyor…" : "Kaydet"}
       </button>
 
-      <span className="pb-2 text-caption">
-        {state.error ? <span className="text-danger">{state.error}</span> : null}
-        {state.saved ? <span className="text-success-ink">{state.saved}</span> : null}
+      <span className="pb-2 text-caption" role="alert">
+        {state.error ? <span className="text-danger" role="alert">{state.error}</span> : null}
+        {state.saved ? <span className="text-success-ink" role="status">{state.saved}</span> : null}
         {!state.error && !state.saved ? (
           <span className="text-ink-faint">
             Boş bırakılırsa süresiz. Tarih geçince QR kodları çalışmaz.
@@ -320,7 +341,7 @@ function GecerlilikAlani({
             key={k.ay}
             type="button"
             onClick={() => setDeger(ayEkle(k.ay))}
-            className="rounded-chip border border-line bg-surface px-2 py-1 text-caption text-ink-soft hover:bg-canvas"
+            className={buttonClass({ variant: "secondary", size: "sm" })}
           >
             +{k.etiket}
           </button>

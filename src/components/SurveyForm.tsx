@@ -4,14 +4,14 @@ import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from
 import Link from "next/link";
 import { StarRating } from "./StarRating";
 import { ImageUpload } from "./ImageUpload";
-import { taslakAnahtari, taslakOku, taslakSil, taslakYaz } from "@/lib/anket-taslak";
-import { DUSUK_PUAN, secenekAnahtari } from "@/lib/anket-detay";
+import { taslakAnahtari, taslakOku, taslakSil, taslakYaz } from "@/lib/isletme/anket-taslak";
+import { DUSUK_PUAN, secenekAnahtari } from "@/lib/isletme/anket-detay";
 import { useDil } from "./DilSaglayici";
 import { KvkkNotice } from "./KvkkNotice";
-import { CONTACT_RETENTION_DAYS, CONTACT_TYPES, type ContactType } from "@/lib/kvkk";
+import { CONTACT_RETENTION_DAYS, CONTACT_TYPES, type ContactType } from "@/lib/isletme/kvkk";
 import { markGoogleClick, recordSurveyStart, submitFeedback } from "@/app/f/[slug]/[table]/actions";
-import { BIYERLERE_JETON_ANAHTARI } from "@/lib/biyerlere-jeton";
-import type { MetinAnahtari } from "@/lib/ceviriler";
+import { BIYERLERE_JETON_ANAHTARI } from "@/lib/biyerlere/biyerlere-jeton";
+import type { MetinAnahtari } from "@/lib/cekirdek/ceviriler";
 
 type Props = {
   slug: string;

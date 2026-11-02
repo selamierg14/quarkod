@@ -1,17 +1,16 @@
-import { requireUser, visibleBusinesses } from "@/lib/auth";
-import { getActiveAccount } from "@/lib/impersonation";
+import { requireUser, visibleBusinesses } from "@/lib/kimlik/auth";
+import { getActiveAccount } from "@/lib/kimlik/impersonation";
 import { exitAccount } from "./hesaplar/actions";
 import { logout } from "../giris/actions";
 import { AdminSidebar } from "@/components/AdminSidebar";
-import { BildirimZili } from "@/components/BildirimZili";
 import { KomutPaleti } from "@/components/KomutPaleti";
 import { PersonelKabuk } from "@/components/PersonelKabuk";
-import { ProfilAvatarButton } from "@/components/ProfilAvatarButton";
-import { prisma } from "@/lib/db";
-import { ROL_ADLARI } from "@/lib/constants";
-import { abonelikUyarisi } from "@/lib/abonelik";
+import { UstCubuk } from "@/components/UstCubuk";
+import { prisma } from "@/lib/cekirdek/db";
+import { ROL_ADLARI } from "@/lib/cekirdek/constants";
+import { abonelikUyarisi } from "@/lib/isletme/abonelik";
 import { ToastProvider } from "@/components/ui";
-import { panelMenusu, panelModu } from "@/lib/panel";
+import { panelMenusu, panelModu } from "@/lib/kimlik/panel";
 
 export const dynamic = "force-dynamic";
 
@@ -81,10 +80,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
             aramak yerine buradan tek tıkla gidilsin. Mobilde bu rozet
             AdminSidebar'ın kendi başlık çubuğunda — burada tekrar
             göstermek iki üst üste çubuk demek olurdu. */}
-        <div className="print-hidden hidden items-center justify-end gap-1.5 border-b border-line bg-surface px-4 py-2.5 lg:flex lg:px-8">
-          <BildirimZili />
-          <ProfilAvatarButton ad={user.name} />
-        </div>
+        <UstCubuk gruplar={gruplar} ad={user.name} />
 
         {/* Platform yöneticisi bir kiracıyı görüntülüyorsa bu bant hep üstte
             durur: yanlışlıkla müşterinin verisinde işlem yapmayı önler.
@@ -124,7 +120,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
             Vardiya çizelgesi) kalan tüm genişliği kullansın diye kaldırıldı
             — kutuya sıkışmış görünüyordu. Mobilde zaten viewport dar olduğu
             için etkisi yok. */}
-        <main id="icerik" className="w-full flex-1 px-4 py-6 lg:px-8 lg:py-8">
+        <main id="icerik" className="w-full flex-1 px-4 py-5 lg:px-6 lg:py-6">
           {children}
         </main>
       </div>

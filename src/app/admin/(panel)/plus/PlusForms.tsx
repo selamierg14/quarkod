@@ -2,9 +2,10 @@
 
 import { useActionState } from "react";
 import { plusKaldir, plusYap, type PlusFormState } from "./actions";
+import { GonderDugmesi, buttonClass } from "@/components/ui";
 
 const INPUT =
-  "rounded-chip border border-line bg-surface px-2.5 py-1.5 text-caption outline-none focus:border-line-strong";
+  "rounded-chip border border-line bg-surface px-2.5 py-1.5 text-caption outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100";
 
 export function PlusYapForm({ appUserId }: { appUserId: string }) {
   const [state, formAction, pending] = useActionState<PlusFormState, FormData>(plusYap, {});
@@ -24,11 +25,11 @@ export function PlusYapForm({ appUserId }: { appUserId: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-chip bg-accent-600 px-2.5 py-1 text-caption font-medium text-white hover:bg-accent-700 disabled:bg-slate-400"
+        className={buttonClass({ size: "sm" })}
       >
         {pending ? "..." : "Plus yap"}
       </button>
-      {state.error ? <span className="text-caption text-danger">{state.error}</span> : null}
+      {state.error ? <span className="text-caption text-danger" role="alert">{state.error}</span> : null}
     </form>
   );
 }
@@ -37,12 +38,11 @@ export function PlusKaldirButonu({ appUserId }: { appUserId: string }) {
   return (
     <form action={plusKaldir}>
       <input type="hidden" name="appUserId" value={appUserId} />
-      <button
-        type="submit"
+      <GonderDugmesi
         className="rounded-chip px-2.5 py-1 text-caption text-ink-faint hover:text-danger"
       >
         Kaldır
-      </button>
+      </GonderDugmesi>
     </form>
   );
 }

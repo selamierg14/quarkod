@@ -10,7 +10,8 @@ import {
   MAX_RAW_UPLOAD_BYTES,
   MENU_MAX_DIM,
   type ImageKind,
-} from "@/lib/image";
+} from "@/lib/isletme/image";
+import { buttonClass } from "@/components/ui";
 
 /**
  * Görsel yükleme alanı.
@@ -121,7 +122,7 @@ export function ImageUpload({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={busy}
-            className="rounded-chip border border-line bg-surface px-3 py-1.5 text-small text-ink-soft hover:bg-canvas disabled:opacity-60"
+            className={buttonClass({ variant: "secondary", size: "sm" })}
           >
             {t(busy ? "gorsel.isleniyor" : value ? "gorsel.degistir" : "gorsel.sec")}
           </button>

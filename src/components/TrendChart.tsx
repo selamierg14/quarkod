@@ -1,4 +1,4 @@
-import type { TrendPoint } from "@/lib/stats";
+import type { TrendPoint } from "@/lib/rapor/stats";
 
 /**
  * Haftalık ortalama puan grafiği. Harici grafik kütüphanesi yok — düz SVG,

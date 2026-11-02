@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { siteUrl } from "@/lib/site";
+import { siteUrl } from "@/lib/cekirdek/site";
 
 /**
  * Arama motoru kuralları.

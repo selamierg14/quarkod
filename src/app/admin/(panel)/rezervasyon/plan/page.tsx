@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { LayoutGrid } from "lucide-react";
-import { requireRezervasyonErisim, visibleBusinesses } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
+import { requireRezervasyonErisim, visibleBusinesses } from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { EmptyState, PageHeader, SectionCard, buttonClass } from "@/components/ui";
 import { IsletmeSecici } from "../../menu/MenuUst";
 import { KatPlani, type PlanMasasi } from "../KatPlani";
 import { BolgeYonetimi } from "./BolgeYonetimi";
@@ -70,7 +70,7 @@ export default async function KatPlaniPage({
   }));
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <PageHeader
         ikon={<LayoutGrid className="h-4 w-4" aria-hidden="true" />}
         renk="indigo"
@@ -100,7 +100,7 @@ export default async function KatPlaniPage({
           </p>
           <Link
             href={`/admin/isletmeler/${secili.id}/masalar`}
-            className="mt-3 inline-block rounded-control bg-brand px-4 py-2 text-small font-semibold text-brand-ink"
+            className={buttonClass({ size: "md", className: "mt-3 inline-block" })}
           >
             Masalar &amp; QR&apos;a git
           </Link>

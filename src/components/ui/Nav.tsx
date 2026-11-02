@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { SayfaBoyutu } from "./SayfaBoyutu";
+import type { SayfaBoyutu as SayfaBoyutuDegeri } from "@/lib/cekirdek/sayfalama";
 
 /**
  * Filtre/dönem seçici (segment). Bağlantı tabanlı: sunucu bileşeninde de
@@ -111,21 +113,36 @@ export function ChipLink({
   );
 }
 
-/** Sayfalama: 30'lu listeler için önceki/sonraki + konum bilgisi. */
+/**
+ * Sayfalama çubuğu: solda "neredeyim", sağda gezinme + sayfa boyutu.
+ *
+ * Boyut seçici burada, çubuğun SAĞ ALTINDA: listeyi okuyup "bu kadarı az
+ * geldi" diyen kişi tam o noktada duruyor. Listenin üstüne koymak, kararı
+ * daha veri görülmeden vermeyi gerektirirdi.
+ *
+ * Tek sayfalık listede de çiziliyor (eskiden gizleniyordu): boyutu
+ * büyüten kullanıcının seçimini geri alabilmesi gerekiyor, yoksa çubuk
+ * kaybolduğu için 100'de kilitli kalıyordu. Çubuğun hiç gerekmediği kısa
+ * listelerde kararı çağıran veriyor (bkz. cubukGosterilsinMi).
+ */
 export function Pagination({
   sayfa,
   toplamSayfa,
   href,
   toplamKayit,
+  boyut,
+  aralik,
 }: {
   sayfa: number;
   toplamSayfa: number;
   /** Sayfa numarasını alıp adres üreten fonksiyon. */
   href: (sayfa: number) => string;
   toplamKayit?: number;
+  /** Verilirse sağda sayfa boyutu açılır listesi çizilir. */
+  boyut?: SayfaBoyutuDegeri;
+  /** "11–20 / 137" — verilmezse "Sayfa 2 / 14" yazılır. */
+  aralik?: string;
 }) {
-  if (toplamSayfa <= 1) return null;
-
   const stil =
     "inline-flex h-9 items-center rounded-control px-3 text-small font-medium ring-1 ring-line transition";
   const pasif = "text-ink-faint bg-sunken cursor-not-allowed";
@@ -134,13 +151,15 @@ export function Pagination({
   return (
     <nav
       aria-label="Sayfalama"
-      className="flex items-center justify-between gap-3 text-small text-ink-muted"
+      className="flex flex-wrap items-center justify-between gap-3 text-small text-ink-muted"
     >
       <span className="tabular">
-        Sayfa {sayfa} / {toplamSayfa}
-        {toplamKayit !== undefined ? ` · ${toplamKayit} kayıt` : ""}
+        {aralik ?? `Sayfa ${sayfa} / ${toplamSayfa}`}
+        {aralik === undefined && toplamKayit !== undefined
+          ? ` · ${toplamKayit} kayıt`
+          : ""}
       </span>
-      <span className="flex gap-2">
+      <span className="flex items-center gap-2">
         {sayfa > 1 ? (
           <Link href={href(sayfa - 1)} className={`${stil} ${aktif}`}>
             ← Önceki
@@ -159,6 +178,7 @@ export function Pagination({
             Sonraki →
           </span>
         )}
+        {boyut !== undefined ? <SayfaBoyutu boyut={boyut} /> : null}
       </span>
     </nav>
   );

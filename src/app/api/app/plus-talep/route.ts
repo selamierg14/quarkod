@@ -1,9 +1,10 @@
 import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { gunBaslangici } from "@/lib/gun";
-import { PLUS_HEDIYE_ACIKLAMASI, PLUS_KUPON_ONEKI } from "@/lib/biyerlere-plus";
-import { apiHata, appKullaniciGerekli, govdeOku } from "@/lib/app-api";
+import { prisma } from "@/lib/cekirdek/db";
+import { gunBaslangici } from "@/lib/cekirdek/gun";
+import { PLUS_HEDIYE_ACIKLAMASI, PLUS_KUPON_ONEKI } from "@/lib/biyerlere/biyerlere-plus";
+import { apiHata, appKullaniciGerekli, govdeOku } from "@/lib/kimlik/app-api";
+import { KUPON_AKTIF } from "@/lib/biyerlere/kupon";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,12 @@ export const dynamic = "force-dynamic";
  * kaydı taşıyor.
  */
 export async function POST(request: Request) {
+  // Plus hakkı da bir kupon üretiyor; özellik kapalıyken bu uç da kapalı
+  // (bkz. lib/biyerlere/kupon.ts).
+  if (!KUPON_AKTIF) {
+    return apiHata("Bu özellik şu an kullanımda değil.", 404);
+  }
+
   const oturum = await appKullaniciGerekli(request);
   if ("yanit" in oturum) return oturum.yanit;
 

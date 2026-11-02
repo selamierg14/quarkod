@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
-import { DENEME_GUN } from "@/lib/deneme";
+import { getSession } from "@/lib/kimlik/auth";
+import { DENEME_GUN } from "@/lib/isletme/deneme";
 import { Card, Overline } from "@/components/ui";
 import { DenemeForm } from "./DenemeForm";
-import { markaStili } from "@/lib/marka";
-import { SITE_ADI } from "@/lib/site";
+import { markaStili } from "@/lib/isletme/marka";
+import { SITE_ADI } from "@/lib/cekirdek/site";
 import { Breadcrumb } from "../_landing/Breadcrumb";
 import { Footer } from "../_landing/Footer";
 import { Header } from "../_landing/Header";

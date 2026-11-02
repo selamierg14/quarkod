@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
-import { VAKALAR } from "@/lib/vakalar";
-import { siteUrl } from "@/lib/site";
+import { VAKALAR } from "@/lib/rapor/vakalar";
+import { siteUrl } from "@/lib/cekirdek/site";
 
 /**
  * Site haritası — Search Console'un tarayacağı sayfa listesi.

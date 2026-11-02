@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { addTables, toggleTable, tumMasalariAc, tumMasalariKapat, type FormState } from "../actions";
+import { GonderDugmesi, SilDugmesi, buttonClass } from "@/components/ui";
 
 type TableRow = {
   id: string;
@@ -39,23 +40,24 @@ export function TableManager({
           {acikSayisi > 0 ? (
             <form action={tumMasalariKapat}>
               <input type="hidden" name="businessId" value={businessId} />
-              <button
-                type="submit"
-                className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas"
+              {/* Tek tıkla bütün masaların QR'ı duruyordu (QA). İki adımlı. */}
+              <SilDugmesi
+                className={buttonClass({ variant: "secondary", size: "sm", className: "text-danger-ink" })}
+                onayClassName="bg-danger! text-white! ring-danger!"
+                onayMetni={`${acikSayisi} masanın QR'ı kapansın mı?`}
               >
                 Tümünü kapat
-              </button>
+              </SilDugmesi>
             </form>
           ) : null}
           {kapaliSayisi > 0 ? (
             <form action={tumMasalariAc}>
               <input type="hidden" name="businessId" value={businessId} />
-              <button
-                type="submit"
-                className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas"
-              >
+              <GonderDugmesi
+                className={buttonClass({ variant: "secondary", size: "sm" })}
+      >
                 Tümünü aç
-              </button>
+              </GonderDugmesi>
             </form>
           ) : null}
         </div>
@@ -65,8 +67,7 @@ export function TableManager({
         {tables.map((table) => (
           <form key={table.id} action={toggleTable}>
             <input type="hidden" name="tableId" value={table.id} />
-            <button
-              type="submit"
+            <GonderDugmesi
               title={table.active ? "Kapat" : "Aç"}
               className={`
                 rounded-chip px-3 py-1.5 text-small ring-1 transition
@@ -76,9 +77,9 @@ export function TableManager({
                     : "bg-sunken text-ink-faint line-through ring-line"
                 }
               `}
-            >
+      >
               {table.isEntrance ? "Giriş" : table.tableNumber}
-            </button>
+            </GonderDugmesi>
           </form>
         ))}
         {tables.length === 0 ? (
@@ -96,12 +97,12 @@ export function TableManager({
             name="tableNumbers"
             required
             placeholder='"1-20" veya "VIP-1, VIP-2, Teras"'
-            className="flex-1 rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong"
+            className="flex-1 rounded-control border border-line bg-surface px-3 py-2 text-small text-ink outline-none placeholder:text-ink-faint transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
           />
           <button
             type="submit"
             disabled={pending}
-            className="rounded-chip bg-accent-600 px-4 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+            className={buttonClass({ size: "md" })}
           >
             Ekle
           </button>
@@ -115,7 +116,7 @@ export function TableManager({
       </form>
 
       {state.error ? (
-        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink">
+        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
           {state.error}
         </p>
       ) : null}

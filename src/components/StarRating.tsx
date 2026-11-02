@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import type { MetinAnahtari } from "@/lib/ceviriler";
+import type { MetinAnahtari } from "@/lib/cekirdek/ceviriler";
 import { useDil } from "./DilSaglayici";
 
 type Props = {

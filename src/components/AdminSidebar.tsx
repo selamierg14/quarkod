@@ -3,11 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { aktifMi, grupAktifMi, type IkonAdi, type NavGrup } from "@/lib/panel";
-import { APP_VERSION } from "@/lib/constants";
+import { aktifMi, grupAktifMi, type IkonAdi, type NavGrup } from "@/lib/kimlik/panel";
+import { APP_VERSION } from "@/lib/cekirdek/constants";
 import { BildirimZili } from "./BildirimZili";
 import { ProfilAvatarButton } from "./ProfilAvatarButton";
 import { CikisButonu } from "./CikisButonu";
+import { komutPaletiniAc } from "./KomutPaleti";
 
 /**
  * Panelin sol gezinme çubuğu.
@@ -76,15 +77,15 @@ export function AdminSidebar({
             <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
+        {/* Tek marka adı. Önceden burada "Memnuniyet Paneli" yazıyordu
+            (dar sütunda "Memnuniyet Pan…" diye kesiliyordu), altta "Quarkod",
+            uygulamada "Biyerlere" — aynı ekranda üç isim. Sürüm yalnızca
+            altta; burada ikinci kez gösterilmesi gürültüydü. */}
         {genis ? (
-          <div className="flex min-w-0 items-center gap-1.5">
-            <Link href="/admin" className="truncate font-semibold tracking-tight text-white">
-              Memnuniyet Paneli
-            </Link>
-            <span className="shrink-0 rounded-chip bg-white/15 px-1.5 py-0.5 font-mono text-[10px] font-medium text-white/80">
-              v{APP_VERSION}
-            </span>
-          </div>
+          <Link href="/admin" className="flex min-w-0 items-center gap-2 text-white">
+            <MarkaIsareti />
+            <span className="truncate font-semibold tracking-tight">Quarkod</span>
+          </Link>
         ) : null}
       </div>
 
@@ -111,6 +112,9 @@ export function AdminSidebar({
                       <button
                         type="button"
                         onClick={() => grupAc(link.href, acik)}
+                        // Ekran okuyucu açık/kapalı bilgisini ancak bununla
+                        // alıyor; ok ikonunun dönmesi görsel bir işaret.
+                        aria-expanded={acik && genis}
                         title={genis ? undefined : link.label}
                         className={`flex w-full items-center gap-2.5 rounded-chip px-2.5 py-2 text-small font-medium transition ${
                           genis ? "" : "lg:justify-center"
@@ -245,8 +249,8 @@ export function AdminSidebar({
           {genis ? "Çıkış" : null}
         </CikisButonu>
         {genis ? (
-          <p className="mt-2.5 text-center font-mono text-[11px] text-ink-faint">
-            Quarkod v{APP_VERSION}
+          <p className="mt-2.5 text-center text-[11px] text-ink-faint tabular">
+            Sürüm {APP_VERSION}
           </p>
         ) : null}
       </div>
@@ -267,9 +271,21 @@ export function AdminSidebar({
             <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <Link href="/admin" className="flex-1 font-semibold tracking-tight text-ink">
-          Memnuniyet Paneli
+        <Link href="/admin" className="flex flex-1 items-center gap-2 font-semibold tracking-tight text-ink">
+          <MarkaIsareti koyu />
+          Quarkod
         </Link>
+        <button
+          type="button"
+          onClick={komutPaletiniAc}
+          aria-label="Sayfa ara"
+          className="flex h-9 w-9 items-center justify-center rounded-chip text-ink-soft transition hover:bg-sunken"
+        >
+          <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M20 20l-3.5-3.5" />
+          </svg>
+        </button>
         <BildirimZili />
         <ProfilAvatarButton ad={kullaniciAdi} />
       </div>
@@ -299,6 +315,24 @@ export function AdminSidebar({
   );
 }
 
+/**
+ * Marka işareti: köşeli "Q". Ayrı bir logo dosyası olmadan da panelin
+ * her yerde (kenar çubuğu, mobil başlık, personel kabuğu, giriş) aynı
+ * kimliği taşıması için tek bileşen.
+ */
+export function MarkaIsareti({ koyu = false }: { koyu?: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-[7px] text-[13px] font-bold leading-none ${
+        koyu ? "bg-ink text-white" : "bg-white text-accent-700"
+      }`}
+    >
+      Q
+    </span>
+  );
+}
+
 /** Menü ikonları — dış bir ikon paketi yerine tek dosyada, ince çizgili set. */
 function Ikon({ ad }: { ad: IkonAdi }) {
   const ortak = "h-[18px] w-[18px] shrink-0";
@@ -309,6 +343,18 @@ function Ikon({ ad }: { ad: IkonAdi }) {
       return (
         <svg viewBox="0 0 24 24" className={ortak} {...p}>
           <path d="M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-3H4zM14 7h6V4h-6z" />
+        </svg>
+      );
+    case "saat":
+      return (
+        <svg viewBox="0 0 24 24" className={ortak} {...p}>
+          <path d="M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3.5 2" />
+        </svg>
+      );
+    case "telefon":
+      return (
+        <svg viewBox="0 0 24 24" className={ortak} {...p}>
+          <path d="M7 3h10a1 1 0 011 1v16a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1zM11 18h2" />
         </svg>
       );
     case "mesaj":
@@ -323,10 +369,18 @@ function Ikon({ ad }: { ad: IkonAdi }) {
           <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
         </svg>
       );
-    case "yildiz":
+    // Sponsorlar ve Plus aynı yıldızı kullanıyordu; menüde yan yana
+    // durup hangisinin hangisi olduğu ancak yazı okunarak anlaşılıyordu.
+    case "sponsor":
       return (
         <svg viewBox="0 0 24 24" className={ortak} {...p}>
-          <path d="M12 3.5l2.7 5.5 6 .9-4.3 4.2 1 6-5.4-2.8-5.4 2.8 1-6L3.3 9.9l6-.9z" />
+          <path d="M4 10v4a1 1 0 001 1h2l5 4V5L7 9H5a1 1 0 00-1 1zM16 9a4 4 0 010 6M19 6.5a8 8 0 010 11" />
+        </svg>
+      );
+    case "tac":
+      return (
+        <svg viewBox="0 0 24 24" className={ortak} {...p}>
+          <path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z" />
         </svg>
       );
     case "menu":
@@ -367,12 +421,13 @@ function Ikon({ ad }: { ad: IkonAdi }) {
           <path d="M3 10h18M7 15h4" />
         </svg>
       );
+    // Hesap ikonuyla (kart + şerit) neredeyse aynıydı; abonelik bir
+    // döngü — yenilenen takvim.
     case "abonelik":
       return (
         <svg viewBox="0 0 24 24" className={ortak} {...p}>
-          <rect x="3" y="5" width="18" height="14" rx="2" />
-          <path d="M3 10h18M7 15h3" />
-          <circle cx="17" cy="15" r="1.4" fill="currentColor" stroke="none" />
+          <path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7" />
+          <path d="M12 8v4l2.5 1.5" />
         </svg>
       );
     case "denetim":

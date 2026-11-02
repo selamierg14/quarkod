@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import {
   actingAccountId,
+  allowedBusinessIds,
   canAccessBusiness,
   hashPassword,
   requireKullaniciYonetimi,
@@ -11,21 +12,45 @@ import {
   setSessionCookie,
   userScope,
   requireYazma,
-} from "@/lib/auth";
-import { denetimYaz } from "@/lib/denetim";
-import { acilabilirRoller } from "@/lib/panel";
-import { gecerliRolMu } from "@/lib/session-token";
-import { sifreSorunu } from "@/lib/sifre";
-import { prisma } from "@/lib/db";
-import { istenenModulleriSuz, modulDagitabilirMi } from "@/lib/moduller";
-import { normalizePhone, toUsername, usernameProblem } from "@/lib/username";
-import { uniqueConstraintMessage } from "@/lib/unique-error";
-import { issueOtp, verifyOtp } from "@/lib/otp";
-import {
-  clearPendingPassword,
-  readPendingPassword,
-  setPendingPassword,
-} from "@/lib/pending-password";
+} from "@/lib/kimlik/auth";
+import { denetimYaz } from "@/lib/rapor/denetim";
+import { acilabilirRoller, yonetebilirMi } from "@/lib/kimlik/panel";
+import { gecerliRolMu } from "@/lib/kimlik/session-token";
+import { sifreSorunu, yeniSifreSorunu } from "@/lib/kimlik/sifre";
+import { prisma } from "@/lib/cekirdek/db";
+import { istenenModulleriSuz, modulleriGuncelleMeli } from "@/lib/kimlik/moduller";
+import { normalizePhone, toUsername, usernameProblem } from "@/lib/kimlik/username";
+import { ekTelefonlariCoz } from "@/lib/kimlik/telefonlar";
+import { uniqueConstraintMessage } from "@/lib/cekirdek/unique-error";
+import { alanDogrula } from "@/lib/cekirdek/desenler";
+import { ilkHata, listeAlani } from "@/lib/cekirdek/girdi";
+import { SINIRLAR, hizSiniriMesaji, hizSiniriUygula } from "@/lib/kimlik/hiz-siniri";
+
+/**
+ * Bir listedeki İŞLETMELERİN HEPSİNE yetki var mı — tek sorguyla.
+ *
+ * `canAccessBusiness` tek işletme için doğru ama döngüde çağrılınca her
+ * eleman için yeniden hesap/atama sorgusu atıyor. Bölge müdürü ataması
+ * onlarca işletme taşıyabildiği için burada izinli kimlikler bir kez
+ * okunup kümede aranıyor; kural aynı, gidiş dönüş bir tane.
+ */
+async function hepsineYetkiliMi(
+  actor: Awaited<ReturnType<typeof requireKullaniciYonetimi>>,
+  isletmeIdleri: string[],
+): Promise<boolean> {
+  if (isletmeIdleri.length === 0) return true;
+  const izinliler = new Set(await allowedBusinessIds(actor));
+  return isletmeIdleri.every((id) => izinliler.has(id));
+}
+
+/**
+ * Bir bölge müdürüne atanabilecek en fazla işletme.
+ *
+ * Sınır iki iş görüyor: her eleman bir `userBusiness` satırına dönüşüyor,
+ * ve gerçek bir zincirin bölge sayısı bunun çok altında. Sınırsızken elle
+ * kurulmuş tek bir istek binlerce satır yazdırabiliyordu.
+ */
+const EN_COK_BOLGE_ISLETMESI = 200;
 
 export type UserFormState = { error?: string; saved?: string };
 
@@ -47,15 +72,31 @@ export async function createUser(
   const rawPhone = String(formData.get("phone") ?? "").trim();
   const role = String(formData.get("role") ?? "");
   const businessId = String(formData.get("businessId") ?? "");
-  // Bölge müdürü birden çok işletmeye atanır; form aynı adla çoklu değer yollar.
-  const bolgeIsletmeleri = formData
-    .getAll("bolgeIsletmeleri")
-    .map((v) => String(v))
-    .filter(Boolean);
+  // Bölge müdürü birden çok işletmeye atanır; form aynı adla çoklu değer
+  // yollar. Liste SINIRLI: her eleman aşağıda bir `userBusiness` satırına
+  // dönüşüyor ve sınırsızken elle kurulmuş tek bir istek binlerce satır
+  // yazdırabiliyordu. Tekrarlar da ayıklanıyor (aynı işletmenin iki kez
+  // gönderilmesi tekillik hatasına düşürüyordu).
+  const bolgeSonuc = listeAlani(
+    formData.getAll("bolgeIsletmeleri"),
+    "Bölge işletmeleri",
+    { enCok: EN_COK_BOLGE_ISLETMESI },
+  );
+  if (!bolgeSonuc.ok) return { error: bolgeSonuc.hata };
+  const bolgeIsletmeleri = bolgeSonuc.deger;
   const password = String(formData.get("password") ?? "");
 
-  if (!name) return { error: "Ad soyad gerekli." };
-  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: "Geçerli bir e-posta girin." };
+  // Ad, e-posta ve şifre sınırsızdı; üçü de doğrudan veritabanına
+  // gidiyordu. Biçim kuralları artık desenler.ts'ten — aynı e-posta deseni
+  // önceden bu dosyada, isletmeler/actions.ts'te ve deneme/actions.ts'te
+  // ayrı ayrı yazılıydı.
+  const alanHatasi = ilkHata(
+    alanDogrula(name, "kisiAdi", "Ad soyad"),
+    alanDogrula(email, "eposta", "E-posta"),
+    alanDogrula(password, "sifre", "Şifre"),
+    alanDogrula(rawPhone, "telefon", "Telefon"),
+  );
+  if (alanHatasi) return { error: alanHatasi };
 
   const username = rawUsername || toUsername(email.split("@")[0]);
   const usernameSorun = usernameProblem(username);
@@ -64,6 +105,16 @@ export async function createUser(
   // 2FA kodu buraya gideceği için telefon zorunlu.
   const phone = normalizePhone(rawPhone);
   if (!phone) return { error: "Geçerli bir cep telefonu girin (5XX...)." };
+
+  // Yedek numaralar. Rol kısıtı (garson ekleyemez) ve üst sınır
+  // lib/kimlik/telefonlar.ts'te; arayüz alanı gizlese de kural burada
+  // uygulanıyor çünkü form elle kurulabilir.
+  const yedekler = ekTelefonlariCoz(formData.getAll("ekTelefonlar"), {
+    role,
+    birincil: phone,
+  });
+  if (!yedekler.ok) return { error: yedekler.hata };
+
   if (!gecerliRolMu(role) || !acilabilirRoller(actor.role).includes(role)) {
     // Hesap sahibi kendine eş yetkide ikinci bir sahip açamaz: sahiplik
     // aboneliği ve faturayı taşıyan roldür, onu platform tarafı belirler.
@@ -107,12 +158,12 @@ export async function createUser(
   if (businessId && !(await canAccessBusiness(actor, businessId))) {
     return { error: "Bu işletmeye kullanıcı atama yetkiniz yok." };
   }
-  // Her işletme tek tek doğrulanıyor: form manipüle edilip başka kiracının
-  // işletmesi eklenemesin.
-  for (const id of bolgeIsletmeleri) {
-    if (!(await canAccessBusiness(actor, id))) {
-      return { error: "Seçilen işletmelerden birine yetkiniz yok." };
-    }
+  // Her işletme doğrulanıyor (form manipüle edilip başka kiracının
+  // işletmesi eklenemesin) ama DÖNGÜ İÇİNDE SORGU YOK: canAccessBusiness
+  // her çağrıda 2-3 sorgu atıyordu, on işletmeli bir bölge müdürü için
+  // otuz gidiş dönüş. İzinli kimlikler bir kez okunup kümede aranıyor.
+  if (!(await hepsineYetkiliMi(actor, bolgeIsletmeleri))) {
+    return { error: "Seçilen işletmelerden birine yetkiniz yok." };
   }
 
   const problem = sifreSorunu(password);
@@ -149,6 +200,13 @@ export async function createUser(
           ? {
               businesses: {
                 create: bolgeIsletmeleri.map((id) => ({ businessId: id })),
+              },
+            }
+          : {}),
+        ...(yedekler.deger.length > 0
+          ? {
+              telefonlar: {
+                create: yedekler.deger.map((numara, sira) => ({ phone: numara, sira })),
               },
             }
           : {}),
@@ -191,6 +249,12 @@ export async function updateUser(
 
   const target = await prisma.user.findFirst({ where: { id, ...await userScope(actor) } });
   if (!target) return { error: "Kullanıcı bulunamadı." };
+  // Kıdem kapısı: kapsam filtresi "hangi kiracının kullanıcısı" sorusunu
+  // cevaplıyor, bu satır "hangi kıdemdeki kullanıcı" sorusunu. İkisi
+  // ayrı — bkz. lib/panel.ts, yonetebilirMi.
+  if (!yonetebilirMi(actor.role, target.role)) {
+    return { error: "Bu kullanıcı üzerinde işlem yapma yetkiniz yok." };
+  }
 
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
@@ -198,19 +262,27 @@ export async function updateUser(
   const rawPhone = String(formData.get("phone") ?? "").trim();
   const role = String(formData.get("role") ?? "");
   const businessId = String(formData.get("businessId") ?? "");
-  const bolgeIsletmeleri = formData
-    .getAll("bolgeIsletmeleri")
-    .map((v) => String(v))
-    .filter(Boolean);
+  const bolgeSonuc = listeAlani(
+    formData.getAll("bolgeIsletmeleri"),
+    "Bölge işletmeleri",
+    { enCok: EN_COK_BOLGE_ISLETMESI },
+  );
+  if (!bolgeSonuc.ok) return { error: bolgeSonuc.hata };
+  const bolgeIsletmeleri = bolgeSonuc.deger;
   // Formdan gelen modüller iki süzgeçten geçiyor: tanınmayan anahtarlar
   // atılıyor ve actor'ın KENDİ sahip olmadıkları düşülüyor. İkincisi asıl
   // güvenlik kapısı — form alanı gizlense bile istek elle kurulabilir, ve
   // modül dağıtma yetkisi olmayan bir rol (bölge/sorumlu) için
   // verilebilirModuller boş döndüğü için sonuç da boş kalır.
   const istenenModuller = formData.getAll("moduller").map((v) => String(v));
+  const modullerGonderildi = formData.get("modullerGonderildi") === "1";
 
-  if (!name) return { error: "Ad soyad gerekli." };
-  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: "Geçerli bir e-posta girin." };
+  const alanHatasi = ilkHata(
+    alanDogrula(name, "kisiAdi", "Ad soyad"),
+    alanDogrula(email, "eposta", "E-posta"),
+    alanDogrula(rawPhone, "telefon", "Telefon"),
+  );
+  if (alanHatasi) return { error: alanHatasi };
 
   const username = rawUsername || toUsername(email.split("@")[0]);
   const usernameSorun = usernameProblem(username);
@@ -237,11 +309,18 @@ export async function updateUser(
   if (businessId && !(await canAccessBusiness(actor, businessId))) {
     return { error: "Bu işletmeye kullanıcı atama yetkiniz yok." };
   }
-  for (const bid of bolgeIsletmeleri) {
-    if (!(await canAccessBusiness(actor, bid))) {
-      return { error: "Seçilen işletmelerden birine yetkiniz yok." };
-    }
+  if (!(await hepsineYetkiliMi(actor, bolgeIsletmeleri))) {
+    return { error: "Seçilen işletmelerden birine yetkiniz yok." };
   }
+
+  // Yedek numaralar ETKİN role göre denetleniyor: sahipliği korunan bir
+  // kullanıcıda formdan gelen rol yok sayılıyor (etkinRol), kısıt da o
+  // role göre uygulanmalı.
+  const yedekler = ekTelefonlariCoz(formData.getAll("ekTelefonlar"), {
+    role: etkinRol,
+    birincil: phone,
+  });
+  if (!yedekler.ok) return { error: yedekler.hata };
 
   try {
     await prisma.$transaction([
@@ -254,10 +333,18 @@ export async function updateUser(
           phone,
           role: etkinRol,
           businessId: etkinRol === "manager" || etkinRol === "garson" ? businessId : null,
-          // Modül dağıtamayan bir rol formu göndermişse bu alan hiç
-          // dokunulmamalı: aksi halde bir sorumlu, kullanıcıyı düzenlerken
-          // farkında olmadan modüllerini sıfırlardı.
-          ...(modulDagitabilirMi(actor.role)
+          // Modüllere YALNIZCA form gerçekten modül bloğunu gönderdiyse
+          // dokunuluyor. İki koşul birden aranıyor:
+          //
+          //   1. modulDagitabilirMi — dağıtma yetkisi olmayan bir rol
+          //      (sorumlu, bölge müdürü) kimsenin modülünü değiştiremez.
+          //   2. modullerGonderildi — blok ekranda çizilmişse form bu gizli
+          //      alanı taşır. İşaretsiz kutular gönderilmediği için, bu
+          //      işaret olmadan "hepsini kaldırdım" ile "blok hiç yoktu"
+          //      ayırt edilemiyordu; sonuç, ilgisiz bir alanı düzeltmek için
+          //      formu kaydeden yöneticinin hedefin TÜM modüllerini sessizce
+          //      silmesiydi.
+          ...(modulleriGuncelleMeli(actor.role, modullerGonderildi)
             ? {
                 moduller: istenenModulleriSuz(
                   actor.role,
@@ -268,6 +355,22 @@ export async function updateUser(
             : {}),
         },
       }),
+      // Yedek numaralar da bölge atamaları gibi tamamen yeniden yazılıyor:
+      // form o an ekranda ne gösteriyorsa veritabanı onu yansıtmalı.
+      // Kaldırılan bir numaranın kalması, hesaba erişebilecek bir kanalın
+      // açık unutulması demekti.
+      prisma.userPhone.deleteMany({ where: { userId: id } }),
+      ...(yedekler.deger.length > 0
+        ? [
+            prisma.userPhone.createMany({
+              data: yedekler.deger.map((numara, sira) => ({
+                userId: id,
+                phone: numara,
+                sira,
+              })),
+            }),
+          ]
+        : []),
       // Bölge atamaları tamamen yeniden yazılır: form o an ekranda ne
       // gösteriyorsa veritabanı da onu yansıtmalı.
       prisma.userBusiness.deleteMany({ where: { userId: id } }),
@@ -324,6 +427,12 @@ export async function resetPassword(
     where: { id, ...await userScope(actor) },
   });
   if (!user) return { error: "Kullanıcı bulunamadı." };
+  // Şifre sıfırlama, hesabı devralmanın en kısa yolu: kıdem kapısı olmadan
+  // bir bölge müdürü patronun şifresini belirleyip onun yerine giriş
+  // yapabiliyordu.
+  if (!yonetebilirMi(actor.role, user.role)) {
+    return { error: "Bu kullanıcının şifresini sıfırlama yetkiniz yok." };
+  }
 
   // Sıfırlama, o kullanıcının açık oturumlarını da kapatır: şifresi
   // sıfırlanan kişinin panelde kalmaya devam etmesi anlamsız olurdu.
@@ -357,6 +466,9 @@ export async function toggleUser(formData: FormData) {
     where: { id, ...await userScope(owner) },
   });
   if (!user) return;
+  // Kıdem kapısı: aksi halde bir bölge müdürü patronu pasife alıp hesabı
+  // kilitleyebiliyordu.
+  if (!yonetebilirMi(owner.role, user.role)) return;
 
   await prisma.user.update({ where: { id }, data: { active: !user.active } });
   await denetimYaz(owner, "user.toggle", {
@@ -368,116 +480,82 @@ export async function toggleUser(formData: FormData) {
 }
 
 export type PasswordState = {
-  step: "form" | "kod";
   error?: string;
   saved?: string;
-  maskedPhone?: string;
 };
 
 /**
- * Kendi şifresini değiştirme — iki adım.
+ * Kendi şifresini değiştirme — TEK ADIM: mevcut şifre + yeni şifre (iki kez).
  *
- * 1. Mevcut şifre + yeni şifre doğrulanır, kayıtlı GSM'e kod gider.
- * 2. Kod doğrulanınca şifre değişir.
+ * Kimlik kanıtı mevcut şifrenin kendisi. Bu akış bir süre SMS kodu da
+ * istiyordu; kaldırıldı çünkü bedeli faydasından büyüktü: numarası
+ * tanımlanmamış bir kullanıcı şifresini HİÇ değiştiremiyordu ve
+ * "patronunuzdan numaranızı tanımlamasını isteyin" mesajıyla kalıyordu.
+ * Şifre değiştirmek, kilitlenmiş bir kullanıcının kendi başına yapabilmesi
+ * gereken ilk şey.
  *
- * Tek adımda değiştirmek, açık bırakılmış bir oturumu ele geçiren kişinin
- * şifreyi değiştirip hesabı tamamen devralmasına yetiyordu. Kod adımı bunu
- * telefona sahip olma şartına bağlıyor.
+ * Kod hâlâ ŞİFRESİNİ UNUTAN akışında duruyor (admin/giris/actions.ts) ve
+ * orada vazgeçilmez: mevcut şifre bilinmediğinde elde tek kanıt telefona
+ * ulaşabilmek. Buradaki ile oradaki akışın farkı tam olarak bu.
  *
- * Yeni şifre 2. adıma kadar bir yerde tutulmalı; oturum çerezinde imzalı ve
- * kısa ömürlü olarak taşınıyor — istemcide düz metin dolaşmıyor.
+ * İki kutu SUNUCUDA karşılaştırılıyor (`yeniSifreSorunu`) — tarayıcı
+ * kontrolü bir kolaylık, istek elle de kurulabilir.
  */
 export async function changeOwnPassword(
   _prev: PasswordState,
   formData: FormData,
 ): Promise<PasswordState> {
   const session = await requireUser();
-  const step = String(formData.get("step") ?? "form");
 
   const user = await prisma.user.findUnique({ where: { id: session.id } });
-  if (!user) return { step: "form", error: "Kullanıcı bulunamadı." };
+  if (!user) return { error: "Kullanıcı bulunamadı." };
 
-  // --- 2. adım: SMS kodu
-  if (step === "kod") {
-    const code = String(formData.get("code") ?? "").trim();
-    const bekleyen = await readPendingPassword();
-    if (!bekleyen) {
-      return { step: "form", error: "İşlem zaman aşımına uğradı. Baştan başlayın." };
-    }
+  /**
+   * `current` doğrudan bcrypt.compare'e gidiyor ve sınırsızdı: bcrypt'in
+   * maliyeti girdiyle artıyor, yani megabaytlık bir "mevcut şifre" tek
+   * istekte sunucuyu meşgul edebiliyordu. Oturum gerektiren bir uç olduğu
+   * için etkisi giriş formundakinden dar ama sınıf aynı.
+   */
+  const mevcutSonuc = alanDogrula(formData.get("current"), "girisSifresi", "Mevcut şifre", {
+    zorunlu: true,
+  });
+  if (!mevcutSonuc.ok) return { error: "Mevcut şifre hatalı." };
 
-    // Çerez o anki kullanıcıya bağlı: ortak kullanılan bir tarayıcıda
-    // yarım kalmış bir işlemin, sonradan giren başkasının şifresini
-    // belirlemesi mümkün olmasın.
-    if (bekleyen.userId !== user.id) {
-      await clearPendingPassword();
-      return { step: "form", error: "İşlem geçersiz. Baştan başlayın." };
-    }
+  // Şifre deneme hızı sınırlı: açık bırakılmış bir oturumu bulan kişi
+  // mevcut şifreyi buradan deneyerek aramasın.
+  const sinir = await hizSiniriUygula(SINIRLAR.otpDeneme, user.id);
+  if (!sinir.izin) return { error: hizSiniriMesaji(sinir) };
 
-    const sonuc = await verifyOtp(user.id, "sifre", code);
-    if (!sonuc.ok) {
-      return {
-        step: "kod",
-        error: sonuc.error,
-        maskedPhone: String(formData.get("maskedPhone") ?? ""),
-      };
-    }
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { passwordHash: bekleyen.hash, passwordChangedAt: new Date() },
-    });
-    await clearPendingPassword();
-
-    // Şifre değişimi eski oturumları geçersizleştirdiği için kendi
-    // oturumumuzu tazeliyoruz; yoksa kullanıcı kendi işleminden sonra
-    // giriş ekranına düşerdi.
-    await setSessionCookie({
-      // Jeton modül taşımaz; etkin küme her istekte DB'den okunuyor.
-      moduller: [],
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role as "superadmin" | "owner" | "manager",
-      accountId: user.accountId,
-      businessId: user.businessId,
-    });
-
-    return { step: "form", saved: "Şifreniz değiştirildi." };
+  if (!(await bcrypt.compare(mevcutSonuc.deger, user.passwordHash))) {
+    return { error: "Mevcut şifre hatalı." };
   }
 
-  // --- 1. adım: doğrulama + kod gönderimi
-  const current = String(formData.get("current") ?? "");
   const next = String(formData.get("next") ?? "");
-  const repeat = String(formData.get("repeat") ?? "");
-
-  if (!(await bcrypt.compare(current, user.passwordHash))) {
-    return { step: "form", error: "Mevcut şifre hatalı." };
-  }
-  if (next !== repeat) {
-    return { step: "form", error: "Yeni şifreler birbiriyle uyuşmuyor." };
-  }
-
-  const problem = sifreSorunu(next);
-  if (problem) return { step: "form", error: problem };
+  const sorun = yeniSifreSorunu(next, String(formData.get("repeat") ?? ""));
+  if (sorun) return { error: sorun };
 
   if (await bcrypt.compare(next, user.passwordHash)) {
-    return { step: "form", error: "Yeni şifre eskisiyle aynı olamaz." };
+    return { error: "Yeni şifre eskisiyle aynı olamaz." };
   }
 
-  if (!user.phone) {
-    return {
-      step: "form",
-      error:
-        "Hesabınızda kayıtlı telefon yok; doğrulama kodu gönderilemiyor. " +
-        "Patronunuzdan numaranızı tanımlamasını isteyin.",
-    };
-  }
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash: await hashPassword(next), passwordChangedAt: new Date() },
+  });
 
-  const kod = await issueOtp(user.id, user.phone, "sifre");
-  if (!kod.ok) return { step: "form", error: kod.error };
+  // Şifre değişimi eski oturumları geçersizleştirdiği için kendi
+  // oturumumuzu tazeliyoruz; yoksa kullanıcı kendi işleminden sonra
+  // giriş ekranına düşerdi.
+  await setSessionCookie({
+    // Jeton modül taşımaz; etkin küme her istekte DB'den okunuyor.
+    moduller: [],
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role as "superadmin" | "owner" | "manager",
+    accountId: user.accountId,
+    businessId: user.businessId,
+  });
 
-  // Yeni şifre hash'lenmiş hâlde çerezde bekler; düz metin hiçbir yerde durmaz.
-  await setPendingPassword(user.id, await hashPassword(next));
-
-  return { step: "kod", maskedPhone: kod.maskedPhone };
+  return { saved: "Şifreniz değiştirildi." };
 }

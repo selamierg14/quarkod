@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { markaStili } from "@/lib/marka";
-import { CONTACT_RETENTION_DAYS } from "@/lib/kvkk";
-import { ILETISIM_EPOSTA, SITE_ADI } from "@/lib/site";
+import { markaStili } from "@/lib/isletme/marka";
+import { CONTACT_RETENTION_DAYS } from "@/lib/isletme/kvkk";
+import { ILETISIM_EPOSTA, SITE_ADI } from "@/lib/cekirdek/site";
 import { Breadcrumb } from "../_landing/Breadcrumb";
 import { Footer } from "../_landing/Footer";
 import { Header } from "../_landing/Header";

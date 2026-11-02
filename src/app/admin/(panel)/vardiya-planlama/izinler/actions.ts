@@ -6,12 +6,12 @@ import {
   requirePersonelYonetimi,
   requireUser,
   requireYazma,
-} from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { bildirimGonder } from "@/lib/bildirim";
-import { denetimYaz } from "@/lib/denetim";
-import { gunBaslangici } from "@/lib/gun";
-import { araliklarKesisiyorMu, gecerliIzinTuru } from "@/lib/izin";
+} from "@/lib/kimlik/auth";
+import { prisma } from "@/lib/cekirdek/db";
+import { bildirimGonder } from "@/lib/altyapi/bildirim";
+import { denetimYaz } from "@/lib/rapor/denetim";
+import { gunBaslangici } from "@/lib/cekirdek/gun";
+import { araliklarKesisiyorMu, gecerliIzinTuru } from "@/lib/isletme/izin";
 
 /** İki tarih aynı günse tek gün, değilse aralık olarak yazar. */
 function tarihAraligiYaz(baslangic: Date, bitis: Date): string {
@@ -96,7 +96,8 @@ export async function izinTalepEt(
     return { error: "Bu tarihlerde zaten bekleyen ya da onaylı bir izniniz var." };
   }
 
-  await prisma.leaveRequest.create({
+  const talep = await prisma.leaveRequest.create({
+    select: { id: true },
     data: {
       businessId: user.businessId,
       userId: user.id,
@@ -128,7 +129,12 @@ export async function izinTalepEt(
       tur: "izin.talep",
       baslik: "Yeni izin talebi",
       govde: `${user.name} — ${tarihAraligiYaz(baslangic!, bitis!)}`,
-      url: "/admin/vardiya-planlama/izinler",
+      // Talebin KENDİSİNE gidiyor. Önceden yalnızca sayfa adresiydi: sayfa
+      // son 30 güne baktığı için karara bağlanmış eski bir talep listede
+      // hiç yoktu ve bildirime tıklayan "Henüz kayıtlı izin yok" görüyordu
+      // (QA, Ekim 2026). İşletme de adreste — çok işletmeli sahipte sayfa
+      // varsayılan olarak ilk işletmeyi açıyordu.
+      url: `/admin/vardiya-planlama/izinler?isletme=${user.businessId}&talep=${talep.id}`,
     },
   );
 

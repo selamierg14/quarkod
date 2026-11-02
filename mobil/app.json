@@ -12,6 +12,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.quarkod.biyerlere",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Yakınındaki mekanları göstermek ve masadaki karekodu okuttuğunda ziyaretini doğrulamak için konumunu kullanıyoruz.",
         "NSCameraUsageDescription": "Masadaki karekodu okutup ziyaretini doğrulamak için kamerayı kullanıyoruz."
@@ -33,6 +34,7 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      "expo-apple-authentication",
       "expo-font",
       [
         "expo-splash-screen",
@@ -40,6 +42,15 @@
           "backgroundColor": "#121214",
           "image": "./assets/splash-icon.png",
           "imageWidth": 180
+        }
+      ],
+      "expo-image",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Masadaki karekodu okutup ziyaretini doğrulamak için kamerayı kullanıyoruz.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
         }
       ]
     ]
