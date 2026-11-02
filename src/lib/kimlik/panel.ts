@@ -30,7 +30,8 @@ export type IkonAdi =
   | "pano"
   | "mesaj"
   | "grafik"
-  | "yildiz"
+  | "sponsor"
+  | "tac"
   | "menu"
   | "bina"
   | "kiyas"
@@ -65,6 +66,18 @@ export type NavLink = {
   exact?: boolean;
   /** Doluysa satır kendisi bir sayfa değil, açılır bir alt liste başlığıdır. */
   altLinkler?: AltNavLink[];
+  /**
+   * Modülün sayfa İÇİ sekmelerle gezilen ekranları. Kenar çubuğunda
+   * ÇİZİLMİYOR — yalnızca aktif satırı işaretlemek, konum yolunu kurmak ve
+   * Ctrl+K aramasında bulunmak için.
+   *
+   * Önceden bunlar `altLinkler`'di: aynı ekranlar hem menüde alt öğe hem
+   * sayfada sekme olarak iki kez duruyordu, "QR kodlarını yazdır" menüde
+   * QR Menü altında ama sayfada İşletme ayarları sekmesi olarak açılıyordu
+   * (UI incelemesi, "çift navigasyon"). Seçim sekmeden yana: bulunduğun
+   * yerde kalıyor; menü yalnızca modüle giriş.
+   */
+  sayfalar?: AltNavLink[];
 };
 
 export type NavGrup = { baslik: string; linkler: NavLink[] };
@@ -121,6 +134,19 @@ export function yonetebilirMi(actorRole: Role, targetRole: string): boolean {
 
 
 
+/**
+ * Kullanıcılar tek bağlantı. Önceden "Listele / Ekle" alt menüsü vardı;
+ * listenin kendisinde "+ Yeni kullanıcı" düğmesi olduğu için ikinci satır
+ * yalnızca menüyü uzatıyordu. "Ekle" ekranındayken de aktif görünmesi
+ * için `exact` yok — `/admin/kullanicilar/...` ile başlayan her adres bu
+ * satırı işaretliyor.
+ */
+const KULLANICILAR: NavLink = {
+  href: "/admin/kullanicilar",
+  label: "Kullanıcılar",
+  ikon: "kisi",
+};
+
 export function panelMenusu(
   modu: PanelModu,
   role: Role,
@@ -145,26 +171,24 @@ export function panelMenusu(
       {
         baslik: "Platform",
         linkler: [
+          // Platform özeti: önceden /admin iskeleti gösterip Hesaplar'a
+          // yönlendiriyordu; yönetici "bugün neye bakmalıyım" ekranını
+          // hiç görmüyordu (bkz. admin/(panel)/PlatformOzeti.tsx).
+          { href: "/admin", label: "Özet", ikon: "pano", exact: true },
           { href: "/admin/hesaplar", label: "Hesaplar", ikon: "hesap" },
           { href: "/admin/abonelikler", label: "Abonelikler", ikon: "abonelik" },
           { href: "/admin/isletmeler", label: "İşletmeler", ikon: "bina" },
-          {
-            href: "/admin/kullanicilar",
-            label: "Kullanıcılar",
-            ikon: "kisi",
-            altLinkler: [
-              { href: "/admin/kullanicilar", label: "Listele", exact: true },
-              { href: "/admin/kullanicilar/ekle", label: "Ekle" },
-            ],
-          },
+          KULLANICILAR,
         ],
       },
       {
-        baslik: "Biyerlere",
+        // Yalnızca "Biyerlere" yeni gelen biri için hiçbir şey
+        // söylemiyordu; bu grup tüketici uygulamasının içeriği.
+        baslik: "Biyerlere uygulaması",
         linkler: [
           { href: "/admin/rotalar", label: "Rotalar", ikon: "rota" },
-          { href: "/admin/sponsorlar", label: "Sponsorlar ve kredi", ikon: "yildiz" },
-          { href: "/admin/plus", label: "Biyerlere Plus", ikon: "yildiz" },
+          { href: "/admin/sponsorlar", label: "Sponsorlar ve kredi", ikon: "sponsor" },
+          { href: "/admin/plus", label: "Biyerlere Plus", ikon: "tac" },
         ],
       },
       {
@@ -198,7 +222,7 @@ export function panelMenusu(
       href: "/admin/geri-bildirimler",
       label: "Geri bildirimler",
       ikon: "mesaj",
-      altLinkler: [
+      sayfalar: [
         { href: "/admin/geri-bildirimler", label: "Liste" },
         { href: "/admin/kirilim", label: "Vardiya & masa" },
         { href: "/admin/urunler", label: "Ürünler" },
@@ -213,20 +237,10 @@ export function panelMenusu(
         href: "/admin/menu",
         label: "QR Menü",
         ikon: "menu",
-        altLinkler: [
+        sayfalar: [
           { href: "/admin/menu", label: "Menümü düzenle", exact: true },
           { href: "/admin/menu/sablonlar", label: "Hazır şablonlar" },
           { href: "/admin/menu/onizle", label: "Menü görünümüm" },
-          // Kodları üretip bastırmak QR menünün doğal devamı; işletme
-          // ayarlarının altında aranıyordu.
-          ...(tekIsletmeId
-            ? [
-                {
-                  href: `/admin/isletmeler/${tekIsletmeId}/qr`,
-                  label: "QR kodlarını yazdır",
-                },
-              ]
-            : []),
         ],
       },
       { href: "/admin/duyurular", label: "Duyurular", ikon: "duyuru" },
@@ -247,7 +261,7 @@ export function panelMenusu(
       href: "/admin/rezervasyon",
       label: "Rezervasyon",
       ikon: "rezervasyon",
-      altLinkler: [
+      sayfalar: [
         { href: "/admin/rezervasyon", label: "Masa durumu", exact: true },
         { href: "/admin/rezervasyon/plan", label: "Kat planı" },
       ],
@@ -266,7 +280,7 @@ export function panelMenusu(
         // doğrudan menüden erişilebilir.
         ...(tekIsletmeId
           ? {
-              altLinkler: [
+              sayfalar: [
                 { href: "/admin/isletmeler", label: "Listele", exact: true },
                 { href: `/admin/isletmeler/${tekIsletmeId}`, label: "Ayarlar", exact: true },
                 {
@@ -277,15 +291,7 @@ export function panelMenusu(
             }
           : {}),
       },
-      {
-        href: "/admin/kullanicilar",
-        label: "Kullanıcılar",
-        ikon: "kisi",
-        altLinkler: [
-          { href: "/admin/kullanicilar", label: "Listele", exact: true },
-          { href: "/admin/kullanicilar/ekle", label: "Ekle" },
-        ],
-      },
+      KULLANICILAR,
       { href: "/admin/denetim", label: "İşlem geçmişi", ikon: "denetim" },
     );
     // Pazarlama ve İYS ayrı satılan modüller: izni olmayan hesapta menüde
@@ -314,7 +320,7 @@ export function panelMenusu(
       href: `/admin/isletmeler/${tekIsletmeId}`,
       label: "İşletme ayarları",
       ikon: "bina",
-      altLinkler: [
+      sayfalar: [
         { href: `/admin/isletmeler/${tekIsletmeId}`, label: "Ayarlar", exact: true },
         {
           href: `/admin/isletmeler/${tekIsletmeId}/kategoriler`,
@@ -332,15 +338,7 @@ export function panelMenusu(
     // requirePersonelYonetimi; acilabilirRoller de sorumluya yalnızca
     // "garson" açtırıyor, userScope ise onu kendi işletmesiyle sınırlıyor
     // — hesaptaki başka bir işletmenin ekibini göremez/düzenleyemez.
-    yonetim.push({
-      href: "/admin/kullanicilar",
-      label: "Kullanıcılar",
-      ikon: "kisi",
-      altLinkler: [
-        { href: "/admin/kullanicilar", label: "Listele", exact: true },
-        { href: "/admin/kullanicilar/ekle", label: "Ekle" },
-      ],
-    });
+    yonetim.push(KULLANICILAR);
   } else if (role === "bolge") {
     // Bölge müdürü ne "yonetici" (owner/superadmin) ne tek işletmeli bir
     // "manager" — birden fazla işletmeye bağlı olduğu için manager'daki
@@ -349,15 +347,7 @@ export function panelMenusu(
     // ile zaten doğru kısıtlanıyordu ama menüden bulunamıyordu — bölge
     // müdürü kendi işletmelerine giden bir yolu keşfedemiyordu.
     yonetim.push({ href: "/admin/isletmeler", label: "İşletmelerim", ikon: "bina" });
-    yonetim.push({
-      href: "/admin/kullanicilar",
-      label: "Kullanıcılar",
-      ikon: "kisi",
-      altLinkler: [
-        { href: "/admin/kullanicilar", label: "Listele", exact: true },
-        { href: "/admin/kullanicilar/ekle", label: "Ekle" },
-      ],
-    });
+    yonetim.push(KULLANICILAR);
   }
 
   // Vardiya çizelgesi ve görev şablonu yalnızca planlayan tarafta (garson
@@ -368,7 +358,7 @@ export function panelMenusu(
       href: "/admin/vardiya-planlama",
       label: "Personel operasyonu",
       ikon: "takvim",
-      altLinkler: [
+      sayfalar: [
         { href: "/admin/vardiya-planlama", label: "Çizelge", exact: true },
         // "İzinler" adı panelde ticari ileti onaylarına ait (MarketingConsent);
         // personel izni tamamen ayrı bir kavram olduğu için burada vardiya
@@ -414,11 +404,97 @@ export function panelMenusu(
 
 /** Adres çubuğundaki yola göre hangi bağlantının aktif olduğunu bulur. */
 export function aktifMi(link: NavLink | AltNavLink, pathname: string): boolean {
-  return link.exact ? pathname === link.href : pathname.startsWith(link.href);
+  const kendisi = link.exact ? pathname === link.href : pathname.startsWith(link.href);
+  if (kendisi) return true;
+  // Sekmeyle gezilen sayfalardan biri açıksa modül satırı da aktif
+  // (ör. /admin/kirilim açıkken "Geri bildirimler").
+  return "sayfalar" in link && Boolean(link.sayfalar?.some((s) => aktifMi(s, pathname)));
 }
 
 /** Bir üst menünün alt linklerinden biri aktifse üst de "açık/aktif" sayılır. */
 export function grupAktifMi(link: NavLink, pathname: string): boolean {
   if (!link.altLinkler) return aktifMi(link, pathname);
   return link.altLinkler.some((alt) => aktifMi(alt, pathname));
+}
+
+// --- Konum yolu (breadcrumb) -----------------------------------------
+
+export type KonumAdimi = { label: string; href?: string };
+
+/**
+ * Menüde karşılığı olmayan alt sayfaların adları. Liste sayfaları menüde;
+ * onların altındaki "ekle/düzenle/detay" ekranları değil.
+ */
+const ALT_SAYFA_ADI: Record<string, string> = {
+  ekle: "Yeni",
+  duzenle: "Düzenle",
+  masalar: "Masalar & QR",
+  kategoriler: "Anket kategorileri",
+  qr: "QR kodları",
+  plan: "Kat planı",
+  sablonlar: "Hazır şablonlar",
+  onizle: "Önizleme",
+  izinler: "İzin & müsaitlik",
+  sablon: "Görev şablonu",
+  performans: "Performans",
+};
+
+function eslesir(href: string, pathname: string, exact?: boolean): boolean {
+  if (exact || href === "/admin") return pathname === href;
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/**
+ * Üst çubuktaki konum yolu: "Platform › Kullanıcılar › Yeni".
+ *
+ * Menü ağacından türüyor — ayrı bir harita tutulmuyor, yeni bir ekran
+ * menüye eklendiğinde yolu da kendiliğinden doğru çıkıyor. En uzun
+ * eşleşen bağlantı seçiliyor ki `/admin/rezervasyon/plan` "Rezervasyon"
+ * değil "Kat planı" altında görünsün.
+ *
+ * Menüde olmayan alt sayfa (ör. /admin/kullanicilar/ekle) son adım olarak
+ * ekleniyor; adı bilinmeyen bir kimlik parçası ("/hesaplar/ckx…") için
+ * "Detay" yazılıyor — ham kimliği başlığa basmak anlamsız olurdu.
+ */
+export function konumYolu(gruplar: NavGrup[], pathname: string): KonumAdimi[] {
+  type Aday = { grup: string; ust?: NavLink; label: string; href: string; exact?: boolean };
+  const adaylar: Aday[] = [];
+  for (const grup of gruplar) {
+    for (const link of grup.linkler) {
+      adaylar.push({ grup: grup.baslik, label: link.label, href: link.href, exact: link.exact });
+      for (const alt of [...(link.altLinkler ?? []), ...(link.sayfalar ?? [])]) {
+        adaylar.push({ grup: grup.baslik, ust: link, label: alt.label, href: alt.href, exact: alt.exact });
+      }
+    }
+  }
+
+  const bulunan = adaylar
+    .filter((a) => eslesir(a.href, pathname, a.exact))
+    .sort((a, b) => b.href.length - a.href.length || Number(Boolean(b.ust)) - Number(Boolean(a.ust)))[0];
+
+  // Menüde olmayan bir alt sayfa ise, ona en yakın menü bağlantısını
+  // (exact olsa bile) üst olarak kullan.
+  const ebeveyn =
+    bulunan ??
+    adaylar
+      .filter((a) => a.href !== "/admin" && pathname.startsWith(`${a.href}/`))
+      .sort((a, b) => b.href.length - a.href.length)[0];
+  if (!ebeveyn) return [];
+
+  const yol: KonumAdimi[] = [{ label: ebeveyn.grup }];
+  if (ebeveyn.ust && ebeveyn.ust.label !== ebeveyn.label) {
+    yol.push({ label: ebeveyn.ust.label });
+  }
+  yol.push({ label: ebeveyn.label, href: ebeveyn.href });
+
+  if (pathname !== ebeveyn.href) {
+    const kalan = pathname.slice(ebeveyn.href.length).split("/").filter(Boolean);
+    const son = kalan[kalan.length - 1];
+    if (son) yol.push({ label: ALT_SAYFA_ADI[son] ?? "Detay" });
+  }
+
+  // Son adım içinde bulunulan sayfa: bağlantı değil.
+  const sonAdim = yol[yol.length - 1];
+  yol[yol.length - 1] = { label: sonAdim.label };
+  return yol;
 }

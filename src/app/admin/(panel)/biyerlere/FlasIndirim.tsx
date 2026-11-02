@@ -3,9 +3,10 @@
 import { useActionState } from "react";
 import { flasIndirimBaslat, type FlasIndirimFormState } from "./actions";
 import { alanOzellikleri } from "@/lib/cekirdek/desenler";
+import { buttonClass } from "@/components/ui";
 
 const INPUT =
-  "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
+  "rounded-control border border-line bg-surface px-3 py-2 text-small text-ink outline-none placeholder:text-ink-faint transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100";
 
 const SURE_SECENEKLERI = [1, 2, 4, 8, 24];
 
@@ -60,7 +61,7 @@ export function FlasIndirim({ businessId, pushKredisi }: { businessId: string; p
           <button
             type="submit"
             disabled={pending}
-            className="self-start rounded-control bg-accent-600 px-4 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+            className={buttonClass({ size: "md", className: "self-start" })}
           >
             {pending ? "Başlatılıyor..." : "Flaş indirimi başlat"}
           </button>

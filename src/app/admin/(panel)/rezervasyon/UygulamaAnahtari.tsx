@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { Smartphone } from "lucide-react";
 import { uygulamaRezervasyonuAyarla, type RezervasyonFormState } from "./actions";
+import { buttonClass } from "@/components/ui";
 
 /**
  * "Biyerlere uygulamasından rezervasyon al" anahtarı.
@@ -48,7 +49,7 @@ export function UygulamaAnahtari({
           <button
             type="submit"
             disabled={gonderiliyor}
-            className="rounded-control border border-line px-4 py-2 text-small font-semibold text-ink hover:bg-sunken disabled:opacity-50"
+            className={buttonClass({ variant: "secondary", size: "sm" })}
           >
             {gonderiliyor ? "…" : acik ? "Kapat" : "Aç"}
           </button>

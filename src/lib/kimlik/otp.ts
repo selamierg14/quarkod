@@ -241,7 +241,7 @@ export async function verifyOtpFor(
 /** Panel akışlarının SMS metni. */
 function varsayilanMetin(code: string, purpose: string): string {
   return purpose === "giris"
-    ? `Memnuniyet paneli giris kodunuz: ${code}. ${OTP_TTL_MINUTES} dakika gecerlidir.`
+    ? `Quarkod giris kodunuz: ${code}. ${OTP_TTL_MINUTES} dakika gecerlidir.`
     : `Sifre sifirlama kodunuz: ${code}. ${OTP_TTL_MINUTES} dakika gecerlidir.`;
 }
 

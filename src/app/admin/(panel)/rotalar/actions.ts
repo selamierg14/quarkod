@@ -96,7 +96,7 @@ export async function durakEkle(
   const actor = await requireSuperadmin();
   const rotaId = String(formData.get("rotaId") ?? "");
   const businessId = String(formData.get("businessId") ?? "");
-  if (!businessId) return { error: "Bir mekan seç." };
+  if (!businessId) return { error: "Bir mekan seçin." };
 
   const [rota, business] = await Promise.all([
     prisma.rota.findUnique({ where: { id: rotaId } }),

@@ -8,7 +8,7 @@ import { SHIFTS, type Shift } from "@/lib/cekirdek/constants";
 import { CONTACT_RETENTION_DAYS } from "@/lib/isletme/kvkk";
 import { detaylariCoz } from "@/lib/isletme/anket-detay";
 import { yanitlanabilir } from "@/lib/cekirdek/yanit";
-import { SectionCard, StatusBadge, Stars, formatDateTime } from "@/components/ui";
+import { SectionCard, StatusBadge, Stars, formatDateTime, buttonClass } from "@/components/ui";
 import { StatusForm } from "./StatusForm";
 import { hazirYanitlar } from "@/lib/isletme/hazir-yanit";
 import { RespondForm } from "./RespondForm";
@@ -64,17 +64,17 @@ export default async function FeedbackDetailPage({
   const sorunlar = detaylariCoz(feedback.problemDetails);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <Link
         href="/admin/geri-bildirimler"
-        className="inline-flex w-fit items-center gap-1.5 self-start rounded-control border border-line bg-surface px-3 py-1.5 text-small font-medium text-ink-soft shadow-card transition hover:-translate-y-0.5 hover:border-line-strong hover:text-ink"
+        className={buttonClass({ variant: "secondary", size: "sm", className: "self-start" })}
       >
         <span aria-hidden="true">←</span>
         Geri bildirimler
       </Link>
 
       <div className="grid gap-5 lg:grid-cols-[2fr_1fr]">
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-4">
           <section className="overflow-hidden rounded-card bg-surface shadow-card ring-1 ring-line">
             {/* İşletmenin marka rengi kartın tepesinde: zincirde çalışan
                 sorumlu, hangi şubenin kaydına baktığını yazıyı okumadan
@@ -267,7 +267,7 @@ export default async function FeedbackDetailPage({
           </SectionCard>
         </div>
 
-        <aside className="flex flex-col gap-5">
+        <aside className="flex flex-col gap-4">
           <SectionCard ikon={<Tag className="h-4 w-4" aria-hidden="true" />} renk="indigo" title="Durum ve iç not">
             {/* Salt okunur kullanıcıya düzenleme formu gösterilmez: sunucu
                 zaten reddediyor ama kapalı bir kapıya yönlendirmek kafa
@@ -369,7 +369,7 @@ export default async function FeedbackDetailPage({
                       </span>
                     ) : (
                       <span
-                        className="ml-2 text-caption text-rating"
+                        className="ml-2 text-caption font-medium text-danger-ink"
                         title={notification.error ?? ""}
                       >
                         gönderilemedi

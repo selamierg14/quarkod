@@ -2,10 +2,19 @@ import { CalendarDays, Moon, StickyNote, Sun, Sunrise, Sunset, Users2 } from "lu
 import Link from "next/link";
 import { requirePersonelYonetimi, visibleBusinesses } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
-import { EmptyState, PageHeader } from "@/components/ui";
+import { trSirala } from "@/lib/cekirdek/text";
+import { EmptyState, PageHeader, buttonClass } from "@/components/ui";
 import { getShiftBreakdown } from "@/lib/rapor/stats";
 import { SHIFTS, type Shift } from "@/lib/cekirdek/constants";
-import { gunAdi, gunBaslangici, gunEkle, gunGirdisi, haftaBaslangici } from "@/lib/cekirdek/gun";
+import {
+  gunAdi,
+  gunBaslangici,
+  gunEkle,
+  gunGirdisi,
+  gunGirdisindenTarih,
+  haftaBaslangici,
+} from "@/lib/cekirdek/gun";
+import { BuguneKaydir } from "./BuguneKaydir";
 import { etkinVardiyalar } from "@/lib/personel/vardiya";
 import { IZIN_TURLERI, izinKumesiKur, izinliMi, type IzinTuru } from "@/lib/isletme/izin";
 import { vardiyaUyarilariniHesapla } from "@/lib/personel/vardiya-uyari";
@@ -38,13 +47,19 @@ export default async function VardiyaPlanlamaPage({
   const vardiyalar = etkinVardiyalar(secili).map(
     (deger) => [deger, SHIFTS[deger]] as const,
   );
-  const haftaBasi = query.baslangic
-    ? haftaBaslangici(new Date(query.baslangic))
-    : haftaBaslangici(new Date());
+  const haftaBasi =
+    query.baslangic && /^\d{4}-\d{2}-\d{2}$/.test(query.baslangic)
+      ? haftaBaslangici(gunGirdisindenTarih(query.baslangic))
+      : haftaBaslangici(new Date());
   const gunler = Array.from({ length: 7 }, (_, i) => gunEkle(haftaBasi, i));
   const haftaSonu = gunler[6];
+  /** Sonraki pazartesi 00:00 — aralık yarı açık: [haftaBasi, sonrakiHafta). */
+  const sonrakiHafta = gunEkle(haftaBasi, 7);
+  const buHaftaMi = gunGirdisi(haftaBasi) === gunGirdisi(haftaBaslangici(new Date()));
+  const kisaTarih = (d: Date, yil = false) =>
+    d.toLocaleDateString("tr-TR", { day: "numeric", month: "short", ...(yil ? { year: "numeric" } : {}) });
 
-  const [personel, atamalar, bekleyenTalepler, vardiyaKirilimi, izinler, devirNotlari] =
+  const [personelHam, atamalar, bekleyenTalepler, vardiyaKirilimi, izinler, devirNotlari] =
     await Promise.all([
     prisma.user.findMany({
       where: { businessId: secili.id, active: true, role: { in: ["manager", "garson"] } },
@@ -54,7 +69,9 @@ export default async function VardiyaPlanlamaPage({
     prisma.shiftAssignment.findMany({
       where: {
         businessId: secili.id,
-        date: { gte: haftaBasi, lte: haftaSonu },
+        // `lte: haftaSonu` (pazar 00:00) UTC gece yarısında saklanmış eski
+        // pazar kayıtlarını (İstanbul 03:00) dışarıda bırakıyordu.
+        date: { gte: haftaBasi, lt: sonrakiHafta },
         // Pasifleştirilen personel çizelgeden "kalkmalı" ama geçmiş
         // atamaları silinmemeli — geçen ay çalıştığı vardiyalar hâlâ
         // gerçek. Bu yüzden yalnızca BUGÜNDEN İLERİSİ aktiflik şartına
@@ -97,6 +114,8 @@ export default async function VardiyaPlanlamaPage({
       include: { author: { select: { name: true } } },
     }),
   ]);
+  // Türkçe sıralama: DB harmanlaması "İbrahim"i sona atıyordu (QA).
+  const personel = trSirala(personelHam, (p) => p.name);
   const kirilimByShift = new Map(vardiyaKirilimi.map((k) => [k.shift, k]));
   const izinKumesi = izinKumesiKur(izinler);
 
@@ -195,7 +214,7 @@ export default async function VardiyaPlanlamaPage({
   };
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <VardiyaSekmeleri aktif="cizelge" />
 
       {/* Başlık artık yalnızca kimlik: ne olduğu ve hangi hafta. Hafta
@@ -210,7 +229,8 @@ export default async function VardiyaPlanlamaPage({
         ikon={<CalendarDays className="h-4 w-4" aria-hidden="true" />}
         renk="teal"
         title="Vardiya çizelgesi"
-        description={`${haftaBasi.toLocaleDateString("tr-TR")} – ${haftaSonu.toLocaleDateString("tr-TR")}`}
+        // QA: "hangi hafta olduğu başlıkta yok" — eskiden (i) arkasındaydı.
+        description={`${kisaTarih(haftaBasi)} – ${kisaTarih(haftaSonu, true)}${buHaftaMi ? " · bu hafta" : ""}`}
       />
 
       <div className="flex flex-col divide-y divide-line rounded-card bg-surface shadow-card ring-1 ring-line">
@@ -225,15 +245,23 @@ export default async function VardiyaPlanlamaPage({
             <span />
           )}
           <div className="flex gap-1">
+            {buHaftaMi ? null : (
+              <Link
+                href={haftaHref(haftaBaslangici(new Date()))}
+                className="rounded-control border border-accent-300 bg-accent-50 px-3 py-1.5 text-small font-medium text-accent-700 transition hover:bg-accent-100"
+              >
+                Bu hafta
+              </Link>
+            )}
             <Link
               href={haftaHref(gunEkle(haftaBasi, -7))}
-              className="rounded-control border border-line bg-surface px-3 py-1.5 text-small text-ink-soft transition hover:border-line-strong hover:bg-canvas"
+              className={buttonClass({ variant: "secondary", size: "sm" })}
             >
               ← Önceki hafta
             </Link>
             <Link
               href={haftaHref(gunEkle(haftaBasi, 7))}
-              className="rounded-control border border-line bg-surface px-3 py-1.5 text-small text-ink-soft transition hover:border-line-strong hover:bg-canvas"
+              className={buttonClass({ variant: "secondary", size: "sm" })}
             >
               Sonraki hafta →
             </Link>
@@ -352,7 +380,7 @@ export default async function VardiyaPlanlamaPage({
                         <input type="hidden" name="karar" value="reddet" />
                         <button
                           type="submit"
-                          className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft hover:bg-canvas"
+                          className={buttonClass({ variant: "secondary", size: "sm" })}
                         >
                           Reddet
                         </button>
@@ -372,7 +400,7 @@ export default async function VardiyaPlanlamaPage({
           aksiyon={
             <Link
               href="/admin/kullanicilar/ekle"
-              className="rounded-control bg-accent-600 px-4 py-2 text-small font-medium text-white hover:bg-accent-700"
+              className={buttonClass({ size: "md" })}
             >
               + Personel ekle
             </Link>
@@ -387,7 +415,12 @@ export default async function VardiyaPlanlamaPage({
               haftaya tek bakışta bakılabilsin diye. Mobilde aynı veri gün
               kartları olarak (aşağıda) tekrar ediyor; geniş tablo telefonda
               yatay kaydırma zorunlu kılardı. */}
-          <div className="hidden overflow-x-auto rounded-card bg-surface shadow-card ring-1 ring-line lg:block">
+          <div
+            id="vardiya-cizelgesi"
+            className="hidden overflow-x-auto rounded-card bg-surface shadow-card ring-1 ring-line lg:block"
+          >
+            {/* QA: 1316px ekranda "Cuma — bugün" ilk açılışta görünmüyordu. */}
+            <BuguneKaydir kapsayici="vardiya-cizelgesi" />
             <table className="w-full min-w-[1050px] text-small">
               {/* table-auto: sütunlar içeriğe göre genişliyor. Önceden her
                   gün sabit 180px'ti — geniş bir monitörde tablo 4 gün
@@ -405,14 +438,17 @@ export default async function VardiyaPlanlamaPage({
                   <col key={gunGirdisi(gun)} className="w-[13%]" />
                 ))}
               </colgroup>
-              <thead className="border-b border-line text-left text-caption text-ink-muted uppercase">
+              <thead className="bg-sunken/70 text-left text-overline font-semibold tracking-wide text-ink-muted uppercase">
                 <tr>
-                  <th className="px-4 py-3 font-medium">Vardiya</th>
+                  {/* Sabit ilk sütun: sağa kaydırınca hangi vardiyada olduğun
+                      kaybolmasın. */}
+                  <th className="sticky left-0 z-10 bg-surface px-4 py-3 font-medium">Vardiya</th>
                   {gunler.map((gun) => {
                     const bugunMu = gunGirdisi(new Date()) === gunGirdisi(gun);
                     return (
                       <th
                         key={gunGirdisi(gun)}
+                        data-bugun={bugunMu || undefined}
                         className={`px-4 py-3 font-medium ${bugunMu ? "text-accent-700" : ""}`}
                       >
                         <span className="flex items-center gap-1.5">
@@ -434,7 +470,7 @@ export default async function VardiyaPlanlamaPage({
               <tbody className="divide-y divide-line">
                 {vardiyalar.map(([deger, etiket]) => (
                   <tr key={deger} className={`border-l-4 ${VARDIYA_RENGI[deger].serit}`}>
-                    <td className="px-4 py-4 align-top">
+                    <td className="sticky left-0 z-10 bg-surface px-4 py-4 align-top">
                       <span
                         className={`inline-flex items-center gap-1.5 rounded-chip px-2.5 py-1 text-small font-medium ${VARDIYA_RENGI[deger].rozet}`}
                       >
@@ -648,7 +684,7 @@ function VardiyaHucresi({
             name="userId"
             required
             defaultValue=""
-            className="min-w-0 flex-1 rounded-chip border border-line bg-canvas px-2 py-1 text-caption text-ink-muted outline-none focus:border-line-strong focus:text-ink"
+            className="min-w-0 flex-1 rounded-chip border border-line bg-canvas px-2 py-1 text-caption text-ink-muted outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100 focus:text-ink"
           >
             <option value="" disabled>
               + Personel seç
@@ -671,11 +707,15 @@ function VardiyaHucresi({
               </optgroup>
             ) : null}
           </select>
+          {/* Seçince otomatik atama bilerek YOK: Windows'ta Chrome kapalı
+              listede ok tuşuyla gezinirken her adımda `change` tetikliyor —
+              klavye kullanan yönetici gezinirken birini istemeden atardı.
+              "+" ne yaptığını söylemiyordu; düğme artık adını taşıyor. */}
           <button
             type="submit"
-            className="shrink-0 rounded-chip border border-line px-2 py-1 text-caption text-ink-soft hover:bg-canvas"
+            className={buttonClass({ size: "sm", className: "shrink-0" })}
           >
-            +
+            Ata
           </button>
         </form>
       ) : null}

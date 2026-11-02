@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Download, FileSpreadsheet, FileQuestion, Upload } from "lucide-react";
-import { SectionCard } from "@/components/ui";
+import { SectionCard, buttonClass } from "@/components/ui";
 import { cizelgeyiIceAktar, type CizelgeIceAktarState } from "./actions";
 
 /**
@@ -46,7 +46,7 @@ export function CizelgeAktarim({
         <div className="flex flex-wrap gap-2">
           <a
             href={indirmeAdresi}
-            className="inline-flex w-fit items-center gap-2 rounded-control border border-line bg-surface px-4 py-2 text-small font-medium text-ink-soft transition hover:border-line-strong hover:bg-canvas"
+            className={buttonClass({ variant: "secondary", size: "sm" })}
           >
             <Download className="h-4 w-4" aria-hidden="true" />
             Bu haftayı Excel&apos;e aktar
@@ -108,7 +108,7 @@ export function CizelgeAktarim({
             <button
               type="submit"
               disabled={pending}
-              className="w-fit rounded-control bg-gradient-to-r from-accent-600 to-accent-700 px-4 py-2 text-small font-medium text-white shadow-card transition hover:brightness-110 disabled:bg-slate-400 disabled:bg-none"
+              className={buttonClass({ size: "md" })}
             >
               {pending ? "Yükleniyor…" : "Dosyayı yükle"}
             </button>

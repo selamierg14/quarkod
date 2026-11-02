@@ -1,7 +1,9 @@
 import { Megaphone } from "lucide-react";
 import { requireMenuErisim, visibleBusinesses } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
-import { EmptyState, PageHeader, Pagination, SectionCard } from "@/components/ui";
+import { EmptyState, PageHeader, Pagination } from "@/components/ui";
+import { gunBaslangici, gunGirdisi } from "@/lib/cekirdek/gun";
+import { duyuruDurumu } from "@/lib/isletme/duyuru";
 import { aralikMetni, cubukGosterilsinMi, sayfaDurumu, toplamSayfa } from "@/lib/cekirdek/sayfalama";
 import { IsletmeSecici } from "../menu/MenuUst";
 import { DuyuruSatiri, NewDuyuruForm } from "./DuyuruForms";
@@ -10,9 +12,19 @@ export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Duyurular" };
 
-function tarihGirdisi(d: Date | null): string | null {
-  if (!d) return null;
-  return d.toLocaleDateString("tr-TR");
+/**
+ * Tarih alanı için yyyy-aa-gg. Gün başına indirgeniyor: eski kayıtlar UTC
+ * gece yarısı saklanmış olabilir, yenileri İstanbul gece yarısı.
+ * Önceden görünen metin ("05.01.2026") tarih alanına geri ayrıştırılıyordu.
+ */
+function gunAnahtari(d: Date | null): string {
+  return d ? gunGirdisi(gunBaslangici(d)) : "";
+}
+
+function tarihMetni(baslangic: Date | null, bitis: Date | null): string | null {
+  if (!baslangic && !bitis) return null;
+  const bicim = (d: Date) => d.toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" });
+  return `${baslangic ? bicim(baslangic) : "şimdi"} – ${bitis ? bicim(bitis) : "süresiz"}`;
 }
 
 export default async function DuyurularPage({
@@ -41,7 +53,7 @@ export default async function DuyurularPage({
   });
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <PageHeader
         ikon={<Megaphone className="h-4 w-4" aria-hidden="true" />}
         renk="violet"
@@ -51,17 +63,16 @@ export default async function DuyurularPage({
 
       <IsletmeSecici businesses={businesses} seciliId={secili.id} taban="/admin/duyurular" />
 
-      <SectionCard
-        ikon={<Megaphone className="h-4 w-4" aria-hidden="true" />}
-        renk="amber"
-        title="Yeni duyuru"
-        description="QR karşılama ekranında müşterinin göreceği kısa haber."
-      >
-        <NewDuyuruForm businessId={secili.id} isletmeSayisi={businesses.length} />
-      </SectionCard>
+      <NewDuyuruForm
+        // İşletme değişince form da sıfırlansın.
+        key={secili.id}
+        businessId={secili.id}
+        isletmeSayisi={businesses.length}
+        acikBasla={toplam === 0}
+      />
 
       {duyurular.length === 0 ? (
-        <EmptyState>Henüz duyuru eklenmedi.</EmptyState>
+        toplam === 0 ? null : <EmptyState>Bu sayfada duyuru yok.</EmptyState>
       ) : (
         <ul className="flex flex-col gap-2">
           {duyurular.map((d) => (
@@ -72,8 +83,10 @@ export default async function DuyurularPage({
               aciklama={d.aciklama}
               imageUrl={d.imageUrl}
               aktif={d.aktif}
-              baslangic={tarihGirdisi(d.baslangic)}
-              bitis={tarihGirdisi(d.bitis)}
+              durum={duyuruDurumu(d)}
+              baslangic={gunAnahtari(d.baslangic)}
+              bitis={gunAnahtari(d.bitis)}
+              tarihMetni={tarihMetni(d.baslangic, d.bitis)}
             />
           ))}
         </ul>

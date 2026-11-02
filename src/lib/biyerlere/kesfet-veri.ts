@@ -1,7 +1,7 @@
 import "server-only";
 import { prisma } from "../cekirdek/db";
 import { sponsorMu } from "./sponsorluk";
-import { duyuruAktifMi } from "../isletme/duyuru";
+import { duyuruAktifMi, duyuruDurumu } from "../isletme/duyuru";
 import { ozellikleriCoz } from "./mekan";
 import { duyuruGorselAdresi, gorselAdresi, urunGorselAdresi } from "../isletme/gorsel-adres";
 import { parseAlerjenler, parseOzelBilesenler, parseTags } from "../isletme/menu";
@@ -131,7 +131,10 @@ export async function etkinlikleriGetir(): Promise<EtkinlikOzet[]> {
 
   const etkinlikler = isletmeler.flatMap((m) =>
     m.duyurular
-      .filter((d) => !d.bitis || d.bitis >= simdi)
+      // "Bitmemiş" = panelin "Süresi doldu" demediği; bitiş günü dahil
+      // (bkz. lib/isletme/duyuru.ts). Ham an karşılaştırması duyuruyu son
+      // gününün 03:00'ünde düşürüyordu.
+      .filter((d) => duyuruDurumu(d, simdi) !== "suresi-doldu")
       .map((d) => ({
         id: d.id,
         baslik: d.baslik,

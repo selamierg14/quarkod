@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { FEEDBACK_STATUS_LIST } from "@/lib/cekirdek/constants";
 import { updateFeedback, type UpdateState } from "./actions";
+import { buttonClass } from "@/components/ui";
 
 export function StatusForm({
   id,
@@ -60,7 +61,7 @@ export function StatusForm({
           rows={4}
           defaultValue={internalNote ?? ""}
           placeholder="Ne yapıldı? Kiminle konuşuldu?"
-          className="w-full resize-none rounded-control border border-line p-3 text-small outline-none focus:border-line-strong"
+          className="w-full resize-none rounded-control border border-line p-3 text-small outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
         />
         {/* "Kim yazdı, ne zaman yazdı" ekranda hiç görünmüyordu — not tek
             bir metin kutusuydu, üzerine her kaydedilişte sessizce
@@ -94,7 +95,7 @@ export function StatusForm({
       <button
         type="submit"
         disabled={pending}
-        className="rounded-control bg-accent-600 px-4 py-2.5 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+        className={buttonClass({ size: "md" })}
       >
         {pending ? "Kaydediliyor..." : "Kaydet"}
       </button>

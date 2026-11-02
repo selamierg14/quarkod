@@ -1,7 +1,7 @@
 import { Crown } from "lucide-react";
 import { requireSuperadmin } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
-import { PageHeader, Pagination, SectionCard } from "@/components/ui";
+import { PageHeader, Pagination, SectionCard, buttonClass } from "@/components/ui";
 import { aralikMetni, cubukGosterilsinMi, sayfaDurumu, toplamSayfa } from "@/lib/cekirdek/sayfalama";
 import { plusGecerliMi } from "@/lib/biyerlere/biyerlere-plus";
 import { PlusKaldirButonu, PlusYapForm } from "./PlusForms";
@@ -45,7 +45,7 @@ export default async function PlusPage({
   });
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <PageHeader
         ikon={<Crown className="h-4 w-4" aria-hidden="true" />}
         renk="amber"
@@ -65,11 +65,11 @@ export default async function PlusPage({
             name="ara"
             defaultValue={arama}
             placeholder="Kullanıcı adı ya da ad"
-            className="flex-1 rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong"
+            className="flex-1 rounded-control border border-line bg-surface px-3 py-2 text-small text-ink outline-none placeholder:text-ink-faint transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
           />
           <button
             type="submit"
-            className="rounded-control border border-line px-4 py-2 text-small font-medium text-ink-soft hover:bg-canvas"
+            className={buttonClass({ variant: "secondary", size: "sm" })}
           >
             Ara
           </button>

@@ -5,15 +5,30 @@ import {
   MAX_LOGO_BYTES,
   MAX_MENU_BYTES,
   MAX_RAW_UPLOAD_BYTES,
+  imzaUyuyorMu,
   validateImageDataUrl,
 } from "./image";
 
-/** Verilen bayt boyutunu üretecek uzunlukta sahte bir base64 data URI. */
-function fakeDataUrl(mime: string, bytes: number): string {
-  // base64 uzunluğu ≈ bytes * 4/3
-  const base64Len = Math.ceil((bytes * 4) / 3);
-  return `data:${mime};base64,${"A".repeat(base64Len)}`;
+/** Türlerin gerçek dosya imzaları — sunucu artık öneki değil bunları doğruluyor. */
+const IMZALAR: Record<string, number[]> = {
+  "image/png": [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
+  "image/jpeg": [0xff, 0xd8, 0xff, 0xe0],
+  // "RIFF" + 4 bayt boyut + "WEBP"
+  "image/webp": [0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50],
+};
+
+/**
+ * Verilen bayt boyutunda sahte bir data URI. Başında türün gerçek imzası
+ * var; `govdeTuru` verilirse önek bir türü, içerik başka bir türü taşır.
+ */
+function fakeDataUrl(mime: string, bytes: number, govdeTuru: string = mime): string {
+  const veri = Buffer.alloc(bytes);
+  Buffer.from(IMZALAR[govdeTuru] ?? []).copy(veri);
+  return `data:${mime};base64,${veri.toString("base64")}`;
 }
+
+/** Gerçek bir GIF'in ilk baytları ("GIF89a"). */
+const GIF_BASI = Buffer.from("GIF89a\x01\x00\x01\x00", "latin1");
 
 describe("validateImageDataUrl", () => {
   it("küçük PNG/JPEG/WebP kabul eder", () => {
@@ -27,6 +42,27 @@ describe("validateImageDataUrl", () => {
     expect(validateImageDataUrl(fakeDataUrl("image/svg+xml", 500), "logo")).not.toBeNull();
     expect(validateImageDataUrl(fakeDataUrl("image/gif", 500), "logo")).not.toBeNull();
     expect(validateImageDataUrl("düpedüz metin", "logo")).not.toBeNull();
+  });
+
+  /**
+   * Önek bir beyan; kanıt dosyanın imzası. QA'da bir GIF yüklenip
+   * önizlendi — istek elle kurulursa "data:image/png" etiketiyle her şey
+   * gönderilebiliyordu.
+   */
+  it("öneki doğru ama içeriği başka türde olanı reddeder", () => {
+    const gifPngKiligindan = `data:image/png;base64,${Buffer.concat([GIF_BASI, Buffer.alloc(200)]).toString("base64")}`;
+    expect(validateImageDataUrl(gifPngKiligindan, "duyuru")).not.toBeNull();
+    // PNG etiketiyle JPEG içerik de tutarsız.
+    expect(validateImageDataUrl(fakeDataUrl("image/png", 500, "image/jpeg"), "logo")).not.toBeNull();
+    // Hiç imzası olmayan rastgele veri.
+    expect(validateImageDataUrl(`data:image/webp;base64,${"A".repeat(400)}`, "logo")).not.toBeNull();
+  });
+
+  it("imza kontrolü yalnızca baştaki baytlara bakar", () => {
+    expect(imzaUyuyorMu("png", fakeDataUrl("image/png", 50).split(",")[1])).toBe(true);
+    expect(imzaUyuyorMu("webp", fakeDataUrl("image/webp", 50).split(",")[1])).toBe(true);
+    expect(imzaUyuyorMu("jpeg", fakeDataUrl("image/webp", 50).split(",")[1])).toBe(false);
+    expect(imzaUyuyorMu("png", "")).toBe(false);
   });
 
   it("boyut sınırını aşanı reddeder", () => {

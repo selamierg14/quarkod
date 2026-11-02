@@ -4,12 +4,13 @@ import { useActionState, useState } from "react";
 import { loginAction, type LoginState } from "./actions";
 import { alanOzellikleri } from "@/lib/cekirdek/desenler";
 
+import { buttonClass } from "@/components/ui";
 // "use server" dosyaları yalnızca async fonksiyon dışa aktarabilir; başlangıç
 // durumu bu yüzden istemci tarafında duruyor.
 const INITIAL_LOGIN_STATE: LoginState = { step: "kimlik", mode: "giris" };
 
 const INPUT =
-  "w-full rounded-control border border-line bg-surface p-3 text-[16px] outline-none focus:border-line-strong";
+  "w-full rounded-control border border-line bg-surface p-3 text-[16px] outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100";
 
 /**
  * Giriş, 2FA kodu ve şifre sıfırlama tek ekranda.
@@ -114,7 +115,7 @@ export function LoginForm() {
                     // çalışmıyordu — üstelik sessizce, çünkü hata balonu
                     // boş kod alanını işaret ediyor.
                     formNoValidate
-                    className="rounded-chip border border-line bg-surface px-2.5 py-1 text-caption text-ink-soft transition hover:border-line-strong hover:text-ink"
+                    className={buttonClass({ variant: "secondary", size: "sm" })}
                   >
                     {secenek.maskeli}
                   </button>
@@ -167,7 +168,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={pending}
-        className="mt-3 rounded-control bg-gradient-to-r from-accent-600 to-accent-700 px-5 py-3.5 font-medium text-white shadow-card transition hover:from-accent-700 hover:to-accent-700 disabled:from-slate-400 disabled:to-slate-400"
+        className={buttonClass({ size: "lg", className: "mt-3" })}
       >
         {pending
           ? "Lütfen bekleyin…"

@@ -39,7 +39,34 @@ export async function onRequestError(
   });
 }
 
+/**
+ * Uygulamanın saati İstanbul.
+ *
+ * Gün hesapları (lib/cekirdek/gun.ts: "bugün", hafta başı, vardiya günü)
+ * ve tarih biçimleri sunucunun YEREL saatini kullanıyor. Vercel UTC'de
+ * çalışıyor, geliştirme makinesi İstanbul'da — ve ikisi aynı veritabanına
+ * yazıyor. Sonuç (Ekim 2026'da ölçüldü):
+ *
+ *   - Panelde saatler 3 saat geri ("11:24 itibarıyla", Türkiye 14:24).
+ *   - Aynı gün iki ayrı anla saklanmış: vardiya atamalarının 214'ü
+ *     İstanbul gece yarısında (21:00Z), 67'si UTC gece yarısında (00:00Z).
+ *     İstanbul'dan yazılan atama canlıda BİR GÜN ÖNCE görünüyor; dört kişi
+ *     aynı vardiyaya iki satırla atanmış.
+ *
+ * Ürünün bütün kullanıcıları Türkiye'de; tek doğru saat bu. Ortam
+ * değişkenine bırakılmadı: unutulduğunda sessizce UTC'ye döner ve tam
+ * olarak yukarıdaki hatayı geri getirir. Node, çalışma anında atanan
+ * `process.env.TZ`'yi tanıyor; `register` ilk istekten önce bittiği için
+ * hiçbir istek eski saatle işlenmiyor. Türkiye 2016'dan beri yaz saati
+ * uygulamıyor, yani fark sabit +3.
+ */
+export const UYGULAMA_SAAT_DILIMI = "Europe/Istanbul";
+
 export async function register() {
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    process.env.TZ = UYGULAMA_SAAT_DILIMI;
+  }
+
   // Yakalanmayan hatalar Next'in kancasına düşmez; onları da kayda alalım.
   if (process.env.NEXT_RUNTIME === "nodejs") {
     // Üretimde yanlış ayarla açılmaktansa hiç açılmamak yeğdir: bu

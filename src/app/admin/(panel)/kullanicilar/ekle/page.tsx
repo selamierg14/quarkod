@@ -5,7 +5,7 @@ import { actingAccountId, requireKullaniciYonetimi, visibleBusinesses } from "@/
 import { NewUserForm } from "../UserForms";
 import { acilabilirRoller } from "@/lib/kimlik/panel";
 import { verilebilirModuller } from "@/lib/kimlik/moduller";
-import { PageHeader, SectionCard } from "@/components/ui";
+import { PageHeader, SectionCard, buttonClass } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -35,10 +35,10 @@ export default async function NewUserPage() {
       : [];
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <Link
         href="/admin/kullanicilar"
-        className="inline-flex w-fit items-center gap-1.5 self-start rounded-control border border-line bg-surface px-3 py-1.5 text-small font-medium text-ink-soft shadow-card transition hover:-translate-y-0.5 hover:border-line-strong hover:text-ink"
+        className={buttonClass({ variant: "secondary", size: "sm", className: "self-start" })}
       >
         <span aria-hidden="true">←</span>
         Kullanıcı listesine dön
@@ -65,22 +65,26 @@ export default async function NewUserPage() {
           hesaplar={hesaplar}
           hint={
             // "Hangi kafeye kullanıcı açıyorum?" sorusu formun en kritik ama
-            // en görünmez parçasıydı: kullanıcı her zaman içinde bulunulan
-            // hesaba açılır ve o hesabın TÜM işletmelerini görür.
+            // en görünmez parçasıydı. Önceki metin hem bozuktu ("…bu
+            // hesaptaki KESKİNLEZZETLER görebilecek", QA) hem de yanlıştı:
+            // kimin neyi gördüğü role bağlı, hesabın tamamı değil.
             hedefHesap ? (
-              <>
-                Bu kullanıcı{" "}
-                <span className="font-medium text-ink">{hedefHesap.name}</span>{" "}
-                hesabına açılacak ve bu hesaptaki{" "}
-                {businesses.length > 0 ? (
-                  <span className="font-medium text-ink">
-                    {businesses.map((b) => b.name).join(", ")}
-                  </span>
-                ) : (
-                  "işletmeleri"
-                )}{" "}
-                görebilecek.
-              </>
+              businesses.length === 1 ? (
+                <>
+                  Bu kullanıcı{" "}
+                  <span className="font-medium text-ink">{hedefHesap.name}</span>{" "}
+                  hesabında,{" "}
+                  <span className="font-medium text-ink">{businesses[0].name}</span>{" "}
+                  işletmesi için açılacak.
+                </>
+              ) : (
+                <>
+                  Bu kullanıcı{" "}
+                  <span className="font-medium text-ink">{hedefHesap.name}</span>{" "}
+                  hesabına açılacak. Hangi işletmeleri göreceği aşağıdaki rol ve
+                  işletme seçimine bağlı.
+                </>
+              )
             ) : hesaplar.length > 0 ? (
               "Kullanıcının açılacağı hesabı aşağıdan seçin."
             ) : (

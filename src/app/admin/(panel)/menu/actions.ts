@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { allowedBusinessIds, canAccessBusiness, requireYazma } from "@/lib/kimlik/auth";
 import { denetimYaz } from "@/lib/rapor/denetim";
 import { prisma } from "@/lib/cekirdek/db";
+import { adAnahtari } from "@/lib/cekirdek/text";
 import { validateImageDataUrl } from "@/lib/isletme/image";
 import {
   parseKalori,
@@ -417,6 +418,16 @@ export async function tumMenuyuSil(
   if (String(formData.get("onay") ?? "") !== "evet") {
     return { error: "Silme onaylanmadı." };
   }
+  // Son kilit: işletmenin adı yazılmalı (UI incelemesi). Arayüz düğmeyi
+  // zaten ad yazılana kadar kapalı tutuyor; burada istek elle kurulsa da
+  // geçmesin diye tekrar bakılıyor.
+  const isletme = await prisma.business.findUnique({
+    where: { id: businessId },
+    select: { name: true },
+  });
+  if (!isletme || adAnahtari(String(formData.get("onayAdi") ?? "")) !== adAnahtari(isletme.name)) {
+    return { error: "Onay için işletmenin adını aynen yazın." };
+  }
 
   const { count } = await prisma.menuCategory.deleteMany({ where: { businessId } });
   await menuDenetim("menu.category", `Tüm menü silindi (${count} bölüm)`);
@@ -431,6 +442,10 @@ export async function sablonuUygula(
 ): Promise<MenuFormState> {
   const businessId = String(formData.get("businessId") ?? "");
   const sablonId = String(formData.get("sablonId") ?? "");
+  // "ekle": dolu menüye yalnızca eksik bölüm/ürünleri ekler. Önceden dolu
+  // menüye hiçbir şablon uygulanamıyordu; her kartta "Size uygun" yazıyor
+  // ama düğmelerin hepsi pasifti (UI incelemesi).
+  const ekle = String(formData.get("mod") ?? "") === "ekle";
 
   const hata = await menuIzni(businessId);
   if (hata) return { error: hata };
@@ -440,55 +455,92 @@ export async function sablonuUygula(
   const sablon = MENU_SABLONLARI.find((s) => s.id === sablonId);
   if (!sablon) return { error: "Şablon bulunamadı." };
 
-  const mevcutSayi = await prisma.menuCategory.count({ where: { businessId } });
-  if (mevcutSayi > 0) {
-    return { error: "Menüde zaten bölüm var; şablon yalnızca boş menüye uygulanabilir." };
+  type SablonUrunu = (typeof sablon.kategoriler)[number]["urunler"][number];
+  const urunVerisi = (urun: SablonUrunu, sortOrder: number) => {
+    // Zorunlu menü bilgileri için tipik bir başlangıç. Eşlemesi olmayan
+    // ürün boş kalıyor — eksik bilgi, uydurulmuş bilgiden iyidir (bkz.
+    // lib/menu-sablon-bilgileri.ts).
+    const bilgi = sablonUrunBilgisi(urun.ad);
+    return {
+      businessId,
+      name: urun.ad,
+      description: urun.aciklama ?? null,
+      priceKurus: urun.fiyatKurus ?? null,
+      sortOrder,
+      icindekiler: bilgi?.icindekiler ?? null,
+      kaloriKcal: bilgi?.kaloriKcal ?? null,
+      alerjenler: bilgi ? serializeAlerjenler(bilgi.alerjenler) : null,
+      ozelBilesenler: bilgi ? serializeOzelBilesenler(bilgi.ozelBilesenler ?? []) : null,
+      // İşletme bu değerleri henüz görmedi: kendi tarifiyle örtüşmeyebilir,
+      // panelde doğrulaması isteniyor.
+      bilgilerDogrulandi: false,
+    };
+  };
+
+  const mevcut = await prisma.menuCategory.findMany({
+    where: { businessId },
+    select: { id: true, name: true, sortOrder: true, items: { select: { name: true, sortOrder: true } } },
+  });
+
+  if (mevcut.length > 0 && !ekle) {
+    return { error: "Menüde zaten bölüm var. Şablonu mevcut menüye eklemeyi seçin." };
   }
 
-  await prisma.$transaction(
-    sablon.kategoriler.map((kategori, kategoriIndex) =>
-      prisma.menuCategory.create({
-        data: {
-          businessId,
-          name: kategori.ad,
-          sortOrder: (kategoriIndex + 1) * 10,
-          items: {
-            create: kategori.urunler.map((urun, urunIndex) => {
-              // Zorunlu menü bilgileri için tipik bir başlangıç. Eşlemesi
-              // olmayan ürün boş kalıyor — eksik bilgi, uydurulmuş
-              // bilgiden iyidir (bkz. lib/menu-sablon-bilgileri.ts).
-              const bilgi = sablonUrunBilgisi(urun.ad);
-              return {
-                businessId,
-                name: urun.ad,
-                description: urun.aciklama ?? null,
-                priceKurus: urun.fiyatKurus ?? null,
-                sortOrder: (urunIndex + 1) * 10,
-                icindekiler: bilgi?.icindekiler ?? null,
-                kaloriKcal: bilgi?.kaloriKcal ?? null,
-                alerjenler: bilgi ? serializeAlerjenler(bilgi.alerjenler) : null,
-                ozelBilesenler: bilgi
-                  ? serializeOzelBilesenler(bilgi.ozelBilesenler ?? [])
-                  : null,
-                // İşletme bu değerleri henüz görmedi: kendi tarifiyle
-                // örtüşmeyebilir, panelde doğrulaması isteniyor.
-                bilgilerDogrulandi: false,
-              };
-            }),
-          },
-        },
-      }),
-    ),
-  );
+  let eklenenUrun = 0;
+  let eklenenBolum = 0;
+  const islemler = [];
+  let sonBolumSirasi = Math.max(0, ...mevcut.map((k) => k.sortOrder));
 
+  for (const kategori of sablon.kategoriler) {
+    // Aynı adlı bölüm varsa (büyük-küçük harf farkı dahil) içine ekleniyor;
+    // içinde aynı adla duran ürün tekrar eklenmiyor.
+    const varOlan = mevcut.find((k) => adAnahtari(k.name) === adAnahtari(kategori.ad));
+    if (varOlan) {
+      const adlar = new Set(varOlan.items.map((u) => adAnahtari(u.name)));
+      let sira = Math.max(0, ...varOlan.items.map((u) => u.sortOrder));
+      const yeniler = kategori.urunler.filter((u) => !adlar.has(adAnahtari(u.ad)));
+      for (const urun of yeniler) {
+        sira += 10;
+        islemler.push(
+          prisma.menuItem.create({ data: { ...urunVerisi(urun, sira), categoryId: varOlan.id } }),
+        );
+      }
+      eklenenUrun += yeniler.length;
+    } else {
+      sonBolumSirasi += 10;
+      islemler.push(
+        prisma.menuCategory.create({
+          data: {
+            businessId,
+            name: kategori.ad,
+            sortOrder: sonBolumSirasi,
+            items: { create: kategori.urunler.map((u, i) => urunVerisi(u, (i + 1) * 10)) },
+          },
+        }),
+      );
+      eklenenBolum += 1;
+      eklenenUrun += kategori.urunler.length;
+    }
+  }
+
+  if (islemler.length === 0) {
+    return { error: `"${sablon.ad}" şablonundaki her şey menünüzde zaten var.` };
+  }
+
+  await prisma.$transaction(islemler);
   await fiyatTarihiniDamgala(businessId);
-  await menuDenetim("menu.category", `Şablon uygulandı: ${sablon.ad}`);
+  await menuDenetim(
+    "menu.category",
+    ekle ? `Şablon menüye eklendi: ${sablon.ad} (${eklenenUrun} ürün)` : `Şablon uygulandı: ${sablon.ad}`,
+  );
   yenile(businessId);
 
   return {
     saved:
-      `"${sablon.ad}" şablonu uygulandı. Fiyatları ve zorunlu menü bilgilerini ` +
-      `(içindekiler, kalori, alerjenler) kendi tarifinize göre doğrulayın.`,
+      (ekle
+        ? `"${sablon.ad}" şablonundan ${eklenenBolum} yeni bölüm ve ${eklenenUrun} ürün eklendi. `
+        : `"${sablon.ad}" şablonu uygulandı. `) +
+      "Fiyatları ve zorunlu menü bilgilerini (içindekiler, kalori, alerjenler) kendi tarifinize göre doğrulayın.",
   };
 }
 

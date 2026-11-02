@@ -4,9 +4,10 @@ import { getAnketHunisi, getDoldurmaSuresi, getShiftBreakdown, getTableBreakdown
 import { huniYuzdeleriHesapla } from "@/lib/rapor/huni";
 import { masaBaskinliginiTespitEt } from "@/lib/rapor/masa-baskinlik";
 import { prisma } from "@/lib/cekirdek/db";
-import { EmptyState, SectionCard } from "@/components/ui";
+import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
 import { RaporSekmeleri } from "@/components/RaporSekmeleri";
 import { PeriyotFiltre } from "@/components/PeriyotFiltre";
+import { DonemBos, VARSAYILAN_DONEM_GUN } from "@/components/DonemBos";
 import { gunEkle, gunBaslangici } from "@/lib/cekirdek/gun";
 
 function daysAgo(days: number): Date {
@@ -55,7 +56,7 @@ export default async function BreakdownPage({
       : allowedIds;
   const days = PERIODS.some((p) => String(p.days) === query.gun)
     ? Number(query.gun)
-    : 30;
+    : VARSAYILAN_DONEM_GUN;
 
   const [shifts, tables, doldurmaSuresi, huni, atamalar] = await Promise.all([
     getShiftBreakdown(selected, { from: daysAgo(days) }),
@@ -105,26 +106,18 @@ export default async function BreakdownPage({
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <RaporSekmeleri aktif="vardiya" />
 
-      <div>
-        <h1 className="flex items-center gap-2.5 text-title font-semibold">
-          <span
-            aria-hidden="true"
-            className="flex h-9 w-9 items-center justify-center rounded-control bg-gradient-to-br from-sky-500 to-sky-700 text-white shadow-md shadow-sky-500/25"
-          >
-            <Clock className="h-4 w-4" />
-          </span>
-          Vardiya &amp; masa
-        </h1>
-        <p className="mt-1 text-small text-ink-muted">
-          Aynı ortalama, farklı yerlerde farklı sebeplerden düşer. Vardiya
-          personel sorununu, masa ise mekânla ilgili sorunu (gürültü, ısı,
-          servise uzaklık) ele verir.
-        </p>
+      <div className="flex flex-col gap-2">
+        <PageHeader
+          ikon={<Clock className="h-4 w-4" aria-hidden="true" />}
+          renk="sky"
+          title="Vardiya & masa"
+          description="Aynı ortalama, farklı yerlerde farklı sebeplerden düşer. Vardiya personel sorununu, masa ise mekânla ilgili sorunu (gürültü, ısı, servise uzaklık) ele verir."
+        />
         {doldurmaSuresi ? (
-          <p className="mt-2 inline-flex items-center gap-1.5 rounded-chip bg-sunken px-3 py-1.5 text-caption text-ink-soft">
+          <p className="inline-flex items-center gap-1.5 self-start rounded-chip bg-sunken px-3 py-1.5 text-caption text-ink-soft">
             <span aria-hidden="true">⏱</span>
             Ortalama doldurma süresi:{" "}
             <span className="font-medium text-ink">
@@ -141,7 +134,17 @@ export default async function BreakdownPage({
         baseHref="/admin/kirilim"
         businesses={businesses}
         donemler={PERIODS.map((p) => ({ gun: p.days, label: p.label }))}
+        varsayilan={VARSAYILAN_DONEM_GUN}
       />
+
+      {shiftTotal === 0 ? (
+        <DonemBos
+          businessIds={selected}
+          gun={days}
+          taban={`/admin/kirilim${query.isletme ? `?isletme=${query.isletme}` : ""}`}
+          donemler={PERIODS.map((p) => p.days)}
+        />
+      ) : null}
 
       <SectionCard
         ikon={<DoorOpen className="h-4 w-4" aria-hidden="true" />}
@@ -306,7 +309,7 @@ export default async function BreakdownPage({
           <>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[520px] text-small">
-                <thead className="bg-sunken/70 text-left text-caption font-semibold tracking-wide text-ink-soft uppercase">
+                <thead className="bg-sunken/70 text-left text-overline font-semibold tracking-wide text-ink-muted uppercase">
                   <tr>
                     <th className="px-5 py-3">{masaVarMi ? "Masa" : "Nokta"}</th>
                     <th className="px-5 py-3">Ortalama</th>

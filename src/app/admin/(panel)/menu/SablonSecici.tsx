@@ -3,76 +3,39 @@
 import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { sablonuUygula, type MenuFormState } from "./actions";
-import { MENU_SABLONLARI, type SablonRenk } from "@/lib/isletme/menu-sablonlari";
+import { MENU_SABLONLARI } from "@/lib/isletme/menu-sablonlari";
 import type { BusinessType } from "@/lib/cekirdek/constants";
-import { useToast } from "@/components/ui";
+import {
+  CakeSlice,
+  Coffee,
+  EggFried,
+  Fish,
+  Flame,
+  Hamburger,
+  Martini,
+  Pizza,
+  Sandwich,
+  UtensilsCrossed,
+  type LucideIcon,
+} from "lucide-react";
+import { buttonClass, useToast } from "@/components/ui";
 
 /**
- * Kart temaları. Tailwind sınıfları derleme anında taranıyor; şablonun
- * renk adından string birleştirerek üretilemez, bu yüzden tam sınıf
- * adlarıyla sabit bir eşleme tutuluyor.
+ * Şablon ikonları — panelin çizgi ikon setinden. Önceden emojiydi (☕ 🍕 🍔):
+ * panel her yerde çizgi ikon kullanırken burası farklı bir dil
+ * konuşuyordu (UI incelemesi). Tanımadığımız yeni bir şablon tabak alır.
  */
-const TEMA: Record<SablonRenk, { kart: string; rozet: string; serit: string; sayac: string }> = {
-  amber: {
-    kart: "hover:border-amber-300 hover:shadow-amber-100",
-    rozet: "bg-amber-100 text-amber-700 ring-amber-200",
-    serit: "from-amber-400 to-amber-500",
-    sayac: "bg-amber-50 text-amber-700",
-  },
-  orange: {
-    kart: "hover:border-orange-300 hover:shadow-orange-100",
-    rozet: "bg-orange-100 text-orange-700 ring-orange-200",
-    serit: "from-orange-400 to-orange-500",
-    sayac: "bg-orange-50 text-orange-700",
-  },
-  rose: {
-    kart: "hover:border-rose-300 hover:shadow-rose-100",
-    rozet: "bg-rose-100 text-rose-700 ring-rose-200",
-    serit: "from-rose-400 to-rose-500",
-    sayac: "bg-rose-50 text-rose-700",
-  },
-  red: {
-    kart: "hover:border-red-300 hover:shadow-red-100",
-    rozet: "bg-red-100 text-red-700 ring-red-200",
-    serit: "from-red-400 to-red-500",
-    sayac: "bg-red-50 text-red-700",
-  },
-  emerald: {
-    kart: "hover:border-emerald-300 hover:shadow-emerald-100",
-    rozet: "bg-emerald-100 text-emerald-700 ring-emerald-200",
-    serit: "from-emerald-400 to-emerald-500",
-    sayac: "bg-emerald-50 text-emerald-700",
-  },
-  teal: {
-    kart: "hover:border-teal-300 hover:shadow-teal-100",
-    rozet: "bg-teal-100 text-teal-700 ring-teal-200",
-    serit: "from-teal-400 to-teal-500",
-    sayac: "bg-teal-50 text-teal-700",
-  },
-  sky: {
-    kart: "hover:border-sky-300 hover:shadow-sky-100",
-    rozet: "bg-sky-100 text-sky-700 ring-sky-200",
-    serit: "from-sky-400 to-sky-500",
-    sayac: "bg-sky-50 text-sky-700",
-  },
-  violet: {
-    kart: "hover:border-violet-300 hover:shadow-violet-100",
-    rozet: "bg-violet-100 text-violet-700 ring-violet-200",
-    serit: "from-violet-400 to-violet-500",
-    sayac: "bg-violet-50 text-violet-700",
-  },
-  pink: {
-    kart: "hover:border-pink-300 hover:shadow-pink-100",
-    rozet: "bg-pink-100 text-pink-700 ring-pink-200",
-    serit: "from-pink-400 to-pink-500",
-    sayac: "bg-pink-50 text-pink-700",
-  },
-  indigo: {
-    kart: "hover:border-indigo-300 hover:shadow-indigo-100",
-    rozet: "bg-indigo-100 text-indigo-700 ring-indigo-200",
-    serit: "from-indigo-400 to-indigo-500",
-    sayac: "bg-indigo-50 text-indigo-700",
-  },
+const SABLON_IKONU: Record<string, LucideIcon> = {
+  "kahve-dukkani": Coffee,
+  "kahvalti-kafe": EggFried,
+  "restoran-lokanta": UtensilsCrossed,
+  "kebapci-ocakbasi": Flame,
+  pizzaci: Pizza,
+  "burger-fast-food": Hamburger,
+  "donerci-bufe": Sandwich,
+  "balik-restorani": Fish,
+  "bar-gece-kulubu": Martini,
+  "pastane-tatlici": CakeSlice,
 };
 
 /**
@@ -125,10 +88,7 @@ export function SablonSecici({
             <span aria-hidden="true">✓</span>
             {state.saved}
           </p>
-          <Link
-            href="/admin/menu"
-            className="shrink-0 rounded-control bg-success px-4 py-2 text-small font-semibold text-white transition hover:opacity-90"
-          >
+          <Link href="/admin/menu" className={buttonClass({ size: "sm", className: "shrink-0" })}>
             Menümü düzenle →
           </Link>
         </div>
@@ -143,18 +103,17 @@ export function SablonSecici({
             !
           </span>
           <p className="text-small text-warning-ink">
-            Menünüzde zaten <strong>{mevcutBolumSayisi} bölüm</strong> var.
-            Şablon yalnızca boş menüye uygulanabilir — aynı bölümler iki kez
-            oluşmasın diye. Şablona geçmek istiyorsanız önce{" "}
-            <strong>Menümü düzenle</strong> sekmesindeki &quot;Tüm menüyü
-            sil&quot; ile temizleyin.
+            Menünüzde zaten <strong>{mevcutBolumSayisi} bölüm</strong> var. Bir
+            şablonu <strong>mevcut menüye ekleyebilirsiniz</strong>: aynı adlı
+            bölümler birleşir, menünüzde olan ürünler tekrar eklenmez. Menüyü
+            tamamen değiştirmek isterseniz önce <strong>Menümü düzenle</strong>{" "}
+            sayfasının sonundaki &quot;Tüm menüyü sil&quot; ile temizleyin.
           </p>
         </div>
       ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {siralanmis.map((sablon) => {
-          const tema = TEMA[sablon.renk];
           const urunSayisi = sablon.kategoriler.reduce((t, k) => t + k.urunler.length, 0);
           const onerilen = sablon.onerilenTurler.includes(businessType);
           const acik = acikId === sablon.id;
@@ -165,11 +124,9 @@ export function SablonSecici({
               className={`flex h-full flex-col overflow-hidden rounded-card border bg-surface shadow-card transition ${
                 acik
                   ? "border-accent-300 shadow-pop ring-2 ring-accent-200"
-                  : `border-line hover:-translate-y-0.5 hover:shadow-raised ${tema.kart}`
+                  : `border-line hover:-translate-y-0.5 hover:shadow-raised`
               }`}
             >
-              <span className={`h-1.5 w-full bg-gradient-to-r ${tema.serit}`} aria-hidden="true" />
-
               <button
                 type="button"
                 onClick={() => setAcikId(acik ? null : sablon.id)}
@@ -177,12 +134,17 @@ export function SablonSecici({
                 className="flex flex-1 cursor-pointer flex-col p-4 text-start"
               >
                 <span className="flex items-start justify-between gap-2">
-                  <span
-                    aria-hidden="true"
-                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-chip text-xl ring-1 ${tema.rozet}`}
-                  >
-                    {sablon.ikon}
-                  </span>
+                  {(() => {
+                    const Ikon = SABLON_IKONU[sablon.id] ?? UtensilsCrossed;
+                    return (
+                      <span
+                        aria-hidden="true"
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-chip bg-accent-50 text-accent-700 ring-1 ring-inset ring-accent-100"
+                      >
+                        <Ikon className="h-5 w-5" />
+                      </span>
+                    );
+                  })()}
                   {onerilen ? (
                     <span className="rounded-full bg-accent-50 px-2 py-0.5 text-caption font-semibold text-accent-700 ring-1 ring-accent-200">
                       Size uygun
@@ -196,10 +158,10 @@ export function SablonSecici({
                 </span>
 
                 <span className="mt-3 flex items-center gap-2">
-                  <span className={`rounded-chip px-2 py-1 text-caption font-semibold ${tema.sayac}`}>
+                  <span className={`rounded-chip px-2 py-1 text-caption font-semibold bg-sunken text-ink-soft`}>
                     {sablon.kategoriler.length} bölüm
                   </span>
-                  <span className={`rounded-chip px-2 py-1 text-caption font-semibold ${tema.sayac}`}>
+                  <span className={`rounded-chip px-2 py-1 text-caption font-semibold bg-sunken text-ink-soft`}>
                     {urunSayisi} ürün
                   </span>
                   <span className="ms-auto text-caption font-medium text-accent-700">
@@ -233,15 +195,16 @@ export function SablonSecici({
                   <form action={formAction} className="mt-3">
                     <input type="hidden" name="businessId" value={businessId} />
                     <input type="hidden" name="sablonId" value={sablon.id} />
+                    {doluMu ? <input type="hidden" name="mod" value="ekle" /> : null}
                     <button
                       type="submit"
-                      disabled={pending || doluMu}
-                      className="w-full rounded-control bg-gradient-to-r from-accent-600 to-accent-700 px-4 py-2.5 text-small font-semibold text-white shadow-card transition hover:brightness-110 disabled:from-slate-300 disabled:to-slate-300"
+                      disabled={pending}
+                      className={buttonClass({ size: "md", block: true })}
                     >
                       {pending
-                        ? "Kuruluyor…"
+                        ? "Ekleniyor…"
                         : doluMu
-                          ? "Önce mevcut menüyü silin"
+                          ? "Mevcut menüme ekle"
                           : `Bu menüyü kullan (${urunSayisi} ürün)`}
                     </button>
                   </form>

@@ -121,7 +121,7 @@ export async function degisimKararVer(formData: FormData): Promise<void> {
     await bildirimGonder([talep.requestedById], {
       tur: "vardiya.degisim.karar",
       baslik: "Vardiya talebin reddedildi",
-      govde: `${kaynakEtiket} — bu vardiyada kalmaya devam ediyorsun.`,
+      govde: `${kaynakEtiket} — bu vardiyada kalmaya devam ediyorsunuz.`,
       url: "/admin/vardiyalarim",
     });
     revalidatePath("/admin/vardiya-planlama");
@@ -214,13 +214,13 @@ export async function degisimKararVer(formData: FormData): Promise<void> {
     await bildirimGonder([talep.requestedById], {
       tur: "vardiya.degisim.karar",
       baslik: "Vardiya değişim talebin onaylandı",
-      govde: `Artık ${hedefEtiket} çalışıyorsun (önceden ${kaynakEtiket}).`,
+      govde: `Artık ${hedefEtiket} çalışıyorsunuz (önceden ${kaynakEtiket}).`,
       url: "/admin/vardiyalarim",
     });
     await bildirimGonder([esleşen.requestedById], {
       tur: "vardiya.degisim.karar",
       baslik: "Vardiya değişim talebin onaylandı",
-      govde: `Artık ${kaynakEtiket} çalışıyorsun (önceden ${hedefEtiket}).`,
+      govde: `Artık ${kaynakEtiket} çalışıyorsunuz (önceden ${hedefEtiket}).`,
       url: "/admin/vardiyalarim",
     });
     revalidatePath("/admin/vardiya-planlama");
@@ -262,7 +262,7 @@ export async function degisimKararVer(formData: FormData): Promise<void> {
   await bildirimGonder([talep.requestedById], {
     tur: "vardiya.degisim.karar",
     baslik: "Vardiya değişim talebin onaylandı",
-    govde: `Artık ${hedefEtiket} çalışıyorsun (önceden ${kaynakEtiket}).`,
+    govde: `Artık ${hedefEtiket} çalışıyorsunuz (önceden ${kaynakEtiket}).`,
     url: "/admin/vardiyalarim",
   });
   revalidatePath("/admin/vardiya-planlama");

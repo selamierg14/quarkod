@@ -1,6 +1,8 @@
 import { Mail, Store, Utensils } from "lucide-react";
 import Link from "next/link";
-import { requireTenant, visibleBusinesses } from "@/lib/kimlik/auth";
+import { requireTenant, requireUser, visibleBusinesses } from "@/lib/kimlik/auth";
+import { effectiveAccountId } from "@/lib/kimlik/impersonation";
+import { PlatformOzeti } from "./PlatformOzeti";
 import { modulTonu } from "@/lib/kimlik/modul-rengi";
 import { getBusinessStats, type BusinessStats } from "@/lib/rapor/stats";
 import { biyerlereIstatistikGetir } from "@/lib/biyerlere/biyerlere-istatistik";
@@ -86,6 +88,13 @@ export default async function AdminHomePage({
 }: {
   searchParams: Promise<{ isletme?: string }>;
 }) {
+  // Hesap seçmemiş platform yöneticisi kendi özetini görüyor. Önceden
+  // requireTenant onu Hesaplar'a yönlendiriyordu: önce bu sayfanın
+  // iskeleti görünüyor, sonra başka bir sayfa açılıyordu.
+  const oturum = await requireUser();
+  if (oturum.role === "superadmin" && !(await effectiveAccountId(oturum))) {
+    return <PlatformOzeti />;
+  }
   const user = await requireTenant();
   const businesses = await visibleBusinesses(user);
   const query = await searchParams;
@@ -108,8 +117,18 @@ export default async function AdminHomePage({
   const son7 = stats.reduce((a, s) => a + s.last7Days, 0);
   const googleShown = stats.reduce((a, s) => a + s.googleShown, 0);
   const googleClicked = stats.reduce((a, s) => a + s.googleClicked, 0);
-  const puanliToplam = stats.reduce((a, s) => a + (s.average ?? 0) * s.total, 0);
-  const ortalama = toplam > 0 ? puanliToplam / toplam : null;
+  /**
+   * Kart "son 30 gün"ü gösteriyor, eğilim de aynı dönemi önceki 30 günle
+   * kıyaslıyor. Önceden etiket "Bu haftaki ortalama", değer TÜM ZAMANLARIN
+   * ortalaması, eğilim ise 30/30 karşılaştırmasıydı — üç ayrı dönem. QA
+   * ekranda "ortalama 3.8" yanında "son 7 günde 0" görünce yakaladı.
+   * Dönemde kayıt yoksa ortalama gösterilmiyor.
+   */
+  const son30 = stats.reduce((a, s) => a + s.last30Count, 0);
+  const ortalama =
+    son30 > 0
+      ? stats.reduce((a, s) => a + (s.last30Average ?? 0) * s.last30Count, 0) / son30
+      : null;
 
   // Değişim: işletme başına delta'ların kayıt ağırlıklı ortalaması.
   const deltali = stats.filter((s) => s.delta !== null && s.total > 0);
@@ -205,10 +224,13 @@ export default async function AdminHomePage({
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             renk="mavi"
-            label="Bu haftaki ortalama"
+            label="Son 30 gün ortalaması"
             value={ortalama !== null ? `${ortalama.toFixed(1)} / 5` : "—"}
+            hint={ortalama === null ? "Son 30 günde geri bildirim yok" : undefined}
             trend={
-              delta === null || Math.abs(delta) < 0.1
+              ortalama === null
+                ? undefined
+                : delta === null || Math.abs(delta) < 0.1
                 ? { yon: "sabit", metin: "önceki aya göre sabit" }
                 : {
                     yon: delta > 0 ? "yukari" : "asagi",

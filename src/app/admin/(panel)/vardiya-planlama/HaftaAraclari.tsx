@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { ChevronDown, CopyPlus, TriangleAlert } from "lucide-react";
 import { gecenHaftayiKopyala, type HaftaKopyaState } from "./actions";
 import { uyarilariGrupla, type VardiyaUyarisi } from "@/lib/personel/vardiya-uyari";
+import { buttonClass } from "@/components/ui";
 
 /**
  * Hafta üstü araç şeridi: geçen haftayı kopyalama ve çizelge uyarıları.
@@ -42,7 +43,7 @@ export function HaftaAraclari({
         <button
           type="submit"
           disabled={pending}
-          className="inline-flex items-center gap-2 rounded-control border border-line bg-surface px-3.5 py-2 text-small font-medium text-ink-soft shadow-card transition hover:border-line-strong hover:bg-canvas disabled:opacity-60"
+          className={buttonClass({ variant: "secondary", size: "sm" })}
         >
           <CopyPlus className="h-4 w-4" aria-hidden="true" />
           {pending ? "Kopyalanıyor…" : "Geçen haftayı kopyala"}

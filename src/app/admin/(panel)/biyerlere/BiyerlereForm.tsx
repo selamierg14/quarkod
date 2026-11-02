@@ -1,12 +1,12 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { useToast } from "@/components/ui";
+import { useToast, buttonClass } from "@/components/ui";
 import { FIYAT_SEGMENTLERI, MEKAN_OZELLIKLERI, ozellikleriCoz } from "@/lib/biyerlere/mekan";
 import { updateBiyerlereSettings, type BiyerlereFormState } from "./actions";
 
 const INPUT =
-  "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
+  "rounded-control border border-line bg-surface px-3 py-2 text-small text-ink outline-none placeholder:text-ink-faint transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100";
 const ETIKET = "text-small font-medium text-ink-soft";
 const YARDIM = "text-caption text-ink-faint";
 
@@ -148,7 +148,7 @@ export function BiyerlereForm({ business }: { business: Business }) {
       <button
         type="submit"
         disabled={pending}
-        className="self-start rounded-control bg-accent-600 px-4 py-2.5 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+        className={buttonClass({ size: "md", className: "self-start" })}
       >
         {pending ? "Kaydediliyor..." : "Kaydet"}
       </button>

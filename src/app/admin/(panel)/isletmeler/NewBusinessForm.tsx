@@ -4,9 +4,10 @@ import { useActionState, useState } from "react";
 import { BUSINESS_TYPE_LIST, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/cekirdek/constants";
 import { createBusiness, type FormState } from "./actions";
 import { alanOzellikleri } from "@/lib/cekirdek/desenler";
+import { buttonClass } from "@/components/ui";
 
 const INPUT =
-  "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
+  "rounded-control border border-line bg-surface px-3 py-2 text-small text-ink outline-none placeholder:text-ink-faint transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100";
 
 export function NewBusinessForm() {
   const [open, setOpen] = useState(false);
@@ -184,14 +185,14 @@ export function NewBusinessForm() {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-control bg-accent-600 px-4 py-2.5 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+          className={buttonClass({ size: "md" })}
         >
           {pending ? "Oluşturuluyor..." : "Oluştur"}
         </button>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="rounded-control border border-line px-4 py-2.5 text-small text-ink-soft"
+          className={buttonClass({ variant: "secondary", size: "md" })}
         >
           Vazgeç
         </button>

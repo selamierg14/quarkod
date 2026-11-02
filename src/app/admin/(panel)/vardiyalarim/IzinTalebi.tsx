@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { CalendarOff } from "lucide-react";
-import { SectionCard } from "@/components/ui";
+import { SectionCard, buttonClass } from "@/components/ui";
 import { IZIN_TURLERI } from "@/lib/isletme/izin";
 import { gunGirdisi } from "@/lib/cekirdek/gun";
 import {
@@ -12,7 +12,7 @@ import {
 import { alanOzellikleri } from "@/lib/cekirdek/desenler";
 
 const INPUT =
-  "w-full rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
+  "w-full rounded-control border border-line bg-surface px-3 py-2 text-small text-ink outline-none placeholder:text-ink-faint transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100";
 
 /**
  * Personelin kendi izin talebi.
@@ -53,7 +53,7 @@ export function IzinTalebi({
           <button
             type="button"
             onClick={() => setAcik(true)}
-            className="rounded-control bg-gradient-to-b from-accent-600 to-accent-700 px-3.5 py-2 text-small font-medium text-white shadow-card transition hover:brightness-110"
+            className={buttonClass({ size: "sm" })}
           >
             İzin talep et
           </button>
@@ -96,14 +96,14 @@ export function IzinTalebi({
             <button
               type="submit"
               disabled={pending}
-              className="rounded-control bg-gradient-to-b from-accent-600 to-accent-700 px-4 py-2 text-small font-medium text-white shadow-card transition hover:brightness-110 disabled:bg-slate-400 disabled:bg-none"
+              className={buttonClass({ size: "md" })}
             >
               {pending ? "Gönderiliyor…" : "Talebi gönder"}
             </button>
             <button
               type="button"
               onClick={() => setAcik(false)}
-              className="rounded-control border border-line bg-surface px-4 py-2 text-small text-ink-soft transition hover:bg-canvas"
+              className={buttonClass({ variant: "secondary", size: "sm" })}
             >
               Vazgeç
             </button>

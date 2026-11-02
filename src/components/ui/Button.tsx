@@ -29,7 +29,9 @@ const VARIANTS: Record<ButtonVariant, string> = {
 
 const SIZES: Record<ButtonSize, string> = {
   sm: "h-8 gap-1.5 px-3 text-small",
-  md: "h-10 gap-2 px-4 text-body",
+  // Panelin form ve sayfa düğmesi. 40px/15px'ti; yoğun yönetim ekranında
+  // satır düğmeleriyle (32px) arasındaki fark gereğinden büyük duruyordu.
+  md: "h-9 gap-2 px-4 text-small",
   // Mobilde tek elle basılan ana aksiyon: 48px dokunma hedefi.
   lg: "h-12 gap-2 px-5 text-body",
 };

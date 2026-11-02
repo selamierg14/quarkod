@@ -18,7 +18,7 @@ export default async function LoginPage() {
           aria-hidden="true"
           className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-accent-500 to-accent-700 text-lg font-bold text-white shadow-card"
         >
-          M
+          Q
         </div>
 
         <div className="mt-6 rounded-card bg-surface p-7 shadow-card ring-1 ring-line">

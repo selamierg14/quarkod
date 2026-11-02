@@ -16,6 +16,7 @@ import { denetimYaz } from "@/lib/rapor/denetim";
 import { secenekleriAyristir, secenekleriBirlestir } from "@/lib/isletme/anket-detay";
 import { sifreSorunu } from "@/lib/kimlik/sifre";
 import { prisma } from "@/lib/cekirdek/db";
+import { adAnahtari } from "@/lib/cekirdek/text";
 import { BUSINESS_TYPES, DEFAULT_CATEGORIES, type BusinessType } from "@/lib/cekirdek/constants";
 import { validateImageDataUrl } from "@/lib/isletme/image";
 import { normalizePhone, toUsername, usernameProblem } from "@/lib/kimlik/username";
@@ -402,19 +403,28 @@ export async function addCategory(
   if (!adSonuc.ok) return { error: adSonuc.hata };
   const name = adSonuc.deger;
 
-  const existing = await prisma.categoryTemplate.findUnique({
-    where: { businessId_name: { businessId, name } },
+  // Büyük-küçük harf farkı tekrar sayılıyor: "temizlik" ve "Temizlik" ayrı
+  // kayıt olunca müşteri ankette aynı soruyu iki kez görüyordu (QA, Ekim
+  // 2026). Veritabanındaki tekil anahtar harfi harfine; Türkçe katlama
+  // burada, işletmenin kategori listesi üzerinde (birkaç düzine satır).
+  const mevcutlar = await prisma.categoryTemplate.findMany({
+    where: { businessId },
+    select: { id: true, name: true, active: true },
   });
+  const existing = mevcutlar.find((k) => adAnahtari(k.name) === adAnahtari(name));
+  if (existing?.active) {
+    return { error: `"${existing.name}" kategorisi zaten var.` };
+  }
   if (existing) {
-    // Daha önce kapatılmış bir kategori tekrar açılabilir.
+    // Daha önce kapatılmış bir kategori tekrar açılabilir — yeni bir
+    // kopya açmak yerine eskisi (geçmiş puanlarıyla birlikte) geri gelir.
     await prisma.categoryTemplate.update({
       where: { id: existing.id },
       data: { active: true },
     });
   } else {
-    const count = await prisma.categoryTemplate.count({ where: { businessId } });
     await prisma.categoryTemplate.create({
-      data: { businessId, name, sortOrder: count },
+      data: { businessId, name, sortOrder: mevcutlar.length },
     });
   }
 
@@ -535,8 +545,15 @@ export async function addTables(
   if (range) {
     const start = Number(range[1]);
     const end = Number(range[2]);
-    if (end < start || end - start >= EN_COK_MASA) {
-      return { error: `Aralık geçersiz veya çok geniş (en fazla ${EN_COK_MASA} masa).` };
+    // İki hata tek mesajda birleşiyordu ("geçersiz veya çok geniş") ve
+    // kullanıcı hangisini yaptığını bilmiyordu (QA). Ayrı ve somut.
+    if (end < start) {
+      return { error: `"${start}-${end}" ters yazılmış; ${end}-${start} mi demek istediniz?` };
+    }
+    if (end - start >= EN_COK_MASA) {
+      return {
+        error: `Aralık çok geniş: ${end - start + 1} masa. Tek seferde en fazla ${EN_COK_MASA} masa eklenebilir.`,
+      };
     }
     numbers = Array.from({ length: end - start + 1 }, (_, i) => String(start + i));
   } else {

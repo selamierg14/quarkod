@@ -44,7 +44,7 @@ export default async function RotalarPage({
   ]);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <PageHeader
         ikon={<MapPinned className="h-4 w-4" aria-hidden="true" />}
         renk="violet"
@@ -56,7 +56,7 @@ export default async function RotalarPage({
         ikon={<MapPinned className="h-4 w-4" aria-hidden="true" />}
         renk="amber"
         title="Yeni rota"
-        description="Önce rotayı aç, sonra durakları (mekanları) ekle."
+        description="Önce rotayı açın, sonra durakları (mekanları) ekleyin."
       >
         <NewRotaForm />
       </SectionCard>

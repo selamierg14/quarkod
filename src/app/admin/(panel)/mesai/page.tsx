@@ -4,7 +4,7 @@ import { Clock } from "lucide-react";
 import QRCode from "qrcode";
 import { requireMesaiErisim, visibleBusinesses } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
-import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
+import { EmptyState, PageHeader, SectionCard, buttonClass } from "@/components/ui";
 import { appUrl } from "@/lib/cekirdek/constants";
 import { gunBaslangici, gunEkle, gunGirdisi, gunGirdisindenTarih } from "@/lib/cekirdek/gun";
 import { istemciIp } from "@/lib/kimlik/istemci-ip";
@@ -135,7 +135,7 @@ export default async function MesaiPage({
   const ipTespitCalisiyor = gorulenIp !== "" && gorulenIp !== "guvenilmez";
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <PageHeader
         ikon={<Clock className="h-4 w-4" aria-hidden="true" />}
         renk="emerald"
@@ -180,7 +180,7 @@ export default async function MesaiPage({
           </label>
           <button
             type="submit"
-            className="rounded-control border border-line px-4 py-2 text-small font-semibold text-ink hover:bg-sunken"
+            className={buttonClass({ variant: "secondary", size: "sm" })}
           >
             Göster
           </button>

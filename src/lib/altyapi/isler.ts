@@ -43,7 +43,7 @@ export const ZAMANLI_ISLER: IsTanimi[] = [
   },
 ];
 
-export type IsDurumu = "calisti" | "gecikti" | "hic" | "hatali";
+export type IsDurumu = "calisti" | "gecikti" | "hic" | "hatali" | "yonetiliyor";
 
 export type IsSaglik = IsTanimi & {
   durum: IsDurumu;
@@ -71,4 +71,50 @@ export const DURUM_METNI: Record<IsDurumu, string> = {
   gecikti: "Gecikti",
   hic: "Hiç çalışmadı",
   hatali: "Son çalışma hatalı",
+  yonetiliyor: "Neon tarafından yönetiliyor",
 };
+
+/** Dikkat isteyen durumlar — "yönetiliyor" ve "çalıştı" sorun değil. */
+export function isSorunluMu(durum: IsDurumu): boolean {
+  return durum === "gecikti" || durum === "hic" || durum === "hatali";
+}
+
+/**
+ * Veritabanının yedeği bizim işimiz mi, sağlayıcının mı?
+ *
+ * Neon (yönetilen Postgres) her veritabanının otomatik anlık yedeğini ve
+ * zamana dönük geri yüklemeyi kendisi yapıyor. Orada `npm run yedekle`
+ * hiç zamanlanmıyor ve zamanlanması da gerekmiyor — ama Sistem sağlığı
+ * ekranı yine de "Yedekleme: Hiç çalışmadı" diye KIRMIZI hata
+ * gösteriyordu, hemen altındaki not ise "ayrı bir cron gerekmiyor"
+ * diyordu. UI incelemesi bu çelişkiyi yakaladı.
+ *
+ * Bağlantı adresinin kendisi dışarı verilmiyor; yalnızca sunucu adının
+ * Neon'a ait olup olmadığına bakılıyor. Adres çözülemezse "bizim işimiz"
+ * kabul ediliyor — emin olmadan bir yedeği "yönetiliyor" saymak, hiç
+ * yedek alınmayan bir kurulumu sağlıklı gösterirdi.
+ */
+export function yedeklemeYonetiliyorMu(veritabaniAdresi: string | undefined): boolean {
+  if (!veritabaniAdresi) return false;
+  try {
+    return new URL(veritabaniAdresi).hostname.toLowerCase().endsWith(".neon.tech");
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * İşin ekranda gösterilecek durumu. `isDurumu`nun üstüne tek kural
+ * ekliyor: sağlayıcının yönettiği yedekleme "hiç çalışmadı" değil.
+ */
+export function isSagligi(
+  tanim: IsTanimi,
+  son: { finishedAt: Date | null; ok: boolean; detail: string | null } | null,
+  secenek: { yedeklemeYonetiliyor: boolean },
+  simdi = new Date(),
+): IsDurumu {
+  // Biri yine de elle `npm run yedekle` çalıştırdıysa o sonucu göstermek
+  // daha dürüst: hata verdiyse bilinmeli.
+  if (tanim.ad === "yedekle" && secenek.yedeklemeYonetiliyor && !son) return "yonetiliyor";
+  return isDurumu(tanim, son, simdi);
+}

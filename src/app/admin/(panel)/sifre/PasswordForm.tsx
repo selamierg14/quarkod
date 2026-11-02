@@ -3,11 +3,12 @@
 import { useActionState, useRef, useState } from "react";
 import { changeOwnPassword, type PasswordState } from "../kullanicilar/actions";
 import { alanOzellikleri } from "@/lib/cekirdek/desenler";
+import { buttonClass } from "@/components/ui";
 
 const INITIAL: PasswordState = {};
 
 const INPUT =
-  "rounded-chip border border-line bg-surface px-3 py-2.5 text-[16px] outline-none focus:border-line-strong";
+  "rounded-chip border border-line bg-surface px-3 py-2.5 text-[16px] outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100";
 
 /**
  * Şifre değiştirme — tek ekran: mevcut şifre + yeni şifre (iki kez).
@@ -96,7 +97,7 @@ export function PasswordForm() {
       <button
         type="submit"
         disabled={pending}
-        className="mt-1 rounded-control bg-accent-600 px-4 py-2.5 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+        className={buttonClass({ size: "md", className: "mt-1" })}
       >
         {pending ? "Değiştiriliyor…" : "Şifreyi değiştir"}
       </button>

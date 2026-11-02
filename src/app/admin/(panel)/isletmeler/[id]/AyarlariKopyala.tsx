@@ -2,7 +2,7 @@
 
 import { ClipboardList } from "lucide-react";
 import { useActionState, useState } from "react";
-import { SectionCard } from "@/components/ui";
+import { SectionCard, buttonClass } from "@/components/ui";
 import { ayarlariKopyala, type FormState } from "../actions";
 
 /**
@@ -62,7 +62,7 @@ export function AyarlariKopyala({
           type="button"
           disabled={secili.length === 0}
           onClick={() => setAcik(true)}
-          className="mt-3 self-start rounded-control bg-accent-600 px-4 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+          className={buttonClass({ size: "md", className: "mt-3 self-start" })}
         >
           Seçilenlere kopyala
         </button>
@@ -85,14 +85,14 @@ export function AyarlariKopyala({
             <button
               type="submit"
               disabled={pending}
-              className="rounded-control bg-accent-600 px-4 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+              className={buttonClass({ size: "md" })}
             >
               {pending ? "Kopyalanıyor…" : "Evet, kopyala"}
             </button>
             <button
               type="button"
               onClick={() => setAcik(false)}
-              className="rounded-control border border-line bg-surface px-4 py-2 text-small text-ink-soft transition hover:bg-canvas"
+              className={buttonClass({ variant: "secondary", size: "sm" })}
             >
               Vazgeç
             </button>

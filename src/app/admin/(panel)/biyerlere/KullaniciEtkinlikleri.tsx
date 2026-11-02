@@ -82,7 +82,7 @@ export function KullaniciEtkinlikleri({ etkinlikler }: { etkinlikler: PanelEtkin
               name="sebep"
               placeholder="Sebep (isteğe bağlı)"
               maxLength={200}
-              className="w-44 rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong"
+              className="w-44 rounded-control border border-line bg-surface px-3 py-2 text-small text-ink outline-none placeholder:text-ink-faint transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
             />
             <button
               type="submit"

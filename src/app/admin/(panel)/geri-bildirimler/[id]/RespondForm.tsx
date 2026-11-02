@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import type { HazirYanit } from "@/lib/isletme/hazir-yanit";
 import { respondToCustomer, type RespondState } from "./actions";
+import { buttonClass } from "@/components/ui";
 
 /**
  * Şikayet döngüsünü kapatan yanıt kutusu.
@@ -61,7 +62,7 @@ export function RespondForm({
               key={yanit.etiket}
               type="button"
               onClick={() => setMesaj(yanit.metin)}
-              className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink hover:bg-sunken"
+              className={buttonClass({ variant: "secondary", size: "sm" })}
             >
               {yanit.etiket}
             </button>
@@ -81,7 +82,7 @@ export function RespondForm({
             ? "Örn: Geri bildiriminiz için teşekkürler, sorunu çözdük..."
             : "Kısa bir SMS yazın; müşterinin numarasına gönderilir."
         }
-        className="rounded-control border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong"
+        className="rounded-control border border-line bg-surface px-3 py-2 text-small outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
       />
       {state.error ? (
         <p className="text-caption text-danger-ink" role="alert">{state.error}</p>
@@ -94,7 +95,7 @@ export function RespondForm({
         <button
           type="submit"
           disabled={pending}
-          className="shrink-0 rounded-control bg-accent-600 px-4 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+          className={buttonClass({ size: "md", className: "shrink-0" })}
         >
           {pending ? "Gönderiliyor…" : "Gönder"}
         </button>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/cekirdek/db";
 import type { SessionUser } from "@/lib/kimlik/auth";
+import { buttonClass } from "@/components/ui";
 
 type Adim = { baslik: string; tamam: boolean; href: string; aksiyon: string };
 
@@ -109,7 +110,7 @@ function OnboardingGovde({ adimlar }: { adimlar: Adim[] }) {
             {!adim.tamam ? (
               <Link
                 href={adim.href}
-                className="rounded-chip bg-accent-600 px-3 py-1 text-caption font-medium text-white hover:bg-accent-700"
+                className={buttonClass({ size: "sm" })}
               >
                 {adim.aksiyon}
               </Link>

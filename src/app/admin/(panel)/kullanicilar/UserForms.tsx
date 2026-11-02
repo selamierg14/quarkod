@@ -9,7 +9,14 @@ import {
   type UserFormState,
 } from "./actions";
 import { KeyRound, UserCheck, UserX } from "lucide-react";
-import { Button } from "@/components/ui";
+import {
+  Button,
+  GonderDugmesi,
+  KorunanForm,
+  SifreAlani,
+  SilDugmesi,
+  buttonClass,
+} from "@/components/ui";
 import {
   MODULLER,
   MODUL_ACIKLAMALARI,
@@ -22,7 +29,7 @@ import {
 } from "@/lib/kimlik/telefonlar";
 
 const INPUT =
-  "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
+  "rounded-control border border-line bg-surface px-3 py-2 text-small text-ink outline-none placeholder:text-ink-faint transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100";
 
 type Business = { id: string; name: string };
 
@@ -114,7 +121,7 @@ export function NewUserForm({
   );
 
   return (
-    <form action={formAction} className="flex flex-col gap-3">
+    <KorunanForm action={formAction} sonuc={state} sifirla className="flex flex-col gap-3">
       {hint ? <div className="text-small text-ink-muted">{hint}</div> : null}
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -174,34 +181,57 @@ export function NewUserForm({
           />
         </label>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-caption text-ink-muted">Rol</span>
-          <select
-            name="role"
-            value={role}
-            onChange={(event) => setRole(event.target.value)}
-            className={INPUT}
-          >
-            {roller.map((r) => (
-              <option key={r} value={r}>
-                {ROL_SECENEKLERI[r] ?? r}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {isletmeGerekir(role) ? (
+        {/* Tek seçenekli liste bir karar değil, bir engel (QA): sorumlu
+            yalnızca "garson" açabiliyor, tek işletmeli hesapta da "Seçin"
+            zorunluydu. Tek seçenek sabit metin olarak gösteriliyor. */}
+        {roller.length === 1 ? (
+          <div className="flex flex-col gap-1">
+            <span className="text-caption text-ink-muted">Rol</span>
+            <input type="hidden" name="role" value={roller[0]} />
+            <span className="rounded-chip border border-line bg-canvas px-3 py-2 text-small text-ink-soft">
+              {ROL_SECENEKLERI[roller[0]] ?? roller[0]}
+            </span>
+          </div>
+        ) : (
           <label className="flex flex-col gap-1">
-            <span className="text-caption text-ink-muted">İşletme</span>
-            <select name="businessId" required className={INPUT}>
-              <option value="">Seçin</option>
-              {businesses.map((business) => (
-                <option key={business.id} value={business.id}>
-                  {business.name}
+            <span className="text-caption text-ink-muted">Rol</span>
+            <select
+              name="role"
+              value={role}
+              onChange={(event) => setRole(event.target.value)}
+              className={INPUT}
+            >
+              {roller.map((r) => (
+                <option key={r} value={r}>
+                  {ROL_SECENEKLERI[r] ?? r}
                 </option>
               ))}
             </select>
           </label>
+        )}
+
+        {isletmeGerekir(role) ? (
+          businesses.length === 1 ? (
+            <div className="flex flex-col gap-1">
+              <span className="text-caption text-ink-muted">İşletme</span>
+              <input type="hidden" name="businessId" value={businesses[0].id} />
+              <span className="rounded-chip border border-line bg-canvas px-3 py-2 text-small text-ink-soft">
+                {businesses[0].name}
+              </span>
+            </div>
+          ) : (
+            <label className="flex flex-col gap-1">
+              <span className="text-caption text-ink-muted">İşletme</span>
+              <select name="businessId" required className={INPUT}>
+                <option value="">Seçin</option>
+                {businesses.map((business) => (
+                  <option key={business.id} value={business.id}>
+                    {business.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )
         ) : null}
 
         {role === "bolge" ? (
@@ -232,15 +262,7 @@ export function NewUserForm({
 
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-muted">Başlangıç şifresi</span>
-          <input
-            name="password"
-            {...alanOzellikleri("sifre")}
-            // Başlangıç şifresi bilerek AÇIK: yöneticinin onu kullanıcıya
-            // iletmesi gerekiyor, noktalarla gösterip yazdırmak anlamsız.
-            type="text"
-            placeholder="en az 8 karakter"
-            className={INPUT}
-          />
+          <SifreAlani className={INPUT} />
         </label>
       </div>
 
@@ -280,11 +302,11 @@ export function NewUserForm({
       <button
         type="submit"
         disabled={pending}
-        className="self-start rounded-control bg-accent-600 px-4 py-2.5 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+        className={buttonClass({ size: "md", className: "self-start" })}
       >
         {pending ? "Ekleniyor..." : "Kullanıcı ekle"}
       </button>
-    </form>
+    </KorunanForm>
   );
 }
 
@@ -329,7 +351,7 @@ export function EditUserForm({
   const rolSabit = user.role === "owner";
 
   return (
-    <form action={formAction} className="flex flex-col gap-3">
+    <KorunanForm action={formAction} sonuc={state} className="flex flex-col gap-3">
       <input type="hidden" name="id" value={user.id} />
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -512,11 +534,11 @@ export function EditUserForm({
       <button
         type="submit"
         disabled={pending}
-        className="self-start rounded-control bg-accent-600 px-4 py-2.5 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+        className={buttonClass({ size: "md", className: "self-start" })}
       >
         {pending ? "Kaydediliyor..." : "Kaydet"}
       </button>
-    </form>
+    </KorunanForm>
   );
 }
 
@@ -544,27 +566,24 @@ export function ResetPasswordForm({ userId }: { userId: string }) {
   }
 
   return (
-    <form action={formAction} className="flex flex-col items-end gap-1">
+    <KorunanForm action={formAction} sonuc={state} sifirla className="flex flex-col items-end gap-1">
       <input type="hidden" name="userId" value={userId} />
       <div className="flex gap-1">
-        <input
-          name="password"
-          {...alanOzellikleri("sifre")}
-          type="text"
+        <SifreAlani
           placeholder="yeni şifre"
-          className="w-36 rounded-chip border border-line px-2 py-1 text-caption outline-none focus:border-line-strong"
+          className="w-36 rounded-chip border border-line px-2 py-1 text-caption outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
         />
         <button
           type="submit"
           disabled={pending}
-          className="rounded-chip bg-accent-600 px-2.5 py-1 text-caption text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+          className={buttonClass({ size: "sm" })}
         >
           Kaydet
         </button>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="rounded-chip border border-line px-2 py-1 text-caption text-ink-muted"
+          className={buttonClass({ variant: "ghost", size: "sm" })}
         >
           ✕
         </button>
@@ -575,46 +594,63 @@ export function ResetPasswordForm({ userId }: { userId: string }) {
       {state.saved ? (
         <span className="text-caption text-success" role="status">{state.saved}</span>
       ) : null}
-    </form>
+    </KorunanForm>
   );
 }
 
 export function ToggleUserButton({
   userId,
   active,
+  ad,
   disabled,
 }: {
   userId: string;
   active: boolean;
+  /** Onay metninde kimin pasifleştirileceği yazsın. */
+  ad: string;
   disabled: boolean;
 }) {
+  if (disabled) {
+    return (
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        className="px-2"
+        disabled
+        title="Kendi hesabınızı kapatamazsınız"
+      >
+        <UserX className="h-3.5 w-3.5" aria-hidden="true" />
+        <span className="sr-only">Pasifleştir</span>
+      </Button>
+    );
+  }
+
   return (
     <form action={toggleUser}>
       <input type="hidden" name="userId" value={userId} />
-      {/* Pasifleştirme geri alınabilir ama girişi kesen bir işlem:
-          "Düzenle" ile aynı görsel ağırlıkta durunca yanlışlıkla
-          tıklanabiliyordu. Aktifleştirme riskli değil, nötr kalıyor. */}
-      <Button
-        type="submit"
-        variant={active ? "destructive" : "secondary"}
-        size="sm"
-        className="px-2"
-        disabled={disabled}
-        title={
-          disabled
-            ? "Kendi hesabınızı kapatamazsınız"
-            : active
-              ? "Pasifleştir — panele giremez, kaydı silinmez"
-              : "Aktifleştir"
-        }
-      >
-        {active ? (
+      {active ? (
+        // Pasifleştirme girişi kesen bir işlem: ilk tık yalnızca soruyor,
+        // ikinci tık uyguluyor (UI incelemesi: riskli işlem onaysızdı).
+        // Geri alınabilir — aynı satırda "Aktifleştir" olarak döner.
+        <SilDugmesi
+          title="Pasifleştir — panele giremez, kaydı silinmez"
+          className={buttonClass({ variant: "secondary", size: "sm", className: "px-2 text-danger-ink" })}
+          onayClassName="bg-danger! text-white! ring-danger! px-2.5"
+          onayMetni={`${ad.split(" ")[0]} pasifleşsin mi?`}
+        >
           <UserX className="h-3.5 w-3.5" aria-hidden="true" />
-        ) : (
+          <span className="sr-only">Pasifleştir</span>
+        </SilDugmesi>
+      ) : (
+        <GonderDugmesi
+          title="Aktifleştir"
+          className={buttonClass({ variant: "secondary", size: "sm", className: "px-2" })}
+        >
           <UserCheck className="h-3.5 w-3.5" aria-hidden="true" />
-        )}
-        <span className="sr-only">{active ? "Pasifleştir" : "Aktifleştir"}</span>
-      </Button>
+          <span className="sr-only">Aktifleştir</span>
+        </GonderDugmesi>
+      )}
     </form>
   );
 }

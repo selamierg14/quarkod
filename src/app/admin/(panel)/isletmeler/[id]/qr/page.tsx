@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { canAccessBusiness, requireIsletmeSayfasi } from "@/lib/kimlik/auth";
@@ -7,6 +8,7 @@ import { PrintButton } from "./PrintButton";
 import { EN_COK_KOPYA, girisKartiVarMi, kopyaCoz, kopyalariYay } from "@/lib/isletme/qr-kopya";
 import { masaSirala } from "@/lib/isletme/masa";
 import { IsletmeUst } from "../IsletmeUst";
+import { EmptyState, buttonClass } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -72,16 +74,16 @@ export default async function QrPage({
   }));
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <div className="print-hidden">
         <IsletmeUst business={business} aktif="qr" />
       </div>
 
-      <div className="print-hidden flex flex-wrap items-center justify-between gap-3 rounded-control bg-gradient-to-r from-accent-50 to-transparent px-5 py-4 ring-1 ring-accent-100">
+      <div className="print-hidden flex flex-wrap items-center justify-between gap-3 rounded-card bg-surface px-4 py-3 shadow-card ring-1 ring-line">
         <p className="text-small text-ink-soft">
           <strong className="text-ink">{basilacak.length} QR kodu</strong> hazır —
-          renkleri işletmenin marka renginden alınıyor. Matbaaya vereceksen
-          PDF&apos;i indir; kendin basacaksan yazdırmaya bas.
+          renkleri işletmenin marka renginden alınıyor. Matbaaya verecekseniz
+          PDF&apos;i indirin; kendiniz basacaksanız yazdır düğmesini kullanın.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           {/* ORTAK QR'IN KOPYA SAYISI.
@@ -122,7 +124,7 @@ export default async function QrPage({
               vektörel. Tek tek PNG indirip Word'de dizme işini bitiriyor. */}
           <a
             href={`/admin/isletmeler/${business.id}/qr/pdf${kopya > 1 ? `?kopya=${kopya}` : ""}`}
-            className="rounded-control bg-gradient-to-r from-accent-600 to-accent-700 px-4 py-2.5 text-small font-semibold text-white shadow-card transition hover:brightness-110"
+            className={buttonClass({ size: "md" })}
           >
             Matbaa PDF&apos;i indir
           </a>
@@ -139,9 +141,16 @@ export default async function QrPage({
       ) : null}
 
       {codes.length === 0 ? (
-        <p className="rounded-control border border-dashed border-line-strong bg-surface p-10 text-center text-small text-ink-muted">
-          Aktif masa yok. Önce işletme sayfasından masa ekleyin.
-        </p>
+        <EmptyState
+          baslik="Basılacak QR yok"
+          aksiyon={
+            <Link href={`/admin/isletmeler/${business.id}/masalar`} className={buttonClass({ size: "sm" })}>
+              Masa ekle
+            </Link>
+          }
+        >
+          Bu işletmede aktif masa ya da giriş noktası yok.
+        </EmptyState>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 print:grid-cols-3 print:gap-0">
           {basilacak.map((code) => (
@@ -173,7 +182,7 @@ export default async function QrPage({
               <a
                 href={code.dataUrl}
                 download={code.fileName}
-                className="print-hidden mt-3 rounded-chip border border-line px-3 py-1.5 text-caption text-ink-soft hover:bg-canvas"
+                className={buttonClass({ variant: "secondary", size: "sm", className: "print-hidden mt-3" })}
               >
                 PNG indir
               </a>

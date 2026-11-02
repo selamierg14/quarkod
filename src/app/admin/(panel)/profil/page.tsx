@@ -38,7 +38,7 @@ export default async function ProfilePage() {
   });
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <PageHeader
         ikon={<User className="h-4 w-4" aria-hidden="true" />}
         renk="indigo"
@@ -65,7 +65,7 @@ export default async function ProfilePage() {
               <dt className="text-ink-muted">Telefon</dt>
               <dd className="tabular">
                 {kayit?.phone ?? (
-                  <span className="text-rating">tanımlı değil</span>
+                  <span className="font-medium text-warning-ink">tanımlı değil</span>
                 )}
               </dd>
             </div>

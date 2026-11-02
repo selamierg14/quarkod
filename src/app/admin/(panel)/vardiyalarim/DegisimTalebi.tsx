@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import type { Shift } from "@/lib/cekirdek/constants";
 import { degisimTalepEt, type DegisimFormState } from "./actions";
 import { alanOzellikleri } from "@/lib/cekirdek/desenler";
+import { buttonClass } from "@/components/ui";
 
 export function DegisimTalebi({
   assignmentId,
@@ -138,7 +139,7 @@ export function DegisimTalebi({
             <button
               type="submit"
               disabled={pending}
-              className="rounded-chip bg-accent-600 px-2.5 py-1 text-caption font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+              className={buttonClass({ size: "sm" })}
             >
               {pending ? "Gönderiliyor..." : "Talebi gönder"}
             </button>

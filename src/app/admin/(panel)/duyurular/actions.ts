@@ -7,12 +7,19 @@ import { validateImageDataUrl } from "@/lib/isletme/image";
 import { denetimYaz } from "@/lib/rapor/denetim";
 import { alanDogrula } from "@/lib/cekirdek/desenler";
 import { ilkHata } from "@/lib/cekirdek/girdi";
+import { gunBaslangici, gunGirdisi, gunGirdisindenTarih } from "@/lib/cekirdek/gun";
+import { duyuruTarihHatasi } from "@/lib/isletme/duyuru";
 
 export type DuyuruFormState = { error?: string; saved?: string };
 
+/**
+ * "yyyy-aa-gg" → YEREL gün başı. `new Date("2026-01-05")` UTC gece yarısı
+ * veriyordu (İstanbul'da 03:00); duyuru kuralı artık günleri karşılaştırıyor
+ * (bkz. lib/isletme/duyuru.ts) ama saklanan değer de gün başı olsun.
+ */
 function tarihParse(value: string): Date | null {
-  if (!value) return null;
-  const d = new Date(value);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const d = gunGirdisindenTarih(value);
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
@@ -40,9 +47,8 @@ export async function duyuruEkle(
     return { error: "Bu işletmeye yetkiniz yok." };
   }
   if (alanHatasi) return { error: alanHatasi };
-  if (baslangic && bitis && baslangic > bitis) {
-    return { error: "Başlangıç, bitişten sonra olamaz." };
-  }
+  const tarihHatasi = duyuruTarihHatasi(baslangic, bitis);
+  if (tarihHatasi) return { error: tarihHatasi };
   if (imageUrl) {
     const problem = validateImageDataUrl(imageUrl, "duyuru");
     if (problem) return { error: problem };
@@ -125,9 +131,15 @@ export async function duyuruDuzenle(
   const bitis = tarihParse(String(formData.get("bitis") ?? ""));
 
   if (alanHatasi) return { error: alanHatasi };
-  if (baslangic && bitis && baslangic > bitis) {
-    return { error: "Başlangıç, bitişten sonra olamaz." };
-  }
+  // Düzenlemede geçmiş bitiş YALNIZCA değiştirildiyse hata: süresi dolmuş
+  // bir duyurunun yalnızca metnini düzelten kullanıcıyı tarihi
+  // değiştirmeye zorlamıyoruz.
+  // Gün olarak kıyas: eski kayıtlar UTC gece yarısı (00:00Z), yeni
+  // okunan İstanbul gece yarısı (21:00Z) — aynı gün, farklı an.
+  const gunAnahtari = (d: Date | null) => (d ? gunGirdisi(gunBaslangici(d)) : null);
+  const bitisDegisti = gunAnahtari(bitis) !== gunAnahtari(duyuru.bitis);
+  const tarihHatasi = duyuruTarihHatasi(baslangic, bitis, new Date(), bitisDegisti);
+  if (tarihHatasi) return { error: tarihHatasi };
   if (imageUrl && imageUrl !== duyuru.imageUrl) {
     const problem = validateImageDataUrl(imageUrl, "duyuru");
     if (problem) return { error: problem };

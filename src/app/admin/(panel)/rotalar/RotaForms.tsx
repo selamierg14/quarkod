@@ -10,10 +10,10 @@ import {
   type RotaFormState,
 } from "./actions";
 import { alanOzellikleri } from "@/lib/cekirdek/desenler";
-import { GonderDugmesi, SilDugmesi } from "@/components/ui";
+import { GonderDugmesi, SilDugmesi, buttonClass } from "@/components/ui";
 
 const INPUT =
-  "w-full rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
+  "w-full rounded-control border border-line bg-surface px-3 py-2 text-small text-ink outline-none placeholder:text-ink-faint transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100";
 
 export function NewRotaForm() {
   const [state, formAction, pending] = useActionState<RotaFormState, FormData>(rotaEkle, {});
@@ -44,7 +44,7 @@ export function NewRotaForm() {
       <button
         type="submit"
         disabled={pending}
-        className="self-start rounded-control bg-accent-600 px-4 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+        className={buttonClass({ size: "md", className: "self-start" })}
       >
         {pending ? "Oluşturuluyor..." : "Rota oluştur"}
       </button>
@@ -117,7 +117,7 @@ export function DurakEkleForm({
       <button
         type="submit"
         disabled={pending}
-        className="rounded-control border border-line px-3 py-2 text-caption font-medium text-ink-soft hover:bg-canvas disabled:opacity-60"
+        className={buttonClass({ variant: "secondary", size: "sm" })}
       >
         {pending ? "Ekleniyor..." : "Durak ekle"}
       </button>

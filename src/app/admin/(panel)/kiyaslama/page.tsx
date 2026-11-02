@@ -19,7 +19,7 @@ export default async function ComparisonPage() {
   const withData = stats.filter((stat) => stat.total > 0);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <div className="print-hidden -mb-2 flex gap-1 border-b border-line">
         <TabLink href="/admin" active={false}>
           Genel

@@ -1,6 +1,7 @@
 "use client";
 
 import { tekQrOlustur, toggleTable } from "../actions";
+import { buttonClass } from "@/components/ui";
 
 /**
  * Tek ortak QR'ı açan/gösteren küçük kart.
@@ -38,7 +39,7 @@ export function TekQrKurulum({
           <input type="hidden" name="tableId" value={girisMasasi.id} />
           <button
             type="submit"
-            className="w-full rounded-control border border-line px-4 py-2 text-small font-medium text-ink-soft transition hover:bg-canvas"
+            className={buttonClass({ variant: "secondary", size: "sm", className: "w-full" })}
           >
             Ortak QR&apos;ı kapat
           </button>
@@ -52,7 +53,7 @@ export function TekQrKurulum({
       <input type="hidden" name="businessId" value={businessId} />
       <button
         type="submit"
-        className="w-full rounded-control bg-teal-600 px-4 py-2.5 text-small font-semibold text-white shadow-card transition hover:bg-teal-700"
+        className={buttonClass({ size: "md", block: true })}
       >
         {girisMasasi ? "Ortak QR'ı yeniden aç" : "Tek ortak QR oluştur"}
       </button>

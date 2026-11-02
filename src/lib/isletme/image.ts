@@ -43,6 +43,37 @@ const ALLOWED_PREFIX = /^data:image\/(png|jpeg|webp);base64,/;
 
 export type ImageKind = "logo" | "cover" | "menu" | "anket" | "duyuru";
 
+type GorselTuru = "png" | "jpeg" | "webp";
+
+/**
+ * Dosyanın ilk baytları beyan edilen türün imzası mı.
+ *
+ *   PNG   89 50 4E 47 0D 0A 1A 0A
+ *   JPEG  FF D8 FF
+ *   WebP  "RIFF" ???? "WEBP"
+ *
+ * Yalnızca ilk 16 bayt çözülüyor (24 base64 karakteri) — 450 KB'lık bir
+ * görselin tamamını imza için belleğe açmaya gerek yok.
+ */
+export function imzaUyuyorMu(tur: GorselTuru, base64: string): boolean {
+  let bas: Buffer;
+  try {
+    bas = Buffer.from(base64.slice(0, 24), "base64");
+  } catch {
+    return false;
+  }
+  const esit = (konum: number, baytlar: number[]) =>
+    baytlar.every((b, i) => bas[konum + i] === b);
+  switch (tur) {
+    case "png":
+      return esit(0, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    case "jpeg":
+      return esit(0, [0xff, 0xd8, 0xff]);
+    case "webp":
+      return esit(0, [0x52, 0x49, 0x46, 0x46]) && esit(8, [0x57, 0x45, 0x42, 0x50]);
+  }
+}
+
 /**
  * Bir data URI'nin güvenli biçimde saklanabileceğini doğrular.
  * Geçerliyse null, değilse Türkçe hata mesajı döner.
@@ -57,6 +88,15 @@ export function validateImageDataUrl(
 
   // base64 uzunluğundan yaklaşık bayt sayısı.
   const base64 = value.slice(value.indexOf(",") + 1);
+
+  // Önek bir BEYAN, kanıt değil: istek elle kurulup "data:image/png" diye
+  // etiketlenmiş bir GIF ya da başka bir dosya gönderilebiliyordu (QA bir
+  // GIF'in yüklenip önizlendiğini gördü). Dosyanın ilk baytlarındaki imza
+  // beyan edilen türle eşleşmeli.
+  const beyan = ALLOWED_PREFIX.exec(value)![1] as GorselTuru;
+  if (!imzaUyuyorMu(beyan, base64)) {
+    return "Görsel biçimi tanınmadı. PNG, JPEG veya WebP yükleyin.";
+  }
   const bytes = Math.floor((base64.length * 3) / 4);
   const limit =
     kind === "logo"

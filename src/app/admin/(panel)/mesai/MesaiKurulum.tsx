@@ -8,6 +8,7 @@ import {
   qrOlustur,
   type MesaiFormState,
 } from "./actions";
+import { buttonClass } from "@/components/ui";
 
 /**
  * Kurulum kutusu: QR + izinli ağlar.
@@ -73,7 +74,7 @@ export function MesaiKurulum({
           <button
             type="submit"
             disabled={qrBekliyor}
-            className="rounded-control border border-line px-3 py-2 text-small font-medium text-ink hover:bg-sunken disabled:opacity-50"
+            className={buttonClass({ variant: "secondary", size: "sm" })}
           >
             {qrBekliyor ? "…" : qrAdresi ? "Yenile" : "Karekod üret"}
           </button>
@@ -98,7 +99,7 @@ export function MesaiKurulum({
             <button
               type="submit"
               disabled={agBekliyor}
-              className="rounded-control bg-accent-600 px-3 py-2 text-small font-medium text-white hover:bg-accent-700 disabled:opacity-50"
+              className={buttonClass({ size: "sm" })}
             >
               {agBekliyor ? "…" : "Bu ağdan kaydet"}
             </button>
@@ -139,7 +140,7 @@ export function MesaiKurulum({
           <button
             type="submit"
             disabled={ipBekliyor}
-            className="self-start rounded-control border border-line px-3 py-1.5 text-small text-ink hover:bg-sunken disabled:opacity-50"
+            className={buttonClass({ variant: "secondary", size: "sm", className: "self-start" })}
           >
             {ipBekliyor ? "…" : "Listeyi kaydet"}
           </button>

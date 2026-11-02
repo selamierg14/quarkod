@@ -24,6 +24,8 @@ export type BusinessStats = {
   openComplaints: number;
   last7Days: number;
   last30Average: number | null;
+  /** Son 30 gündeki kayıt sayısı — ortalamayı ağırlıklandırmak ve "veri yok"u ayırt etmek için. */
+  last30Count: number;
   /** Önceki 30 günün ortalaması — değişim bundan hesaplanır. */
   prev30Average: number | null;
   /** Son 30 gün ile önceki 30 gün arasındaki fark (puan). */
@@ -716,6 +718,7 @@ export async function getBusinessStats(businessIds: string[]): Promise<BusinessS
       openComplaints: esikAltiSayac.get(business.id) ?? 0,
       last7Days: son7.get(business.id) ?? 0,
       last30Average,
+      last30Count: son30.get(business.id)?._count._all ?? 0,
       prev30Average,
       delta,
       googleShown: googleGosterilen.get(business.id) ?? 0,

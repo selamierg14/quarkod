@@ -1,16 +1,17 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { BUSINESS_TYPE_LIST, qrCardText } from "@/lib/cekirdek/constants";
 import { ImageUpload } from "@/components/ImageUpload";
-import { useToast } from "@/components/ui";
+import { useToast, buttonClass } from "@/components/ui";
 import { updateBusiness, type FormState } from "../actions";
 import { alanOzellikleri } from "@/lib/cekirdek/desenler";
 import { CalismaSaatleri } from "./CalismaSaatleri";
 
 const INPUT =
-  "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
+  "rounded-control border border-line bg-surface px-3 py-2 text-small text-ink outline-none placeholder:text-ink-faint transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100";
 
 // Önceden etiketler `text-caption text-ink-muted` idi: küçük punto +
 // orta-açık gri, ekran görüntüsünde "silik" ve "anlaşılmıyor" diye
@@ -103,10 +104,8 @@ export function SettingsForm({
   const defaultCardText = qrCardText(business.type);
 
   /**
-   * Bu form ekrana sığmayacak kadar uzun ve iki ayrı yerden gönderiliyor:
-   * tepedeki "Görselleri kaydet" ve en alttaki "Kaydet". Sonucu yalnızca
-   * düğmenin yanında göstermek, diğer uçtan gönderen kişiyi sonucu
-   * göremeden bırakıyordu. Kısa bildirim her iki durumda da görünür.
+   * Form ekrana sığmayacak kadar uzun. Sonuç kısa bildirimle (toast)
+   * gösteriliyor ki kaydet çubuğu nerede olursa olsun görünsün.
    */
   const { bildir } = useToast();
   const sonDurum = useRef(state);
@@ -116,6 +115,24 @@ export function SettingsForm({
     if (state.error) bildir(state.error, "hata");
     else if (state.saved) bildir("İşletme ayarları kaydedildi.");
   }, [state, bildir]);
+
+  // Kaydedilmemiş değişiklik uyarısı (QA). Herhangi bir alan değişince
+  // "kirli" sayılıyor; başarılı kayıt temizliyor. Sayfadan çıkarken
+  // tarayıcının kendi onay penceresi çıkıyor.
+  const [kirli, setKirli] = useState(false);
+  const [sonKayit, setSonKayit] = useState(state);
+  if (state !== sonKayit) {
+    setSonKayit(state);
+    if (state.saved) setKirli(false);
+  }
+  useEffect(() => {
+    if (!kirli) return;
+    const uyar = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", uyar);
+    return () => window.removeEventListener("beforeunload", uyar);
+  }, [kirli]);
 
   const sosyalOzet = [
     business.instagramUrl ? "Instagram" : null,
@@ -128,7 +145,11 @@ export function SettingsForm({
   ].filter(Boolean);
 
   return (
-    <form action={formAction} className="flex flex-col gap-3">
+    <form
+      action={formAction}
+      onChange={() => setKirli(true)}
+      className="flex flex-col gap-3"
+    >
       <input type="hidden" name="id" value={business.id} />
 
       {/* Kimlik: her zaman açık. Formun geri kalanı katlanabilir ama bu üçü
@@ -201,18 +222,6 @@ export function SettingsForm({
           />
         </label>
 
-        {/* Form uzun; görselleri seçen kişi en alttaki kaydet düğmesine
-            kadar kaydırmak istemeyebilir. Aynı formu buradan da gönderir. */}
-        <div className="flex flex-wrap items-center gap-3 border-t border-line pt-3">
-          <button
-            type="submit"
-            disabled={pending}
-            className="rounded-control bg-accent-600 px-4 py-2.5 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
-          >
-            {pending ? "Kaydediliyor..." : "Görselleri kaydet"}
-          </button>
-          <span className={YARDIM}>Aşağıdaki ayarlarla birlikte kaydedilir.</span>
-        </div>
       </Bolum>
 
       <Bolum
@@ -399,12 +408,23 @@ export function SettingsForm({
         </div>
       </Bolum>
 
+      {/* Bu, menünün tepesindeki TEK SATIRLIK şerit. Görselli, tarihli
+          duyuru kartları ayrı bir modül (Duyurular). QA iki sistemin
+          karıştığını söyledi; ad ve açıklama artık farkı söylüyor. */}
       <Bolum
-        baslik="Duyuru"
+        baslik="Menü şeridi"
         ozet={business.announcementActive ? "yayında" : "kapalı"}
       >
+        <p className={YARDIM}>
+          QR menünün en üstünde tek satırlık kısa bir not. Görselli ve tarih
+          aralığına bağlı duyurular için{" "}
+          <Link href="/admin/duyurular" className="font-medium text-accent-700 hover:underline">
+            Duyurular sayfasını
+          </Link>{" "}
+          kullanın.
+        </p>
         <label className="flex flex-col gap-1">
-          <span className={ETIKET}>QR menünün tepesinde görünen duyuru</span>
+          <span className={ETIKET}>Şerit metni</span>
           <input
             name="announcement"
             defaultValue={business.announcement ?? ""}
@@ -426,7 +446,7 @@ export function SettingsForm({
             className="mt-0.5 h-4 w-4"
           />
           <span className="text-small">
-            <span className="font-medium text-ink">Duyuruyu menüde göster</span>
+            <span className="font-medium text-ink">Şeridi menüde göster</span>
             <span className={`mt-0.5 block ${YARDIM}`}>
               Kapalıyken müşteri şeridi görmez.
             </span>
@@ -434,24 +454,25 @@ export function SettingsForm({
         </label>
       </Bolum>
 
-      {state.error ? (
-        <p className="rounded-chip bg-danger-soft px-3 py-2 text-small text-danger-ink" role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.saved ? (
-        <p className="rounded-chip bg-success-soft px-3 py-2 text-small text-success-ink">
-          Kaydedildi.
-        </p>
-      ) : null}
-
-      <button
-        type="submit"
-        disabled={pending}
-        className="self-start rounded-control bg-accent-600 px-4 py-2.5 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
-      >
-        {pending ? "Kaydediliyor..." : "Kaydet"}
-      </button>
+      {/* TEK kaydet, ekranın altına yapışık: form uzun olduğu için ortada
+          ikinci bir "Görselleri kaydet" düğmesi vardı (QA: iki ayrı düğme
+          kafa karıştırıyordu). Çubuk her kaydırma konumunda görünür. */}
+      <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center gap-3 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur">
+        <button type="submit" disabled={pending} className={buttonClass({ size: "md" })}>
+          {pending ? "Kaydediliyor…" : "Kaydet"}
+        </button>
+        {state.error ? (
+          <span className="text-small font-medium text-danger-ink" role="alert">
+            {state.error}
+          </span>
+        ) : kirli ? (
+          <span className="text-small text-warning-ink">Kaydedilmemiş değişiklik var.</span>
+        ) : state.saved ? (
+          <span className="text-small text-success-ink" role="status">
+            Kaydedildi.
+          </span>
+        ) : null}
+      </div>
     </form>
   );
 }

@@ -27,3 +27,31 @@ export function foldTr(value: string): string {
     .join("")
     .toLowerCase();
 }
+
+/**
+ * İki ad "aynı şey" mi — kategori, görev gibi kullanıcının adlandırdığı
+ * listelerde tekrarı yakalamak için.
+ *
+ * Büyük-küçük harf Türkçe kuralıyla katlanıyor ("İ"→"i", "I"→"ı") ve
+ * boşluklar sadeleşiyor; aksanlar KORUNUYOR. foldTr burada fazla agresif
+ * olurdu: "Kır" ile "Kir" farklı şeyler. Postgres'in `mode: insensitive`
+ * (ILIKE) seçeneği de kullanılmıyor — sonucu sunucunun yerel ayarına bağlı
+ * ve "İ"yi her zaman "i"ye indirmiyor.
+ */
+export function adAnahtari(ad: string): string {
+  return ad.trim().replace(/\s+/g, " ").toLocaleLowerCase("tr");
+}
+
+const TR_SIRALAYICI = new Intl.Collator("tr", { sensitivity: "base" });
+
+/**
+ * Ada göre Türkçe sıralama — yeni dizi döner.
+ *
+ * Veritabanının `ORDER BY name` sonucu sunucunun harmanlamasına bağlı:
+ * "İbrahim" listenin sonuna, küçük harfle yazılmış adlar büyüklerin
+ * arkasına düşüyordu (QA, personel seçim listeleri). Sayfalanmayan seçim
+ * listeleri bellekte, Türkçe kurallarla sıralanıyor.
+ */
+export function trSirala<T>(liste: readonly T[], ad: (oge: T) => string): T[] {
+  return [...liste].sort((a, b) => TR_SIRALAYICI.compare(ad(a), ad(b)));
+}

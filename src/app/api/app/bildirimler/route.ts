@@ -3,6 +3,7 @@ import { prisma } from "@/lib/cekirdek/db";
 import { appKullaniciGerekli } from "@/lib/kimlik/app-api";
 import { ROZETLER, gecerliRozetMi } from "@/lib/biyerlere/rozet";
 import { KUPON_AKTIF } from "@/lib/biyerlere/kupon";
+import { duyuruDurumu } from "@/lib/isletme/duyuru";
 
 export const dynamic = "force-dynamic";
 
@@ -97,10 +98,17 @@ export async function GET(request: Request) {
           baslik: true,
           aciklama: true,
           createdAt: true,
+          aktif: true,
+          baslangic: true,
+          bitis: true,
           business: { select: { slug: true, name: true } },
         },
       })
     : [];
+  // Süresi dolmuş duyuru akışta "yeni" diye çıkmasın (panel ile aynı kural,
+  // bkz. lib/isletme/duyuru.ts). Planlanmış olanlar kalıyor: favori
+  // mekanın gelecek etkinliğini önceden duymak bu akışın amacı.
+  const guncelDuyurular = duyurular.filter((d) => duyuruDurumu(d) !== "suresi-doldu");
 
   const ogeler: BildirimOgesi[] = [
     ...rozetler
@@ -142,7 +150,7 @@ export async function GET(request: Request) {
         href: "/rezervasyonlarim",
       };
     }),
-    ...duyurular.map(
+    ...guncelDuyurular.map(
       (d): BildirimOgesi => ({
         id: `duyuru-${d.id}`,
         tur: "duyuru",

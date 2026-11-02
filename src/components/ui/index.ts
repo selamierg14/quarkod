@@ -16,10 +16,22 @@ export { Skeleton, SkeletonCard, SkeletonRows } from "./Skeleton";
 export { ToastProvider, useToast } from "./Toast";
 export type { ToastTone } from "./Toast";
 export { Dialog } from "./Dialog";
+export { KorunanForm } from "./KorunanForm";
+export { BasHarfAvatar } from "./BasHarfAvatar";
+export { EYLEM_SATIRI, EylemMenusu } from "./EylemMenusu";
+export { SifreAlani, sifreUret } from "./SifreAlani";
 
-/** Tarih biçimi tek yerde: liste, detay ve dışa aktarma aynı görünsün. */
+/**
+ * Tarih biçimi tek yerde: liste, detay ve dışa aktarma aynı görünsün.
+ *
+ * Saat dilimi AÇIKÇA İstanbul: sunucu (instrumentation.ts) ve tarayıcı
+ * aynı metni üretsin. Yurt dışındaki bir tarayıcıda istemci bileşeni
+ * farklı saat yazsaydı hem hidrasyon uyuşmazlığı hem de ekranda iki ayrı
+ * saat olurdu.
+ */
 export function formatDateTime(date: Date): string {
   return date.toLocaleString("tr-TR", {
+    timeZone: "Europe/Istanbul",
     day: "2-digit",
     month: "2-digit",
     year: "2-digit",

@@ -1,16 +1,5 @@
 import type { ReactNode } from "react";
 
-/**
- * Kart üstündeki ince renk şeridi — panel tek düze durmasın diye.
- * Modül renkleriyle aynı geçiş dilini kullanır (bkz. lib/modul-rengi.ts):
- * özet kartları da panelin geri kalanıyla aynı aileden görünsün.
- */
-const SERIT: Record<string, string> = {
-  mavi: "bg-gradient-to-r from-sky-500 to-sky-400",
-  yesil: "bg-gradient-to-r from-emerald-500 to-emerald-400",
-  mor: "bg-gradient-to-r from-violet-500 to-violet-400",
-  amber: "bg-gradient-to-r from-amber-500 to-amber-400",
-};
 
 /**
  * Özet ekranının taşıyıcısı. Rakam büyük ve tabular; yanındaki değişim
@@ -23,7 +12,6 @@ export function StatCard({
   accent,
   trend,
   tone = "default",
-  renk,
 }: {
   label: string;
   value: string;
@@ -33,7 +21,11 @@ export function StatCard({
   /** Önceki döneme göre değişim; işaretiyle birlikte verilir. */
   trend?: { yon: "yukari" | "asagi" | "sabit"; metin: string; iyi?: boolean };
   tone?: "default" | "dikkat";
-  /** Üstteki ince renk şeridi. */
+  /**
+   * KULLANIM DIŞI: dört kartın üstünde dört ayrı renk şeridi vardı; renk
+   * bir şey anlatmıyordu (UI incelemesi). Çağıranlar bozulmasın diye kabul
+   * ediliyor, çizilmiyor. Dikkat isteyen kart için `tone="dikkat"`.
+   */
   renk?: "mavi" | "yesil" | "mor" | "amber";
 }) {
   return (
@@ -42,7 +34,6 @@ export function StatCard({
         tone === "dikkat" ? "ring-danger/25" : "ring-line"
       }`}
     >
-      {renk ? <div className={`h-1 w-full ${SERIT[renk]}`} aria-hidden="true" /> : null}
       <div className="p-4">
         <div className="flex items-center gap-2">
           {accent ? (

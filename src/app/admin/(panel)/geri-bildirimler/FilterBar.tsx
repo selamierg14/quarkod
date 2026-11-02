@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { FEEDBACK_STATUS_LIST, SHIFTS } from "@/lib/cekirdek/constants";
-import { TarihGirdisi } from "@/components/ui";
+import { TarihGirdisi, buttonClass } from "@/components/ui";
 
 type Props = {
   businesses: { id: string; name: string }[];
@@ -10,7 +10,7 @@ type Props = {
 };
 
 const INPUT =
-  "rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
+  "rounded-control border border-line bg-surface px-3 py-2 text-small text-ink outline-none placeholder:text-ink-faint transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100";
 
 export function FilterBar({ businesses, showBusinessFilter }: Props) {
   const router = useRouter();
@@ -133,7 +133,7 @@ export function FilterBar({ businesses, showBusinessFilter }: Props) {
         <button
           type="button"
           onClick={() => router.push("/admin/geri-bildirimler")}
-          className="rounded-chip border border-line px-3 py-2 text-small text-ink-soft hover:bg-canvas"
+          className={buttonClass({ variant: "secondary", size: "sm" })}
         >
           Temizle
         </button>

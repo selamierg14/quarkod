@@ -6,6 +6,7 @@ import {
   rezervasyonDurumDegistir,
   type RezervasyonFormState,
 } from "../rezervasyon/actions";
+import { buttonClass } from "@/components/ui";
 
 export type BekleyenTalep = {
   id: string;
@@ -87,7 +88,7 @@ function Satir({ businessId, talep }: { businessId: string; talep: BekleyenTalep
           <button
             type="submit"
             disabled={bekliyor}
-            className="min-h-11 rounded-control bg-accent-600 px-4 text-small font-medium text-white hover:bg-accent-700 disabled:opacity-50"
+            className={buttonClass({ size: "md", className: "min-h-11" })}
           >
             {bekliyor ? "…" : "Onayla"}
           </button>

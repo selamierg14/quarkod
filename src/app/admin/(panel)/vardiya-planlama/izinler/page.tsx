@@ -1,7 +1,8 @@
 import { CalendarOff } from "lucide-react";
 import { requirePersonelYonetimi, visibleBusinesses } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
-import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
+import { trSirala } from "@/lib/cekirdek/text";
+import { Alert, EmptyState, PageHeader, SectionCard, formatDateTime, buttonClass } from "@/components/ui";
 import { IZIN_TURLERI, gecerliIzinTuru } from "@/lib/isletme/izin";
 import { gunBaslangici, gunEkle } from "@/lib/cekirdek/gun";
 import { IsletmeSecici } from "../../menu/MenuUst";
@@ -26,7 +27,7 @@ function tarihAraligi(baslangic: Date, bitis: Date): string {
 export default async function IzinlerPage({
   searchParams,
 }: {
-  searchParams: Promise<{ isletme?: string }>;
+  searchParams: Promise<{ isletme?: string; talep?: string }>;
 }) {
   const user = await requirePersonelYonetimi();
   const businesses = await visibleBusinesses(user);
@@ -39,7 +40,7 @@ export default async function IzinlerPage({
   const secili = businesses.find((b) => b.id === query.isletme) ?? businesses[0];
   const esik = gunEkle(gunBaslangici(), -GERIYE_GUN);
 
-  const [personel, izinler] = await Promise.all([
+  const [personelHam, izinler] = await Promise.all([
     prisma.user.findMany({
       where: { businessId: secili.id, active: true, role: { in: ["manager", "garson"] } },
       orderBy: { name: "asc" },
@@ -48,9 +49,16 @@ export default async function IzinlerPage({
     prisma.leaveRequest.findMany({
       // Bekleyen talepler tarihi ne olursa olsun görünmeli: geçmişe düşmüş
       // ama karara bağlanmamış bir talep sessizce kaybolmasın.
+      // Bildirimden gelinen talep (`?talep=`) tarihi ne olursa olsun
+      // listeye giriyor; işletme şartı OR'un DIŞINDA, yani başka bir
+      // işletmenin talep kimliği yazılsa bile görünmez.
       where: {
         businessId: secili.id,
-        OR: [{ status: "bekliyor" }, { bitis: { gte: esik } }],
+        OR: [
+          { status: "bekliyor" },
+          { bitis: { gte: esik } },
+          ...(query.talep ? [{ id: query.talep }] : []),
+        ],
       },
       orderBy: [{ status: "asc" }, { baslangic: "desc" }],
       include: {
@@ -59,12 +67,22 @@ export default async function IzinlerPage({
       },
     }),
   ]);
+  // Türkçe sıralama: DB harmanlaması "İbrahim"i sona atıyordu (QA).
+  const personel = trSirala(personelHam, (p) => p.name);
 
   const bekleyenler = izinler.filter((i) => i.status === "bekliyor");
+  const vurgulanan = query.talep ? izinler.find((i) => i.id === query.talep) : undefined;
+  const kararBilgisi = vurgulanan
+    ? [vurgulanan.decidedBy?.name, vurgulanan.decidedAt && formatDateTime(vurgulanan.decidedAt)]
+        .filter(Boolean)
+        .join(", ")
+    : "";
+  const vurgu = (id: string) =>
+    id === vurgulanan?.id ? "bg-accent-50 ring-2 ring-inset ring-accent-600" : "";
   const digerleri = izinler.filter((i) => i.status !== "bekliyor");
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <VardiyaSekmeleri aktif="izinler" />
 
       <PageHeader
@@ -80,6 +98,23 @@ export default async function IzinlerPage({
         taban="/admin/vardiya-planlama/izinler"
       />
 
+      {/* Bildirimden gelindiyse ve talep artık beklemiyorsa, kullanıcı
+          aradığı kaydı listede kendisi bulmak zorunda kalmasın. */}
+      {vurgulanan && vurgulanan.status !== "bekliyor" ? (
+        <Alert
+          tone={vurgulanan.status === "onaylandi" ? "basari" : "bilgi"}
+          baslik={`${vurgulanan.user.name} — ${tarihAraligi(vurgulanan.baslangic, vurgulanan.bitis)}`}
+        >
+          {`Bu talep ${
+            vurgulanan.status === "onaylandi" ? "onaylandı" : "reddedildi ya da geri alındı"
+          }${kararBilgisi ? ` (${kararBilgisi})` : ""}. Aşağıdaki kayıtlarda işaretli.`}
+        </Alert>
+      ) : query.talep && !vurgulanan ? (
+        <Alert tone="bilgi" baslik="Bildirimdeki talep bulunamadı">
+          Talep bu işletmeye ait değil ya da silinmiş. Seçili işletme: {secili.name}.
+        </Alert>
+      ) : null}
+
       {bekleyenler.length > 0 ? (
         <SectionCard
           ikon={<CalendarOff className="h-4 w-4" aria-hidden="true" />}
@@ -92,7 +127,7 @@ export default async function IzinlerPage({
             {bekleyenler.map((izin) => (
               <li
                 key={izin.id}
-                className="flex flex-wrap items-center justify-between gap-3 px-5 py-3"
+                className={`flex flex-wrap items-center justify-between gap-3 px-5 py-3 ${vurgu(izin.id)}`}
               >
                 <span className="min-w-0">
                   <span className="font-medium text-ink">{izin.user.name}</span>
@@ -124,7 +159,7 @@ export default async function IzinlerPage({
                     <input type="hidden" name="karar" value="reddet" />
                     <button
                       type="submit"
-                      className="rounded-chip border border-line px-3 py-1.5 text-caption text-ink-soft transition hover:bg-canvas"
+                      className={buttonClass({ variant: "secondary", size: "sm" })}
                     >
                       Reddet
                     </button>
@@ -156,7 +191,7 @@ export default async function IzinlerPage({
               return (
                 <li
                   key={izin.id}
-                  className="flex flex-wrap items-center justify-between gap-3 px-5 py-3"
+                  className={`flex flex-wrap items-center justify-between gap-3 px-5 py-3 ${vurgu(izin.id)}`}
                 >
                   <span className="min-w-0">
                     <span

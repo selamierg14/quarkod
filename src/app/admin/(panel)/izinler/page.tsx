@@ -1,7 +1,7 @@
 import { Mail } from "lucide-react";
 import { allowedBusinessIds, requireModul, requireTenantOwner } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
-import { EmptyState, PageHeader, Pagination, formatDateTime } from "@/components/ui";
+import { EmptyState, PageHeader, Pagination, formatDateTime, buttonClass } from "@/components/ui";
 import { aralikMetni, cubukGosterilsinMi, sayfaDurumu, toplamSayfa } from "@/lib/cekirdek/sayfalama";
 import { IYS_CHANNELS, type IysChannel } from "@/lib/isletme/iys";
 import { MarkReportedForm } from "./MarkReportedForm";
@@ -43,7 +43,7 @@ export default async function ConsentsPage({
   });
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <PageHeader
         ikon={<Mail className="h-4 w-4" aria-hidden="true" />}
         renk="emerald"
@@ -67,7 +67,7 @@ export default async function ConsentsPage({
           <div className="flex flex-wrap items-center gap-2">
             <a
               href="/admin/izinler/disa-aktar"
-              className="rounded-chip bg-accent-600 px-3 py-1.5 text-small font-medium text-white transition hover:bg-accent-700"
+              className={buttonClass({ size: "sm" })}
             >
               Bekleyenleri indir
             </a>
@@ -95,29 +95,29 @@ export default async function ConsentsPage({
           görünür.
         </EmptyState>
       ) : (
-        <div className="overflow-x-auto rounded-control bg-surface ring-1 ring-line">
+        <div className="overflow-x-auto rounded-card bg-surface shadow-card ring-1 ring-line">
           <table className="w-full min-w-[720px] text-small">
-            <thead className="border-b border-line text-left text-caption tracking-wide text-ink-muted uppercase">
+            <thead className="bg-sunken/70 text-left text-overline font-semibold tracking-wide text-ink-muted uppercase">
               <tr>
-                <th className="px-4 py-3 font-medium">Alıcı</th>
-                <th className="px-4 py-3 font-medium">Kanal</th>
-                <th className="px-4 py-3 font-medium">Durum</th>
-                <th className="px-4 py-3 font-medium">İşletme</th>
-                <th className="px-4 py-3 font-medium">İzin tarihi</th>
-                <th className="px-4 py-3 font-medium">İYS</th>
-                <th className="px-4 py-3 font-medium"></th>
+                <th className="px-4 py-2 font-medium">Alıcı</th>
+                <th className="px-4 py-2 font-medium">Kanal</th>
+                <th className="px-4 py-2 font-medium">Durum</th>
+                <th className="px-4 py-2 font-medium">İşletme</th>
+                <th className="px-4 py-2 font-medium">İzin tarihi</th>
+                <th className="px-4 py-2 font-medium">İYS</th>
+                <th className="px-4 py-2 font-medium"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
               {consents.map((consent) => (
                 <tr key={consent.id}>
-                  <td className="px-4 py-3 font-medium tabular">
+                  <td className="px-4 py-2.5 font-medium tabular">
                     {consent.recipient}
                   </td>
-                  <td className="px-4 py-3 text-ink-soft">
+                  <td className="px-4 py-2.5 text-ink-soft">
                     {IYS_CHANNELS[consent.channel as IysChannel] ?? consent.channel}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-2.5">
                     <span
                       className={`inline-flex rounded-full px-2.5 py-0.5 text-caption font-medium ring-1 ${
                         consent.status === "ONAY"
@@ -128,7 +128,7 @@ export default async function ConsentsPage({
                       {consent.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-ink-soft">
+                  <td className="px-4 py-2.5 text-ink-soft">
                     <span className="flex items-center gap-2">
                       <span
                         className="h-2 w-2 rounded-full"
@@ -137,10 +137,10 @@ export default async function ConsentsPage({
                       {consent.business.name}
                     </span>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-ink-muted">
+                  <td className="px-4 py-2.5 whitespace-nowrap text-ink-muted">
                     {formatDateTime(consent.consentAt)}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td className="px-4 py-2.5 whitespace-nowrap">
                     {consent.reportedAt ? (
                       <span
                         className="text-caption text-success"
@@ -149,10 +149,10 @@ export default async function ConsentsPage({
                         bildirildi · {formatDateTime(consent.reportedAt)}
                       </span>
                     ) : (
-                      <span className="text-caption text-rating">bekliyor</span>
+                      <span className="text-caption font-medium text-warning-ink">bekliyor</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                  <td className="px-4 py-2.5 text-right whitespace-nowrap">
                     <a
                       href={`/admin/izinler/${consent.id}/kanit`}
                       className="text-caption text-ink-muted underline underline-offset-2 hover:text-ink"

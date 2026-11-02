@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Smartphone, Star, CalendarClock, ClipboardCheck } from "lucide-react";
 import { requireUser, visibleBusinesses } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
-import { EmptyState, PageHeader, SectionCard } from "@/components/ui";
+import { EmptyState, PageHeader, SectionCard, buttonClass } from "@/components/ui";
 import { gunBaslangici, gunEkle } from "@/lib/cekirdek/gun";
 import { SHIFTS } from "@/lib/cekirdek/constants";
 import { vardiyaHesapla } from "@/lib/personel/vardiya";
@@ -130,7 +130,7 @@ export default async function CepPage({
   const suAnkiVardiya = isletme ? vardiyaHesapla(simdi, isletme) : null;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <PageHeader
         ikon={<Smartphone className="h-4 w-4" aria-hidden="true" />}
         renk="indigo"
@@ -219,7 +219,7 @@ export default async function CepPage({
           <div className="flex flex-wrap gap-2">
             <Link
               href="/admin/vardiyalarim"
-              className="flex items-center gap-1.5 rounded-control border border-line px-3 py-2 text-small text-ink hover:bg-sunken"
+              className={buttonClass({ variant: "secondary", size: "sm" })}
             >
               <CalendarClock className="h-4 w-4" aria-hidden="true" />
               Vardiyalarım
@@ -227,7 +227,7 @@ export default async function CepPage({
             {gorevSayilari > 0 ? (
               <Link
                 href="/admin/gorevlerim"
-                className="flex items-center gap-1.5 rounded-control border border-line px-3 py-2 text-small text-ink hover:bg-sunken"
+                className={buttonClass({ variant: "secondary", size: "sm" })}
               >
                 <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
                 Görevlerim ({gorevSayilari})

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CalendarClock } from "lucide-react";
 import { requireRezervasyonErisim, visibleBusinesses } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
-import { EmptyState, PageHeader, Pagination, SectionCard } from "@/components/ui";
+import { EmptyState, PageHeader, Pagination, SectionCard, buttonClass } from "@/components/ui";
 import { aralikMetni, cubukGosterilsinMi, sayfaDurumu, toplamSayfa } from "@/lib/cekirdek/sayfalama";
 import { masaDurumu, type MevcutRezervasyon } from "@/lib/isletme/rezervasyon";
 import { IsletmeSecici } from "../menu/MenuUst";
@@ -177,7 +177,7 @@ export default async function RezervasyonPage({
   }));
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <PageHeader
         ikon={<CalendarClock className="h-4 w-4" aria-hidden="true" />}
         renk="indigo"
@@ -216,7 +216,7 @@ export default async function RezervasyonPage({
           </label>
           <button
             type="submit"
-            className="rounded-control border border-line px-4 py-2 text-small font-semibold text-ink hover:bg-sunken"
+            className={buttonClass({ variant: "secondary", size: "sm" })}
           >
             Göster
           </button>

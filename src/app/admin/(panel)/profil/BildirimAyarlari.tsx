@@ -177,7 +177,7 @@ export function BildirimAyarlari() {
         <div className="flex flex-col gap-3">
           <p className="text-small text-ink-muted">
             Şu an bu cihazda bildirimler kapalı. Panel açık olmasa bile eşiğin
-            altında bir puan geldiğinde haber alırsın.
+            altında bir puan geldiğinde haber alırsınız.
           </p>
           {/* Bu düğmeye pratikte telefondan basılıyor: `lg` boyutu 48px
               dokunma hedefi veriyor (bkz. components/ui/Button.tsx). */}

@@ -4,6 +4,7 @@ import { useActionState, useCallback, useRef, useState } from "react";
 import { MASA_DURUM_ADLARI, MASA_DURUM_RENKLERI, type MasaDurumu } from "@/lib/isletme/rezervasyon";
 import { planKaydet, type RezervasyonFormState } from "./actions";
 
+import { buttonClass } from "@/components/ui";
 export type PlanMasasi = {
   id: string;
   tableNumber: string;
@@ -251,7 +252,7 @@ export function KatPlani({
             <button
               type="submit"
               disabled={bekliyor || !degisti}
-              className="rounded-control bg-brand px-4 py-2 text-small font-semibold text-brand-ink disabled:opacity-50"
+              className={buttonClass({ size: "md" })}
             >
               {bekliyor ? "Kaydediliyor…" : "Kat planını kaydet"}
             </button>

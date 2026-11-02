@@ -9,9 +9,10 @@ import {
   type GunSaati,
 } from "@/lib/isletme/calisma-saati";
 
+import { buttonClass } from "@/components/ui";
 const INPUT =
   "rounded-chip border border-line bg-surface px-2 py-1.5 text-small outline-none " +
-  "focus:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-1 " +
+  "focus:border-accent-500 focus:ring-2 focus:ring-accent-100 focus-visible:outline-2 focus-visible:outline-offset-1 " +
   "focus-visible:outline-accent-600 disabled:bg-sunken disabled:text-ink-faint";
 
 /**
@@ -119,7 +120,7 @@ export function CalismaSaatleri({ baslangic }: { baslangic: string | null }) {
           type="button"
           onClick={haftaIcineUygula}
           disabled={saatler.pazartesi.kapali}
-          className="rounded-chip border border-line px-2.5 py-1 text-caption text-ink-soft transition hover:border-line-strong hover:text-ink disabled:opacity-45"
+          className={buttonClass({ variant: "secondary", size: "sm" })}
         >
           Pazartesiyi hafta içine uygula
         </button>

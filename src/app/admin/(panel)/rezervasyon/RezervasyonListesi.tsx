@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { REZERVASYON_DURUMLARI, type RezervasyonDurumu } from "@/lib/isletme/rezervasyon";
 import { rezervasyonDurumDegistir, type RezervasyonFormState } from "./actions";
+import { buttonClass } from "@/components/ui";
 
 export type ListeKaydi = {
   id: string;
@@ -122,7 +123,7 @@ function Satir({ businessId, kayit }: { businessId: string; kayit: ListeKaydi })
           <button
             type="submit"
             disabled={bekliyor}
-            className="rounded-control border border-line px-3 py-1.5 text-small text-ink hover:bg-sunken disabled:opacity-50"
+            className={buttonClass({ variant: "secondary", size: "sm" })}
           >
             {bekliyor ? "…" : "Uygula"}
           </button>

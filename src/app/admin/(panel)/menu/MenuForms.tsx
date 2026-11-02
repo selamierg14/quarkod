@@ -3,7 +3,7 @@
 import { ChevronDown, ClipboardList, Send } from "lucide-react";
 import { useActionState, useState } from "react";
 import { ImageUpload } from "@/components/ImageUpload";
-import { GonderDugmesi, SectionCard, SilDugmesi } from "@/components/ui";
+import { GonderDugmesi, SectionCard, SilDugmesi, buttonClass, EylemMenusu, EYLEM_SATIRI } from "@/components/ui";
 import {
   ALERJENLER,
   MENU_TAGS,
@@ -32,9 +32,9 @@ import {
 } from "./actions";
 
 const INPUT =
-  "w-full rounded-chip border border-line bg-surface px-3 py-2 text-small outline-none focus:border-line-strong";
-const KUCUK_BUTON =
-  "rounded border border-line px-1.5 py-0.5 text-caption text-ink-muted hover:bg-canvas";
+  "w-full rounded-control border border-line bg-surface px-3 py-2 text-small text-ink outline-none placeholder:text-ink-faint transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100";
+/** Satırdaki küçük düğmeler — 32px; önceden ~22px'ti (UI incelemesi). */
+const KUCUK_BUTON = buttonClass({ variant: "secondary", size: "sm", className: "px-2.5" });
 
 export type UrunGorunumu = {
   id: string;
@@ -75,7 +75,7 @@ export function NewCategoryForm({ businessId }: { businessId: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-chip bg-accent-600 px-3 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+        className={buttonClass({ size: "sm" })}
       >
         {pending ? "Ekleniyor…" : "Bölüm ekle"}
       </button>
@@ -410,14 +410,14 @@ export function NewItemForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-chip bg-accent-600 px-4 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+          className={buttonClass({ size: "md" })}
         >
           {pending ? "Ekleniyor…" : "Ürünü ekle"}
         </button>
         <button
           type="button"
           onClick={() => setAcik(false)}
-          className="rounded-chip border border-line px-4 py-2 text-small text-ink-soft"
+          className={buttonClass({ variant: "secondary", size: "sm" })}
         >
           Kapat
         </button>
@@ -457,14 +457,14 @@ export function ItemRow({
             <button
               type="submit"
               disabled={pending}
-              className="rounded-chip bg-accent-600 px-4 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+              className={buttonClass({ size: "md" })}
             >
               {pending ? "Kaydediliyor…" : "Kaydet"}
             </button>
             <button
               type="button"
               onClick={() => setDuzenle(false)}
-              className="rounded-chip border border-line px-4 py-2 text-small text-ink-soft"
+              className={buttonClass({ variant: "secondary", size: "sm" })}
             >
               Vazgeç
             </button>
@@ -480,8 +480,8 @@ export function ItemRow({
     // dizilimde dar bir telefonda buton grubu shrink-0 olduğu için asla
     // küçülmüyordu ve ürün adının üstüne biniyordu. sm'den itibaren eski
     // yatay düzen (görsel + isim + butonlar tek satırda) geri geliyor.
-    <li className="flex flex-col gap-2 px-4 py-2.5 sm:flex-row sm:items-start sm:gap-3">
-      <div className="flex items-start gap-3">
+    <li className="flex flex-col gap-2 px-4 py-2.5 sm:flex-row sm:items-center sm:gap-3">
+      <div className="flex min-w-0 flex-1 items-start gap-3">
         {urun.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -498,9 +498,6 @@ export function ItemRow({
           <span className={`font-medium ${urun.active ? "" : "text-ink-faint line-through"}`}>
             {urun.name}
           </span>
-          {urun.priceKurus !== null ? (
-            <span className="text-small text-ink-muted">{formatPrice(urun.priceKurus)}</span>
-          ) : null}
           {urun.soldOut ? (
             <span className="rounded bg-warning-soft px-1.5 py-0.5 text-caption text-warning-ink">
               tükendi
@@ -529,57 +526,64 @@ export function ItemRow({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-1 sm:shrink-0 sm:justify-end">
+      {/* Fiyat kendi sütununda, sağa hizalı ve tabular: alt alta satırlarda
+          rakamlar aynı hizada okunuyor. Önceden adın hemen yanındaydı. */}
+      <span className="shrink-0 text-small font-medium text-ink tabular sm:w-20 sm:text-right">
+        {urun.priceKurus !== null ? formatPrice(urun.priceKurus) : "—"}
+      </span>
+
+      <div className="flex items-center gap-1.5 sm:shrink-0">
         {/* Tükendi, mutfaktan gelen bilgiyle anında işaretlenmeli: tek tık. */}
         <form action={toggleSoldOut}>
           <input type="hidden" name="itemId" value={urun.id} />
           <GonderDugmesi
-            className={`rounded px-2 py-0.5 text-caption ${
+            className={
               urun.soldOut
-                ? "bg-warning-soft text-warning-ink"
-                : "border border-line text-ink-muted hover:bg-canvas"
-            }`}
-      >
+                ? buttonClass({ variant: "secondary", size: "sm", className: "px-2.5 bg-warning-soft! text-warning-ink! ring-warning/30!" })
+                : KUCUK_BUTON
+            }
+          >
             {urun.soldOut ? "Stoğa al" : "Tükendi"}
           </GonderDugmesi>
         </form>
         <button type="button" onClick={() => setDuzenle(true)} className={KUCUK_BUTON}>
           Düzenle
         </button>
-        <form action={moveMenuItem}>
-          <input type="hidden" name="itemId" value={urun.id} />
-          <input type="hidden" name="direction" value="up" />
-          <GonderDugmesi  aria-label={`${urun.name} yukarı`} className={KUCUK_BUTON}
-      >
-            ↑
-          </GonderDugmesi>
-        </form>
-        <form action={moveMenuItem}>
-          <input type="hidden" name="itemId" value={urun.id} />
-          <input type="hidden" name="direction" value="down" />
-          <GonderDugmesi  aria-label={`${urun.name} aşağı`} className={KUCUK_BUTON}
-      >
-            ↓
-          </GonderDugmesi>
-        </form>
-        <form action={toggleMenuItem}>
-          <input type="hidden" name="itemId" value={urun.id} />
-          <GonderDugmesi  className={KUCUK_BUTON}
-      >
-            {urun.active ? "Gizle" : "Geri koy"}
-          </GonderDugmesi>
-        </form>
-        <form action={deleteMenuItem}>
-          <input type="hidden" name="itemId" value={urun.id} />
-          <SilDugmesi
-            title="Ürünü kalıcı olarak siler"
-            className={`${KUCUK_BUTON} text-danger`}
-      
-            onayMetni="Ürün silinsin mi?"
-            onayClassName="bg-danger-soft text-danger-ink font-medium">
-            Sil
-          </SilDugmesi>
-        </form>
+        <EylemMenusu etiket={`${urun.name} — diğer işlemler`}>
+          <form action={moveMenuItem}>
+            <input type="hidden" name="itemId" value={urun.id} />
+            <input type="hidden" name="direction" value="up" />
+            <GonderDugmesi role="menuitem" className={EYLEM_SATIRI}>
+              ↑ Yukarı taşı
+            </GonderDugmesi>
+          </form>
+          <form action={moveMenuItem}>
+            <input type="hidden" name="itemId" value={urun.id} />
+            <input type="hidden" name="direction" value="down" />
+            <GonderDugmesi role="menuitem" className={EYLEM_SATIRI}>
+              ↓ Aşağı taşı
+            </GonderDugmesi>
+          </form>
+          <form action={toggleMenuItem}>
+            <input type="hidden" name="itemId" value={urun.id} />
+            <GonderDugmesi role="menuitem" className={EYLEM_SATIRI}>
+              {urun.active ? "Menüde gizle" : "Menüye geri koy"}
+            </GonderDugmesi>
+          </form>
+          <div className="my-1 border-t border-line" aria-hidden="true" />
+          <form action={deleteMenuItem}>
+            <input type="hidden" name="itemId" value={urun.id} />
+            <SilDugmesi
+              role="menuitem"
+              title="Ürünü kalıcı olarak siler"
+              className={`${EYLEM_SATIRI} text-danger-ink hover:bg-danger-soft hover:text-danger-ink`}
+              onayMetni="Kalıcı olarak silinsin mi?"
+              onayClassName="bg-danger! text-white!"
+            >
+              Sil
+            </SilDugmesi>
+          </form>
+        </EylemMenusu>
       </div>
     </li>
   );
@@ -596,14 +600,20 @@ export function ItemRow({
  */
 export function TumMenuyuSil({
   businessId,
+  isletmeAdi,
   bolumSayisi,
   urunSayisi,
 }: {
   businessId: string;
+  /** Onay için yazdırılan ad. */
+  isletmeAdi: string;
   bolumSayisi: number;
   urunSayisi: number;
 }) {
   const [acik, setAcik] = useState(false);
+  const [yazilan, setYazilan] = useState("");
+  const adUyuyor =
+    yazilan.trim().toLocaleLowerCase("tr") === isletmeAdi.trim().toLocaleLowerCase("tr");
   const [state, formAction, pending] = useActionState<MenuFormState, FormData>(
     tumMenuyuSil,
     {},
@@ -653,18 +663,32 @@ export function TumMenuyuSil({
         </div>
       </div>
 
+      <label className="flex flex-col gap-1">
+        <span className="text-small text-danger-ink">
+          Onaylamak için işletmenin adını yazın: <strong>{isletmeAdi}</strong>
+        </span>
+        <input
+          name="onayAdi"
+          value={yazilan}
+          onChange={(e) => setYazilan(e.target.value)}
+          autoComplete="off"
+          spellCheck={false}
+          className="h-9 max-w-sm rounded-control border border-danger/40 bg-surface px-3 text-small text-ink outline-none focus:border-danger"
+        />
+      </label>
+
       <div className="flex flex-wrap gap-2">
         <button
           type="submit"
-          disabled={pending}
-          className="rounded-control bg-danger px-4 py-2 text-small font-medium text-white transition hover:brightness-95 disabled:opacity-60"
+          disabled={pending || !adUyuyor}
+          className={buttonClass({ variant: "destructive", size: "sm" })}
         >
           {pending ? "Siliniyor…" : "Evet, tüm menüyü sil"}
         </button>
         <button
           type="button"
           onClick={() => setAcik(false)}
-          className="rounded-control border border-line bg-surface px-4 py-2 text-small text-ink-soft transition hover:bg-canvas"
+          className={buttonClass({ variant: "secondary", size: "sm" })}
         >
           Vazgeç
         </button>
@@ -750,7 +774,7 @@ export function MenuyuKopyala({
           <button
             type="submit"
             disabled={pending}
-            className="self-start rounded-control bg-accent-600 px-4 py-2 text-small font-medium text-white transition hover:bg-accent-700 disabled:bg-slate-400"
+            className={buttonClass({ size: "md", className: "self-start" })}
           >
             {pending ? "Kopyalanıyor…" : "Seçilenlere kopyala"}
           </button>

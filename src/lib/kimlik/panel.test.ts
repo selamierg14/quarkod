@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { acilabilirRoller, aktifMi, panelMenusu, panelModu } from "./panel";
+import { acilabilirRoller, aktifMi, konumYolu, panelMenusu, panelModu } from "./panel";
 import { MODUL_ANAHTARLARI } from "./moduller";
 
 /** Menüdeki tüm bağlantı adreslerini düz listeye indirger. */
@@ -10,7 +10,12 @@ function adresler(
   tekIsletmeId?: Parameters<typeof panelMenusu>[3],
 ) {
   return panelMenusu(modu, role, moduller, tekIsletmeId).flatMap((g) =>
-    g.linkler.flatMap((l) => [l.href, ...(l.altLinkler?.map((alt) => alt.href) ?? [])]),
+    g.linkler.flatMap((l) => [
+      l.href,
+      ...(l.altLinkler?.map((alt) => alt.href) ?? []),
+      // Sekmeyle gezilen sayfalar da menü ağacında (palet + konum yolu).
+      ...(l.sayfalar?.map((s) => s.href) ?? []),
+    ]),
   );
 }
 
@@ -37,8 +42,9 @@ describe("platform menüsü", () => {
   it("kiracıya ait ekranları hiç göstermez", () => {
     // Platform yöneticisi hiçbir işletmenin sahibi değil; "kimin özeti"
     // sorusunun cevabı olmayan ekranlar menüde durmamalı.
+    // "/admin" artık listede değil: platform modunda o adres kiracı özeti
+    // değil PLATFORM özeti (bkz. admin/(panel)/PlatformOzeti.tsx).
     for (const gizli of [
-      "/admin",
       "/admin/geri-bildirimler",
       "/admin/kirilim",
       "/admin/urunler",
@@ -51,13 +57,14 @@ describe("platform menüsü", () => {
   });
 
   it("platform işlerini gösterir", () => {
+    // Kullanıcılar tek bağlantı: "Listele / Ekle" alt menüsü, sayfadaki
+    // "+ Yeni kullanıcı" düğmesinin tekrarıydı (UI incelemesi, Ekim 2026).
     expect(platform).toEqual([
+      "/admin",
       "/admin/hesaplar",
       "/admin/abonelikler",
       "/admin/isletmeler",
       "/admin/kullanicilar",
-      "/admin/kullanicilar",
-      "/admin/kullanicilar/ekle",
       "/admin/rotalar",
       "/admin/sponsorlar",
       "/admin/plus",
@@ -143,15 +150,20 @@ describe("kiracı menüsü", () => {
       MODUL_ANAHTARLARI,
       "isletme-1",
     ).flatMap((g) =>
-      g.linkler.flatMap((l) => [l.href, ...(l.altLinkler?.map((alt) => alt.href) ?? [])]),
+      g.linkler.flatMap((l) => [
+      l.href,
+      ...(l.altLinkler?.map((alt) => alt.href) ?? []),
+      // Sekmeyle gezilen sayfalar da menü ağacında (palet + konum yolu).
+      ...(l.sayfalar?.map((s) => s.href) ?? []),
+    ]),
     );
     expect(manager).toContain("/admin/isletmeler/isletme-1");
     expect(manager).toContain("/admin/isletmeler/isletme-1/kategoriler");
     expect(manager).toContain("/admin/isletmeler/isletme-1/masalar");
     // Kendi ekibini kurabilsin diye Kullanıcılar da eklendi (yalnızca
     // "garson" açabiliyor, bkz. acilabilirRoller ve userScopeFor testleri).
+    // "Ekle" ayrı bir menü satırı değil; listedeki düğmeden açılıyor.
     expect(manager).toContain("/admin/kullanicilar");
-    expect(manager).toContain("/admin/kullanicilar/ekle");
     // Sahibe özel ekranlar hâlâ görünmüyor.
     expect(manager).not.toContain("/admin/izinler");
     expect(manager).not.toContain("/admin/isletmeler");
@@ -170,7 +182,12 @@ describe("personel performansı", () => {
   it("sahip ve yönetici görür, personelin kendi menüsünde hiç yok", () => {
     for (const role of ["owner", "bolge", "manager"] as const) {
       const adresler = panelMenusu("kiraci", role).flatMap((g) =>
-        g.linkler.flatMap((l) => [l.href, ...(l.altLinkler?.map((alt) => alt.href) ?? [])]),
+        g.linkler.flatMap((l) => [
+      l.href,
+      ...(l.altLinkler?.map((alt) => alt.href) ?? []),
+      // Sekmeyle gezilen sayfalar da menü ağacında (palet + konum yolu).
+      ...(l.sayfalar?.map((s) => s.href) ?? []),
+    ]),
       );
       expect(adresler).toContain("/admin/vardiya-planlama/performans");
     }
@@ -178,7 +195,12 @@ describe("personel performansı", () => {
     // Garson zaten "kiraci" moduna hiç girmiyor — kendi menüsü tamamen ayrı
     // (Vardiyalarım/Görevlerim) ve performans linkini içermiyor.
     const personelMenusu = panelMenusu("personel", "garson").flatMap((g) =>
-      g.linkler.flatMap((l) => [l.href, ...(l.altLinkler?.map((alt) => alt.href) ?? [])]),
+      g.linkler.flatMap((l) => [
+      l.href,
+      ...(l.altLinkler?.map((alt) => alt.href) ?? []),
+      // Sekmeyle gezilen sayfalar da menü ağacında (palet + konum yolu).
+      ...(l.sayfalar?.map((s) => s.href) ?? []),
+    ]),
     );
     expect(personelMenusu).not.toContain("/admin/vardiya-planlama/performans");
     expect(personelMenusu).not.toContain("/admin/vardiya-planlama");
@@ -250,5 +272,83 @@ describe("açılabilir roller", () => {
     // karışamaz).
     expect(acilabilirRoller("manager")).toEqual(["garson"]);
     expect(acilabilirRoller("bolge")).toEqual(["garson"]);
+  });
+});
+
+describe("konumYolu (üst çubuk)", () => {
+  const platform = panelMenusu("platform", "superadmin");
+  const kiraci = panelMenusu("kiraci", "owner", MODUL_ANAHTARLARI, "isl_1");
+  const etiketler = (yol: ReturnType<typeof konumYolu>) => yol.map((a) => a.label);
+
+  it("menüdeki sayfa: grup › sayfa", () => {
+    expect(etiketler(konumYolu(platform, "/admin/hesaplar"))).toEqual(["Platform", "Hesaplar"]);
+  });
+
+  it("menüde olmayan alt sayfa adıyla eklenir", () => {
+    expect(etiketler(konumYolu(platform, "/admin/kullanicilar/ekle"))).toEqual([
+      "Platform",
+      "Kullanıcılar",
+      "Yeni",
+    ]);
+    expect(etiketler(konumYolu(platform, "/admin/kullanicilar/ckx1/duzenle"))).toEqual([
+      "Platform",
+      "Kullanıcılar",
+      "Düzenle",
+    ]);
+  });
+
+  it("ham kimlik başlığa basılmıyor, 'Detay' yazılıyor", () => {
+    expect(etiketler(konumYolu(platform, "/admin/hesaplar/ckx9"))).toEqual([
+      "Platform",
+      "Hesaplar",
+      "Detay",
+    ]);
+  });
+
+  it("alt menüdeki sayfa üst başlığıyla görünür", () => {
+    expect(etiketler(konumYolu(kiraci, "/admin/rezervasyon/plan"))).toEqual([
+      "Yönetim",
+      "Rezervasyon",
+      "Kat planı",
+    ]);
+  });
+
+  it("yalnızca son adım bağlantısız; önceki sayfa adımı tıklanabilir", () => {
+    const yol = konumYolu(platform, "/admin/kullanicilar/ekle");
+    expect(yol[1].href).toBe("/admin/kullanicilar");
+    expect(yol[yol.length - 1].href).toBeUndefined();
+  });
+
+  it("özet (/admin) her adresle eşleşmiyor", () => {
+    expect(etiketler(konumYolu(platform, "/admin"))).toEqual(["Platform", "Özet"]);
+    expect(konumYolu(platform, "/admin/bilinmeyen")).toEqual([]);
+  });
+});
+
+describe("çift navigasyon yok (UI incelemesi)", () => {
+  const menu = panelMenusu("kiraci", "owner", MODUL_ANAHTARLARI, "isl_1");
+  const linkler = menu.flatMap((g) => g.linkler);
+
+  it("kenar çubuğunda açılır alt menü kalmadı — sekmeler sayfada", () => {
+    expect(linkler.filter((l) => l.altLinkler?.length)).toEqual([]);
+  });
+
+  it("QR yazdırma QR Menü altında değil (İşletme ayarları sekmesi)", () => {
+    const qrMenu = linkler.find((l) => l.href === "/admin/menu");
+    expect(qrMenu?.sayfalar?.some((s) => s.href.endsWith("/qr"))).toBe(false);
+  });
+
+  it("sekmeyle açılan sayfada modül satırı aktif görünür", () => {
+    const geriBildirim = linkler.find((l) => l.href === "/admin/geri-bildirimler")!;
+    expect(aktifMi(geriBildirim, "/admin/kirilim")).toBe(true);
+    expect(aktifMi(geriBildirim, "/admin/menu")).toBe(false);
+  });
+
+  it("konum yolu sekme sayfasını adıyla gösterir", () => {
+    expect(konumYolu(menu, "/admin/vardiya-planlama/performans").map((a) => a.label)).toEqual([
+      "Personel",
+      "Personel operasyonu",
+      "Performans",
+    ]);
   });
 });

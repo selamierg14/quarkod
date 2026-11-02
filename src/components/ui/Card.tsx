@@ -27,7 +27,7 @@ export function Card({
   return (
     <section
       className={`overflow-hidden rounded-card shadow-card ring-1 ${TONES[tone]} ${
-        padded ? "p-5" : ""
+        padded ? "p-4" : ""
       } ${className}`}
     >
       {children}
@@ -60,12 +60,13 @@ export function CardHeader({
 }
 
 /**
- * Başlığı renkli bir şeritte duran bölüm kartı.
+ * Başlıklı bölüm kartı — panelin ana taşıyıcısı.
  *
- * Panelde her bölüm "beyaz kutu + gri küçük başlık" kalıbıyla yazılıyordu;
- * on tanesi alt alta gelince hepsi aynı görünüyor, göz nereye bakacağını
- * bilemiyordu. Burada başlık kendi zeminine oturuyor: bölümün nerede
- * başladığı bir çizgiyle değil bir yüzeyle belli oluyor.
+ * Başlık şeridi NÖTR (bkz. lib/kimlik/modul-rengi.ts): önceden her kartın
+ * üstünde modül renginde bir çizgi ve renkli bir şerit vardı; yan yana
+ * beş kart beş renk demekti. Bölümün nerede başladığını artık ayırıcı
+ * çizgi ve ikon rozeti söylüyor. İç boşluk 16px — yönetim panelinde
+ * yoğunluk tercih ediliyor; 20px'lik boşluklar listeleri seyreltiyordu.
  */
 export function SectionCard({
   title,
@@ -91,17 +92,14 @@ export function SectionCard({
     <section
       className={`overflow-hidden rounded-card bg-surface shadow-card ring-1 ring-line ${className}`}
     >
-      {/* Kartın tepesindeki ince renk geçişi: on kart alt alta dizildiğinde
-          hangisinin nerede başladığı çizgiyle değil renkle okunuyor. */}
-      <div className={`h-0.5 w-full ${ton.cizgi}`} aria-hidden="true" />
       <div
-        className={`flex flex-wrap items-center justify-between gap-3 border-b px-4 py-2.5 ${ton.serit}`}
+        className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b px-4 py-2.5 ${ton.serit}`}
       >
         <div className="flex min-w-0 items-center gap-2.5">
           {ikon ? (
             <span
               aria-hidden="true"
-              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-chip text-small shadow-sm ${ton.rozet}`}
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-chip text-small ${ton.rozet}`}
             >
               {ikon}
             </span>
@@ -111,7 +109,7 @@ export function SectionCard({
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
       </div>
-      <div className={padded ? "p-5" : ""}>{children}</div>
+      <div className={padded ? "p-4" : ""}>{children}</div>
     </section>
   );
 }
@@ -124,12 +122,16 @@ export type SayfaRengi = ModulRengi;
 export { BilgiIpucu };
 
 /**
- * Sayfa başlığı: her ekranın tepesinde aynı ritim, kendi rengi.
+ * Sayfa başlığı: her ekranın tepesinde aynı ritim.
  *
- * Başlık düz bir satır değil, kendi yüzeyi olan bir bant: arkasında
- * modülün renginden çok soluk bir parıltı, solunda dolu renkli bir ikon
- * rozeti. Amaç, pazarlama sitesindeki kart diliyle aynı aileye girmek —
- * panel "tablolar listesi" değil, uygulama gibi dursun.
+ * Kart DEĞİL, doğrudan zeminde. Önceden başlık gradyanlı bir kartın
+ * içindeydi ve açıklama bir (i) rozetinin arkasına saklanıyordu: kart her
+ * sayfada ~70px dikey alan harcıyor, açıklamayı ise kimse açmıyordu
+ * (UI incelemesi, Ekim 2026). Artık başlık büyük (22px) ve sayfanın tek
+ * ana eylemi sağında; açıklama altında tek paragraf.
+ *
+ * İkon her sayfada aynı yerde ve aynı boyutta: bazı başlıklarda olup
+ * bazılarında olmaması sayfaların ayrı ayrı yazıldığı hissini veriyordu.
  */
 export function PageHeader({
   title,
@@ -147,27 +149,24 @@ export function PageHeader({
 }) {
   const ton = modulTonu(renk);
   return (
-    // Tek satır: açıklama (i) arkasında, başlık ile aksiyon aynı hizada.
-    // Önceden iki satırlık açıklama her sayfanın tepesinde yer kaplıyor ve
-    // asıl işi (tablo/form) aşağı itiyordu.
-    <div className="relative flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-card bg-surface px-4 py-3 shadow-card ring-1 ring-line">
-      <div
-        aria-hidden="true"
-        className={`pointer-events-none absolute inset-y-0 left-0 w-2/3 bg-gradient-to-r to-transparent ${ton.parilti}`}
-      />
-      <div className="relative flex min-w-0 items-center gap-2.5">
+    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+      <div className="flex min-w-0 flex-1 items-start gap-3">
         {ikon ? (
           <span
             aria-hidden="true"
-            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-control shadow-md ${ton.rozet}`}
+            className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-control ${ton.rozet}`}
           >
             {ikon}
           </span>
         ) : null}
-        <h1 className="min-w-0 truncate text-title font-semibold text-ink">{title}</h1>
-        {description ? <BilgiIpucu>{description}</BilgiIpucu> : null}
+        <div className="min-w-0">
+          <h1 className="text-display font-semibold text-balance text-ink">{title}</h1>
+          {description ? (
+            <p className="mt-1 max-w-3xl text-small text-ink-muted">{description}</p>
+          ) : null}
+        </div>
       </div>
-      {action ? <div className="relative shrink-0">{action}</div> : null}
+      {action ? <div className="shrink-0">{action}</div> : null}
     </div>
   );
 }

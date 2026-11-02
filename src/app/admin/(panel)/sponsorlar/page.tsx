@@ -1,7 +1,7 @@
 import { Sparkles } from "lucide-react";
 import { requireSuperadmin } from "@/lib/kimlik/auth";
 import { prisma } from "@/lib/cekirdek/db";
-import { PageHeader, Pagination, SectionCard } from "@/components/ui";
+import { PageHeader, Pagination, SectionCard, buttonClass } from "@/components/ui";
 import { aralikMetni, cubukGosterilsinMi, sayfaDurumu, toplamSayfa } from "@/lib/cekirdek/sayfalama";
 import { gunGirdisi, haftaBaslangici } from "@/lib/cekirdek/gun";
 import { sponsorMu } from "@/lib/biyerlere/sponsorluk";
@@ -42,7 +42,7 @@ export default async function SponsorlarPage({
   });
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <PageHeader
         ikon={<Sparkles className="h-4 w-4" aria-hidden="true" />}
         renk="amber"
@@ -95,11 +95,11 @@ export default async function SponsorlarPage({
                           name="adet"
                           min={1}
                           placeholder="adet"
-                          className="w-20 rounded-chip border border-line bg-surface px-2 py-1 text-caption outline-none focus:border-line-strong"
+                          className="w-20 rounded-chip border border-line bg-surface px-2 py-1 text-caption outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
                         />
                         <button
                           type="submit"
-                          className="rounded-chip border border-line px-2.5 py-1 text-caption font-medium text-ink-soft hover:bg-canvas"
+                          className={buttonClass({ variant: "secondary", size: "sm" })}
                         >
                           Kredi ekle
                         </button>

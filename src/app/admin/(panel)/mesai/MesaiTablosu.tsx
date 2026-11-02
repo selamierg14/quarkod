@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { SHIFTS } from "@/lib/cekirdek/constants";
 import { DURUM_METNI, sureMetni, type PersonelDurumu } from "@/lib/personel/mesai";
 import { elleKayitEkle, kaydiDuzelt, type MesaiFormState } from "./actions";
+import { buttonClass } from "@/components/ui";
 
 export type TabloSatiri = {
   userId: string;
@@ -187,7 +188,7 @@ function DuzeltmeFormu({
       <button
         type="submit"
         disabled={bekliyor}
-        className="min-h-11 rounded-control bg-accent-600 px-4 text-small font-medium text-white hover:bg-accent-700 disabled:opacity-50"
+        className={buttonClass({ size: "md", className: "min-h-11" })}
       >
         {bekliyor ? "…" : guncelleme ? "Kaydı düzelt" : "Kayıt ekle"}
       </button>
